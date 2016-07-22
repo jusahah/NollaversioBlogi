@@ -1,19 +1,19 @@
 +++
-date = "2016-07-19T14:44:27+03:00"
-draft = true
-title = "Usecase - palvelupyyntö elää rinnakkaistodellisuuksissa"
+date = "2016-07-22T14:44:27+03:00"
+draft = false
+title = "Usecase-arkkitehtuurin vahvuus"
 
 +++
 
-Usecase-arkkitehtuuri (en keksinyt hyvää käännöstä suomeksi) on eräs tapa järjestää Laravel-pohjaisen tietokoneohjelman control flow. 
+Usecase-arkkitehtuuri on eräs tapa järjestää Laravel-pohjaisen tietokoneohjelman control flow. 
 
-Mitä usecase-arkkitehtuuri painottaa? Nimensä mukaisesti se pyrkii abstraktoimaan koodin erillisiin käyttötarkoituksiin. 
+Mitä usecase-arkkitehtuuri painottaa? Nimensä mukaisesti se pyrkii abstraktoimaan koodin erillisiin käyttötarkoituksiin, usecaseihin. 
 
 Käyttötarkoitus on esim. "nosta rahaa pankista".
 
 Otetaan esimerkki. Kuvitellaan järjestelmä, jossa loppukäyttäjä voi ryhtyä haluamansa pankin asiakkaaksi. Pankkeja on useita, ja asiakas voi yhden järjestelmän kautta hallita asiakkuuksiaan kussakin pankissa.
 
-### Usecase - rahan nosto
+### Ensimmäinen usecase - rahan nosto
 
 ```php
 
@@ -89,10 +89,12 @@ public function nostaRahaa(Request $request, int $pankkiID) {
 
 ```
 
-Ylläoleva usecase-arkkitehtuuri erottelee *sisääntulevan palvelupyynnön* käsittelyn ja *itse toiminnon läpiviemisen* toisistaan. On syytä muistaa, että rahan nostaminen pankista on palvelupyyntö asiakkaalta pankille. Jotta tuo palvelupyyntö voidaan viedä läpi, täytyy asiakkaan tietokoneen lähettää tekninen palvelupyyntö järjestelmän palvelimelle. Tässä on kaksi fundamentaalista konseptia:
+Ylläoleva usecase-arkkitehtuuri erottelee *sisääntulevan palvelupyynnön* käsittelyn ja *itse toiminnon läpiviemisen* toisistaan. On syytä muistaa, että rahan nostaminen pankista on palvelupyyntö asiakkaalta pankille. Jotta tuo palvelupyyntö voidaan viedä läpi, täytyy asiakkaan tietokoneen lähettää tekninen palvelupyyntö järjestelmän palvelimelle. 
 
-#1 ) Palvelupyyntö siinä mielessä, että tosimaailmassa minä pyydän sinua tekemään jotain
-#2 ) Palvelupyyntö siinä mielessä, että kasa bittejä siirtyy tietokoneelta toiselle.
+Tässä onkin *kaksi fundamentaalista konseptia*:
+
+1. Palvelupyyntö siinä mielessä, että tosimaailmassa minä pyydän sinua tekemään jotain. 
+2. Palvelupyyntö siinä mielessä, että kasa bittejä siirtyy tietokoneelta toiselle. 
 
 **Jälkimmäinen on pelkkä bittimaailman kuvaus ensimmäisestä**. Täydellisessä maailmassa jälkimmäiselle konseptille ei olisi lainkaan tarvetta. Mutta meidän maailmassamme on - tieto rahan nostosta täytyy jotenkin välittää kotikoneelta palvelimelle. Se ei välity telepatialla, joten joudumme turvautumaan *teknisen palvelupyynnön* lähettämiseen.
 
@@ -104,21 +106,22 @@ Sen sijaan Controller-tiedosto (PankkiController.php) välittää tuommoisista a
 
 Itse asiassa Usecase-tiedosto ei edes tiedä, että se on osa internet-applikaatiota. Sillä kaikki internet-liikenteeseen liittyvä logiikka elää Controller-tiedostossa.
 
+### Toinen usecase - rahan siirto
+
 Lisätään järjestelmään toinen usecase. Mitä muuta haluamme pankkijärjestelmältämme kuin nostaa rahaa? No, ainakin siirtää rahaa yhdeltä tililtä toiselle.
 
-Oletetaan, että rahan siirron voi tehdä miltä tahansa tililtä mille tahansa tilille. Ainoa vaatimus on, että siirron tekevä asiakas omistaa lähtötilin.
+Oletetaan, että rahan siirron voi tehdä miltä tahansa tililtä mille tahansa tilille. Tilien ei tarvitse olla samassa pankissa. Ainoa vaatimus on, että siirron tekevä asiakas omistaa lähtötilin, ja on asiakkaana siinä pankissa, jossa lähtötili sijaitsee.
 
-### Usecase - tilisiirto
 
 ```php
 
 // SiirraRahaa_useCase.php
 
 public function siirraRahaa(
-	int $lahtoPankkiID, // Mistä pankista rahat lähtevät?
-	int $tuloPankkiID, // Mihin pankkiin rahat saapuvat?
-	int $lahettajaID,    // Kenen tili lähtöpankissa?
-	int $vastaanottajaID,  // Kenen tili tulopankissa?
+	int $lahtoPankkiID, /* Mistä pankista rahat lähtevät? */
+	int $tuloPankkiID, /* Mihin pankkiin rahat saapuvat? */
+	int $lahettajaID,    /* Kenen tili lähtöpankissa? */
+	int $vastaanottajaID,  /* Kenen tili tulopankissa? */
 	int $summa
 ) {
 	// Tässä oletetaan, että jokaisella asiakkaalla voi olla max. yksi tili per pankki.
@@ -182,12 +185,12 @@ public function siirraRahaa(
 
 // PankkiController.php
 
-public function nostaRahaa(Request $request, IPankki $pankki) {
+public function nostaRahaa(Request $request, int $pankkiID) {
 	// Kuten ennenkin
 	// ...
 }
 
-public function siirraRahaa(Request $request, IPankki $lahtoPankki) {
+public function siirraRahaa(Request $request, int $lahtoPankkiID) {
 	// Parametrit IOC:in kautta
 	// Miksi otamme IOC:n kautta $lahtoPankin, mutta emme $tuloPankkia?
 	// Koska lähettäjä operoi omalla selaimellaan *tietyn* pankin käyttöliittymässä, 
@@ -199,18 +202,15 @@ public function siirraRahaa(Request $request, IPankki $lahtoPankki) {
 		http://pankkijarjestelma.fi/pankki/pankkiID/operaatio
 	*/
 
-	// Validation sisääntullut request jotenkin
+	// Validoi sisääntullut request jotenkin
 	try {
 		$this->validateSiirtoRequest($request); // Throws "ValidaatioVirhe"		
 	} catch (ValidaatioVirhe $vv) {
 		return Response::error('Rahan siirto epäonnistui - tarkista tiedot');
 	}
 
-	// Varmistetaan, että vastaanottava pankki on olemassa
+	// Haetaan siirtoon liittyvät tiedot.
 	$tuloPankkiID = $request->get('tuloPankkiID');
-	$tuloPankki = Pankki::findById($tuloPankkiID); // Throw "EiPankkia";
-
-	// Haetaan muut siirtoon liittyvät tiedot.
 	$lahettajaID = $request->get('lahettajaID');
 	$vastaanottajaID = $request->get('vastaanottajaID');
 	$summa     = $request->get('summa');
@@ -218,8 +218,8 @@ public function siirraRahaa(Request $request, IPankki $lahtoPankki) {
 	// Kutsutaan usecasea!
 	try {
 		(new SiirraRahaa_useCase())->siirraRahaa(
-			$lahtopankki, 
-			$tuloPankki,
+			$lahtoPankkiID, 
+			$tuloPankkiID,
 			$lahettajaID,
 			$vastaanottajaID, 
 			$summa
@@ -255,7 +255,7 @@ protected function validateSiirtoRequest(Request $request)
         'tuloPankkiID' => 'required|int',
         'lahettajaID' => 'required|int',
         'vastaanottajaID' => 'required|int',
-        'summa' => 'required|int',
+        'summa' => 'required|int|min:0|max:99999999',
     ]);
 
     // Kaikki kunnossa
