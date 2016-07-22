@@ -1,0 +1,243 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Raskas koodi erillisessä säikeessä? Lupaus auttaa. &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Raskas koodi erillisessä säikeessä? Lupaus auttaa.</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Mon, Jul 18, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Javascriptin hauska puoli on, että se ajaa itseään mukavasti yhdessä säikeessä. Tämä tarkoittaa, että kaikki
+koodi ajetaan <em>perätysten</em>, kiltisti jonossa.</p>
+
+<p>Eli kun funktio <strong>A</strong> aloittaa ajonsa, funktio <strong>B</strong> ei voi aloittaa ennenkuin <strong>A</strong> on valmis. Täydellinen metafööri Javascriptille onkin McDonaldsin autokaistan jono - jos yksi autoilija jää suustansa kiinni noutotiskille, yksikään takana olevista autoista ei liiku senttiäkään.</p>
+
+<p>Ohjelmoinnin maailmassa tämä tarkoittaa, että jos yksi funktio rohmuaa prosessorin ajoaikaa viisi sekuntia, kaikki muut ajovuoroa odottavat koodinpätkäset joutuvat vähintään tuon viisi sekuntia odottamaan.</p>
+
+<p>Tämä kylmä totuus pätee sekä selaimen puolella että serverimaailmassa (Node.js).</p>
+
+<p>Yksi tapa ratkoa jonotuksen tuomat haasteet on pitää huoli, että jono liikkuu vauhdilla. Mäkkärikin tekee näin - he pitävät huolen, ettei yksittäinen asiakas tuki koko autokaistaa, vaan siirtyy sutjakasti elämässään eteenpäin. Koodin puolella tämä on tehtävissä ohjelmoijan maalaisjärjen käytöllä - ohjelmoija arvioi parhaan kykynsä mukaan kuinka kauan kunkin koodinpätkän ajo kestää.</p>
+
+<p>Jos ajo kestää kaksi mikrosekuntia, ei ongelmia.</p>
+
+<p>Jos ajo kestää kaksi sekuntia, niin pulassa ollaan.</p>
+
+<p>Mikä avuksi tilanteisiin, joissa yksittäinen koodinajo on pitkäkestoinen?</p>
+
+<h3 id="luo-uusi-säie-joka-tekee-raskaat-työt">Luo uusi säie, joka tekee raskaat työt</h3>
+
+<p>Ratkaisu on yksinkertainen - uusi työmyyrä (säie), joka ottaa kontolleen raskaan työurakan. Selaimessa Web Worker-standardi mahdollistaa säikeen luomisen. Muita <em>järkeviä</em> vaihtoehtoja ei juuri ole.</p>
+
+<p>Serveripuolella (Node.js) on enemmän vaihtoehtoja. Yksi vaihtoehto on ajaa raskas koodi kokonaan uudessa Node.js-instanssissa. Eli uudessa käyttöjärjestelmän prosessissa, joka pyörittää Node.js-koodia.</p>
+
+<p>Se voi olla ihan hyväkin idea, mutta aika raskas, sillä koko Node.js-moottori täytyy ladata uusiksi tätä uutta &ldquo;säiettä&rdquo; varten. Jos koodinajo on pitkäkestoinen, tällä ei ole juuri merkitystä.</p>
+
+<p>Toinen vaihtoehto olisi käyttää &ldquo;kevyempää säiettä&rdquo;, joka ajetaan jo olemassaolevan Node.js-prosessin alaisuudessa. Tällöin käyttöjärjestelmän ei tarvitse synnyttää uutta prosessia, vaan uusi prosessi syntyy kivasti käyttöjärjestelmän tietämättä asiasta mitään.</p>
+
+<p>Valitaan kuitenkin vaihtoehto yksi ihan siksi, että yksi parhaista <em>säiekirjastoista</em> turvautuu siihen.</p>
+
+<h3 id="threads-kirjasto-ja-lupaukset">Threads -kirjasto ja lupaukset</h3>
+
+<p>Oletetaan, että meillä on koodinpätkä, joka etsii kaikki suomalaiset erisnimet tekstidokumentista. Skripti toimii seuraavasti:</p>
+
+<pre><code class="language-javascript">
+// etsiErisnimet.js
+
+var ERISNIMET = ['Aado', 'Aamu', 'Aapo', ... , 'Yrjö'];
+
+module.exports = function(dokumentti) {
+	
+  var sanat = dokumentti.split(&quot; &quot;); // Erottele välilyönnillä
+
+  var nimet = _.filter(sanat, function(sana) {
+    return ERISNIMET.indexOf(sana) !== -1; // Löytyikö sana nimiluettelosta?
+  })
+
+  // Poista duplikaatit
+  // ['Mikko', 'Mikko', 'Matti'] -&gt; ['Mikko', 'Matti']
+  return _.uniq(nimet);
+}
+
+</code></pre>
+
+<p>Algoritmi on kompleksisuudeltaan about <em>O(nk)</em>, jossa <em>n</em> kuvaa tekstin pituutta ja <em>k</em> etunimien lukumäärää.
+Ei ehkä ihan optimialgoritmi, mutta what the hell. Käyttö on helppoa.</p>
+
+<pre><code class="language-javascript">
+// Testi.js
+var nimiEtsinta = require('etsiErisnimet');
+
+var nimet = nimiEtsinta('Pirkko ja Ville menivät kalaan.');
+console.log(nimet) // ['Pirkko', 'Ville']
+
+</code></pre>
+
+<p>Seuraavaksi katsotaan, miten tuo algoritmi saadaan ajettua erillisessä säikeessä.</p>
+
+<p>Ensinnäkin tarvitsemme säiekirjaston. Sen voi asentaa <em>npm install threads &ndash;save</em> -komennolla komentorivillä.
+Tämän lisäksi on syytä tehdä pieni muutos etsiErisnimet.js-tiedostoon, jotta se pystyy toimimaan threads-kirjaston kanssa. Muuta ei tarvita.</p>
+
+<p>Sitten itse koodi. Huomattavaa on, että <em>paketoimme</em> aiemman erisnimien etsintään erikoistuneen koodin siten, että se voidaan ajaa säikeen sisällä.</p>
+
+<pre><code class="language-javascript">
+// etsiErisnimetThreaded.js
+
+// Tämä moduuli toimii yksinomaan wrapperinä.
+
+var threads = require('threads'); // Säiekirjasto
+var Promise = require('bluebird'); // Lupauskirjasto
+
+module.exports = function(dokumentti) {
+
+  return new Promise(function(resolve, reject) {
+    // Luodaan uusi säie
+    // Spawn-funktio ottaa parametrikseen sen moduulin nimen, 
+    // jonka koodin säie ottaa ajaakseen.
+    var thread = threads.spawn('etsiErisnimet');
+
+    // Säie on luotu pinnan alla ja valmis toimimaan.
+    // Lähetetään säikeelle viesti
+    thread.send(dokumentti)
+    // ...ja jäädään kuuntelemaan vastausta
+    .on('message', function(loydetytErisnimet) {
+      // Resolvoidaan lupaus saaduilla tuloksilla.
+      return resolve(loydetytErisnimet);
+    })
+    .on('error', function(error) {
+      // Rejektoidaan lupaus
+      return reject(error);
+    });
+
+  });
+
+}
+
+</code></pre>
+
+<pre><code class="language-javascript">
+// etsiErisnimet.js
+
+// Aiempi erisnimien etsintä toimii kuten ennenkin, mutta
+// tarvitsemme hiukan lisäkoodia hallitsemaan tiedonvaihtoa
+// säikeiden välillä.
+
+var ERISNIMET = ['Aado', 'Aamu', 'Aapo', ... , 'Yrjö'];
+
+module.exports = function(dokumentti, takaisinlahetys) {
+
+  var sanat = dokumentti.split(&quot; &quot;); // Erottele välilyönnillä
+
+  var nimet = _.filter(sanat, function(sana) {
+    return ERISNIMET.indexOf(sana) !== -1; // Löytyikö sana nimiluettelosta?
+  })
+
+  // Poista duplikaatit
+  // ['Mikko', 'Mikko', 'Matti'] -&gt; ['Mikko', 'Matti']
+  takaisinlahetys(_.uniq(nimet));
+}
+
+</code></pre>
+
+<p>Ylläoleva koodi on kaikki mitä tarvitsemme. Nyt voimme suorittaa erisnimietsinnän täysin erillään omassa säikeessään!</p>
+
+<pre><code class="language-javascript">
+// RikosSeurantaApplikaatio.js
+
+var Promise = require('bluebird');
+var nimietsinta = require('etsiErisnimetThreaded');
+
+function vastaanotaDokumentti(dokumentti) {
+	
+  nimietsinta(dokumentti)
+  .then(function(loydetytNimet) {
+    return tarkistaEpailyttavatNimiParit(loydetytNimet);
+  })
+  .catch(function(error) {
+    console.log(&quot;Nimien etsintä epäonnistui&quot;);
+    console.error(error);
+  })
+}
+
+function tarkistaEpailyttavatNimiParit(nimet) {
+  if (_.intersection(['Ilkka', 'Kanerva'], nimet).length === 2) {
+    // Sekä Ilkka että Kanerva löytyivät, soita Karhuryhmä.
+  }
+}
+
+</code></pre>
+
+<p>Tällä tavoin olemme kivasti paketoineet säikeidenhallinnan ikävät sivuseikat lupausta tarjoavat abstraktion taakse. <em>RikosSeurantaApplikaation</em> ei tarvitse välittää tuon taivaallista säikeiden olemassaolosta - riittää, että se kutsuu tarjottua rajapintaa ja ottaa vastaan <em>lupauksen</em>.</p>
+
+<p>Tuo lupaus sitten jonain kauniina aamuna realisoituu todeksi, ja kaikki ovat tyytyväisiä.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

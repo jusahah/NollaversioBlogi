@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Laravels on Nollaversio IT</title>
+    <link>http://nollaversio.fi/blog/public/laravel/</link>
+    <description>Recent content in Laravels on Nollaversio IT</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fi-fi</language>
+    <lastBuildDate>Wed, 20 Jul 2016 20:42:23 +0300</lastBuildDate>
+    <atom:link href="http://nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Suojaa tuloväylät - mutta miten?</title>
+      <link>http://nollaversio.fi/blog/public/laravel/protecting-routes/</link>
+      <pubDate>Wed, 20 Jul 2016 20:42:23 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/protecting-routes/</guid>
+      <description>
+
+&lt;p&gt;Tyypillinen web-applikaatio ottaa vastaan monenlaista palvelupyyntöä. Osa pyynnöistä tulee rekisteröityneiltä käyttäjiltä, osa vierailta, osa hakkereilta, osa sisältää dataa, osa ei.&lt;/p&gt;
+
+&lt;p&gt;Kaiken tämän keskellä applikaatio tulisi kehittää niin, että jokainen sisääntuloväylä on suojattu asianmukaisesti. Eli portti on kunnossa ja pysyy kiinni esim. SQL-injektioille.&lt;/p&gt;
+
+&lt;p&gt;Helppo, nopea tapa huolehtia suojauksesta on jokaisen tuloväylän portilla tarkistaa, että asianmukaiset paperit ovat mukana:&lt;/p&gt;
+
+&lt;h3 id=&#34;versio-1&#34;&gt;versio 1&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// AdminController.php
+
+public function store(Request $request) {
+	$this-&amp;gt;tarkistaAdminOikeudet();
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function index(Request $request) {
+	$this-&amp;gt;tarkistaAdminOikeudet();
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function list(Request $request) {
+	$this-&amp;gt;tarkistaAdminOikeudet();
+
+	// Kaikki hyvin, käsittele request
+}
+
+private function tarkistaAdminOikeudet() {
+	if (Auth::user()-&amp;gt;isNotAdmin()) {
+		throw new Exception(&amp;quot;Admin-oikeudet puuttuvat!&amp;quot;);
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevasta heti nähdään, että jotain on pielessä. Sama admin-tarkistus joudutaan tekemään kolmesti eri kohdissa.&lt;/p&gt;
+
+&lt;p&gt;Huomattavasti paremman ratkaisun tarjoaa konstruktori-metodi, joka mahdollistaa kaikille public-metodeille &lt;em&gt;yhteisen&lt;/em&gt; tarkistuksen määrittämisen. Eli:&lt;/p&gt;
+
+&lt;h3 id=&#34;versio-2&#34;&gt;versio 2&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// AdminController.php
+
+public function __construct(Request $request) {
+
+	$this-&amp;gt;tarkistaAdminOikeudet();
+}
+
+public function store(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function index(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function list(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+private function tarkistaAdminOikeudet() {
+	if (Auth::user()-&amp;gt;isNotAdmin()) {
+		throw new Exception(&amp;quot;Admin-oikeudet puuttuvat!&amp;quot;);
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kuten huomaamme, duplikaatio poistui. Tarkistus tehdään vain yhdessä pisteessä.&lt;/p&gt;
+
+&lt;p&gt;Mutta miksi turhaan edes keksiä pyörää uudestaan? Laravel tarjoaa &amp;ldquo;Middleware&amp;rdquo;-nimisen konseptin käyttöömme. Middleware on käytännössä yksi ylimääräinen kerros internetin ja applikaatiosi välissä. Tuo ylimääräinen &amp;ldquo;rasvakerros&amp;rdquo; soveltuu hyvin admin-tarkistuksen suorituspisteeksi.&lt;/p&gt;
+
+&lt;h3 id=&#34;versio-3&#34;&gt;versio 3&lt;/h3&gt;
+
+&lt;p&gt;// Middleware/TarkistaAdmin.php&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class TarkistaAdmin
+{
+
+    public function handle($request, Closure $next)
+    {
+        if (Auth::user()-&amp;gt;isNotAdmin()) {
+        	// Ohjataan käyttäjä kirjautumissivulle.
+            return redirect(&#39;kirjaudu_sisaan&#39;);
+        }
+
+        // Kaikki ok!
+        // Muu applikaatio voi luottaa että käyttäjällä on tarvittavat oikeudet!
+
+        return $next($request);
+    }
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// AdminController.php
+
+public function __construct(Request $request) {
+
+	$this-&amp;gt;middleware(&#39;tarkistaAdmin&#39;)
+}
+
+public function store(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function index(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function list(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tämä on jo varsin pätevä ratkaisu. Ensinnäkin admin-tarkistuksen logiikka elää nyt poissa AdminControllerista. Tämä on ihan hyvä, sillä oletettavasti joku muukin komponentti applikaatiossa on kiinnostunut tekemään admin-tarkistuksia. Kun admin-tarkistus elää middleware-kerroksessa, se on kaikkien applikaation osasten käytettävissä.&lt;/p&gt;
+
+&lt;p&gt;Noin muutenkin on järkevintä tsekata admin-oikeudet mahdollisimman aikaisin. Tilanne on vastaava kuin lentokentällä - turvatarkastus tapahtuu &lt;em&gt;keskitetysti&lt;/em&gt; ennen lähtöporteille siirtymistä. Millainen sotku syntyisi, jos turvatarkastus järjestettäisiin kunkin lähtöportin edessä erikseen? Aikamoinen.&lt;/p&gt;
+
+&lt;p&gt;Sama konsepti pätee web-applikaatioon - mitä aiemmin tarkastukset tehdään, sitä parempi. Aikainen tarkastus selkeyttää kaikkien osapuolten toimintaa. Lentokentälläkin on helpompi kuljeskella, kun turvatarkastus on rajattu tietylle alueelle.&lt;/p&gt;
+
+&lt;p&gt;Laravellin middleware-konsepti lisää myös uusia mahdollisuuksia valikoimaamme. Voimme esimerkiksi määrittää suoraan konstruktorissa, mille kaikille sisääntuloväylille (eli public metodeille) haluamme middleware-suojauksen pätevän.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// AdminController.php
+
+public function __construct(Request $request) {
+
+	$this-&amp;gt;middleware(&#39;tarkistaAdmin&#39;, [&#39;only&#39; =&amp;gt; [
+		&#39;store&#39;,
+		&#39;update&#39;
+	]]);
+}
+
+public function store(Request $request) {
+
+	// SUOJATTU!
+}
+
+public function update(Request $request) {
+
+	// SUOJATTU!
+}
+
+public function index(Request $request) {
+
+	// EI SUOJATTU!
+}
+
+public function list(Request $request) {
+
+	// EI SUOJATTU!
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kätevää, varsin kätevää. Esimerkin &lt;em&gt;only&lt;/em&gt;-attribuutin lisäksi meillä on käytössämme &lt;em&gt;except&lt;/em&gt;-attribuutti, joka
+toimii nimensä mukaisesti - se suojaa kaikki muut väylät paitsi erikseen &lt;em&gt;except&lt;/em&gt;:in perässä määritellyt.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Laravel vinkit #1</title>
+      <link>http://nollaversio.fi/blog/public/laravel/vinkit1/</link>
+      <pubDate>Wed, 06 Jul 2016 06:28:46 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/vinkit1/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;Kuinka lisätä uusi raportointitoiminnallisuus ilman muutoksia vanhaan koodipohjaan?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Lyhyt vastaus: luomalla palveluntarjoaja, joka määrittää tapahtumakuuntelijan.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Laravellilla rakennettu järjestelmä on helposti laajennettavissa palveluntarjoajien kautta. Palveluntarjoajan mahdollistavat arkkitehtuurin rakentamisen siten, että uudet toiminnallisuudet elävät täysin erillään ns. ydinkoodista. Ydinkoodin ei edes tarvitse tietää uuden toiminnallisuuden olemassaolosta.&lt;/p&gt;
+
+&lt;p&gt;Paras tapa toteuttaa tämä erilläänolo on käyttää palveluntarjoajia (Service Provider).&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Käytetään esimerkkinä Nordean pankkijärjestelmää.&lt;/p&gt;
+
+&lt;p&gt;Oletetaan, että Nordean mahtava nettipankki sallii asiakkaidensa lisätä pankkitileilleen rahaa. Ahneuspäissään pankkiväki ei ole lisännyt mahdollisuutta nostaa rahaa tililtä - ainoastaan talletus on mahdollista.&lt;/p&gt;
+
+&lt;p&gt;Ihana nettipankki toimii kuin unelma, kunnes tulee lakimuutoksen myötä lisävaatimus: jokaisen pankkitilille tehtävän talletuksen jälkeen järjestelmän tulee ilmoittaa viranomaisille ko. pankkitilin uusi saldo.&lt;/p&gt;
+
+&lt;p&gt;Oletetaan, että tässä esimerkissä viranomaisilla on upea HTTP-rajapinta nimeltä &amp;ldquo;Pankkipoliisi&amp;rdquo;. Rajapinnan tarkempi toiminta ei ole oleellista, joten oletetaan, että pintaa voidaan kutsua tyyliin:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;Pankkipoliisi::ilmoita($asiakasID, $uusiSaldo)&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Miten nykyistä Nordean pankkijärjestelmää tulee muuttaa, jotta lain vaatimus täyttyy?&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Tarvittava muutos järjestelmän on yksinkertainen. Vanha ydinkoodi - joka huolehtii pankkitilin hallinnasta - voi pysyä tismalleen identtisenä.&lt;/p&gt;
+
+&lt;p&gt;Vaatimuksen täyttöä varten lisäämme järjestelmään palveluntarjoajan, joka puolestaan lisää &lt;em&gt;tapahtumakuuntelijan&lt;/em&gt;. Tuo tapahtumakuuntelija on kaiken A ja O - se kuuntelee järjestelmän tuottamia tapahtumia ja valikoi niistä jatkokäsittelyyn itselleen mieluisat.&lt;/p&gt;
+
+&lt;p&gt;Käytännössä homma toimii siten, että &lt;strong&gt;vanha ydinkoodi tuottaa tapahtumia&lt;/strong&gt;, ja &lt;strong&gt;uusi koodipohja reagoi noihin tapahtumiin&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tämä patterni on yleismaailmallinen ja soveltuu moniin käyttötarkoituksiin: olemassaoleva järjestelmäkomponentti tuottaa informaatiota, uusi komponentti reagoi tuotettuun informaatioon.&lt;/p&gt;
+
+&lt;p&gt;Kaiken pohjalla toimii oletus siitä, että vanha komponentti ei tiedä uuden komponentin olemassaolosta mitään. Parhaimmillaan myöskään uusi komponentti ei havaitse vanhaa komponenttia. Kaikki informaatio kulkee tapahtumien muodossa.&lt;/p&gt;
+
+&lt;p&gt;Hieman karrikoiden; vanha komponentti &amp;ldquo;&lt;em&gt;ampuu tapahtumia kohti tyhjyyttä&lt;/em&gt;&amp;rdquo;, uusi komponentti &amp;ldquo;&lt;em&gt;vastaanottaa tapahtumia tyhjyydestä&lt;/em&gt;&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Tämä on koko arkkitehtuurin perimmäinen ajatus - vanha ja uusi koodipohja elävät täysin omissa maailmoissaan tietämättä mitään toisistaan.&lt;/p&gt;
+
+&lt;p&gt;Uusi koodipohja vain ottaa sopivat tapahtumat kiinni.&lt;/p&gt;
+
+&lt;p&gt;Vanha ydinkoodi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Models/Pankkitili.php
+
+public function saveCash(ICurrency $amount) {
+
+	// Ei tarvetta transaktiolle kun lisätään rahaa -&amp;gt; menee aina läpi.
+
+	// Lasketaan uusi saldo
+	$this-&amp;gt;balance = $this-&amp;gt;balance + $amount-&amp;gt;convert($this-&amp;gt;accountCurrency);
+	// Päivitetään muutos tietokantaan. 
+	// Luo ja ampuu tapahtuman &amp;quot;pankkitili päivitetty!&amp;quot;.
+	$this-&amp;gt;save();
+
+	return true;
+	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yllä siis ydinkoodipohja. Koodi ei missään sisällä ekspliittistä käskyä ampua tapahtumaa. Tapahtuman luonti ja välitys järjestelmän muille komponenteille tapahtuu implisiittisesti, pinnan alla, Laravellin toimesta.&lt;/p&gt;
+
+&lt;p&gt;Kun lisätoiminnallisuutta järjestelmään lisätään, &lt;em&gt;ylläolevaan koodipohjaan ei tarvitse koskea&lt;/em&gt;. Tämä on koko hajautetun, tapahtumien välitykseen perustuvan arkkitehtuurin keskeisin pointti.&lt;/p&gt;
+
+&lt;p&gt;Toteutetaan uusi raportointitoiminnallisuus lisäämällä palveluntarjoaja, jonka vastuulla on napata lennosta sopivat tapahtumat ja reagoida niihin.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;// Providers/RaportointiPankkipoliisille.php
+
+public function boot() {	
+
+  // Ilmoitetaan halustamme kuunnella Pankkitiliin liittyviä &amp;quot;updated&amp;quot;-tapahtumia.
+  Pankkitili::updated(function($tili) {
+    // Tämä klosuuri ajetaan aina kun tilin saldo on päivittynyt.
+    // Klosuurin sisällä käytössämme on $tili-objekti
+    // $tili edustaa sitä Pankkitiliä, johon päivitys kohdistui.
+
+    // Selvitetään uusi saldo lähettääksemme sen viranomaisille.
+    $uusiSaldo = $tili-&amp;gt;getBalance();
+
+    $poliisi = new Pankkipoliisi(/*api-tunnukset tähän*/);
+
+    // Ilmoitetaan käyttäjän uusi saldo, eli lähetetään käyttäjä-ID ja saldosumma.
+    try {
+      $poliisi-&amp;gt;ilmoita(\Auth::user()-&amp;gt;id(), $uusiSaldo);
+    } catch (\Exception $e) {
+      Log::warning(&#39;poliisi_ilmoitus_fail&#39;, $e);
+    }
+  });
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Pankkipoliisin asetukset täytyy määritellä jossain config-tiedostossa, mutta periaate on ylläolevan mukainen.&lt;/p&gt;
+
+&lt;p&gt;Tiivistettynä:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Vanhan koodipohjan (&lt;em&gt;Pankkitili.php&lt;/em&gt;) ei tässä esimerkissä tarvinnut muuttua kun halusimme lisätä uuden toiminnallisuuden järjestelmään.&lt;/li&gt;
+&lt;li&gt;Uusi palveluntarjoaja (&lt;em&gt;RaportointiPankkipoliisille.php&lt;/em&gt;) lisäsi &lt;strong&gt;laajennuksen&lt;/strong&gt; olemassaolevaan järjestelmään.&lt;/li&gt;
+&lt;li&gt;Lisätyn laajennuksen määrittämä &lt;em&gt;tapahtumakuuntelija&lt;/em&gt; nappaa sopivat tapahtumat kiinni ja reagoi niihin lähettämällä viestin viranomaisille.&lt;/li&gt;
+&lt;/ol&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

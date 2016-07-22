@@ -1,0 +1,998 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Nollaversio IT</title>
+    <link>http://nollaversio.fi/blog/public/</link>
+    <description>Recent content on Nollaversio IT</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fi-fi</language>
+    <lastBuildDate>Wed, 20 Jul 2016 20:42:23 +0300</lastBuildDate>
+    <atom:link href="http://nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Suojaa tuloväylät - mutta miten?</title>
+      <link>http://nollaversio.fi/blog/public/laravel/protecting-routes/</link>
+      <pubDate>Wed, 20 Jul 2016 20:42:23 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/protecting-routes/</guid>
+      <description>
+
+&lt;p&gt;Tyypillinen web-applikaatio ottaa vastaan monenlaista palvelupyyntöä. Osa pyynnöistä tulee rekisteröityneiltä käyttäjiltä, osa vierailta, osa hakkereilta, osa sisältää dataa, osa ei.&lt;/p&gt;
+
+&lt;p&gt;Kaiken tämän keskellä applikaatio tulisi kehittää niin, että jokainen sisääntuloväylä on suojattu asianmukaisesti. Eli portti on kunnossa ja pysyy kiinni esim. SQL-injektioille.&lt;/p&gt;
+
+&lt;p&gt;Helppo, nopea tapa huolehtia suojauksesta on jokaisen tuloväylän portilla tarkistaa, että asianmukaiset paperit ovat mukana:&lt;/p&gt;
+
+&lt;h3 id=&#34;versio-1&#34;&gt;versio 1&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// AdminController.php
+
+public function store(Request $request) {
+	$this-&amp;gt;tarkistaAdminOikeudet();
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function index(Request $request) {
+	$this-&amp;gt;tarkistaAdminOikeudet();
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function list(Request $request) {
+	$this-&amp;gt;tarkistaAdminOikeudet();
+
+	// Kaikki hyvin, käsittele request
+}
+
+private function tarkistaAdminOikeudet() {
+	if (Auth::user()-&amp;gt;isNotAdmin()) {
+		throw new Exception(&amp;quot;Admin-oikeudet puuttuvat!&amp;quot;);
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevasta heti nähdään, että jotain on pielessä. Sama admin-tarkistus joudutaan tekemään kolmesti eri kohdissa.&lt;/p&gt;
+
+&lt;p&gt;Huomattavasti paremman ratkaisun tarjoaa konstruktori-metodi, joka mahdollistaa kaikille public-metodeille &lt;em&gt;yhteisen&lt;/em&gt; tarkistuksen määrittämisen. Eli:&lt;/p&gt;
+
+&lt;h3 id=&#34;versio-2&#34;&gt;versio 2&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// AdminController.php
+
+public function __construct(Request $request) {
+
+	$this-&amp;gt;tarkistaAdminOikeudet();
+}
+
+public function store(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function index(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function list(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+private function tarkistaAdminOikeudet() {
+	if (Auth::user()-&amp;gt;isNotAdmin()) {
+		throw new Exception(&amp;quot;Admin-oikeudet puuttuvat!&amp;quot;);
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kuten huomaamme, duplikaatio poistui. Tarkistus tehdään vain yhdessä pisteessä.&lt;/p&gt;
+
+&lt;p&gt;Mutta miksi turhaan edes keksiä pyörää uudestaan? Laravel tarjoaa &amp;ldquo;Middleware&amp;rdquo;-nimisen konseptin käyttöömme. Middleware on käytännössä yksi ylimääräinen kerros internetin ja applikaatiosi välissä. Tuo ylimääräinen &amp;ldquo;rasvakerros&amp;rdquo; soveltuu hyvin admin-tarkistuksen suorituspisteeksi.&lt;/p&gt;
+
+&lt;h3 id=&#34;versio-3&#34;&gt;versio 3&lt;/h3&gt;
+
+&lt;p&gt;// Middleware/TarkistaAdmin.php&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class TarkistaAdmin
+{
+
+    public function handle($request, Closure $next)
+    {
+        if (Auth::user()-&amp;gt;isNotAdmin()) {
+        	// Ohjataan käyttäjä kirjautumissivulle.
+            return redirect(&#39;kirjaudu_sisaan&#39;);
+        }
+
+        // Kaikki ok!
+        // Muu applikaatio voi luottaa että käyttäjällä on tarvittavat oikeudet!
+
+        return $next($request);
+    }
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// AdminController.php
+
+public function __construct(Request $request) {
+
+	$this-&amp;gt;middleware(&#39;tarkistaAdmin&#39;)
+}
+
+public function store(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function index(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function list(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tämä on jo varsin pätevä ratkaisu. Ensinnäkin admin-tarkistuksen logiikka elää nyt poissa AdminControllerista. Tämä on ihan hyvä, sillä oletettavasti joku muukin komponentti applikaatiossa on kiinnostunut tekemään admin-tarkistuksia. Kun admin-tarkistus elää middleware-kerroksessa, se on kaikkien applikaation osasten käytettävissä.&lt;/p&gt;
+
+&lt;p&gt;Noin muutenkin on järkevintä tsekata admin-oikeudet mahdollisimman aikaisin. Tilanne on vastaava kuin lentokentällä - turvatarkastus tapahtuu &lt;em&gt;keskitetysti&lt;/em&gt; ennen lähtöporteille siirtymistä. Millainen sotku syntyisi, jos turvatarkastus järjestettäisiin kunkin lähtöportin edessä erikseen? Aikamoinen.&lt;/p&gt;
+
+&lt;p&gt;Sama konsepti pätee web-applikaatioon - mitä aiemmin tarkastukset tehdään, sitä parempi. Aikainen tarkastus selkeyttää kaikkien osapuolten toimintaa. Lentokentälläkin on helpompi kuljeskella, kun turvatarkastus on rajattu tietylle alueelle.&lt;/p&gt;
+
+&lt;p&gt;Laravellin middleware-konsepti lisää myös uusia mahdollisuuksia valikoimaamme. Voimme esimerkiksi määrittää suoraan konstruktorissa, mille kaikille sisääntuloväylille (eli public metodeille) haluamme middleware-suojauksen pätevän.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// AdminController.php
+
+public function __construct(Request $request) {
+
+	$this-&amp;gt;middleware(&#39;tarkistaAdmin&#39;, [&#39;only&#39; =&amp;gt; [
+		&#39;store&#39;,
+		&#39;update&#39;
+	]]);
+}
+
+public function store(Request $request) {
+
+	// SUOJATTU!
+}
+
+public function update(Request $request) {
+
+	// SUOJATTU!
+}
+
+public function index(Request $request) {
+
+	// EI SUOJATTU!
+}
+
+public function list(Request $request) {
+
+	// EI SUOJATTU!
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kätevää, varsin kätevää. Esimerkin &lt;em&gt;only&lt;/em&gt;-attribuutin lisäksi meillä on käytössämme &lt;em&gt;except&lt;/em&gt;-attribuutti, joka
+toimii nimensä mukaisesti - se suojaa kaikki muut väylät paitsi erikseen &lt;em&gt;except&lt;/em&gt;:in perässä määritellyt.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Lupausketju liukuhihnana - then vs. tap</title>
+      <link>http://nollaversio.fi/blog/public/nodejs/promise-tap/</link>
+      <pubDate>Mon, 18 Jul 2016 18:02:21 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/nodejs/promise-tap/</guid>
+      <description>
+
+&lt;p&gt;Lupausten maailma on kaunis paikka. Pitkä, hyvin abstraktoitu lupausjono on Scarlett Johanssonin vartaloon verrattavissa oleva jumalallisen kauneuden symboli.&lt;/p&gt;
+
+&lt;p&gt;Mutta joskus tulee vastaan ongelmia, joihin lupausjono ei luontevasti sovellu. Tai ainakin voisi äkkiseltään &lt;em&gt;luulla&lt;/em&gt;, että lupausjono ei toimi halutusti. Yksi tälläinen on seuraava.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Lupaus jono alkaa
+haeTennisTuloksetPalvelimelta()
+.then(lajittelePelaajittain)
+.then(printtaaFedererinTulokset)
+.then(laskeKunkinPelaajanVoittoprosentti)
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Hyvin kaunis lyhyt lupausjono, jonka asynkronoituun tyyliin etenee askel askeleelta. Koko lupausjono on kuin yksi iso liukuhihna. Kunkin &lt;em&gt;then()&lt;/em&gt;-funkkarin kohdalla liukuhihnalla kulkeva tavara ohjataan &lt;em&gt;apufunktioon&lt;/em&gt; (esim. lajittelePelaajittain).&lt;/p&gt;
+
+&lt;p&gt;Apufunktio voidaan ajatella koneena, joka jollain tavalla &lt;em&gt;muuttaa&lt;/em&gt; tai &lt;em&gt;transformoi&lt;/em&gt; saamansa esineen. Muutoksen/transformaation jälkeen tavara etenee kohti seuraavaa apufunktiota/käsittelypistettä.&lt;/p&gt;
+
+&lt;p&gt;Toimii kuin unelma. Mutta katsotaanpa mitä kunkin askeleen apufunktio palauttaa jonon &lt;em&gt;seuraavalle&lt;/em&gt; kaverille tässä meidän tennistuloksia hallinnoivassa esimerkissämme.&lt;/p&gt;
+
+&lt;p&gt;Katsotaan vaiheittain:&lt;/p&gt;
+
+&lt;h3 id=&#34;haetennistuloksetpalvelimelta&#34;&gt;haeTennisTuloksetPalvelimelta&lt;/h3&gt;
+
+&lt;p&gt;&lt;em&gt;null -&amp;gt; tulokset&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Tämä on selvä peli - se hakee tulokset serveriltä ja työntää ne liukuhihnalle. Tämä vaihe istuu liukuhihnan alussa, joten se ei saa syötettä sisäänsä lainkaan. Sen sijaan se aloittaa hihnan toiminnan puskemalla erikseen palvelimelta haetut tulokset hihnalle.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&#34;lajittelepelaajittain&#34;&gt;lajittelePelaajittain&lt;/h3&gt;
+
+&lt;p&gt;&lt;em&gt;tulokset -&amp;gt; niputetut tulokset&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Tämä myös helppo - se ottaa vastaan tulokset, ja lajittelee ne pelaajittain. Eli esimerkiksi Rafael Nadalin kaikki ottelutulokset paketoidaan kivasti yhteen nippuun siten, että myöhemmin niitä on helppo käsitellä erillään muista pelaajista. Tehtyään niputuksen tämä vaihe siirtää tuotetut niput takaisin liukuhihnalle kohti seuraavaa vaihetta.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&#34;printtaafedererintulokset&#34;&gt;printtaaFedererinTulokset&lt;/h3&gt;
+
+&lt;p&gt;&lt;em&gt;niputetut tulokset -&amp;gt; niputetut tulokset&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Mutta entä tämä? Mikä on tämän käsittelyvaiheen tarkoitus? Nimensä mukainen. Vaihe etsii juuri niputetuista (pelaajittain!) tuloksista Roger Federerin tulokset, ja printtaa ne paperille. Miksi juuri Federer? En tiedä, eikä se ole oleellista.&lt;/p&gt;
+
+&lt;p&gt;Mikä on oleellista on se, että tämä vaihe EI transformoi/muunna koko sisääntulevaa datapakettia johonkin uuteen muotoon.&lt;/p&gt;
+
+&lt;p&gt;Joten mitä tämä vaihe sitten palauttaa liukuhihnalle? Me tiedämme alkuperäistä lupausjonoa tarkastelemalla, että seuraava vaihe (&lt;em&gt;laskeKunkinPelaajanVoittoprosentti&lt;/em&gt;) odottaa saatavakseen niputetut tulokset. Toisin sanoen, &lt;em&gt;seuraava&lt;/em&gt; vaihe odottaa &lt;em&gt;edellisen&lt;/em&gt; vaiheen syötettä.&lt;/p&gt;
+
+&lt;p&gt;Tämä tarkoittaa, että &lt;em&gt;printtaaFedererinTulokset&lt;/em&gt; vaihe on ikäänkuin tyhjänpäiväinen läpikulkupiste. Kuin tyhjä putki. Kuin kone, joka ei tee mitään. Huomioitavaa on, että kone tekee kyllä jotain (printtaa paperille Federerin tulokset), mutta liukuhihnan syötteen näkökulmasta mitään ei tapahdu.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Syöte vain kulkee läpi muuntumatta lainkaan!&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// printtaaFedererinTulokset.js
+
+module.exports = function(sisaantulevaData) {
+	
+	var federerTulokset = sisaanTulevaData[&#39;Federer&#39;];
+
+	// Emme ole kiinnostuneita tulostuksen onnistumisesta yms.
+	// Kunhan kutsumme tulostusfunktiota ja jatkamme elämäämme eteenpäin.
+	printtaa(federerTulokset);
+
+	// Palautetaan saatu syöte identtisenä takaisin hihnalle.
+	return sisaantulevaData;
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;hr /&gt;
+
+&lt;h3 id=&#34;laskekunkinpelaajanvoittoprosentti&#34;&gt;laskeKunkinPelaajanVoittoprosentti&lt;/h3&gt;
+
+&lt;p&gt;&lt;em&gt;niputetut tulokset -&amp;gt; voittoprosentit pelaajittain&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Taas selvä peli - tämä steppi ottaa sisäänsä niputetut tulokset ja aggregoi kunkin pelaajan osalta ne yhteen laskien voittoprosentin.&lt;/p&gt;
+
+&lt;p&gt;Ja avot - kaikki toimii.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Mutta.&lt;/p&gt;
+
+&lt;p&gt;Jokin häiritsee &lt;em&gt;printtaaFedererinTulokset&lt;/em&gt;-vaiheessa. Tuo vaihe ottaa sisäänsä dataa ja puskee saman datan &lt;em&gt;identtisenä&lt;/em&gt; ulos. Mitä järkeä tässä on?&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Oleellinen huomio on, että noin maalaisjärjellä ajateltuna &lt;em&gt;printtaaFedererinTulokset&lt;/em&gt; ei ole osa liukuhihnaa&lt;/strong&gt;. Tai siis että se ei ole mikään &lt;em&gt;käsittelyvaihe&lt;/em&gt; lainkaan! Se on enemmänkin vain liukuhihnan päällä sijaitseva tuntoanturi - kun paketti kulkee sen ylitse, jotain tapahtuu jossain. Tässä tapauksessa tuo &amp;ldquo;jotain&amp;rdquo; on, että printteri alkaa sylkemään aanelosta ulos.&lt;/p&gt;
+
+&lt;p&gt;Tuntoanturi ei muunna pakettia mitenkään.&lt;/p&gt;
+
+&lt;p&gt;Joten kauniin koodin nimissä olemme pakotettuja muokkaamaan lupausjonoa. PrinttaaFedererinTulokset ei saa olla käsittelyvaihe, sen tulee olla anturi.&lt;/p&gt;
+
+&lt;h1 id=&#34;tap-funktio-on-anturi&#34;&gt;Tap-funktio on anturi&lt;/h1&gt;
+
+&lt;p&gt;Hoidetaan homma ottamaan käyttöön &lt;em&gt;tap&lt;/em&gt;-funktio osana lupausketjua (liukuhihnaa). Tap-funktio on juuri tähän tarkoitukseen soveltuva - se ottaa sisäänsä edellisen vaiheen tuottamaan syötteen, mutta &lt;em&gt;ei tuota mitään ulosmenevää tavaraa&lt;/em&gt;!&lt;/p&gt;
+
+&lt;p&gt;Toisin sanoen, tap-funktion käyttö mahdollistaa, että tap-funktiota seuraava vaihe saa syötteen sisään tap-funktiota edeltävältä vaiheelta.&lt;/p&gt;
+
+&lt;p&gt;Tässä tapauksessa &lt;em&gt;laskeKunkinPelaajanVoittoprosentti&lt;/em&gt; saa syötteensä &lt;em&gt;lajittelePelaajittain&lt;/em&gt;-vaiheelta. Tämä on juuri mitä haluammekin.&lt;/p&gt;
+
+&lt;p&gt;Eli lopullinen muoto.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Lupaus jono alkaa
+haeTennisTuloksetPalvelimelta()
+.then(lajittelePelaajittain)
+.tap(printtaaFedererinTulokset)
+.then(laskeKunkinPelaajanVoittoprosentti)
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tap tap. Kaunista ja toteuttaa täydellisesti SINGLE RESPONSIBILITY-prinsiippiä. PrinttaaFedererinTulokset saa sisäänsä tarvittavan datan, mutta sen ei tarvitse huolehtia ulosmenevästä tavarasta lainkaan. Itse vaihe on nyt yhden rivin lyhyempi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;```javascript
+
+// printtaaFedererinTulokset.js
+
+module.exports = function(sisaantulevaData) {
+
+    var federerTulokset = sisaanTulevaData[&#39;Federer&#39;];
+
+    // Emme ole kiinnostuneita tulostuksen onnistumisesta yms.
+    // Kunhan kutsumme tulostusfunktiota ja jatkamme elämäämme eteenpäin.
+    printtaa(federerTulokset);
+
+    // Ei tarvitse palauttaa mitään!
+}
+
+```
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: On tietenkin selvää, että useimmissa projekteissa tap vs. then -funktion käyttö on aika irrelevantti seikka. Tässä esimerkissä saimme säästettyä yhden rivin koodia, ja hitusen selvennettyä lupausketjun logiikkaa (kokenut koodari huomaa yhdellä silmäyksellä liukuhihnan toimintalogiikan). Hyöty on silti aika minimaalinen ja lähinnä kosmeettinen.&lt;/p&gt;
+
+&lt;p&gt;Tap-funktion suurin hyöty tulee silloin, kun joudumme lupausketjun osana kutsumaan koodia, jota emme hallitse. Kuvitellaan, että &lt;em&gt;printtaaFedererinTulokset&lt;/em&gt; sijaitsee osana valtavaa, minimoitua JS-kirjastoa. Tuon kirjaston kirjoittaja on oikeaoppisesti koodannut funktion siten, että se ei palauta mitään ulos. Me emme pysty asiaan vaikuttamaan. Joudumme täten tilanteeseen, jossa emme voi käyttää pelkistä &lt;em&gt;then()&lt;/em&gt;-vaiheista koostuvaa ketjua - printtaaFedererinTulokset-vaihe rikkoisi tuon ketjun.&lt;/p&gt;
+
+&lt;p&gt;Tässä tapauksessa &lt;em&gt;tap-funktio&lt;/em&gt; pelastaa päivän suorastaan naurettavan helpolla. Kutsumme &lt;em&gt;printtaaFedererinTulokset&lt;/em&gt;-kirjastofunktiota tap-funktion sisältä, ja kaikki toimii.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Raskas koodi erillisessä säikeessä? Lupaus auttaa.</title>
+      <link>http://nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</link>
+      <pubDate>Mon, 18 Jul 2016 17:11:43 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</guid>
+      <description>
+
+&lt;p&gt;Javascriptin hauska puoli on, että se ajaa itseään mukavasti yhdessä säikeessä. Tämä tarkoittaa, että kaikki
+koodi ajetaan &lt;em&gt;perätysten&lt;/em&gt;, kiltisti jonossa.&lt;/p&gt;
+
+&lt;p&gt;Eli kun funktio &lt;strong&gt;A&lt;/strong&gt; aloittaa ajonsa, funktio &lt;strong&gt;B&lt;/strong&gt; ei voi aloittaa ennenkuin &lt;strong&gt;A&lt;/strong&gt; on valmis. Täydellinen metafööri Javascriptille onkin McDonaldsin autokaistan jono - jos yksi autoilija jää suustansa kiinni noutotiskille, yksikään takana olevista autoista ei liiku senttiäkään.&lt;/p&gt;
+
+&lt;p&gt;Ohjelmoinnin maailmassa tämä tarkoittaa, että jos yksi funktio rohmuaa prosessorin ajoaikaa viisi sekuntia, kaikki muut ajovuoroa odottavat koodinpätkäset joutuvat vähintään tuon viisi sekuntia odottamaan.&lt;/p&gt;
+
+&lt;p&gt;Tämä kylmä totuus pätee sekä selaimen puolella että serverimaailmassa (Node.js).&lt;/p&gt;
+
+&lt;p&gt;Yksi tapa ratkoa jonotuksen tuomat haasteet on pitää huoli, että jono liikkuu vauhdilla. Mäkkärikin tekee näin - he pitävät huolen, ettei yksittäinen asiakas tuki koko autokaistaa, vaan siirtyy sutjakasti elämässään eteenpäin. Koodin puolella tämä on tehtävissä ohjelmoijan maalaisjärjen käytöllä - ohjelmoija arvioi parhaan kykynsä mukaan kuinka kauan kunkin koodinpätkän ajo kestää.&lt;/p&gt;
+
+&lt;p&gt;Jos ajo kestää kaksi mikrosekuntia, ei ongelmia.&lt;/p&gt;
+
+&lt;p&gt;Jos ajo kestää kaksi sekuntia, niin pulassa ollaan.&lt;/p&gt;
+
+&lt;p&gt;Mikä avuksi tilanteisiin, joissa yksittäinen koodinajo on pitkäkestoinen?&lt;/p&gt;
+
+&lt;h3 id=&#34;luo-uusi-säie-joka-tekee-raskaat-työt&#34;&gt;Luo uusi säie, joka tekee raskaat työt&lt;/h3&gt;
+
+&lt;p&gt;Ratkaisu on yksinkertainen - uusi työmyyrä (säie), joka ottaa kontolleen raskaan työurakan. Selaimessa Web Worker-standardi mahdollistaa säikeen luomisen. Muita &lt;em&gt;järkeviä&lt;/em&gt; vaihtoehtoja ei juuri ole.&lt;/p&gt;
+
+&lt;p&gt;Serveripuolella (Node.js) on enemmän vaihtoehtoja. Yksi vaihtoehto on ajaa raskas koodi kokonaan uudessa Node.js-instanssissa. Eli uudessa käyttöjärjestelmän prosessissa, joka pyörittää Node.js-koodia.&lt;/p&gt;
+
+&lt;p&gt;Se voi olla ihan hyväkin idea, mutta aika raskas, sillä koko Node.js-moottori täytyy ladata uusiksi tätä uutta &amp;ldquo;säiettä&amp;rdquo; varten. Jos koodinajo on pitkäkestoinen, tällä ei ole juuri merkitystä.&lt;/p&gt;
+
+&lt;p&gt;Toinen vaihtoehto olisi käyttää &amp;ldquo;kevyempää säiettä&amp;rdquo;, joka ajetaan jo olemassaolevan Node.js-prosessin alaisuudessa. Tällöin käyttöjärjestelmän ei tarvitse synnyttää uutta prosessia, vaan uusi prosessi syntyy kivasti käyttöjärjestelmän tietämättä asiasta mitään.&lt;/p&gt;
+
+&lt;p&gt;Valitaan kuitenkin vaihtoehto yksi ihan siksi, että yksi parhaista &lt;em&gt;säiekirjastoista&lt;/em&gt; turvautuu siihen.&lt;/p&gt;
+
+&lt;h3 id=&#34;threads-kirjasto-ja-lupaukset&#34;&gt;Threads -kirjasto ja lupaukset&lt;/h3&gt;
+
+&lt;p&gt;Oletetaan, että meillä on koodinpätkä, joka etsii kaikki suomalaiset erisnimet tekstidokumentista. Skripti toimii seuraavasti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// etsiErisnimet.js
+
+var ERISNIMET = [&#39;Aado&#39;, &#39;Aamu&#39;, &#39;Aapo&#39;, ... , &#39;Yrjö&#39;];
+
+module.exports = function(dokumentti) {
+	
+  var sanat = dokumentti.split(&amp;quot; &amp;quot;); // Erottele välilyönnillä
+
+  var nimet = _.filter(sanat, function(sana) {
+    return ERISNIMET.indexOf(sana) !== -1; // Löytyikö sana nimiluettelosta?
+  })
+
+  // Poista duplikaatit
+  // [&#39;Mikko&#39;, &#39;Mikko&#39;, &#39;Matti&#39;] -&amp;gt; [&#39;Mikko&#39;, &#39;Matti&#39;]
+  return _.uniq(nimet);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Algoritmi on kompleksisuudeltaan about &lt;em&gt;O(nk)&lt;/em&gt;, jossa &lt;em&gt;n&lt;/em&gt; kuvaa tekstin pituutta ja &lt;em&gt;k&lt;/em&gt; etunimien lukumäärää.
+Ei ehkä ihan optimialgoritmi, mutta what the hell. Käyttö on helppoa.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Testi.js
+var nimiEtsinta = require(&#39;etsiErisnimet&#39;);
+
+var nimet = nimiEtsinta(&#39;Pirkko ja Ville menivät kalaan.&#39;);
+console.log(nimet) // [&#39;Pirkko&#39;, &#39;Ville&#39;]
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Seuraavaksi katsotaan, miten tuo algoritmi saadaan ajettua erillisessä säikeessä.&lt;/p&gt;
+
+&lt;p&gt;Ensinnäkin tarvitsemme säiekirjaston. Sen voi asentaa &lt;em&gt;npm install threads &amp;ndash;save&lt;/em&gt; -komennolla komentorivillä.
+Tämän lisäksi on syytä tehdä pieni muutos etsiErisnimet.js-tiedostoon, jotta se pystyy toimimaan threads-kirjaston kanssa. Muuta ei tarvita.&lt;/p&gt;
+
+&lt;p&gt;Sitten itse koodi. Huomattavaa on, että &lt;em&gt;paketoimme&lt;/em&gt; aiemman erisnimien etsintään erikoistuneen koodin siten, että se voidaan ajaa säikeen sisällä.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// etsiErisnimetThreaded.js
+
+// Tämä moduuli toimii yksinomaan wrapperinä.
+
+var threads = require(&#39;threads&#39;); // Säiekirjasto
+var Promise = require(&#39;bluebird&#39;); // Lupauskirjasto
+
+module.exports = function(dokumentti) {
+
+  return new Promise(function(resolve, reject) {
+    // Luodaan uusi säie
+    // Spawn-funktio ottaa parametrikseen sen moduulin nimen, 
+    // jonka koodin säie ottaa ajaakseen.
+    var thread = threads.spawn(&#39;etsiErisnimet&#39;);
+
+    // Säie on luotu pinnan alla ja valmis toimimaan.
+    // Lähetetään säikeelle viesti
+    thread.send(dokumentti)
+    // ...ja jäädään kuuntelemaan vastausta
+    .on(&#39;message&#39;, function(loydetytErisnimet) {
+      // Resolvoidaan lupaus saaduilla tuloksilla.
+      return resolve(loydetytErisnimet);
+    })
+    .on(&#39;error&#39;, function(error) {
+      // Rejektoidaan lupaus
+      return reject(error);
+    });
+
+  });
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// etsiErisnimet.js
+
+// Aiempi erisnimien etsintä toimii kuten ennenkin, mutta
+// tarvitsemme hiukan lisäkoodia hallitsemaan tiedonvaihtoa
+// säikeiden välillä.
+
+var ERISNIMET = [&#39;Aado&#39;, &#39;Aamu&#39;, &#39;Aapo&#39;, ... , &#39;Yrjö&#39;];
+
+module.exports = function(dokumentti, takaisinlahetys) {
+
+  var sanat = dokumentti.split(&amp;quot; &amp;quot;); // Erottele välilyönnillä
+
+  var nimet = _.filter(sanat, function(sana) {
+    return ERISNIMET.indexOf(sana) !== -1; // Löytyikö sana nimiluettelosta?
+  })
+
+  // Poista duplikaatit
+  // [&#39;Mikko&#39;, &#39;Mikko&#39;, &#39;Matti&#39;] -&amp;gt; [&#39;Mikko&#39;, &#39;Matti&#39;]
+  takaisinlahetys(_.uniq(nimet));
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva koodi on kaikki mitä tarvitsemme. Nyt voimme suorittaa erisnimietsinnän täysin erillään omassa säikeessään!&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// RikosSeurantaApplikaatio.js
+
+var Promise = require(&#39;bluebird&#39;);
+var nimietsinta = require(&#39;etsiErisnimetThreaded&#39;);
+
+function vastaanotaDokumentti(dokumentti) {
+	
+  nimietsinta(dokumentti)
+  .then(function(loydetytNimet) {
+    return tarkistaEpailyttavatNimiParit(loydetytNimet);
+  })
+  .catch(function(error) {
+    console.log(&amp;quot;Nimien etsintä epäonnistui&amp;quot;);
+    console.error(error);
+  })
+}
+
+function tarkistaEpailyttavatNimiParit(nimet) {
+  if (_.intersection([&#39;Ilkka&#39;, &#39;Kanerva&#39;], nimet).length === 2) {
+    // Sekä Ilkka että Kanerva löytyivät, soita Karhuryhmä.
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tällä tavoin olemme kivasti paketoineet säikeidenhallinnan ikävät sivuseikat lupausta tarjoavat abstraktion taakse. &lt;em&gt;RikosSeurantaApplikaation&lt;/em&gt; ei tarvitse välittää tuon taivaallista säikeiden olemassaolosta - riittää, että se kutsuu tarjottua rajapintaa ja ottaa vastaan &lt;em&gt;lupauksen&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tuo lupaus sitten jonain kauniina aamuna realisoituu todeksi, ja kaikki ovat tyytyväisiä.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Lupausten mahti - pätkä koodiani</title>
+      <link>http://nollaversio.fi/blog/public/nodejs/promisechain/</link>
+      <pubDate>Wed, 13 Jul 2016 06:48:47 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/nodejs/promisechain/</guid>
+      <description>&lt;p&gt;Lupaukset (engl. Promise) ovat varsin mahtavia. Siinä missä muuten asynkronoidun funktiokutsun matkapojaksi joutuisi lähettämään callback-funktion, lupaus mahdollistaa koodaustyylin, jossa callback liikkuu &lt;em&gt;varjoissa&lt;/em&gt; - siis pinnan alla. Lupaus on käytännössä pieni wrapperi, kuin lahjapaketti, joka kaitsee isällisellä otteella callbackia.&lt;/p&gt;
+
+&lt;p&gt;Ehkä suurin hyöty lupauksen käytöstä on kuitenkin se, että virhetilanteet tulevat asianmukaisesti hoidetuksi. Lisäksi ne virheet tulevat hoidetuksi oikeassa paikassa - &lt;em&gt;lupausketjun lopussa&lt;/em&gt;. Harva asia on hirveämpää kuin joutua kirjoittamaan &lt;em&gt;varsinaista bisnes-koodia&lt;/em&gt; ja &lt;em&gt;virhetilanteisiin reagoivaa hätäapukoodia&lt;/em&gt; sikin sokin. Lupausten avulla virhekoodi voi elää visuaalisesti kaukana varsinaisesta koodista. Tämä helpottaa koodinlukua.&lt;/p&gt;
+
+&lt;p&gt;Otan esimerkin &lt;em&gt;lupausketjusta&lt;/em&gt;, jossa virheisiin reagoiva koodi on upotettu pahnanpohjimmaiseksi. Esimerkki on suoraan applikaatiostani, joka analysoi PGN-shakkipelitiedoston ja raportoi käyttäjälle takaisin pelaajien tekemät huonot siirrot. Huono siirto tarkoittaa siirtoa, jonka seurauksena vastustajan voittomahdollisuudet paranivat merkittävästi.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Lupausketju
+
+// Lupausketju koostuu kuudesta osavaiheesta, jotka suoritetaan järjestyksessä peräkkäin!
+// Näiden jälkeen on virhetilanteet käsittelevä ekstravaihe.
+
+// #1 PGN-datan separointi eli pelien erottelu toisistaan
+// #2 Jokaisen pelin (map-apufunktio!) muuntaminen kasaksi peliasemia (FEN-muoto)
+// #3 Asemien filteröinti niin, että vain tiettyjen siirtojen asemat ovat mukana
+// #4 Asemien analysointi valittua shakkimoottoria käyttäen.
+// #5 Analysointitulosten paketointi pelikohtaisesti
+// #6 Asemien filteröinti, jätetään vain asemat joissa pelaaja tunaroi
+// #7 Virhetilanteiden hallinta
+
+function processPGN(pgnText) {
+        return Promise.resolve(pgnText)
+        // #1
+        .then(function(pgnText) {
+            return separateGames(pgnText);
+        })
+        // #2
+        .then(function(separatedGames) {
+            return _.map(separatedGames, function(game) {
+                var gameID = uuid.v4(); 
+                // Every position is associated with game id
+                // so we can later know from which game each 
+                // position came from (position.fromgame)
+                return separateIndividualPositions(game, gameID);
+            });
+        })
+        // #3
+        .then(function(allPositions) {
+            // Filter out those not in movenumber range
+            return _.filter(allPositions, function(position) {
+                return position.movenum &amp;gt;= 10 &amp;amp;&amp;amp; position.movenum &amp;lt;= 30;
+            });
+        })
+        // #4
+        .map(analyzePosition, {concurrency: 4} /*Num of parallel engine instances to use?*/)
+        // #5
+        .then(function(results) {
+            // Pack analyzed positions back into games
+            var groupedIntoGames = _.groupBy(results, function(result) { 
+                return result.fromgame;
+            });
+            // Sort positions by movenumber
+            return _.mapValues(groupedIntoGames, function(positions) {
+                return _.sortBy(positions, function(p) { return p.movenum})
+            });
+        })
+        // #6
+        .then(function(groupedIntoGames) {
+            return _.mapValues(groupedIntoGames, function(positions) {
+                if (!positions || positions.length &amp;lt; 2) return [];
+                var currPosition = positions[0];
+
+                return _.compact(_.map(_.tail(positions), function(position) {
+                    var thisEval = parseFloat(position.evaluation);
+                    var evalDiff = Math.abs(thisEval - parseFloat(currPosition.evaluation));
+
+                    var oldFen = currPosition.fen;
+                    var oldBest = currPosition.bestmove;
+                    var oldEval = currPosition.evaluation;
+
+                    // Replace old with the current for next loop run
+                    currPosition = position;
+                    // Evaluation changed &amp;gt; 75 centipawns -&amp;gt; bad move
+                    if (evalDiff &amp;gt; 75) {
+                        // Mistake found
+                        return {
+                            fenBefore: oldFen,
+                            fenAfter: position.fen,
+                            evalBefore: oldEval,
+                            evalAfter: position.evaluation,
+                            movenum: position.movenum,
+                            evalDiff: evalDiff,
+                            playedMove: position.move,
+                            bestMove: oldBest
+                        };
+                    }
+
+                    return null; // Nulls are filtered out later
+
+                    
+                }));
+
+                
+
+
+            });
+        })
+        // #7
+        .catch(function(err) {
+            // Something went wrong, lets bail.
+            console.log(&amp;quot;PGN analysis went wrong&amp;quot;);
+            Log::error(err);
+        })  
+
+
+}
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva koodi voitaisiin helposti vielä muuttaa &lt;em&gt;todella&lt;/em&gt; helppolukuiseen muotoon
+abstraktoimalla varsinainen bisneskoodi.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function processPGN(pgnText) {
+
+        return Promise.resolve(pgnText)
+        .then(separateGames)
+        .then(separatePositionsForEachGame)
+        .then(filterOutPositionsNotInMoveRange)
+        .map(analyzePosition, {concurrency: 4})
+        .then(packResultsIntoGames)
+        .then(filterOutPositionsWhereNoMistakeWasMade)
+        .catch(handleErrors)    
+}
+
+function separateGames(...) {...}
+function separatePositionsForEachGame(...) {...}
+// jne.
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Aika kaunista.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Nodejs - riippuvuuksien injektointi</title>
+      <link>http://nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</link>
+      <pubDate>Mon, 11 Jul 2016 06:35:00 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</guid>
+      <description>
+
+&lt;p&gt;Riippuvuuksien injektointi (engl. dependency injection) on varsin vahva tapa varmistaa modulaarinen koodipohja. Kun tietyn komponentin jokainen alikomponentti otetaan vastaan &amp;ldquo;ulkoa annettuna&amp;rdquo;, on komponenttia mahdollista muokata
+rakentamalla se eri palikoista.&lt;/p&gt;
+
+&lt;p&gt;Alla esimerkki komponentista, joka hallitsee itse riippuvuuksiaan (alikomponenttejaan):&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Termostaatti.js
+
+module.exports = Termostaatti;
+
+function Termostaatti() {
+	this.lampomittari = new Lampomittari();
+	this.tuuletus = new Tuuletusjarjestelma();
+
+	...
+
+}
+
+function Lampomittari() {...}
+function Tuuletusjarjestelma() {...}
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva Termostaatti-komponentti paitsi itse päättää omat alikomponenttinsa, myös sisältää
+alikomponenttien koodin sisuksissaan. Kyseessä on äärimmilleen viety tapa &amp;ldquo;paketoida&amp;rdquo; komponentti
+loogiseksi kokonaisuudeksi, ikäänkuin mustaksi laatikoksi.&lt;/p&gt;
+
+&lt;p&gt;Termostaatin loppukäyttäjän kannalta ratkaisu on peräti toimiva, olettaen, että loppukäyttäjä vain
+haluaa termostaatin käyttöönsä annetussa muodossa.&lt;/p&gt;
+
+&lt;p&gt;Ongelmana kuitenkin on, että esimerkiksi lämpömittarin koodipohjalla olisi ehkä käyttöä muuallakin, esimerkiksi komponenttia &lt;strong&gt;Leivinuuni&lt;/strong&gt; rakennettaessa. Jos lämpömittarin koodi elää &lt;strong&gt;Termostaatin&lt;/strong&gt; sisuksissa, se on käytännössä vangittuna ikuiseen tyrmään.&lt;/p&gt;
+
+&lt;p&gt;Täten helppo tapa parantaa koodia on refaktoroida &lt;strong&gt;Termostaatti&lt;/strong&gt; muotoon, jossa lämpömittari elää omassa kooditiedostossaan, täten helposti siirrettävissä muihin tarkoituksiin.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Termostaatti.js
+
+var Lampomittari = require(&#39;Lampomittari&#39;);
+
+module.exports = Termostaatti;
+
+function Termostaatti() {
+	this.lampomittari = new Lampomittari();
+	this.tuuletus = new Tuuletusjarjestelma();
+	...
+}
+
+function Tuuletusjarjestelma() {...}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+
+// Lampomittari.js
+
+module.exports = Lampomittari;
+
+function Lampomittari() {...}
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Lampomittari-alikomponentti&lt;/strong&gt; otetaan ylläolevassa esimerkissä erikseen käyttöön osaksi &lt;strong&gt;Termostaatti-komponenttia&lt;/strong&gt;. Lämpömittari ei siis enää elä &lt;strong&gt;Termostaatin&lt;/strong&gt; sisällä. Selkeä parannus aiempaan siinä mielessä, että eri komponenttien koodipohjat ovat entistä paremmin jaoteltuina omiin tiedostoihinsa.&lt;/p&gt;
+
+&lt;p&gt;Varsinainen otsikon ongelma ei silti ratkennut - Termostaatti itse hallitsee alikomponentin ottamisen käyttöön.&lt;/p&gt;
+
+&lt;p&gt;Seuraava parannus on siirtää päätäntävalta pois Termostaatin ulottuvilta. Termostaatin vastuulla ei pidä olla lämpömittarin valinta. Termostaatin vastuulla on huolehtia lämpömittarin mitta-asteikon lukemisesta. Oleellista on, että termostaatti saa käyttöönsä luettavissa olevan lämpömittarin.&lt;/p&gt;
+
+&lt;p&gt;Oletetaan esimerkin nimissä, että meillä on kaksi eri tyyppistä lämpömittaria; digitaalinen mittari ja elohopeamittari.&lt;/p&gt;
+
+&lt;p&gt;Termostaattia ei kiinnosta kumpi mittari on sen käytettävissä KUNHAN VAIN molemmat mittarit ovat luettavissa ongelmitta.&lt;/p&gt;
+
+&lt;p&gt;Mutta meitä huoneiston omistajina asia saattaa kiinnostaa. Emme halua elohopeamittaria, sillä elohopea on ympäristömyrkky. Olemme viherhihhuleita, ja suosimme digitaalista mittaria (jonka toiminta ei perustu elohopean lämpölaajenemiseen).&lt;/p&gt;
+
+&lt;p&gt;Käytännössä meillä on kaksi tapaa toteuttaa koodipohja siten, että termostaatti ei ole edes tietoinen millaisen mittarin se saa käyttöönsä.&lt;/p&gt;
+
+&lt;h3 id=&#34;tapa-1-tiedosto-interface&#34;&gt;Tapa 1 (&amp;ldquo;tiedosto-interface&amp;rdquo;)&lt;/h3&gt;
+
+&lt;p&gt;Helpoin tapa ratkoa ongelma on hoksata, että Lampomittari.js -tiedoston määrittämä komponentti otetaan käyttöön Termostaatti.js-tiedostossa nimellä &amp;ldquo;Lampomittari&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Toisin sanoen, mitä ikinä Lampomittari.js-tiedosto määrittääkään, termostaatti näkee sen nimellä &amp;ldquo;Lampomittari&amp;rdquo;. Kyseessä on puhdas interface, joka pätee tiedostojärjestelmän tasolla. Niin kauan kuin Lampomittari.js-tiedoston nimi ei muutu, voimme &lt;em&gt;kontrolloida termostaatin sisäistä toimintaa ilman että meidän tarvitsee koskea lainkaan Termostaatti.js-tiedostoon.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Eli:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Termostaatti.js
+
+var Lampomittari = require(&#39;Lampomittari&#39;);
+
+module.exports = Termostaatti;
+
+function Termostaatti() {
+	this.lampomittari = new Lampomittari();
+	this.tuuletus = new Tuuletusjarjestelma();
+	...
+}
+
+function Tuuletusjarjestelma() {...}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+
+// Lampomittari.js
+
+module.exports = DigitaalinenLampomittari;
+
+function DigitaalinenLampomittari() {...}
+
+function ElohopeaLampomittari() {...}
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva koodipohja antaa Lampomittari.js-tiedostolle tilaisuuden kontrolloida termostaatin sisäistä toimintaa. Jos haluamme vaihtaa termostaatin lämmonmittauksen vanhan koulukunnan menetelmiin, riittää yksi muutos:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Muutos Lampomittari.js koodiin
+module.exports = ElohopeaLampomittari;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Vielä parempaa - voimme käyttää koko Lampomittari.js-tiedostoa yhtenä suurena &amp;ldquo;dispatchina&amp;rdquo;. Tällöin kaikki eri tyyppiset mittarit elävät omissa tiedostoissaan, ja Lampomittari.js-tiedoston tehtäväksi jää valita niistä yksi ja tarjota sitä ulkopuolisille &amp;ldquo;Lampomittari&amp;rdquo;-interfacen nimissä.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Lampomittari.js
+var ElohopeaMittari = require(&#39;ElohopeaLampomittari&#39;);
+var DigitalMittari  = require(&#39;DigitaalinenLampomittari&#39;);
+var SaunaMittari    = require(&#39;SaunaLampomittari&#39;);
+
+module.exports = SaunaMittari;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Mutta asiassa on ongelma. Entä jos huoneistoon halutaan &lt;em&gt;useampi&lt;/em&gt; termostaatti? Entä jos eri termostaatit eivät halua käyttää samaa lämmönmittaustapaa?&lt;/p&gt;
+
+&lt;p&gt;Niin kauan kuin Lampomittari.js-tiedosto toimii interfacena, se pystyy tarjoamaan vain yhden tavan mitata lämpötila. Lisäksi tuo tapa on kirjoitettu suoraan lähdekoodiin. Tarkoittaen, että ohjelman ajon aikana tuo valittu tapa on vakio - sitä ei pysty muuttamaan.&lt;/p&gt;
+
+&lt;p&gt;Yksi suht typerä tapa ratkaista ongelma on luoda erillinen Termostaatti-tiedosto jokaista erilaista termostaattia varten:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// ElohopeaTermostaatti.js
+
+var Lampomittari = require(&#39;ElohopeaLampomittari&#39;);
+
+module.exports = Termostaatti;
+
+function Termostaatti() {
+	this.lampomittari = new Lampomittari();
+	this.tuuletus = new Tuuletusjarjestelma();
+	...
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// DigitaalinenTermostaatti.js
+
+var Lampomittari = require(&#39;DigitaalinenLampomittari&#39;);
+
+module.exports = Termostaatti;
+
+function Termostaatti() {
+	this.lampomittari = new Lampomittari();
+	this.tuuletus = new Tuuletusjarjestelma();
+	...
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa ei ole mitään järkeä. Huomattavaa on, että eri tiedostojen välillä vain yksi koodirivi muuttuu - valitun lämpömittarin nimi.&lt;/p&gt;
+
+&lt;p&gt;Parempikin tapa on.&lt;/p&gt;
+
+&lt;h3 id=&#34;tapa-2-riippuvuuksien-injektointi-moduuliin&#34;&gt;Tapa 2 (&amp;ldquo;riippuvuuksien injektointi moduuliin&amp;rdquo;)&lt;/h3&gt;
+
+&lt;p&gt;Kaiken päämääränä on se, ettei meidän tarvitse koskea Termostaatti.js-tiedostoon silloin, kun haluamme vaihtaa termostaatin lämmönmittaustapaa. Yllä saavutimme tavoitteen require-komennon kautta; otimme käyttöön require-toiminnolla Lampomittari.fi -komponentin - joka ei itse asiassa ollut komponentti lainkaan, vaan ainoastaan &lt;em&gt;esitti&lt;/em&gt; komponenttia. Oikea komponentti oli piilossa Lampomittari.js-tiedoston selän takana.&lt;/p&gt;
+
+&lt;p&gt;Vaihtoehtoinen tapa toteuttaa tavoitteemme on yksinkertaisesti syöttää tarvittavat alikomponentit sisään samalla kun luomme termostaattia.&lt;/p&gt;
+
+&lt;p&gt;Huomioitavaa on, että syötämme alikomponentit sisään &lt;em&gt;ohjelman ajon aikana&lt;/em&gt;. Toisin sanoen, valinta käytetyistä alikomponenteista on tiedossa vasta ohjelman ajon aikana.&lt;/p&gt;
+
+&lt;p&gt;Tämä on fundamentaaline ero aiempiin ratkaisuyrityksiimme. Aiemmissa ratkaisuissa valinta oli aina &lt;strong&gt;kirjattu suoraan lähdekoodiin&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Termostaatti.js
+
+module.exports = function(lampomittari, tuuletusjarjestelma) {
+	// Onko lampomittari digitaalinen vai elohopea? 
+	// Emme tiedä. Emme välitä.
+	return new Termostaatti(lampomittari, tuuletusjarjestelma);
+}
+
+function Termostaatti(lampomittari, tuuletusjarjestelma) {
+	
+	...
+}
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tämä toimintamalli eroaa aiemmista siten, että Termostaatti ottaa vastaan alikomponentit täysin ulkoa annettuina. Termostaatti.js-tiedoston tehtäväksi jää &lt;em&gt;rakentaa termostaatti kytkemällä ulkoatulevat komponentit osaksi kokonaisuutta&lt;/em&gt;. Tästä ajattelumallista käytetään nimitystä &amp;ldquo;Factory&amp;rdquo; eli tehdas. Termostaatin käyttäjä voi vapaasti syöttää haluamansa lämmönmittausmenetelmän sisään termostaattia projektiin lisätessään.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Asuinhuoneisto.js
+
+var termostaattitehdas = require(&#39;Termostaatti&#39;);
+
+var saunanTermostaatti = termostaattitehdas(new SaunaMittari(), new Tuuletus());
+var eteisenTermostaatti = termostaattitehdas(new ElohopeaMittari(), new Tuuletus());
+
+...
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Luonnollisesti tapojen #1 ja #2 välillä trade-off. Tapa 1 mahdollistaa loppukäyttäjän olevan auvoisen tietämätön mistään termostaatin sisäisistä aspekteista. Loppukäyttäjä vain ottaa termostaatin käyttöönsä, luottaen sen toimintaan. Tapa 2 antaa loppukäyttäjälle mahdollisuuden &lt;em&gt;määritellä kustomoituja&lt;/em&gt; termostaatteja. Loppukäyttäjä voi itse rakentaa haluamansa termostaatin ikäänkuin LEGO-palikoita kokoamalla. Jokaisen palikan hän voi valita itse.&lt;/p&gt;
+
+&lt;p&gt;Ero on vastaava kuin Applen läppärin ja itsekootun pöytätietokoneen välillä. Applen läppäri on käytännössä yksi iso musta laatikko, ja sen sisäisten alikomponenttien muuttaminen vaatii Apple-sertifioidun ammattilaisen apua.&lt;/p&gt;
+
+&lt;p&gt;Itsekoottu pöytäkone taas&amp;hellip; riittää, että ruuvaa sivukannen auki, vetää muistikamman irti, asettaa uuden muistikamman tilalle. Noin kahden minuutin juttu.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Laravel vinkit #1</title>
+      <link>http://nollaversio.fi/blog/public/laravel/vinkit1/</link>
+      <pubDate>Wed, 06 Jul 2016 06:28:46 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/vinkit1/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;Kuinka lisätä uusi raportointitoiminnallisuus ilman muutoksia vanhaan koodipohjaan?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Lyhyt vastaus: luomalla palveluntarjoaja, joka määrittää tapahtumakuuntelijan.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Laravellilla rakennettu järjestelmä on helposti laajennettavissa palveluntarjoajien kautta. Palveluntarjoajan mahdollistavat arkkitehtuurin rakentamisen siten, että uudet toiminnallisuudet elävät täysin erillään ns. ydinkoodista. Ydinkoodin ei edes tarvitse tietää uuden toiminnallisuuden olemassaolosta.&lt;/p&gt;
+
+&lt;p&gt;Paras tapa toteuttaa tämä erilläänolo on käyttää palveluntarjoajia (Service Provider).&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Käytetään esimerkkinä Nordean pankkijärjestelmää.&lt;/p&gt;
+
+&lt;p&gt;Oletetaan, että Nordean mahtava nettipankki sallii asiakkaidensa lisätä pankkitileilleen rahaa. Ahneuspäissään pankkiväki ei ole lisännyt mahdollisuutta nostaa rahaa tililtä - ainoastaan talletus on mahdollista.&lt;/p&gt;
+
+&lt;p&gt;Ihana nettipankki toimii kuin unelma, kunnes tulee lakimuutoksen myötä lisävaatimus: jokaisen pankkitilille tehtävän talletuksen jälkeen järjestelmän tulee ilmoittaa viranomaisille ko. pankkitilin uusi saldo.&lt;/p&gt;
+
+&lt;p&gt;Oletetaan, että tässä esimerkissä viranomaisilla on upea HTTP-rajapinta nimeltä &amp;ldquo;Pankkipoliisi&amp;rdquo;. Rajapinnan tarkempi toiminta ei ole oleellista, joten oletetaan, että pintaa voidaan kutsua tyyliin:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;Pankkipoliisi::ilmoita($asiakasID, $uusiSaldo)&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Miten nykyistä Nordean pankkijärjestelmää tulee muuttaa, jotta lain vaatimus täyttyy?&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Tarvittava muutos järjestelmän on yksinkertainen. Vanha ydinkoodi - joka huolehtii pankkitilin hallinnasta - voi pysyä tismalleen identtisenä.&lt;/p&gt;
+
+&lt;p&gt;Vaatimuksen täyttöä varten lisäämme järjestelmään palveluntarjoajan, joka puolestaan lisää &lt;em&gt;tapahtumakuuntelijan&lt;/em&gt;. Tuo tapahtumakuuntelija on kaiken A ja O - se kuuntelee järjestelmän tuottamia tapahtumia ja valikoi niistä jatkokäsittelyyn itselleen mieluisat.&lt;/p&gt;
+
+&lt;p&gt;Käytännössä homma toimii siten, että &lt;strong&gt;vanha ydinkoodi tuottaa tapahtumia&lt;/strong&gt;, ja &lt;strong&gt;uusi koodipohja reagoi noihin tapahtumiin&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tämä patterni on yleismaailmallinen ja soveltuu moniin käyttötarkoituksiin: olemassaoleva järjestelmäkomponentti tuottaa informaatiota, uusi komponentti reagoi tuotettuun informaatioon.&lt;/p&gt;
+
+&lt;p&gt;Kaiken pohjalla toimii oletus siitä, että vanha komponentti ei tiedä uuden komponentin olemassaolosta mitään. Parhaimmillaan myöskään uusi komponentti ei havaitse vanhaa komponenttia. Kaikki informaatio kulkee tapahtumien muodossa.&lt;/p&gt;
+
+&lt;p&gt;Hieman karrikoiden; vanha komponentti &amp;ldquo;&lt;em&gt;ampuu tapahtumia kohti tyhjyyttä&lt;/em&gt;&amp;rdquo;, uusi komponentti &amp;ldquo;&lt;em&gt;vastaanottaa tapahtumia tyhjyydestä&lt;/em&gt;&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Tämä on koko arkkitehtuurin perimmäinen ajatus - vanha ja uusi koodipohja elävät täysin omissa maailmoissaan tietämättä mitään toisistaan.&lt;/p&gt;
+
+&lt;p&gt;Uusi koodipohja vain ottaa sopivat tapahtumat kiinni.&lt;/p&gt;
+
+&lt;p&gt;Vanha ydinkoodi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Models/Pankkitili.php
+
+public function saveCash(ICurrency $amount) {
+
+	// Ei tarvetta transaktiolle kun lisätään rahaa -&amp;gt; menee aina läpi.
+
+	// Lasketaan uusi saldo
+	$this-&amp;gt;balance = $this-&amp;gt;balance + $amount-&amp;gt;convert($this-&amp;gt;accountCurrency);
+	// Päivitetään muutos tietokantaan. 
+	// Luo ja ampuu tapahtuman &amp;quot;pankkitili päivitetty!&amp;quot;.
+	$this-&amp;gt;save();
+
+	return true;
+	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yllä siis ydinkoodipohja. Koodi ei missään sisällä ekspliittistä käskyä ampua tapahtumaa. Tapahtuman luonti ja välitys järjestelmän muille komponenteille tapahtuu implisiittisesti, pinnan alla, Laravellin toimesta.&lt;/p&gt;
+
+&lt;p&gt;Kun lisätoiminnallisuutta järjestelmään lisätään, &lt;em&gt;ylläolevaan koodipohjaan ei tarvitse koskea&lt;/em&gt;. Tämä on koko hajautetun, tapahtumien välitykseen perustuvan arkkitehtuurin keskeisin pointti.&lt;/p&gt;
+
+&lt;p&gt;Toteutetaan uusi raportointitoiminnallisuus lisäämällä palveluntarjoaja, jonka vastuulla on napata lennosta sopivat tapahtumat ja reagoida niihin.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;// Providers/RaportointiPankkipoliisille.php
+
+public function boot() {	
+
+  // Ilmoitetaan halustamme kuunnella Pankkitiliin liittyviä &amp;quot;updated&amp;quot;-tapahtumia.
+  Pankkitili::updated(function($tili) {
+    // Tämä klosuuri ajetaan aina kun tilin saldo on päivittynyt.
+    // Klosuurin sisällä käytössämme on $tili-objekti
+    // $tili edustaa sitä Pankkitiliä, johon päivitys kohdistui.
+
+    // Selvitetään uusi saldo lähettääksemme sen viranomaisille.
+    $uusiSaldo = $tili-&amp;gt;getBalance();
+
+    $poliisi = new Pankkipoliisi(/*api-tunnukset tähän*/);
+
+    // Ilmoitetaan käyttäjän uusi saldo, eli lähetetään käyttäjä-ID ja saldosumma.
+    try {
+      $poliisi-&amp;gt;ilmoita(\Auth::user()-&amp;gt;id(), $uusiSaldo);
+    } catch (\Exception $e) {
+      Log::warning(&#39;poliisi_ilmoitus_fail&#39;, $e);
+    }
+  });
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Pankkipoliisin asetukset täytyy määritellä jossain config-tiedostossa, mutta periaate on ylläolevan mukainen.&lt;/p&gt;
+
+&lt;p&gt;Tiivistettynä:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Vanhan koodipohjan (&lt;em&gt;Pankkitili.php&lt;/em&gt;) ei tässä esimerkissä tarvinnut muuttua kun halusimme lisätä uuden toiminnallisuuden järjestelmään.&lt;/li&gt;
+&lt;li&gt;Uusi palveluntarjoaja (&lt;em&gt;RaportointiPankkipoliisille.php&lt;/em&gt;) lisäsi &lt;strong&gt;laajennuksen&lt;/strong&gt; olemassaolevaan järjestelmään.&lt;/li&gt;
+&lt;li&gt;Lisätyn laajennuksen määrittämä &lt;em&gt;tapahtumakuuntelija&lt;/em&gt; nappaa sopivat tapahtumat kiinni ja reagoi niihin lähettämällä viestin viranomaisille.&lt;/li&gt;
+&lt;/ol&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

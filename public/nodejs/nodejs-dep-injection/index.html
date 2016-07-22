@@ -1,0 +1,297 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Nodejs - riippuvuuksien injektointi &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Nodejs - riippuvuuksien injektointi</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Mon, Jul 11, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Riippuvuuksien injektointi (engl. dependency injection) on varsin vahva tapa varmistaa modulaarinen koodipohja. Kun tietyn komponentin jokainen alikomponentti otetaan vastaan &ldquo;ulkoa annettuna&rdquo;, on komponenttia mahdollista muokata
+rakentamalla se eri palikoista.</p>
+
+<p>Alla esimerkki komponentista, joka hallitsee itse riippuvuuksiaan (alikomponenttejaan):</p>
+
+<pre><code class="language-javascript">
+// Termostaatti.js
+
+module.exports = Termostaatti;
+
+function Termostaatti() {
+	this.lampomittari = new Lampomittari();
+	this.tuuletus = new Tuuletusjarjestelma();
+
+	...
+
+}
+
+function Lampomittari() {...}
+function Tuuletusjarjestelma() {...}
+
+
+</code></pre>
+
+<p>Ylläoleva Termostaatti-komponentti paitsi itse päättää omat alikomponenttinsa, myös sisältää
+alikomponenttien koodin sisuksissaan. Kyseessä on äärimmilleen viety tapa &ldquo;paketoida&rdquo; komponentti
+loogiseksi kokonaisuudeksi, ikäänkuin mustaksi laatikoksi.</p>
+
+<p>Termostaatin loppukäyttäjän kannalta ratkaisu on peräti toimiva, olettaen, että loppukäyttäjä vain
+haluaa termostaatin käyttöönsä annetussa muodossa.</p>
+
+<p>Ongelmana kuitenkin on, että esimerkiksi lämpömittarin koodipohjalla olisi ehkä käyttöä muuallakin, esimerkiksi komponenttia <strong>Leivinuuni</strong> rakennettaessa. Jos lämpömittarin koodi elää <strong>Termostaatin</strong> sisuksissa, se on käytännössä vangittuna ikuiseen tyrmään.</p>
+
+<p>Täten helppo tapa parantaa koodia on refaktoroida <strong>Termostaatti</strong> muotoon, jossa lämpömittari elää omassa kooditiedostossaan, täten helposti siirrettävissä muihin tarkoituksiin.</p>
+
+<pre><code class="language-javascript">
+// Termostaatti.js
+
+var Lampomittari = require('Lampomittari');
+
+module.exports = Termostaatti;
+
+function Termostaatti() {
+	this.lampomittari = new Lampomittari();
+	this.tuuletus = new Tuuletusjarjestelma();
+	...
+}
+
+function Tuuletusjarjestelma() {...}
+
+</code></pre>
+
+<pre><code class="language-javascript">
+
+// Lampomittari.js
+
+module.exports = Lampomittari;
+
+function Lampomittari() {...}
+
+
+</code></pre>
+
+<p><strong>Lampomittari-alikomponentti</strong> otetaan ylläolevassa esimerkissä erikseen käyttöön osaksi <strong>Termostaatti-komponenttia</strong>. Lämpömittari ei siis enää elä <strong>Termostaatin</strong> sisällä. Selkeä parannus aiempaan siinä mielessä, että eri komponenttien koodipohjat ovat entistä paremmin jaoteltuina omiin tiedostoihinsa.</p>
+
+<p>Varsinainen otsikon ongelma ei silti ratkennut - Termostaatti itse hallitsee alikomponentin ottamisen käyttöön.</p>
+
+<p>Seuraava parannus on siirtää päätäntävalta pois Termostaatin ulottuvilta. Termostaatin vastuulla ei pidä olla lämpömittarin valinta. Termostaatin vastuulla on huolehtia lämpömittarin mitta-asteikon lukemisesta. Oleellista on, että termostaatti saa käyttöönsä luettavissa olevan lämpömittarin.</p>
+
+<p>Oletetaan esimerkin nimissä, että meillä on kaksi eri tyyppistä lämpömittaria; digitaalinen mittari ja elohopeamittari.</p>
+
+<p>Termostaattia ei kiinnosta kumpi mittari on sen käytettävissä KUNHAN VAIN molemmat mittarit ovat luettavissa ongelmitta.</p>
+
+<p>Mutta meitä huoneiston omistajina asia saattaa kiinnostaa. Emme halua elohopeamittaria, sillä elohopea on ympäristömyrkky. Olemme viherhihhuleita, ja suosimme digitaalista mittaria (jonka toiminta ei perustu elohopean lämpölaajenemiseen).</p>
+
+<p>Käytännössä meillä on kaksi tapaa toteuttaa koodipohja siten, että termostaatti ei ole edes tietoinen millaisen mittarin se saa käyttöönsä.</p>
+
+<h3 id="tapa-1-tiedosto-interface">Tapa 1 (&ldquo;tiedosto-interface&rdquo;)</h3>
+
+<p>Helpoin tapa ratkoa ongelma on hoksata, että Lampomittari.js -tiedoston määrittämä komponentti otetaan käyttöön Termostaatti.js-tiedostossa nimellä &ldquo;Lampomittari&rdquo;.</p>
+
+<p>Toisin sanoen, mitä ikinä Lampomittari.js-tiedosto määrittääkään, termostaatti näkee sen nimellä &ldquo;Lampomittari&rdquo;. Kyseessä on puhdas interface, joka pätee tiedostojärjestelmän tasolla. Niin kauan kuin Lampomittari.js-tiedoston nimi ei muutu, voimme <em>kontrolloida termostaatin sisäistä toimintaa ilman että meidän tarvitsee koskea lainkaan Termostaatti.js-tiedostoon.</em></p>
+
+<p>Eli:</p>
+
+<pre><code class="language-javascript">
+// Termostaatti.js
+
+var Lampomittari = require('Lampomittari');
+
+module.exports = Termostaatti;
+
+function Termostaatti() {
+	this.lampomittari = new Lampomittari();
+	this.tuuletus = new Tuuletusjarjestelma();
+	...
+}
+
+function Tuuletusjarjestelma() {...}
+
+</code></pre>
+
+<pre><code class="language-javascript">
+
+// Lampomittari.js
+
+module.exports = DigitaalinenLampomittari;
+
+function DigitaalinenLampomittari() {...}
+
+function ElohopeaLampomittari() {...}
+
+
+</code></pre>
+
+<p>Ylläoleva koodipohja antaa Lampomittari.js-tiedostolle tilaisuuden kontrolloida termostaatin sisäistä toimintaa. Jos haluamme vaihtaa termostaatin lämmonmittauksen vanhan koulukunnan menetelmiin, riittää yksi muutos:</p>
+
+<pre><code class="language-javascript">// Muutos Lampomittari.js koodiin
+module.exports = ElohopeaLampomittari;
+</code></pre>
+
+<p>Vielä parempaa - voimme käyttää koko Lampomittari.js-tiedostoa yhtenä suurena &ldquo;dispatchina&rdquo;. Tällöin kaikki eri tyyppiset mittarit elävät omissa tiedostoissaan, ja Lampomittari.js-tiedoston tehtäväksi jää valita niistä yksi ja tarjota sitä ulkopuolisille &ldquo;Lampomittari&rdquo;-interfacen nimissä.</p>
+
+<pre><code class="language-javascript">// Lampomittari.js
+var ElohopeaMittari = require('ElohopeaLampomittari');
+var DigitalMittari  = require('DigitaalinenLampomittari');
+var SaunaMittari    = require('SaunaLampomittari');
+
+module.exports = SaunaMittari;
+
+</code></pre>
+
+<p>Mutta asiassa on ongelma. Entä jos huoneistoon halutaan <em>useampi</em> termostaatti? Entä jos eri termostaatit eivät halua käyttää samaa lämmönmittaustapaa?</p>
+
+<p>Niin kauan kuin Lampomittari.js-tiedosto toimii interfacena, se pystyy tarjoamaan vain yhden tavan mitata lämpötila. Lisäksi tuo tapa on kirjoitettu suoraan lähdekoodiin. Tarkoittaen, että ohjelman ajon aikana tuo valittu tapa on vakio - sitä ei pysty muuttamaan.</p>
+
+<p>Yksi suht typerä tapa ratkaista ongelma on luoda erillinen Termostaatti-tiedosto jokaista erilaista termostaattia varten:</p>
+
+<pre><code class="language-javascript">// ElohopeaTermostaatti.js
+
+var Lampomittari = require('ElohopeaLampomittari');
+
+module.exports = Termostaatti;
+
+function Termostaatti() {
+	this.lampomittari = new Lampomittari();
+	this.tuuletus = new Tuuletusjarjestelma();
+	...
+}
+
+</code></pre>
+
+<pre><code class="language-javascript">// DigitaalinenTermostaatti.js
+
+var Lampomittari = require('DigitaalinenLampomittari');
+
+module.exports = Termostaatti;
+
+function Termostaatti() {
+	this.lampomittari = new Lampomittari();
+	this.tuuletus = new Tuuletusjarjestelma();
+	...
+}
+
+</code></pre>
+
+<p>Ylläolevassa ei ole mitään järkeä. Huomattavaa on, että eri tiedostojen välillä vain yksi koodirivi muuttuu - valitun lämpömittarin nimi.</p>
+
+<p>Parempikin tapa on.</p>
+
+<h3 id="tapa-2-riippuvuuksien-injektointi-moduuliin">Tapa 2 (&ldquo;riippuvuuksien injektointi moduuliin&rdquo;)</h3>
+
+<p>Kaiken päämääränä on se, ettei meidän tarvitse koskea Termostaatti.js-tiedostoon silloin, kun haluamme vaihtaa termostaatin lämmönmittaustapaa. Yllä saavutimme tavoitteen require-komennon kautta; otimme käyttöön require-toiminnolla Lampomittari.fi -komponentin - joka ei itse asiassa ollut komponentti lainkaan, vaan ainoastaan <em>esitti</em> komponenttia. Oikea komponentti oli piilossa Lampomittari.js-tiedoston selän takana.</p>
+
+<p>Vaihtoehtoinen tapa toteuttaa tavoitteemme on yksinkertaisesti syöttää tarvittavat alikomponentit sisään samalla kun luomme termostaattia.</p>
+
+<p>Huomioitavaa on, että syötämme alikomponentit sisään <em>ohjelman ajon aikana</em>. Toisin sanoen, valinta käytetyistä alikomponenteista on tiedossa vasta ohjelman ajon aikana.</p>
+
+<p>Tämä on fundamentaaline ero aiempiin ratkaisuyrityksiimme. Aiemmissa ratkaisuissa valinta oli aina <strong>kirjattu suoraan lähdekoodiin</strong>.</p>
+
+<pre><code class="language-javascript">
+// Termostaatti.js
+
+module.exports = function(lampomittari, tuuletusjarjestelma) {
+	// Onko lampomittari digitaalinen vai elohopea? 
+	// Emme tiedä. Emme välitä.
+	return new Termostaatti(lampomittari, tuuletusjarjestelma);
+}
+
+function Termostaatti(lampomittari, tuuletusjarjestelma) {
+	
+	...
+}
+
+
+</code></pre>
+
+<p>Tämä toimintamalli eroaa aiemmista siten, että Termostaatti ottaa vastaan alikomponentit täysin ulkoa annettuina. Termostaatti.js-tiedoston tehtäväksi jää <em>rakentaa termostaatti kytkemällä ulkoatulevat komponentit osaksi kokonaisuutta</em>. Tästä ajattelumallista käytetään nimitystä &ldquo;Factory&rdquo; eli tehdas. Termostaatin käyttäjä voi vapaasti syöttää haluamansa lämmönmittausmenetelmän sisään termostaattia projektiin lisätessään.</p>
+
+<pre><code class="language-javascript">
+// Asuinhuoneisto.js
+
+var termostaattitehdas = require('Termostaatti');
+
+var saunanTermostaatti = termostaattitehdas(new SaunaMittari(), new Tuuletus());
+var eteisenTermostaatti = termostaattitehdas(new ElohopeaMittari(), new Tuuletus());
+
+...
+
+</code></pre>
+
+<p>Luonnollisesti tapojen #1 ja #2 välillä trade-off. Tapa 1 mahdollistaa loppukäyttäjän olevan auvoisen tietämätön mistään termostaatin sisäisistä aspekteista. Loppukäyttäjä vain ottaa termostaatin käyttöönsä, luottaen sen toimintaan. Tapa 2 antaa loppukäyttäjälle mahdollisuuden <em>määritellä kustomoituja</em> termostaatteja. Loppukäyttäjä voi itse rakentaa haluamansa termostaatin ikäänkuin LEGO-palikoita kokoamalla. Jokaisen palikan hän voi valita itse.</p>
+
+<p>Ero on vastaava kuin Applen läppärin ja itsekootun pöytätietokoneen välillä. Applen läppäri on käytännössä yksi iso musta laatikko, ja sen sisäisten alikomponenttien muuttaminen vaatii Apple-sertifioidun ammattilaisen apua.</p>
+
+<p>Itsekoottu pöytäkone taas&hellip; riittää, että ruuvaa sivukannen auki, vetää muistikamman irti, asettaa uuden muistikamman tilalle. Noin kahden minuutin juttu.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

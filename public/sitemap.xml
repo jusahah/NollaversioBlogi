@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <url>
+    <loc>http://nollaversio.fi/blog/public/</loc>
+    <lastmod>2016-07-20T20:42:23+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://nollaversio.fi/blog/public/laravel/protecting-routes/</loc>
+    <lastmod>2016-07-20T20:42:23+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://nollaversio.fi/blog/public/nodejs/promise-tap/</loc>
+    <lastmod>2016-07-18T18:02:21+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</loc>
+    <lastmod>2016-07-18T17:11:43+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://nollaversio.fi/blog/public/nodejs/promisechain/</loc>
+    <lastmod>2016-07-13T06:48:47+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</loc>
+    <lastmod>2016-07-11T06:35:00+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://nollaversio.fi/blog/public/laravel/vinkit1/</loc>
+    <lastmod>2016-07-06T06:28:46+03:00</lastmod>
+  </url>
+  
+</urlset>

@@ -1,0 +1,12 @@
+baseurl = "http://nollaversio.fi/blog/public/"
+languageCode = "fi-fi"
+title = "Nollaversio IT"
+
+[taxonomies]
+  tag = "tags"
+
+[sections]
+  laravel = "Laravel"
+  nodejs = "Nodejs"
+  electron="Electron"
+  arch="Arkkitehtuuri"

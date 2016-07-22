@@ -1,0 +1,172 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Usecase - palvelupyyntö elää rinnakkaistodellisuuksissa &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Usecase - palvelupyyntö elää rinnakkaistodellisuuksissa</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Tue, Jul 19, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      <p>Usecase-arkkitehtuuri (en keksinyt hyvää käännöstä suomeksi) on eräs tapa järjestää Laravel-pohjaisen tietokoneohjelman control flow.</p>
+
+<p>Mitä usecase-arkkitehtuuri painottaa? Nimensä mukaisesti se pyrkii abstraktoimaan koodin erillisiin käyttötarkoituksiin.</p>
+
+<p>Käyttötarkoitus on esim. &ldquo;nosta rahaa pankista&rdquo;.</p>
+
+<p>Otetaan esimerkki. Kuvitellaan järjestelmä, jossa loppukäyttäjä voi ryhtyä haluamansa pankin asiakkaaksi. Pankkeja on useita, ja asiakas voi yhden järjestelmän kautta hallita asiakkuuksiaan kussakin pankissa.</p>
+
+<pre><code class="language-php">
+// NostaRahaa_useCase.php
+
+public function nostaRahaa(IPankki $pankki, int $asiakasID, int $summa) {
+
+	// Alkuvalmistelut, eli varmistetaan että asiakas-ID on olemassa
+	$asiakas = Asiakas::findById($asiakasID); // Throws &quot;EiOlemassa&quot;
+
+	// Usecasen tunnusmerkkejä on, että siinä tietyt toimenpiteet
+	// suoritetaan järjestyksessä, ja tällä tavoin saavutetaan
+	// haluttu lopputulos.
+
+	// Tässä tapauksessa vaiheet ovat:
+	// 1. Varmista asiakkuus
+	// 2. Nosta rahat
+	// 3. Lähetä ilmoitus nostosta asiakkaalle 
+
+	// Virheet napataan kiinni ylempänä call stäkissä.
+	
+	// #1
+	// Throws &quot;EiAsiakkuutta&quot; mikäli varmistus epäonnistuu.
+	$pankki-&gt;varmistaAsiakkuus($asiakas); 
+
+	// #2
+	// Throws &quot;EiKatetta&quot; mikäli ei tarpeeksi rahaa tilillä.
+	$nostettuSumma = $pankki-&gt;nostaTililta($asiakas, $summa); 
+
+	// #3
+	// Onnistuu aina (oletamme)
+	$asiakas-&gt;lahetaSMS('nostoHyvaksytty', [
+		'summa' =&gt; $nostettuSumma,
+		'ajankohta' =&gt; Carbon::now(),
+	]);
+
+}  
+
+</code></pre>
+
+<pre><code class="language-php">
+// PankkiController.php
+
+public function nostaRahaa(Request $request, IPankki $pankki) {
+	// parametrit tulevat IOC-containerin kautta
+
+	// Validation sisääntullut request jotenkin
+	try {
+		$this-&gt;validate($request); // Throws &quot;ValidaatioVirhe&quot;		
+	} catch (ValidaatioVirhe $vv) {
+		return Response::error('Nosto epäonnistui - tarkista tiedot');
+	}
+
+	$asiakasID = $request-&gt;get('asiakasID');
+	$summa     = $request-&gt;get('summa');
+
+	// Kutsutaan usecasea!
+	try {
+		$nosto = (new NostaRahaa_useCase())-&gt;nostaRahaa($pankki, $asiakasID, $summa);
+	} catch (Error $e) {
+		// Ei tarvetta tietää mikä tietty virhe tapahtui, sen sijaan ilmoitetaan
+		// virheviesti käyttäjälle. Viesti kertoo kaiken oleellisen.
+		return Response::error($e);
+	}
+
+	// Kaikki meni oikein mukavasti.
+	return Response::success('nostoOnnistui', $nosto);
+
+}
+
+
+</code></pre>
+
+<p>Ylläoleva usecase-arkkitehtuuri erottelee <em>sisääntulevan palvelupyynnön</em> käsittelyn ja <em>itse toiminnon läpiviemisen</em> toisistaan. On syytä muistaa, että rahan nostaminen pankista on palvelupyyntö asiakkaalta pankille. Jotta tuo palvelupyyntö voidaan viedä läpi, täytyy asiakkaan tietokoneen lähettää tekninen palvelupyyntö järjestelmän palvelimelle. Tässä on kaksi fundamentaalista konseptia:</p>
+
+<p>#1 ) Palvelupyyntö siinä mielessä, että tosimaailmassa minä pyydän sinua tekemään jotain
+#2 ) Palvelupyyntö siinä mielessä, että kasa bittejä siirtyy tietokoneelta toiselle.</p>
+
+<p><strong>Jälkimmäinen on pelkkä bittimaailman kuvaus ensimmäisestä</strong>. Täydellisessä maailmassa jälkimmäiselle konseptille ei olisi lainkaan tarvetta. Mutta meidän maailmassamme on - tieto rahan nostosta täytyy jotenkin välittää kotikoneelta palvelimelle. Se ei välity telepatialla, joten joudumme turvautumaan <em>teknisen palvelupyynnön</em> lähettämiseen.</p>
+
+<p>Usecase-arkkitehtuuri mahdollistaa näiden kahden konseptin erottelun <em>kauas</em> toisistaan. Siis kauas siinä mielessä, että ne sijaitsevat eri tiedostoissa. Tässä on suuri vahvuus.</p>
+
+<p>Usecase-tiedoston ei tarvitse välittää siitä, millä tavoin asiakkaan kotikone ilmaisi palvelimen suuntaan halunsa nostaa rahaa.</p>
+
+<p>Sen sijaan Controller-tiedosto (PankkiController.php) välittää tuommoisista alhaisen tason detaljeista. Controller ottaa sisään teknisen palvelupyynnön (siis #2 äskeisessä listassamme!), ja luo sen pohjalta oikean palvelupyynnön (#1 listassamme). Usecase-tiedosto ei koskaan edes tiedä #2 olemassaolosta - se välittää vain #1 käsittelystä.</p>
+
+<p>Itse asiassa Usecase-tiedosto ei edes tiedä, että se on osa internet-applikaatiota. Sillä kaikki internet-liikenteeseen liittyvä logiikka elää Controller-tiedostossa.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>
