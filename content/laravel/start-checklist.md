@@ -1,7 +1,7 @@
 +++
 date = "2016-07-22T16:14:13+03:00"
 draft = false
-title = "Tarkastuslista uutta Laravel-projektia aloittaessa"
+title = "Muistilista uutta Laravel-projektia aloittaessa"
 
 +++
 

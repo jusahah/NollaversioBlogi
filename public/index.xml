@@ -6,8 +6,566 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Wed, 20 Jul 2016 20:42:23 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 25 Jul 2016 17:28:05 +0300</lastBuildDate>
     <atom:link href="http://nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Filteröi epäonnistujat pois (reflect &#43; filter)</title>
+      <link>http://nollaversio.fi/blog/public/nodejs/promise-filter/</link>
+      <pubDate>Mon, 25 Jul 2016 17:28:05 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/nodejs/promise-filter/</guid>
+      <description>
+
+&lt;p&gt;Lupauskirjasto &lt;em&gt;Bluebirdin&lt;/em&gt; yksi vähemmän tunnetuista apumetodeista on &lt;strong&gt;reflect()&lt;/strong&gt;. Ainakin allekirjoittaneelle tuo apufunktio pysyi tuntemattomana hyvää matkaa toista vuotta - ei vain tullut pakottavaa tarvetta, ja ongelmat sai aina ratkottua muutenkin.&lt;/p&gt;
+
+&lt;p&gt;Näin jälkikäteen ajateltuna nuo &amp;ldquo;muut&amp;rdquo; ratkaisut olivat aika hirveitä sekasotkuja, jotka toimivat jos jaksoivat.&lt;/p&gt;
+
+&lt;p&gt;Sittemmin otin reflectin käyttöön.&lt;/p&gt;
+
+&lt;h3 id=&#34;minkä-ongelman-promise-reflect-ratkoo&#34;&gt;Minkä ongelman Promise.reflect() ratkoo?&lt;/h3&gt;
+
+&lt;p&gt;Varsin usein omissa applikaatioissani on toiminnallisuuksia, joiden onnistunut läpivienti &lt;em&gt;ei ole kriittistä&lt;/em&gt;. Jotkut toiminnot ovat luonteeltaan sellaisia, että ei niin väliä mikäli toiminto epäonnistuu nolosti. &lt;strong&gt;Tärkeintä on, että yhden vähäpätöisen toiminnon epäonnistuminen ei vedä mukanaan koko applikaatiota vessan pöntöstä alas.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Puhtaan perinteisessä synkronoidussa koodissa on luonnollista, että epäonnistunut toiminto napataan kiinni &lt;em&gt;try-catch&lt;/em&gt; -siepparilla. Esim.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var _       = require(&#39;lodash&#39;);
+var Promise = require(&#39;bluebird&#39;);
+
+// SyncVarkaus.js
+
+function kopioiBlogi(urls) {
+
+	// Käydään yksitellen pihistämässä blogien HTML-sisältö.
+	var blogiSisallot = _.map(urls, function(blogiURL) {
+		var sisalto; // Täytetään sisällöllä
+		try {
+			sisalto = syncRequest(blogiURL);
+		} catch (e) {
+			// No, pöllintä ei onnistunut. Eipä hätiä.
+			// Rikolliset aikeemme kohdistuvat seuraavaan uhriin.
+			console.warn(&#39;Pölliminen epäonnistui - seuraava uhri sisään.&#39;);
+		}	
+
+		return sisalto;	
+
+	})
+	
+	// blogiSisallot sisältää pöllityt sisällöt niistä blogeista,
+	// joiden kähvellys EI epäonnistunut nolosti. Luuserit roikkuvat
+	// vielä mukana undefined-arvoina. Mutta eivät pitkään.
+
+	// Compact() suodattaa töpeksijät roskakoriin.
+	return _.compact(blogiSisallot);
+}
+
+// Rikollisen uramme alkupiste.
+var tulokset = kopioiBlogi([
+	&#39;http://www.pollitasta.fi&#39;,
+	&#39;http://www.tuplaamo.fi&#39;,
+	&#39;http://www.nollaversio.fi/public/blog&#39;
+]);
+
+// Bestseller tiedossa.
+koostaKirja(tulokset);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva on mukavaa perinteistä sync-koodia, jossa jokainen toiminto suoritetaan peräkanaa yksitellen. Ja try-catch-sieppari toimii kuin unelma.&lt;/p&gt;
+
+&lt;p&gt;Mutta kun Javascriptin (ja maalaisjärjen) luonteeseen kuuluu, että jokaista varkautta ei tarvitse tehdä perätysten. Niitä kun voi tehdä myös &lt;em&gt;samanaikaisesti&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Siirrytään ihanaan lupausten maailmaan, ja suoritetaan rikossarjamme asynkronoidusti.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// AsyncVarkaus.js
+
+function kopioiBlogi(urls) {
+
+	return Promise.resolve(urls)
+	.map(function(blogiURL) {
+		// Jokainen request lähtee liikkeelle yht&#39;aikaa.
+		return asyncRequest(blogiURL);
+	})
+	.catch(function(err) {
+		// Jotain meni nolosti pieleen.
+	})
+
+}
+
+kopioiBlogi([
+	&#39;http://www.pollitasta.fi&#39;,
+	&#39;http://www.tuplaamo.fi&#39;,
+	&#39;http://www.nollaversio.fi/public/blog&#39;
+]).then(function(tulokset) {
+	return koostaKirja(tulokset);
+}).then(function(kirja) {
+	// Valitaan sopivan korruptoitunut kustantaja.
+	talentumMedia.julkaise(kirja);
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kaikki näyttää pintapuolin hyvältä. Käyttämällä &lt;em&gt;Promise.map&lt;/em&gt;-metodia ammumme kaikki pöllimisyritykset käyntiin &lt;em&gt;samanaikaisesti&lt;/em&gt;. Kukin kähvellys joko onnistuu tai epäonnistuu. Epäonnistuminen tippuu kivasti &lt;em&gt;.catch()&lt;/em&gt;-sieppariin, joka sitten tekee jotain.&lt;/p&gt;
+
+&lt;p&gt;Mutta asiassa on ongelma. &lt;strong&gt;Jos yksikin yritys epäonnistuu, kaikki epäonnistuvat.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Tämä on &lt;em&gt;.map&lt;/em&gt;-metodin ominaisuus - map-lupaus julistaa itsensä onnistujaksi &lt;strong&gt;vain&lt;/strong&gt; jos jokainen sen alaisuudessa hyörivistä lupauksista onnistuu.&lt;/p&gt;
+
+&lt;p&gt;Jos yksikin alainen töpeksii, map-lupaus vetää pultit ja rikkoo kaiken. Siis estää ketään muutakaan onnistumasta.&lt;/p&gt;
+
+&lt;p&gt;Kerrataan vielä tämä tärkeä pointti uusiksi - &lt;strong&gt;map-lupaus epäonnistuu jos yhdenkin blogin pölliminen epäonnistuu!&lt;/strong&gt;. Ja jos yksikin rosvous menee päin honkia, kaikki onnistuneet pöllimiset päätyvät jäteastiaan. Yksi kaikkien, ja kaikki yhden puolesta. Tämä ei tietenkään ole mitä haluamme.&lt;/p&gt;
+
+&lt;p&gt;Me haluamme, että jos yksi ryöstö menee reisille, muut ryöstöt voivat yhä onnistua.&lt;/p&gt;
+
+&lt;p&gt;Sata kultakelloa on parempi kuin 99, mutta 99 kultakelloa on parempi kuin pyöreä nolla.&lt;/p&gt;
+
+&lt;p&gt;Joten miten korjata asia?&lt;/p&gt;
+
+&lt;h3 id=&#34;reflect&#34;&gt;Reflect()&lt;/h3&gt;
+
+&lt;p&gt;Ratkaisu on sopivaan paikkaan sijoitettu reflect()-apumetodi.&lt;/p&gt;
+
+&lt;p&gt;Miksi reflect() toimii? Koska reflect() nappaa kiinni sekä &lt;em&gt;onnistumiset&lt;/em&gt; että &lt;em&gt;epäonnistumiset&lt;/em&gt;, ja välittää tiedon eteenpäin ns. neutraalissa muodossa.&lt;/p&gt;
+
+&lt;p&gt;Ikäänkuin luuseri ja maailmanmestari kävelisivät tasa-arvoisina rinta rinnan. Reflect() on koodimaailman emakko - kaikki kelpaa ruuaksi. Ja toisesta päästä tuleva tavara on aina vakioitua.&lt;/p&gt;
+
+&lt;p&gt;Katsotaanpa:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// AsyncVarkaus.js
+
+function kopioiBlogi(urls) {
+
+	return Promise.resolve(urls)
+	.map(function(blogiURL) {
+		// Yksittäinen varkaus - kokeillaan onnistuuko?
+		return asyncRequest(blogiURL).reflect();
+	})
+	.filter(function(varkausLupaus) {
+		// Suodatetaan(!) pois epäonnistuneet ryöstöt!
+		return varkausLupaus.isFulfilled();
+	})
+	.map(function(onnistunutVarkaus) {
+		// Vain onnistuneet rosvoukset jäljellä.
+		// Joudumme kutsumaan teknisen apufunktion joka
+		// hakee lopullisen tuloksen lupauksen syövereistä.
+		return onnistunutVarkaus.value();
+	})
+
+	// Huomion arvoista, että emme tarvitse -catch-siepparia lainkaan!
+	// Miksi? Koska kaikki luuserit on jo siivilöity ylempänä.
+	// Yksikään päivänpilaaja ei elä tänne saakka.
+
+}
+
+kopioiBlogi([
+	&#39;http://www.pollitasta.fi&#39;,
+	&#39;http://www.tuplaamo.fi&#39;,
+	&#39;http://www.nollaversio.fi/public/blog&#39;
+]).tap(function(tulokset) {
+
+	// Tulokset sisältää listan niistä blogisisällöistä, 
+	// joiden ryöstö meni nappiin. 
+
+	// Kokoa sisällöistä ikioma kirja.
+	var valmisKirja = _.chain(tulokset)
+	.reduce(function(kirja, pollittyBlogi) {
+		kirja.lisaaUusiLuku(pollittyBlogi);
+	}, new Kirja(&#39;Pölli Tästä Reloaded&#39;))
+	.value();
+
+	talentumMedia.julkaise(valmisKirja);
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa koodissa huomattavaa ovat seuraavat rivit:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;.filter(function(varkausLupaus) {...}&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Apumetodi &lt;em&gt;.filter&lt;/em&gt; (nimensä mukaisesti) suodattaa luuserit pois.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;return asyncRequest(blogiURL).reflect();&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Teemme requestin, ja kutsumme heti apumetodia &lt;em&gt;reflect()&lt;/em&gt;. Kutsumalla reflectiä saamme luotua
+(ja palautetta ympäröivästä funktiosta ulos) uudentyyppisen lupauksen, joka &lt;em&gt;itse osaa napata
+omat virheensä kiinni.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Jännittävää. Olemme ikäänkuin koulineet parannetun Pokemonin, joka on sisäsiisti.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: kun tietty operaatio on &lt;em&gt;valinnainen&lt;/em&gt;, toisin sanoen sen onnistuminen ei ole kriittisen tärkeää, on syytä muistaa &lt;em&gt;reflect() + filter()&lt;/em&gt; -kikka.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Ps. Huomasitko muuten, että käytimme yllä metodia &lt;strong&gt;tap()&lt;/strong&gt; perinteisen &lt;strong&gt;then&lt;/strong&gt;-metodin sijaan:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;.tap(function(tulokset) {...}&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Tämä siksi, että julkaisun suorittava anonyymi funktiomme on päätepiste. Se ei palauta mitään takaisin liukuhihnalle. &lt;a href=&#34;http://nollaversio.fi/blog/public/nodejs/promise-tap/&#34;&gt;Lisää tap vs. then eroista aiemmasta blogikirjoituksessani.&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Muistilista uutta Laravel-projektia aloittaessa</title>
+      <link>http://nollaversio.fi/blog/public/laravel/start-checklist/</link>
+      <pubDate>Fri, 22 Jul 2016 16:14:13 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/start-checklist/</guid>
+      <description>
+
+&lt;p&gt;Olen ihastanut suuresti &lt;a href=&#34;https://en.wikipedia.org/wiki/The_Checklist_Manifesto&#34; target=&#34;_blank&#34;&gt;checklist-manifestoon.&lt;/a&gt; Manifeston hengessä loin alkukesästä itselleni muistilistan asioista, joita uutta Laravel-projektia aloittaessa tulee ottaa huomioon.&lt;/p&gt;
+
+&lt;p&gt;Monet listan kohdista pätevät yleisesti kaikkiin ohjelmistoprojekteihin.&lt;/p&gt;
+
+&lt;h3 id=&#34;laravel-checklist&#34;&gt;Laravel-checklist&lt;/h3&gt;
+
+&lt;h4 id=&#34;vaiheet-1-3-projektikansion-valmistelu-projekti-boilerplate-etc&#34;&gt;Vaiheet 1-3: Projektikansion valmistelu, projekti-boilerplate, etc&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;1. Alusta Git-repo projektikansioon, luo Github-repo, kytke yhteen.&lt;/li&gt;
+&lt;li&gt;2. Lataa Composer.phar projektikansioon&lt;/li&gt;
+&lt;li&gt;3. Kloonaa Laravel-boilerplate&lt;/li&gt;
+&lt;li&gt;4. Muokkaa hakemisto-oikeudet (mm. Laravellin storage-kansio)&lt;/li&gt;
+&lt;li&gt;5. Luo uusi Sublime-projekti&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;vaiheet-6-9-tietokannan-luonti-valmistelu-tietokantayhteys-email-testaus&#34;&gt;Vaiheet 6-9: Tietokannan luonti, valmistelu, tietokantayhteys, email-testaus&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;6. Luo uusi tietokanta (esim. phpMyAdmin:in kautta)&lt;/li&gt;
+&lt;li&gt;7. Päivitä projektitiedostoihin tietokannan käyttäjätunnus + salasana.&lt;/li&gt;
+&lt;li&gt;8. Aseta email-ajuri osoittamaan testitiedostoon (loki).&lt;/li&gt;
+&lt;li&gt;9. Luo &amp;ldquo;finnish&amp;rdquo;-kielitiedosto.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;vaiheet-10-12-ensimmäiset-tietokantataulut-relaatiot-mallit-models&#34;&gt;Vaiheet 10-12: Ensimmäiset tietokantataulut, relaatiot, mallit (models)&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;10. Suorita &amp;lsquo;php artisan make:auth&amp;rsquo;, joka luo käyttäjähallinnan tietokantaan.&lt;/li&gt;
+&lt;li&gt;11. Luo mallit kuvaamaan domain-käsitteitä. Tässä vaiheessa riittää tyhjä tiedosto kullekin mallille.&lt;/li&gt;
+&lt;li&gt;12. Luo applikaation migraatiot (yksi per malli). Hahmottele kunkin mallin tietorakenne.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;vaiheet-13-15-seeders-tehtaat-migraatioiden-toiminnan-varmistus&#34;&gt;Vaiheet 13-15: Seeders, tehtaat, migraatioiden toiminnan varmistus&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;13. Luo seeder-tehtaat (seeder factories) kullekin mallille.&lt;/li&gt;
+&lt;li&gt;14. Luo seeder-tehtaiden avulla (feikki)käyttäjiä ym. domain-objekteja.&lt;/li&gt;
+&lt;li&gt;15. Testaa, että migraatiot toimivat ja että relaatiot eri mallien välillä ovat kunnossa.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Tähän muistilistani päättyy. Tästä eteenpäin alkaa ns. raaka työ, eli itse applikaation toimintalogiikan ja käyttöliittymän ohjelmointi.&lt;/p&gt;
+
+&lt;p&gt;Tämä on se pisin ja uuvuttavin vaihe projektissa. &lt;em&gt;Vaiheet 1-15 ovat verrattavissa arkkitehdin työhön. Vaiheet 16-20 ovat verrattavissa kirvesmiehen työhön.&lt;/em&gt;&lt;/p&gt;
+
+&lt;h4 id=&#34;vaiheet-16-20-toteuta-logiikka-käyttöliittymä-jne&#34;&gt;Vaiheet 16-20: Toteuta logiikka, käyttöliittymä, jne.&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;16. Hahmottele, koodaa, testaa, näpyttele sormet kipeäksi.&lt;/li&gt;
+&lt;li&gt;17. Kiroile, paisko pari hiirtä tusinan päreiksi, harkitse puutarhurin uraa.&lt;/li&gt;
+&lt;li&gt;18. Onnistu lopulta ratkomaan ongelmat.&lt;/li&gt;
+&lt;li&gt;19. Juhlista valmista applikaatiota.&lt;/li&gt;
+&lt;li&gt;20. Aloita seuraava projekti.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Ylläoleva checklist on osoittanut hyödyllisyytensä useammassa omassa projektissani. Kun on muistilista, jota seurata orjallisesti, pysyy laatu tasaisena ja työtahti tiiviinä.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Usecase-arkkitehtuurin vahvuus</title>
+      <link>http://nollaversio.fi/blog/public/laravel/usecase-bliss/</link>
+      <pubDate>Fri, 22 Jul 2016 14:44:27 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/usecase-bliss/</guid>
+      <description>
+
+&lt;p&gt;Usecase-arkkitehtuuri on eräs tapa järjestää Laravel-pohjaisen tietokoneohjelman control flow.&lt;/p&gt;
+
+&lt;p&gt;Mitä usecase-arkkitehtuuri painottaa? Nimensä mukaisesti se pyrkii abstraktoimaan koodin erillisiin käyttötarkoituksiin, usecaseihin.&lt;/p&gt;
+
+&lt;p&gt;Käyttötarkoitus on esim. &amp;ldquo;nosta rahaa pankista&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Otetaan esimerkki. Kuvitellaan järjestelmä, jossa loppukäyttäjä voi ryhtyä haluamansa pankin asiakkaaksi. Pankkeja on useita, ja asiakas voi yhden järjestelmän kautta hallita asiakkuuksiaan kussakin pankissa.&lt;/p&gt;
+
+&lt;h3 id=&#34;ensimmäinen-usecase-rahan-nosto&#34;&gt;Ensimmäinen usecase - rahan nosto&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// NostaRahaa_useCase.php
+
+public function nostaRahaa(int $pankkiID, int $asiakasID, int $summa) {
+
+	// Alkuvalmistelut, eli varmistetaan että asiakas-ID on olemassa
+	$asiakas = Asiakas::findById($asiakasID); // Throws &amp;quot;EiOlemassa&amp;quot;
+	// Varmistetaan, että pankkiID on olemassa
+	$pankki = Pankki::findById($pankkiID); // Throws &amp;quot;EiOlemassa&amp;quot;
+
+	// Usecasen tunnusmerkkejä on, että siinä tietyt toimenpiteet
+	// suoritetaan järjestyksessä, ja tällä tavoin saavutetaan
+	// haluttu lopputulos.
+
+	// Tässä tapauksessa vaiheet ovat:
+	// 1. Varmista asiakkuus
+	// 2. Nosta rahat
+	// 3. Lähetä ilmoitus nostosta asiakkaalle 
+
+	// Virheet napataan kiinni ylempänä call stäkissä.
+	
+	// #1
+	// Throws &amp;quot;EiAsiakkuutta&amp;quot; mikäli varmistus epäonnistuu.
+	$pankki-&amp;gt;varmistaAsiakkuus($asiakas); 
+
+	// #2
+	// Throws &amp;quot;EiKatetta&amp;quot; mikäli ei tarpeeksi rahaa tilillä.
+	$nostettuSumma = $pankki-&amp;gt;nostaTililta($asiakas, $summa); 
+
+	// #3
+	// Onnistuu aina (oletamme)
+	$asiakas-&amp;gt;lahetaSMS(&#39;nostoHyvaksytty&#39;, [
+		&#39;summa&#39; =&amp;gt; $nostettuSumma,
+		&#39;ajankohta&#39; =&amp;gt; Carbon::now(),
+	]);
+
+}  
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// PankkiController.php
+
+public function nostaRahaa(Request $request, int $pankkiID) {
+	// parametrit tulevat IOC-containerin kautta
+
+	// Validation sisääntullut request jotenkin
+	try {
+		$this-&amp;gt;validateNostoRequest($request); // Throws &amp;quot;ValidaatioVirhe&amp;quot;		
+	} catch (ValidaatioVirhe $vv) {
+		return Response::error(&#39;Nosto epäonnistui - tarkista tiedot&#39;);
+	}
+
+	$asiakasID = $request-&amp;gt;get(&#39;asiakasID&#39;);
+	$summa     = $request-&amp;gt;get(&#39;summa&#39;);
+
+	// Kutsutaan usecasea!
+	try {
+		$nosto = (new NostaRahaa_useCase())-&amp;gt;nostaRahaa($pankkiID, $asiakasID, $summa);
+	} catch (Error $e) {
+		// Ei tarvetta tietää mikä tietty virhe tapahtui, sen sijaan ilmoitetaan
+		// virheviesti käyttäjälle. Viesti kertoo kaiken oleellisen.
+		return Response::error($e);
+	}
+
+	// Kaikki meni oikein mukavasti.
+	return Response::success(&#39;nostoOnnistui&#39;, $nosto);
+
+}
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva usecase-arkkitehtuuri erottelee &lt;em&gt;sisääntulevan palvelupyynnön&lt;/em&gt; käsittelyn ja &lt;em&gt;itse toiminnon läpiviemisen&lt;/em&gt; toisistaan. On syytä muistaa, että rahan nostaminen pankista on palvelupyyntö asiakkaalta pankille. Jotta tuo palvelupyyntö voidaan viedä läpi, täytyy asiakkaan tietokoneen lähettää tekninen palvelupyyntö järjestelmän palvelimelle.&lt;/p&gt;
+
+&lt;p&gt;Tässä onkin &lt;em&gt;kaksi fundamentaalista konseptia&lt;/em&gt;:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Palvelupyyntö siinä mielessä, että tosimaailmassa minä pyydän sinua tekemään jotain.&lt;/li&gt;
+&lt;li&gt;Palvelupyyntö siinä mielessä, että kasa bittejä siirtyy tietokoneelta toiselle.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;Jälkimmäinen on pelkkä bittimaailman kuvaus ensimmäisestä&lt;/strong&gt;. Täydellisessä maailmassa jälkimmäiselle konseptille ei olisi lainkaan tarvetta. Mutta meidän maailmassamme on - tieto rahan nostosta täytyy jotenkin välittää kotikoneelta palvelimelle. Se ei välity telepatialla, joten joudumme turvautumaan &lt;em&gt;teknisen palvelupyynnön&lt;/em&gt; lähettämiseen.&lt;/p&gt;
+
+&lt;p&gt;Usecase-arkkitehtuuri mahdollistaa näiden kahden konseptin erottelun &lt;em&gt;kauas&lt;/em&gt; toisistaan. Siis kauas siinä mielessä, että ne sijaitsevat eri tiedostoissa. Tässä on suuri vahvuus.&lt;/p&gt;
+
+&lt;p&gt;Usecase-tiedoston ei tarvitse välittää siitä, millä tavoin asiakkaan kotikone ilmaisi palvelimen suuntaan halunsa nostaa rahaa.&lt;/p&gt;
+
+&lt;p&gt;Sen sijaan Controller-tiedosto (PankkiController.php) välittää tuommoisista alhaisen tason detaljeista. Controller ottaa sisään teknisen palvelupyynnön (siis #2 äskeisessä listassamme!), ja luo sen pohjalta oikean palvelupyynnön (#1 listassamme). Usecase-tiedosto ei koskaan edes tiedä #2 olemassaolosta - se välittää vain #1 käsittelystä.&lt;/p&gt;
+
+&lt;p&gt;Itse asiassa Usecase-tiedosto ei edes tiedä, että se on osa internet-applikaatiota. Sillä kaikki internet-liikenteeseen liittyvä logiikka elää Controller-tiedostossa.&lt;/p&gt;
+
+&lt;h3 id=&#34;toinen-usecase-rahan-siirto&#34;&gt;Toinen usecase - rahan siirto&lt;/h3&gt;
+
+&lt;p&gt;Lisätään järjestelmään toinen usecase. Mitä muuta haluamme pankkijärjestelmältämme kuin nostaa rahaa? No, ainakin siirtää rahaa yhdeltä tililtä toiselle.&lt;/p&gt;
+
+&lt;p&gt;Oletetaan, että rahan siirron voi tehdä miltä tahansa tililtä mille tahansa tilille. Tilien ei tarvitse olla samassa pankissa. Ainoa vaatimus on, että siirron tekevä asiakas omistaa lähtötilin, ja on asiakkaana siinä pankissa, jossa lähtötili sijaitsee.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// SiirraRahaa_useCase.php
+
+public function siirraRahaa(
+	int $lahtoPankkiID, /* Mistä pankista rahat lähtevät? */
+	int $tuloPankkiID, /* Mihin pankkiin rahat saapuvat? */
+	int $lahettajaID,    /* Kenen tili lähtöpankissa? */
+	int $vastaanottajaID,  /* Kenen tili tulopankissa? */
+	int $summa
+) {
+	// Tässä oletetaan, että jokaisella asiakkaalla voi olla max. yksi tili per pankki.
+	// Täten yhdistelmä {pankki, asiakasID} kuvaa yksilöllisesti pankkitilin.
+	// Oikeassa maailmassa käyttäisimme tietenkin *tilinumeroa*, mutta tämä järjestelmä
+	// ei sellaista konseptia tunne.
+
+	// Alkuvalmistelut, eli varmistetaan että lähettäjä ja vastaanottaja ovat olemassa.
+	$lahettaja = Asiakas::findById($asiakasID); // Throws &amp;quot;EiOlemassa&amp;quot;
+	$vastaanottaja = Asiakas::findById($vastaanottajaID); // Throws &amp;quot;EiOlemassa&amp;quot;
+
+	// Varmistetaan, että molemmat pankit ovat olemassa.
+	$lahtoPankki = Pankki::findById($lahtoPankkiID); // Throws &amp;quot;EiOlemassa&amp;quot;
+	$tuloPankki = Pankki::findById($tuloPankkiID); // Throws &amp;quot;EiOlemassa&amp;quot;	
+
+	// Tämän usecasen vaiheet ovat:
+	// 1. Varmista asiakkuudet
+	// 2. Nosta summa lähettäjän tililtä
+	// 3. Lisää summa vastaanottajan tilille
+	// 4. Lähetä ilmoitus nostosta lähettäjälle 
+	// 5. Lähetä ilmoitus saapuneesta rahasummasta vastaanottajalle
+
+	// Virheet napataan kiinni ylempänä call stäkissä.
+	
+	// #1 Varmista asiakkuudet
+	// Throws &amp;quot;EiAsiakkuutta&amp;quot; mikäli varmistus epäonnistuu.
+	$lahtoPankki-&amp;gt;varmistaAsiakkuus($lahettaja); 
+	$tuloPankki-&amp;gt;varmistaAsiakkuus($vastaanottaja); 
+
+	// Koska nosto yhdeltä tililtä ja talletus toiselle tilille
+	// ovat toisistaan *riippuvaisia* operaatioita - eli joko
+	// molemmat onnistuvat tai ei kumpikaan - meidän tulee
+	// turvautua transaktioon.
+
+
+	DB::transaction(function () use ($lahtoPankki, $tuloPankki, $lahettaja, $vastaanottaja, $summa) {
+
+		// #2 Nosta summa lähettäjän tililtä
+		// Throws &amp;quot;EiKatetta&amp;quot; mikäli ei tarpeeksi rahaa tilillä.
+		$nostettuSumma = $lahtoPankki-&amp;gt;nostaTililta($lahettaja, $summa); 
+
+		// #3 Lisää summa vastaanottajan tilille
+		$tuloPankki-&amp;gt;talletaTilille($vastaanottaja, $nostettuSumma);
+	});
+
+	// #4 Lähetä ilmoitus nostosta
+	$lahettaja-&amp;gt;lahetaSMS(&#39;siirtoHyvaksytty&#39;, [
+		&#39;summa&#39; =&amp;gt; $summa,
+		&#39;ajankohta&#39; =&amp;gt; Carbon::now(),
+	]);
+
+	// #5 Lähetä ilmoitus saapuneesta rahasummasta
+	$vastaanottaja-&amp;gt;lahetaSMS(&#39;siirtoSaapunut&#39;, [
+		&#39;summa&#39; =&amp;gt; $summa,
+		&#39;ajankohta&#39; =&amp;gt; Carbon::now(),
+	]);
+}  
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// PankkiController.php
+
+public function nostaRahaa(Request $request, int $pankkiID) {
+	// Kuten ennenkin
+	// ...
+}
+
+public function siirraRahaa(Request $request, int $lahtoPankkiID) {
+	// Parametrit IOC:in kautta
+	// Miksi otamme IOC:n kautta $lahtoPankin, mutta emme $tuloPankkia?
+	// Koska lähettäjä operoi omalla selaimellaan *tietyn* pankin käyttöliittymässä, 
+	// ja kaikki lähettäjän tekemät palvelupyynnöt tehdään tietyn pankin suuntaan.
+	// Toisin sanoen, kaikki sisääntulevat palvelupyynnöt tehdään URL:ään, jonka rakenne
+	// on seuraavanlainen:
+
+	/*
+		http://pankkijarjestelma.fi/pankki/pankkiID/operaatio
+	*/
+
+	// Validoi sisääntullut request jotenkin
+	try {
+		$this-&amp;gt;validateSiirtoRequest($request); // Throws &amp;quot;ValidaatioVirhe&amp;quot;		
+	} catch (ValidaatioVirhe $vv) {
+		return Response::error(&#39;Rahan siirto epäonnistui - tarkista tiedot&#39;);
+	}
+
+	// Haetaan siirtoon liittyvät tiedot.
+	$tuloPankkiID = $request-&amp;gt;get(&#39;tuloPankkiID&#39;);
+	$lahettajaID = $request-&amp;gt;get(&#39;lahettajaID&#39;);
+	$vastaanottajaID = $request-&amp;gt;get(&#39;vastaanottajaID&#39;);
+	$summa     = $request-&amp;gt;get(&#39;summa&#39;);
+
+	// Kutsutaan usecasea!
+	try {
+		(new SiirraRahaa_useCase())-&amp;gt;siirraRahaa(
+			$lahtoPankkiID, 
+			$tuloPankkiID,
+			$lahettajaID,
+			$vastaanottajaID, 
+			$summa
+		);
+
+	} catch (Error $e) {
+		// Ei tarvetta tietää mikä tietty virhe tapahtui, sen sijaan ilmoitetaan
+		// virheviesti käyttäjälle. Viesti kertoo kaiken oleellisen.
+		return Response::error($e);
+	}
+
+	// Kaikki meni oikein mukavasti.
+	return Response::success(&#39;siirtoOnnistui&#39;);	
+
+
+}
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tässä vaiheessa on hyvä mainita eräästä seikasta.&lt;/p&gt;
+
+&lt;p&gt;Kuten huomaamme, sisääntulevan datan validaatio on jaettu kahteen osaan. Esimerkiksi vastaanottajaID:&lt;/p&gt;
+
+&lt;p&gt;1) Ensin validoimme, että vastaanottajaID on mukana sisään tulevassa palvelupyynnössä. Tämä validointi tapahtuu &lt;code&gt;$this-&amp;gt;validateSiirtoRequest($request)&lt;/code&gt; rivillä. Millainen tuo metodi on? Esimerkiksi seuraavanlainen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+protected function validateSiirtoRequest(Request $request)
+{
+	// Throws &amp;quot;ValidaatioVirhe&amp;quot;
+    $this-&amp;gt;validate($request, [
+        &#39;tuloPankkiID&#39; =&amp;gt; &#39;required|int&#39;,
+        &#39;lahettajaID&#39; =&amp;gt; &#39;required|int&#39;,
+        &#39;vastaanottajaID&#39; =&amp;gt; &#39;required|int&#39;,
+        &#39;summa&#39; =&amp;gt; &#39;required|int|min:0|max:99999999&#39;,
+    ]);
+
+    // Kaikki kunnossa
+    return true;
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Huomioitavaa on, että tämä tarkistus/validatointi tapahtuu &lt;em&gt;controllerin&lt;/em&gt; puolella.&lt;/p&gt;
+
+&lt;p&gt;2) Myöhemmin validoimme/tarkistamme - että kunkin ID:n takaa löytyy oikea, aito objekti. Eli jos pankkiID on 15, järjestelmässämme on olemassa Pankki, jonka ID on 15.&lt;/p&gt;
+
+&lt;p&gt;Tämä tarkistus tapahtuu &lt;em&gt;usecasen&lt;/em&gt; puolella.&lt;/p&gt;
+
+&lt;h3 id=&#34;controller-validaatio-vs-usecase-validaatio&#34;&gt;Controller-validaatio vs. usecase-validaatio&lt;/h3&gt;
+
+&lt;p&gt;Miksi validaatio on jaettu kahteen paikkaan? Eikö olisi selkeämpää, jos molemmat validaatiot tehtäisiin yhdessä ja samassa paikassa?&lt;/p&gt;
+
+&lt;p&gt;Ei.&lt;/p&gt;
+
+&lt;p&gt;On syytä huomata, että nämä kaksi validaatiota tarkistavat &lt;em&gt;eri&lt;/em&gt; asioita.&lt;/p&gt;
+
+&lt;p&gt;Controller-validaatio tarkistaa, että sisääntulevat ID:t ovat &lt;em&gt;numeroita&lt;/em&gt;. Ne eivät saa olla esimerkiksi JPG-kuvia - on vaikea etsiä pankkia JPG-kuvan kautta.&lt;/p&gt;
+
+&lt;p&gt;Usecase-validaatio tarkistaa, että &lt;em&gt;ID-numero&lt;/em&gt; (ja usecasen kohdalla me jo varmuudella tiedämme, että ID on numero, kiitos Controller-validaation!) vastaa jotakin järjestelmässä sijaitsee pankkia. On mahdollista, että palvelupyynnön mukana tullut ID-numero ei vastaa yhtäkään pankkia. Pankkeja ei kuitenkaan ole rajatonta määrää, numeroita sen sijaan on.&lt;/p&gt;
+
+&lt;p&gt;Tässä on ero. &lt;strong&gt;Controller validoi, että sisääntuleva data on oikeanmuotoista. Usecase validoi, että sisääntuleva data on järjellistä järjestelmän kannalta.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;summa-summarum&#34;&gt;Summa summarum&lt;/h3&gt;
+
+&lt;p&gt;Usecase-arkkitehtuurin vahvuus piilee juuri edellisessä huomiossa. Voimme käsitellä &amp;ldquo;ylätason toimintoja&amp;rdquo; selkeinä kokonaisuuksina, eli usecasenaina, käyttötarkoituksina. Samaan aikaan usecase on &lt;em&gt;irrallaan&lt;/em&gt; kaikesta siitä ikävästä, mutta pakollisesta säläkoodista, joka liittyy internet-applikaation tekniseen toteutukseen. Eli HTTP-pyyntöjen hallinnasta, jne.&lt;/p&gt;
+
+&lt;p&gt;Hyvässä web-applikaatiossa päteekin, että itse applikaation ydinkoodi - tässä tapauksessa se koodi, joka suorittaa siirtoja ja nostoja pankkien välillä - ei edes tiedä asuvansa osana web-applikaatiota. Se tietää asuvansa osana &lt;em&gt;applikaatiota&lt;/em&gt;, mutta webin olemassaolosta se on onnellisen tietämätön.&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Suojaa tuloväylät - mutta miten?</title>

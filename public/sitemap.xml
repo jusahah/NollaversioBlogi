@@ -3,7 +3,22 @@
   
   <url>
     <loc>http://nollaversio.fi/blog/public/</loc>
-    <lastmod>2016-07-20T20:42:23+03:00</lastmod>
+    <lastmod>2016-07-25T17:28:05+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://nollaversio.fi/blog/public/nodejs/promise-filter/</loc>
+    <lastmod>2016-07-25T17:28:05+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://nollaversio.fi/blog/public/laravel/start-checklist/</loc>
+    <lastmod>2016-07-22T16:14:13+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://nollaversio.fi/blog/public/laravel/usecase-bliss/</loc>
+    <lastmod>2016-07-22T14:44:27+03:00</lastmod>
   </url>
   
   <url>

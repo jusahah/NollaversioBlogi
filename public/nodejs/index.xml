@@ -6,8 +6,206 @@
     <description>Recent content in Nodejs on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Mon, 18 Jul 2016 18:02:21 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 25 Jul 2016 17:28:05 +0300</lastBuildDate>
     <atom:link href="http://nollaversio.fi/blog/public/nodejs/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Filteröi epäonnistujat pois (reflect &#43; filter)</title>
+      <link>http://nollaversio.fi/blog/public/nodejs/promise-filter/</link>
+      <pubDate>Mon, 25 Jul 2016 17:28:05 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/nodejs/promise-filter/</guid>
+      <description>
+
+&lt;p&gt;Lupauskirjasto &lt;em&gt;Bluebirdin&lt;/em&gt; yksi vähemmän tunnetuista apumetodeista on &lt;strong&gt;reflect()&lt;/strong&gt;. Ainakin allekirjoittaneelle tuo apufunktio pysyi tuntemattomana hyvää matkaa toista vuotta - ei vain tullut pakottavaa tarvetta, ja ongelmat sai aina ratkottua muutenkin.&lt;/p&gt;
+
+&lt;p&gt;Näin jälkikäteen ajateltuna nuo &amp;ldquo;muut&amp;rdquo; ratkaisut olivat aika hirveitä sekasotkuja, jotka toimivat jos jaksoivat.&lt;/p&gt;
+
+&lt;p&gt;Sittemmin otin reflectin käyttöön.&lt;/p&gt;
+
+&lt;h3 id=&#34;minkä-ongelman-promise-reflect-ratkoo&#34;&gt;Minkä ongelman Promise.reflect() ratkoo?&lt;/h3&gt;
+
+&lt;p&gt;Varsin usein omissa applikaatioissani on toiminnallisuuksia, joiden onnistunut läpivienti &lt;em&gt;ei ole kriittistä&lt;/em&gt;. Jotkut toiminnot ovat luonteeltaan sellaisia, että ei niin väliä mikäli toiminto epäonnistuu nolosti. &lt;strong&gt;Tärkeintä on, että yhden vähäpätöisen toiminnon epäonnistuminen ei vedä mukanaan koko applikaatiota vessan pöntöstä alas.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Puhtaan perinteisessä synkronoidussa koodissa on luonnollista, että epäonnistunut toiminto napataan kiinni &lt;em&gt;try-catch&lt;/em&gt; -siepparilla. Esim.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var _       = require(&#39;lodash&#39;);
+var Promise = require(&#39;bluebird&#39;);
+
+// SyncVarkaus.js
+
+function kopioiBlogi(urls) {
+
+	// Käydään yksitellen pihistämässä blogien HTML-sisältö.
+	var blogiSisallot = _.map(urls, function(blogiURL) {
+		var sisalto; // Täytetään sisällöllä
+		try {
+			sisalto = syncRequest(blogiURL);
+		} catch (e) {
+			// No, pöllintä ei onnistunut. Eipä hätiä.
+			// Rikolliset aikeemme kohdistuvat seuraavaan uhriin.
+			console.warn(&#39;Pölliminen epäonnistui - seuraava uhri sisään.&#39;);
+		}	
+
+		return sisalto;	
+
+	})
+	
+	// blogiSisallot sisältää pöllityt sisällöt niistä blogeista,
+	// joiden kähvellys EI epäonnistunut nolosti. Luuserit roikkuvat
+	// vielä mukana undefined-arvoina. Mutta eivät pitkään.
+
+	// Compact() suodattaa töpeksijät roskakoriin.
+	return _.compact(blogiSisallot);
+}
+
+// Rikollisen uramme alkupiste.
+var tulokset = kopioiBlogi([
+	&#39;http://www.pollitasta.fi&#39;,
+	&#39;http://www.tuplaamo.fi&#39;,
+	&#39;http://www.nollaversio.fi/public/blog&#39;
+]);
+
+// Bestseller tiedossa.
+koostaKirja(tulokset);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva on mukavaa perinteistä sync-koodia, jossa jokainen toiminto suoritetaan peräkanaa yksitellen. Ja try-catch-sieppari toimii kuin unelma.&lt;/p&gt;
+
+&lt;p&gt;Mutta kun Javascriptin (ja maalaisjärjen) luonteeseen kuuluu, että jokaista varkautta ei tarvitse tehdä perätysten. Niitä kun voi tehdä myös &lt;em&gt;samanaikaisesti&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Siirrytään ihanaan lupausten maailmaan, ja suoritetaan rikossarjamme asynkronoidusti.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// AsyncVarkaus.js
+
+function kopioiBlogi(urls) {
+
+	return Promise.resolve(urls)
+	.map(function(blogiURL) {
+		// Jokainen request lähtee liikkeelle yht&#39;aikaa.
+		return asyncRequest(blogiURL);
+	})
+	.catch(function(err) {
+		// Jotain meni nolosti pieleen.
+	})
+
+}
+
+kopioiBlogi([
+	&#39;http://www.pollitasta.fi&#39;,
+	&#39;http://www.tuplaamo.fi&#39;,
+	&#39;http://www.nollaversio.fi/public/blog&#39;
+]).then(function(tulokset) {
+	return koostaKirja(tulokset);
+}).then(function(kirja) {
+	// Valitaan sopivan korruptoitunut kustantaja.
+	talentumMedia.julkaise(kirja);
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kaikki näyttää pintapuolin hyvältä. Käyttämällä &lt;em&gt;Promise.map&lt;/em&gt;-metodia ammumme kaikki pöllimisyritykset käyntiin &lt;em&gt;samanaikaisesti&lt;/em&gt;. Kukin kähvellys joko onnistuu tai epäonnistuu. Epäonnistuminen tippuu kivasti &lt;em&gt;.catch()&lt;/em&gt;-sieppariin, joka sitten tekee jotain.&lt;/p&gt;
+
+&lt;p&gt;Mutta asiassa on ongelma. &lt;strong&gt;Jos yksikin yritys epäonnistuu, kaikki epäonnistuvat.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Tämä on &lt;em&gt;.map&lt;/em&gt;-metodin ominaisuus - map-lupaus julistaa itsensä onnistujaksi &lt;strong&gt;vain&lt;/strong&gt; jos jokainen sen alaisuudessa hyörivistä lupauksista onnistuu.&lt;/p&gt;
+
+&lt;p&gt;Jos yksikin alainen töpeksii, map-lupaus vetää pultit ja rikkoo kaiken. Siis estää ketään muutakaan onnistumasta.&lt;/p&gt;
+
+&lt;p&gt;Kerrataan vielä tämä tärkeä pointti uusiksi - &lt;strong&gt;map-lupaus epäonnistuu jos yhdenkin blogin pölliminen epäonnistuu!&lt;/strong&gt;. Ja jos yksikin rosvous menee päin honkia, kaikki onnistuneet pöllimiset päätyvät jäteastiaan. Yksi kaikkien, ja kaikki yhden puolesta. Tämä ei tietenkään ole mitä haluamme.&lt;/p&gt;
+
+&lt;p&gt;Me haluamme, että jos yksi ryöstö menee reisille, muut ryöstöt voivat yhä onnistua.&lt;/p&gt;
+
+&lt;p&gt;Sata kultakelloa on parempi kuin 99, mutta 99 kultakelloa on parempi kuin pyöreä nolla.&lt;/p&gt;
+
+&lt;p&gt;Joten miten korjata asia?&lt;/p&gt;
+
+&lt;h3 id=&#34;reflect&#34;&gt;Reflect()&lt;/h3&gt;
+
+&lt;p&gt;Ratkaisu on sopivaan paikkaan sijoitettu reflect()-apumetodi.&lt;/p&gt;
+
+&lt;p&gt;Miksi reflect() toimii? Koska reflect() nappaa kiinni sekä &lt;em&gt;onnistumiset&lt;/em&gt; että &lt;em&gt;epäonnistumiset&lt;/em&gt;, ja välittää tiedon eteenpäin ns. neutraalissa muodossa.&lt;/p&gt;
+
+&lt;p&gt;Ikäänkuin luuseri ja maailmanmestari kävelisivät tasa-arvoisina rinta rinnan. Reflect() on koodimaailman emakko - kaikki kelpaa ruuaksi. Ja toisesta päästä tuleva tavara on aina vakioitua.&lt;/p&gt;
+
+&lt;p&gt;Katsotaanpa:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// AsyncVarkaus.js
+
+function kopioiBlogi(urls) {
+
+	return Promise.resolve(urls)
+	.map(function(blogiURL) {
+		// Yksittäinen varkaus - kokeillaan onnistuuko?
+		return asyncRequest(blogiURL).reflect();
+	})
+	.filter(function(varkausLupaus) {
+		// Suodatetaan(!) pois epäonnistuneet ryöstöt!
+		return varkausLupaus.isFulfilled();
+	})
+	.map(function(onnistunutVarkaus) {
+		// Vain onnistuneet rosvoukset jäljellä.
+		// Joudumme kutsumaan teknisen apufunktion joka
+		// hakee lopullisen tuloksen lupauksen syövereistä.
+		return onnistunutVarkaus.value();
+	})
+
+	// Huomion arvoista, että emme tarvitse -catch-siepparia lainkaan!
+	// Miksi? Koska kaikki luuserit on jo siivilöity ylempänä.
+	// Yksikään päivänpilaaja ei elä tänne saakka.
+
+}
+
+kopioiBlogi([
+	&#39;http://www.pollitasta.fi&#39;,
+	&#39;http://www.tuplaamo.fi&#39;,
+	&#39;http://www.nollaversio.fi/public/blog&#39;
+]).tap(function(tulokset) {
+
+	// Tulokset sisältää listan niistä blogisisällöistä, 
+	// joiden ryöstö meni nappiin. 
+
+	// Kokoa sisällöistä ikioma kirja.
+	var valmisKirja = _.chain(tulokset)
+	.reduce(function(kirja, pollittyBlogi) {
+		kirja.lisaaUusiLuku(pollittyBlogi);
+	}, new Kirja(&#39;Pölli Tästä Reloaded&#39;))
+	.value();
+
+	talentumMedia.julkaise(valmisKirja);
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa koodissa huomattavaa ovat seuraavat rivit:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;.filter(function(varkausLupaus) {...}&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Apumetodi &lt;em&gt;.filter&lt;/em&gt; (nimensä mukaisesti) suodattaa luuserit pois.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;return asyncRequest(blogiURL).reflect();&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Teemme requestin, ja kutsumme heti apumetodia &lt;em&gt;reflect()&lt;/em&gt;. Kutsumalla reflectiä saamme luotua
+(ja palautetta ympäröivästä funktiosta ulos) uudentyyppisen lupauksen, joka &lt;em&gt;itse osaa napata
+omat virheensä kiinni.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Jännittävää. Olemme ikäänkuin koulineet parannetun Pokemonin, joka on sisäsiisti.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: kun tietty operaatio on &lt;em&gt;valinnainen&lt;/em&gt;, toisin sanoen sen onnistuminen ei ole kriittisen tärkeää, on syytä muistaa &lt;em&gt;reflect() + filter()&lt;/em&gt; -kikka.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Ps. Huomasitko muuten, että käytimme yllä metodia &lt;strong&gt;tap()&lt;/strong&gt; perinteisen &lt;strong&gt;then&lt;/strong&gt;-metodin sijaan:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;.tap(function(tulokset) {...}&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Tämä siksi, että julkaisun suorittava anonyymi funktiomme on päätepiste. Se ei palauta mitään takaisin liukuhihnalle. &lt;a href=&#34;http://nollaversio.fi/blog/public/nodejs/promise-tap/&#34;&gt;Lisää tap vs. then eroista aiemmasta blogikirjoituksessani.&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Lupausketju liukuhihnana - then vs. tap</title>

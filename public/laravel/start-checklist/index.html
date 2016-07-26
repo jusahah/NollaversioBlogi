@@ -1,0 +1,137 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Muistilista uutta Laravel-projektia aloittaessa &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Muistilista uutta Laravel-projektia aloittaessa</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Fri, Jul 22, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Olen ihastanut suuresti <a href="https://en.wikipedia.org/wiki/The_Checklist_Manifesto" target="_blank">checklist-manifestoon.</a> Manifeston hengessä loin alkukesästä itselleni muistilistan asioista, joita uutta Laravel-projektia aloittaessa tulee ottaa huomioon.</p>
+
+<p>Monet listan kohdista pätevät yleisesti kaikkiin ohjelmistoprojekteihin.</p>
+
+<h3 id="laravel-checklist">Laravel-checklist</h3>
+
+<h4 id="vaiheet-1-3-projektikansion-valmistelu-projekti-boilerplate-etc">Vaiheet 1-3: Projektikansion valmistelu, projekti-boilerplate, etc</h4>
+
+<ul>
+<li>1. Alusta Git-repo projektikansioon, luo Github-repo, kytke yhteen.</li>
+<li>2. Lataa Composer.phar projektikansioon</li>
+<li>3. Kloonaa Laravel-boilerplate</li>
+<li>4. Muokkaa hakemisto-oikeudet (mm. Laravellin storage-kansio)</li>
+<li>5. Luo uusi Sublime-projekti</li>
+</ul>
+
+<h4 id="vaiheet-6-9-tietokannan-luonti-valmistelu-tietokantayhteys-email-testaus">Vaiheet 6-9: Tietokannan luonti, valmistelu, tietokantayhteys, email-testaus</h4>
+
+<ul>
+<li>6. Luo uusi tietokanta (esim. phpMyAdmin:in kautta)</li>
+<li>7. Päivitä projektitiedostoihin tietokannan käyttäjätunnus + salasana.</li>
+<li>8. Aseta email-ajuri osoittamaan testitiedostoon (loki).</li>
+<li>9. Luo &ldquo;finnish&rdquo;-kielitiedosto.</li>
+</ul>
+
+<h4 id="vaiheet-10-12-ensimmäiset-tietokantataulut-relaatiot-mallit-models">Vaiheet 10-12: Ensimmäiset tietokantataulut, relaatiot, mallit (models)</h4>
+
+<ul>
+<li>10. Suorita &lsquo;php artisan make:auth&rsquo;, joka luo käyttäjähallinnan tietokantaan.</li>
+<li>11. Luo mallit kuvaamaan domain-käsitteitä. Tässä vaiheessa riittää tyhjä tiedosto kullekin mallille.</li>
+<li>12. Luo applikaation migraatiot (yksi per malli). Hahmottele kunkin mallin tietorakenne.</li>
+</ul>
+
+<h4 id="vaiheet-13-15-seeders-tehtaat-migraatioiden-toiminnan-varmistus">Vaiheet 13-15: Seeders, tehtaat, migraatioiden toiminnan varmistus</h4>
+
+<ul>
+<li>13. Luo seeder-tehtaat (seeder factories) kullekin mallille.</li>
+<li>14. Luo seeder-tehtaiden avulla (feikki)käyttäjiä ym. domain-objekteja.</li>
+<li>15. Testaa, että migraatiot toimivat ja että relaatiot eri mallien välillä ovat kunnossa.</li>
+</ul>
+
+<p>Tähän muistilistani päättyy. Tästä eteenpäin alkaa ns. raaka työ, eli itse applikaation toimintalogiikan ja käyttöliittymän ohjelmointi.</p>
+
+<p>Tämä on se pisin ja uuvuttavin vaihe projektissa. <em>Vaiheet 1-15 ovat verrattavissa arkkitehdin työhön. Vaiheet 16-20 ovat verrattavissa kirvesmiehen työhön.</em></p>
+
+<h4 id="vaiheet-16-20-toteuta-logiikka-käyttöliittymä-jne">Vaiheet 16-20: Toteuta logiikka, käyttöliittymä, jne.</h4>
+
+<ul>
+<li>16. Hahmottele, koodaa, testaa, näpyttele sormet kipeäksi.</li>
+<li>17. Kiroile, paisko pari hiirtä tusinan päreiksi, harkitse puutarhurin uraa.</li>
+<li>18. Onnistu lopulta ratkomaan ongelmat.</li>
+<li>19. Juhlista valmista applikaatiota.</li>
+<li>20. Aloita seuraava projekti.</li>
+</ul>
+
+<p>Ylläoleva checklist on osoittanut hyödyllisyytensä useammassa omassa projektissani. Kun on muistilista, jota seurata orjallisesti, pysyy laatu tasaisena ja työtahti tiiviinä.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>
