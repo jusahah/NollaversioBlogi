@@ -65,6 +65,546 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://nollaversio.fi/blog/public/nodejs/lodash-chain/">
+        Chain() -metodi ketjuttaa funktiokutsut
+      </a>
+    </h1>
+
+    <span class="post-date">Thu, Jul 28, 2016</span>
+
+    
+
+<p><a href="http://www.lodash.com">Lodash</a> on varsin hieno apukirjasto Javascriptin ohjelmointiin. Tuo kirjasto sisältää sadoittain pieniä apufunktioita, joiden avulla yleisimmät algoritmit voi toteuttaa nopeasti ja kivuttomasti.</p>
+
+<p>Esimerkkinä vaikka algoritmi listan jakamisesta osiin. Ilman lodashia algoritmi näyttää tältä.</p>
+
+<pre><code class="language-javascript">
+var lista = [1,2,3,4,5,6,7,8];
+var jakoluku = 3;
+
+// Jaetaan lista osiin (jokainen osa on uusi *lista*) siten, että 
+// kukin osa sisältää *jakoluvun* verran elementtejä.
+
+var jaettulista = [];
+
+for (var i = 0, j = lista.length; i &lt; j; i++) {
+  var elementti = lista[i];
+
+  // Jos i on tasajaollinen jakoluvulla,
+  // on aika aloittaa uusi osalista.
+  if (i % jakoluku === 0) {
+    // i on joko 0, 3, 6, 9, ...jne.
+    // Luodaan uusi osalista ja lisätään elementti siihen
+    jaettulista.push([elementti]);
+  }  
+
+  // Jos ei ole tasajaollinen,
+  // lisätään elementti tuoreimpaan osalistaan.
+  else {
+    // Lisätään elementti olemassaolevaan osalistaan
+    jaettulista[jaettulista.length-1].push(elementti);
+  }	
+} 
+
+console.log(jaettulista); // [[1,2,3], [4,5,6], [7,8]]
+
+</code></pre>
+
+<p>Saman saa aikaan Lodashin <strong>.chunk()</strong> metodilla näin:</p>
+
+<pre><code class="language-javascript">var lista = [1,2,3,4,5,6,7,8];
+var jakoluku = 3;
+var jaettulista = _.chunk(lista, jakoluku);
+console.log(jaettulista); // [[1,2,3], [4,5,6], [7,8]]
+
+</code></pre>
+
+<p>Ero on kuin yöllä ja päivällä.</p>
+
+<p>Niin hieno kuin lodash onkin, siinä on puutteensa. <strong>Tai näin minä luulin vähintään vuoden päivät</strong>. Kunnes hoksasin dokumentaatio lukemalla, että puute olikin vain illuusio. Löysin metodin nimeltä <em>chain</em>.</p>
+
+<h3 id="chain-mihin-sitä-tarvitaan">Chain() - mihin sitä tarvitaan?</h3>
+
+<p>Kuvitellaanpa seuraavanlainen korkean tason algoritmi:</p>
+
+<blockquote>
+<p>Alkuasetelma: meillä on lista desimaalilukuja</p>
+
+<p>Algoritmi:</p>
+
+<ol>
+<li><p>Pyöristä luvut tasaluvuiksi.</p></li>
+
+<li><p>Poista kaikki nollat.</p></li>
+
+<li><p>Kerro luvut yhteen.</p></li>
+</ol>
+</blockquote>
+
+<p>Ylläoleva algoritmi näyttää lodashin avulla <em>naivisti</em> toteutettuna seuraavanlaiselta:</p>
+
+<pre><code class="language-javascript">
+var lista = [1.9, 2.0, 2.1, 0.2];
+
+var pyoristetyt = _.map(lista, Math.round);
+var nollatPois  = _.compact(lista);
+var tulo = _.reduce(lista, function(t, luku) {
+  return t * luku;
+}, 1);
+
+// Välivaiheiden tulokset
+console.log(pyoristetyt); // [2,2,2,0]
+console.log(nollatPois); // [2,2,2]
+// Lopullinen tulos eli lukujen tulo
+console.log(tulo); // 8
+
+</code></pre>
+
+<p>Ylläoleva on ihan kiva, mutta huomion arvoista on, että joudumme käyttämään paljon väliaikaisia muuttujia. Välivaiheiden muuttujat <em>pyoristetyt</em> ja <em>nollatPois</em> ovat tälläisiä - algoritmi tallentaa niihin välitulokset, mutta loppukäyttäjä on kiinnostunut vain <em>tulo</em>-muuttujasta.</p>
+
+<p>Yksi ratkaisu on jättää välimuuttujat pois:</p>
+
+<pre><code class="language-javascript">
+var lista = [1.9, 2.0, 2.1, 0.2];
+
+var tulo = _.reduce(_.compact(_.map(lista, Math.round)), function(t, luku) {
+  return t * luku;
+}, 1);
+
+console.log(tulo); // 8
+
+</code></pre>
+
+<p>Ylläoleva lyhempää koodirivien määrää huomattavasti, mutta <strong>vaikeuttaa koodinlukua</strong>. Se näyttää rumalta, ja on vaikea pysyä silmämääräisesti kärryillä siitä, mitkä sulkumerkit muodostavat parin.</p>
+
+<p>Eli trade-off; koodin rivimäärä pieneni, mutta koodinluku vaikeutui merkittävästi.</p>
+
+<p>Mutta meillä on parempikin ratkaisu. Käytetään <strong>chain</strong>-apumetodia.</p>
+
+<h3 id="chain-the-best-of-both-worlds">Chain() - the best of both worlds</h3>
+
+<p>Tässä on chainin varaan tukeutuva ratkaisu:</p>
+
+<pre><code class="language-javascript">
+var lista = [1.9, 2.0, 2.1, 0.2];
+
+var tulo = _
+.chain(lista)
+.map(Math.round)
+.compact()
+.reduce(function(t, luku) {
+  return t * luku;
+}, 1)
+.value();
+
+console.log(tulo); // 8
+
+</code></pre>
+
+<p>Ylläoleva chain-metodiin perustuva ratkaisu vaikuttaa selkeältä voitolta. Se on äärimmäisen helppolukuinen, sillä jokainen uusi metodikutsu alkaa omalta riviltään. Samaan aikaan välimuuttujia ei tarvita! Eli win-win.</p>
+
+<p>Miten chain() toimii pinnan alla? Se muuntaa annetun argumentin (tässä <em>lista</em>) sellaiseen muotoon, että sitä voidaan <strong>juoksuttaa</strong> pitkin ketjua. Sillä chain()-metodi aloittama metodikutsujen sarja voidaan ajatella ketjuna, tai putkena. Tai liukuhihnana. Kukin metodi saa sisäänsä argumentin, muokkaa tuota argumenttia jotenkin, ja pötkäyttää ulos muokatun version argumentista. Seuraava putkenpalanen saa sisälleen tuon muokatun version, ja niin edelleen.</p>
+
+<p>Putken/liukuhihnan loppupäädyssä kutsumme metodia <em>value()</em>, joka hakee lopullisen palautusarvon.</p>
+
+<p>Kyseessä on erittäin vahva ja ennenkaikkea modulaarinen koodaustapa. Ketjuta funktiokutsut ja juoksuta haluamasi dataa ketjun lävitse. Yhdestä päästä menee raaka-aineet sisään, toisesta päästä tulee valmis tuote ulos.</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="http://nollaversio.fi/blog/public/laravel/testing-routes/">
+        Käyttöliittymän testaus (automatisointi)
+      </a>
+    </h1>
+
+    <span class="post-date">Wed, Jul 27, 2016</span>
+
+    
+
+<p>Perinteisen web-applikaation peruspointti on tarjota käyttäjilleen mahdollisuus vuorovaikuttaa itsensä (<em>esim. kerätä tänään dataa talteen, ja hyödyntää kerättyä dataa huomenna</em>) ja/tai toistensa kanssa web-applikaation kautta.</p>
+
+<p>Jotta tämä vuorovaikutus onnistuisi, täytyy web-applikaation tarjota jonkinmoinen käyttöliittymä.</p>
+
+<p>Tyypillisessä tietokantapohjaisessa web-sovelluksesta tuo käyttöliittymä on HTML-sivu, joka sisältää linkit applikaation tarjoamiin toiminnallisuuksiin. Linkkejä klikkailemalla voi vuorovaikuttaa applikaation kanssa. Malliesimerkki tälläisestä applikaatiosta on vaikkapa Wikipedia.</p>
+
+<p>Vuorovaikutus ihmiskäyttäjän kanssa on monen web-sovelluksen keskeisin huolenaihe. Toki on erikseen web-sovellukset, jotka <em>eivät</em> vuorovaikuta ihmiskäyttäjän kanssa, vaan käyvät tiedonvaihtoa toisen web-sovelluksen kanssa. Malliesimerkki tälläisestä applikaatiosta on osakepörssin rajapinta. Tuo rajapinta käy keskustelua muiden applikaatioiden - mm. uutissivustojen pörssikurssien päivityksestä vastaavien ohjelmien - kanssa.</p>
+
+<h3 id="voiko-tietokoneohjelma-simuloida-ihmiskäyttäjää">Voiko tietokoneohjelma simuloida ihmiskäyttäjää?</h3>
+
+<p>Koska useimmilla applikaatioilla kommunikaatio ihmiskäyttäjän kanssa on keskiössä, on syytä kyetä varmistamaan, että käyttöliittymä toimii kuin vettä vain. Laravellin tapauksessa tämä varmistus tarkoittaa, että kukin HTML-sivu - joka siis edustaa tiettyä käyttöliittymän osaa - sisältää tarvittavat toiminnot, jotta applikaation käyttö on sujuvaa.</p>
+
+<p>Mutta miten varmistua siitä, että käyttöliittymä tarjoaa tarvittavat toiminnot? Yksi tapa on silmämääräisesti selata käyttöliittymää. Ihmisaivot tekevät automaattisesti näin saapuessaan esim. Wikipedian etusivulle - luomme ikäänkuin <em>mentaalisen kartan</em> kaikista applikaation tarjoamista mahdollisuuksista.</p>
+
+<p>Homman voi tietenkin myös automatisoida, ja se kannattaa automatisoida. <strong>Sen sijaan että silmämääräisesti tarkistaisimme käyttöliittymän, annetaan erillisen tietokoneohjelman tarkistaa käyttöliittymä.</strong></p>
+
+<p>Tätä on automatisoitu käyttöliittymätestaus.</p>
+
+<h3 id="mitä-testataan-ja-miten">Mitä testataan ja miten?</h3>
+
+<p>Käyttöliittymätestauksessa pääpaino on varmistaa, että applikaation käyttöliittymä tarjoaa tarvittavat toiminnot, jotta applikaation käyttö on sujuvaa.</p>
+
+<p>Tyypillisen web-applikaation käyttöliittymä koostuu isosta kasasta <em>HTML-sivuja</em>. Täten web-applikaation kohdalla käyttöliittymätestaus tarkoittaa kutakuinkin HTML-sivujen sisällön testausta. Eli varmistetaan, että kukin HTML-sivu sisältää tarvittavat <em>toiminnot, tiedot ja ohjeet</em>, jotta vuorovaikutus applikaation kanssa onnistuu odotetusti.</p>
+
+<p>Kirjoitetaan ensimmäinen testi. Oletetaan, että olemme rakentamassa uutta Wikipediaa. Wikipedian keskiössä on <em>artikkeli</em>, joten on luontevaa aloittaa ohjelmoimalla tarvittavat toiminnot yksittäisen artikkelin lukemista ja ylläpitoa varten.</p>
+
+<p>Mitä toimintoja haluamme kytkeä osaksi konseptia nimeltä <em>artikkeli</em>? Ainakin mahdollisuuden <em>lukea</em> artikkeli. Lisäksi olisi kiva voida <em>muokata</em> artikkelia. Aloitetaan näistä kahdesta.</p>
+
+<p>Entä millainen käyttöliittymän tulee olla, jotta <em>lukeminen</em> ja <em>muokkaaminen</em> onnistuvat?</p>
+
+<p>Lukemista varten tarvitsemme jotain mitä lukea. Eli artikkelin sisällön tulee olla ihmissilmin nähtävillä.</p>
+
+<p>Muokkausta varten tarvitsemme jonkinlaisen linkin tai nappulan, jonka kautta siirtyä artikkelin muokkaustilaan.</p>
+
+<p>Testimme näyttää yleisilmeeltään tältä.</p>
+
+<pre><code class="language-php">
+use \Integrated\Extensions\Laravel as IntegrationTest;
+
+class ArtikkeliTesti extends IntegrationTest {
+
+	public function testaaLukuMahdollisuus {
+
+	}
+
+	public function testaaMuokkausMahdollisuus {
+
+
+	}
+	
+
+}
+
+</code></pre>
+
+<p>Seuraavaksi on syytä miettiä, miten nuo testit suoritetaan. Käyttöliittymätestauksen koko pointti on, että testaus suoritetaan ikäänkuin ihmiskäyttäjä toimisi testaajana. Oikeasti tuon testauksen tekee tietokoneohjelma, mutta tietokoneohjelma simuloi ihmisen toimintaa.</p>
+
+<p>Paras tapa suorittaa käyttöliittymätestaus on siis toistaa niitä toimintoja, joita oikea ihmiskäyttäjä tekisi mikäli käyttäisi applikaatiota.</p>
+
+<pre><code class="language-php">
+// ArtikkeliTesti.php
+
+use \Integrated\Extensions\Laravel as IntegrationTest;
+
+class ArtikkeliTesti extends IntegrationTest {
+
+	public function testaaLukuMahdollisuus {
+			// Simuloidaan ihmiskäyttäjää
+			
+
+			// Kirjoita selaimen osoiteriville tietyn artikkelin www-osoite
+			$this-&gt;visit('/artikkelit/seppo-raty');
+
+			// Nyt edessämme pitäisi olla Seppo Rädystä kertova artikkeli
+			$this-&gt;seePageIs('seppo-raty');
+
+			// Artikkelin tulisi mainita hänen urheilulajinsa...
+			$this-&gt;see('keihäänheitto');
+
+			// ... ja muutama kuolematon sitaatti
+			$this-&gt;see('Saksa on paska maa');
+			$this-&gt;see('Vittuillakseni heilutin');
+
+			// Jos kaikki ylläolevat ehdot täyttyvät, voimme
+			// luottaa, että kyseessä on Rädyn wikipedia-artikkeli.
+
+	}
+
+	public function testaaMuokkausMahdollisuus {
+			// Simuloidaan ihmiskäyttäjää
+			
+			// Kirjoita selaimen osoiteriville tietyn artikkelin www-osoite
+			$this-&gt;visit('/artikkelit/seppo-raty');
+
+			// Emme ole kiinnostuneita artikkelin sisällöstä, mutta
+			// olemme kiinnostuneita muokkausmahdollisuudesta.
+
+			// Varmistetaan, että &quot;Muokkaa&quot;-nappula on olemassa, ja että
+			// sitä klikkaamalla avautuu muokkausnäkymä!
+			$this-&gt;click('Muokkaa')-&gt;seePageIs('/seppo-raty/muokkaa');
+
+			// Jos ylläolevat ehdot täyttyvät, voimme luottaa,
+			// että muokkaustoiminto on olemassa.
+
+	}
+	
+
+}
+
+</code></pre>
+
+<p>Ylläolevat kaksi testiä - luku ja muokkaus - voidaan suorittaa automatisoidusti. Ihmiskäyttäjää ei tarvita. Testiä varten luotu tietokoneohjelma ajaa ylläolevat testit, ja varmistaa, että kaikki oletukset/ehdot täyttyvät. Mikäli jokin ehto ei täyty, asiasta raportoidaan eteenpäin (esim. kehittäjälle).</p>
+
+<p>Ylläolevan kaltaisilla yksittäisillä testeillä voimme varmistaa pala palalta koko käyttöliittymän toiminnan. Entä jos haluamme testata toiminnon <em>uuden artikkelin luonti</em>? Se onnistuu näin.</p>
+
+<pre><code class="language-php">
+// ArtikkeliTesti.php
+
+// Muut testit kuten ennenkin
+
+public function testaaArtikkelinLuonti() {
+	
+	// Artikkelin luontia varten käyttäjälle näytetään
+	// HTML-lomake, johon artikkelin tiedot täytetään.
+
+	$this-&gt;visit('/luo-artikkeli')-&gt;andSee('artikkeliluonti');
+
+	// Varmista, että HTML-lomake on olemassa yrittämällä täyttää se...
+	$this
+	-&gt;type('Nollaversio IT', '#artikkelin_nimi') // Kirjoita nimi
+	-&gt;type('Ihan ok firma.', '#artikkelin_teksti') // Kirjoita sisältö
+	-&gt;press('Luo artikkeli'); // Paina &quot;Submit&quot;-nappulaa
+	-&gt;andSee('Uusi artikkeli luotu!') // Varmista luonnin onnistuminen.
+	// Varmista että olemme juuri luodun artikkelin sivulla.
+	-&gt;onPage('/artikkelit/nollaversio-it'); 
+
+}
+
+</code></pre>
+
+<p>Ylläolevan kaltaisilla testeillä voimme testata ilman epäluotettava ihmissilmän tarvetta koko käyttöliittymämme!</p>
+
+<blockquote>
+<p>Loppukaneetti: on syytä huomata, että käyttöliittymätestaus keskittyy <em>olennaisten seikkojen</em> testaamiseen. Se ei testaa sitä, onko sivun värimaailma &lsquo;ihmissilmää miellyttävä&rsquo;, onko fonttikoko sopiva tai ovatko sivun eri komponentit nätisti rivissä.</p>
+
+<p>Automatisoitu testaus keskittyy testaamaan aspekteja, jotka ovat a) ylipäätänsä testattavissa ja b) elintärkeitä applikaation toiminnan kannalta.</p>
+
+<p>Värimaailma <em>ei ole</em> elintärkeä applikaation toiminnan kannalta, ainakaan Wikipedian tapauksessa. Sen sijaan mahdollisuus muokata artikkelia <em>on</em> elintärkeä applikaation toiminnan kannalta.</p>
+
+<p>Jokaisella applikaatiolla on tietenkin omat reunaehtonsa sen suhteen, mitkä aspektit ovat tärkeitä ja mitkä eivät.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="http://nollaversio.fi/blog/public/laravel/reservation-pattern/">
+        Varausten hallinta tietokannan tasolla
+      </a>
+    </h1>
+
+    <span class="post-date">Tue, Jul 26, 2016</span>
+
+    
+
+<p>Otetaan esimerkki seuraavankaltaisesta applikaatiosta. Applikaatio mahdollistaa uhanalaisten sarvikuonojen ostamisen lemmikeiksi. Afrikan salametsästäjät (tai tässä tapauksessa &lsquo;salakidnappaajat&rsquo;) tuovat järjestelmään uusia sarvikuonoja, joita eurooppalaiset intoilijat ostavat.</p>
+
+<p>Ostoprosessi ei kuitenkaan ole yksinkertainen. Kukin sarvikuono varataan ostoprosessin ajaksi - mikäli ostoprosessi menee onnistuneesti läpi, sarvikuonopolo rahdataan Eurooppaan uudelle isännälleen. Mikäli ostoprosessi ei mene lävitse, sarvikuono vapautuu takaisin markkinapaikalle.</p>
+
+<p>Tietokanta voisi olla esim. tämän kaltainen:</p>
+
+<pre><code>// Sarvikuonot-taulu
+
+| id |   ostaja  | hinta | tullut_myyntiin |
+| -- | --------- | ----- | --------------- |
+| 1  |   NULL    |  25   |   1.6.2016      |
+| 2  |   NULL    |  32   |   3.6.2016      |
+| 3  |   2       |  26   |   4.6.2016      |
+
+</code></pre>
+
+<pre><code>// Ostajat-taulu
+
+| id |   nimi    |  maa  |   email         |
+| -- | --------- | ----- | --------------- |
+| 1  |   Pekka   |  FI   |   pekka@24.fi   |
+| 2  |   Mikko   |  FI   |   m85@gmail.com |
+
+</code></pre>
+
+<p>Järjestelmä toimii ylläolevia tauluja hyödyntäen. Ostaja kirjautuu sarvikuonojen markkinapaikalle - se miten tuo kirjautuminen tapahtuu ei ole tässä esimerkissä oleellista. Sen jälkeen hän selaa ostettavissa olevia sarvikuonoja. <em>Sarvikuonot</em>-taulusta saadaan helposti haettu vapaana (ostomielessä) olevat kuonokkaat - vapaalla sarvikuonolla <em>ostaja</em>-sarake on tyhjä (NULL).</p>
+
+<p><code>SELECT * from Sarvikuonot WHERE ostaja=NULL</code></p>
+
+<p>Mutta kuten alussa mainitsimme, haluamme myös sallia sarvikuonon <em>varauksen</em> itse ostoprosessin ajaksi.</p>
+
+<p>Miksi tämä on tärkeää? <strong>Siksi, että muuten saattaisi hyvinkin käydä niin, että useampi henkilö yrittäisi samanaikaisesti ostaa samaa kuonokasta.</strong></p>
+
+<p>Ongelman ydin on siinä, että sarvikuonon <em>ostaja</em>-sarake päivitetään vasta aivan ostoprosessin lopussa. Tämä on loogista siinä mielessä, että ostos ei ole vahvistettu kuin vasta prosessin lopussa.</p>
+
+<p>Mutta järjestelmän muiden asiakkaiden tämä ei ole optimaalista. On varsin ikävää jos joku heistä aloittaa oman ostoprosessinsa sarvikuonosta, jota sinä olet parhaillaan maksamassa Nordean nettipankissa. Kun maksusi menee läpi, tuo toinen asiakas on umpikujassa.</p>
+
+<p>Hänen kannaltaan on varsin ikävää, mikäli ostos epäonnistuu aivan kalkkiviivoilla. Vähemmästäkin ihminen repii juurikasvunsa.</p>
+
+<p>Ongelman ydin siis on, että ostoprosessilla on <strong>alku</strong> ja <strong>loppu</strong>. Mikäli ostoprosessi olisi pistemäinen tapahtuma, mitään ongelmaa ei olisi. Varaus ja osto tapahtuisivat tismalleen samalla ajan hetkellä, joten tarve varauksen olemassaololle poistuisi.</p>
+
+<p>Esimerkkinä tälläisestä pistetapahtumasta on ruokakaupassa käynti. Sanotaan, että maitohyllyllä on tasan yksi maitopurkki. Kauppaan saapuu kaksi perhekuntaa maito-ostoksille.</p>
+
+<p>Kumpi poppoo tuon maitopurtilon saa mukaansa? Kumpi ensimmäisenä sen hyllyltä nappaa. Voittaja vie maidon. Seuraava käsi hapuilee pelkkää tyhjää ilmaa. Tyhjyyttä kohti kurotteleva kyllä varsin nopeasti hoksaa, että maito meni jo, joten hänen ei tarvitse jatkaa ostoprosessiaan eteenpäin. Ainoastaan voittaja kävelee kohti kassapistettä.</p>
+
+<p>Ratkaiskaamme sarvikuonojen <em>varaus vs. osto</em> -ongelma lisäämällä erillinen varaus-sarake tietokantatauluun.</p>
+
+<h3 id="varaus-ja-osto-eriteltynä-tietokannassa">Varaus ja osto eriteltynä tietokannassa</h3>
+
+<p>Uusi Sarvikuonot-taulu näyttää tältä:</p>
+
+<pre><code>// Sarvikuonot-taulu
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
+| -- | --------- | ------- | ----- | --------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
+| 2  |   NULL    |  1      |   32  |   3.6.2016      |
+| 3  |   2       |  2      |   26  |   4.6.2016      |
+
+</code></pre>
+
+<p>Järjestelmä toimii seuraavanlaisesti: heti kun potentiaalinen kuonoaddikti aloittaa ostoprosessin, hänen ostajanumeronsa lisätään sarvikuonon <em>varaaja</em>-kenttään.</p>
+
+<p>Tällä tavoin taulu sisältää tiedon siitä, että kyseistä sarvikuonoa <em>ollaan parhaillaan ostamassa</em>. Muille asiakkaille tuota sarvikasta ei tarvitse näyttää listauksissa - heidän kannaltaan sarvikuono on jo myyty. Täten ostettavissa olevat sarvikuonot haetaan tietokantakomennolla:</p>
+
+<p><code>SELECT * from Sarvikuonot WHERE varaaja=NULL</code></p>
+
+<p>Kun varausta tekevä taho sitten lopulta <em>vahvistaa</em> kuonokkaan oston, tieto vahvistuksesta päivitetään tauluun <em>ostaja</em>-sarakkeeseen.</p>
+
+<pre><code>// Sarvikuonot-taulu
+// Sarvikuonon #2 osto vahvistettu ostajalle #1.
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
+| -- | --------- | ------- | ----- | --------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
+| 2  |   1       |  1      |   32  |   3.6.2016      |
+| 3  |   2       |  2      |   26  |   4.6.2016      |
+
+</code></pre>
+
+<p>Kaksi eri asiakasta eivät voi enää aloittaa ostoprosessia samasta sarvikuonosta samanaikaisesti. Erinomaista. Onko järjestelmämme nyt täydellinen?</p>
+
+<p>Ei todellakaan.</p>
+
+<p>Entä jos ostoprosessi ei menekään läpi? Koska <em>varaaja</em>-kenttä on jo täytetty, sarvikuono on muiden asiakkaiden näkökulmasta ostettu. Mutta jos ostoprosessi menee pieleen (ehkä ostaja tulee katumapäälle kesken maksamisen), tuo sarvikuono on ikuisesti jumissa limbossa.</p>
+
+<p>Tarvitsemme siis mekanismin, joka jollain tavoin <em>vapauttaa</em> limboon joutuneet sarvikuonot. Mekanismiksi on kaksi hyvää vaihtoehtoa.</p>
+
+<h3 id="varausten-vapautus-aktiivinen-vs-passiivinen">Varausten vapautus - aktiivinen vs. passiivinen</h3>
+
+<p>Kerrataan, tietokantataulumme näyttää tältä:</p>
+
+<pre><code>// Sarvikuonot-taulu
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
+| -- | --------- | ------- | ----- | --------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
+| 2  |   NULL    |  1      |   32  |   3.6.2016      |
+| 3  |   2       |  2      |   26  |   4.6.2016      |
+
+</code></pre>
+
+<p>Ja potentiaalinen ostajamme #1 yllättäen saa aivoinfraktin ja poistuu linjoilta. Hän ei tule enää koskaan ostamaan edes tikkukaramellia saati savannin hyökkäysvaunua. Joten tehtävämme on jollain tavoin <em>poistaa</em> varaus sarvikuonolta #2.</p>
+
+<h4 id="aktiivinen-poisto">Aktiivinen poisto</h4>
+
+<p>Yksi tapa hoitaa poistot on pitää yllä erillistä <em>poisto-ohjelmaa</em>, joka tasaisin väliajoin käy etsimässä + poistamassa <em>erääntyneitä</em> varauksia.</p>
+
+<p>Vastaavan kaltainen systeemi on käytössä hotelleissa - jos et ole viimeistään klo 18 vastaanottamassa huoneesi avainta, varauksesi poistetaan asiakaspalvelijan toimesta.</p>
+
+<p>Meidän sarvikuonomarkkinapaikkamme kohdalla loogisinta on kirjata ylös ajankohta, jolloin ostoprosessi alkoi. Vaadimme ostajilta, että heidän tulee suorittaa ostoprosessinsa läpi yhden tunnin aikana. Jos ostoprosessi on epäonnistunut (tai yhä kesken!) tuon yhden tunnin rajapyykin umpeuduttua, varaus poistetaan.</p>
+
+<p>Muokataan tauluamme, jotta saamme kirjattua ylös varauksen tekoajankohdan:</p>
+
+<pre><code>// Sarvikuonot-taulu
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |   varaus_tehty    |
+| -- | --------- | ------- | ----- | --------------- | ----------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |       NULL        |
+| 2  |   NULL    |  1      |   32  |   3.6.2016      | 26.7.16 klo 12.15 |
+| 3  |   2       |  2      |   26  |   4.6.2016      | 21.7.16 klo 17.33 |
+
+</code></pre>
+
+<p>Ohessa pieni skripti, joka pyörii ikäänkuin <em>taustapalveluna</em>, käyden
+tasaisin väliajoin poistamassa erääntyneet varaukset:</p>
+
+<pre><code class="language-php">
+// Tätä skriptiä kutsutaan esim. käyttöjärjestelmän cron-tabin toimesta.
+// Esimerkiksi aina 1 minuutin välein.
+
+// Aloita tietokanta-transaktio
+DB::transaction(function() {
+	// Rajapyykkinä toimii ajankohta yksi tunti sitten.
+	$aikaRajapyykki = Carbon::now()-&gt;subHour();
+
+	// Sarvikuonot, jotka ovat erääntyneet, 
+	// mutta ei ostettu ('ostaja' on NULL),
+	// tyhjennetään varaustiedot
+	Sarvikuono
+		::where('varaus_tehty', &lt;, $aikaRajapyykki)
+		-&gt;where('ostaja', NULL)
+		-&gt;update([
+			'varaaja' =&gt; NULL,
+			'varaus_tehty' =&gt; NULL
+		]);
+});
+
+</code></pre>
+
+<p>Kun ylläoleva skripti on käynyt poistamassa varauksen tiedot, on sarvikuono #2 jälleen muiden
+markkinapaikan kävijöiden nähtävissä.</p>
+
+<p>On myös toinen keino, ns. passiivinen poisto.</p>
+
+<h4 id="passiivinen">Passiivinen</h4>
+
+<p>Aktiivisessa poistossa meillä on erillinen, itse itseään kontrolloiva/ajastava prosessi (=<em>käyttöjärjestelmän prosessi</em>), joka käy tasaisin väliajoin tekemässä poistot. Tuo prosessi elää omaa elämäänsä irrallaan siitä prosessista, joka pyörittää markkinapaikkaamme.</p>
+
+<p>Toinen vaihtoehto on jättää varauksen tiedot maatumaan tietokantaan, ja suorittaa erääntyneiden varausten käsittely suoraan applikaatiomme ydinkoodin puolella.</p>
+
+<p>Tämä on läpeensä sysimusta idea, mutta esimerkin omaisesti esittelen myös sen.</p>
+
+<p>Sarvikuonot-taulu ei muutu mihinkään. Se on edelleen tälläinen:</p>
+
+<pre><code>// Sarvikuonot-taulu
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |   varaus_tehty    |
+| -- | --------- | ------- | ----- | --------------- | ----------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |       NULL        |
+| 2  |   NULL    |  1      |   32  |   3.6.2016      | 26.7.16 klo 12.15 |
+| 3  |   2       |  2      |   26  |   4.6.2016      | 21.7.16 klo 17.33 |
+
+</code></pre>
+
+<p>Erillisen skriptin sijasta meillä on <em>suoraan applikaatiomme sisuksiin koodattu sopivat reagoinnit</em> erääntyneisiin varauksiin.</p>
+
+<p>Esimerkiksi ostettavissa olevien kuonojen listaus näyttää nyt tältä:</p>
+
+<pre><code class="language-php">// SarvikuonoController.php
+
+public function vapaatKuonot() {
+
+	// Vapaat kuonot ovat niitä, joilla pätee joko:
+	// 1) 'varaaja' on tyhjä (NULL)
+	// 2) 'varaus_tehty' ajankohta yli 1 tunti sitten
+
+	$aikaRajapyykki = Carbon::now()-&gt;subHour();
+	$vapaat = Sarvikuonot
+		::where('varaus_tehty', &lt;, $aikaRajapyykki)
+		-&gt;where('ostaja', NULL)
+		-&gt;get();
+
+	return View::make('listaus', compact('vapaat'));	
+
+	
+}
+
+</code></pre>
+
+<p>Muut toiminnot joutuvat nyt turvautumaan vastaavaan logiikkaan. Esimerkiksi ostoprosessin lopussa on vielä kerran varmistettava, että varaus on yhä voimassa. Homma toimii, joten kuten.</p>
+
+<p>Passiivisessa lähestymistavassa on puolensakin. Ylimääräinen prosessin (aktiivinen) olemassaolo lisää järjestelmän kuormitusta ja luo uudenlaisen bugityypin - jos erillinen poistoprosessi kaatuu, varaukset eivät enää eräänny lainkaan. Passiivisessa mallissa tätä riskiä ei ole, sillä &ldquo;erääntyminen&rdquo; on koodattu suoraan osaksi ydinalgoritmia.</p>
+
+<blockquote>
+<p>Loppukaneetti: passiivisen ja aktiivisen lähestymistavan ero on pohjimmiltaan filosofinen, ja siitä löytyy oikean elämän esimerkkejä kosolti. Otetaan esimerkiksi käteisen rahan käyttö.</p>
+
+<p>Yksi nostaa joka kuukausi 100 euroa käteistä, ja sujauttaa setelit lompakkoonsa. Jos hän kuukauden aikana tarvitsee käteistä, hän voi luottaa siihen, että sitä lompakosta löytyy. Hänen ei tarvitse jokaisen kirppariostoksen kohdalla erikseen miettiä asiaa.</p>
+
+<p>Toinen ei nosta käteistä rahaa, vaan kantaa mukanaan yksinomaan muovirahaa. Hänen ei tarvitse huolehtia kuukausittaisesta Otto-automaatilla vierailusta. Mutta jos hän joskus sattuu tarvitsemaan käteistä, hänellä ei sitä ole. Toisin sanoen, jokaista ostosta tehdessään hänen täytyy erikseen varmistaa, että muoviraha käy.</p>
+
+<p>Kyseessä on klassinen tradeoff.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://nollaversio.fi/blog/public/nodejs/promise-filter/">
         Filteröi epäonnistujat pois (reflect &#43; filter)
       </a>

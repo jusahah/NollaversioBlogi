@@ -1,0 +1,232 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Käyttöliittymän testaus (automatisointi) &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Käyttöliittymän testaus (automatisointi)</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Wed, Jul 27, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Perinteisen web-applikaation peruspointti on tarjota käyttäjilleen mahdollisuus vuorovaikuttaa itsensä (<em>esim. kerätä tänään dataa talteen, ja hyödyntää kerättyä dataa huomenna</em>) ja/tai toistensa kanssa web-applikaation kautta.</p>
+
+<p>Jotta tämä vuorovaikutus onnistuisi, täytyy web-applikaation tarjota jonkinmoinen käyttöliittymä.</p>
+
+<p>Tyypillisessä tietokantapohjaisessa web-sovelluksesta tuo käyttöliittymä on HTML-sivu, joka sisältää linkit applikaation tarjoamiin toiminnallisuuksiin. Linkkejä klikkailemalla voi vuorovaikuttaa applikaation kanssa. Malliesimerkki tälläisestä applikaatiosta on vaikkapa Wikipedia.</p>
+
+<p>Vuorovaikutus ihmiskäyttäjän kanssa on monen web-sovelluksen keskeisin huolenaihe. Toki on erikseen web-sovellukset, jotka <em>eivät</em> vuorovaikuta ihmiskäyttäjän kanssa, vaan käyvät tiedonvaihtoa toisen web-sovelluksen kanssa. Malliesimerkki tälläisestä applikaatiosta on osakepörssin rajapinta. Tuo rajapinta käy keskustelua muiden applikaatioiden - mm. uutissivustojen pörssikurssien päivityksestä vastaavien ohjelmien - kanssa.</p>
+
+<h3 id="voiko-tietokoneohjelma-simuloida-ihmiskäyttäjää">Voiko tietokoneohjelma simuloida ihmiskäyttäjää?</h3>
+
+<p>Koska useimmilla applikaatioilla kommunikaatio ihmiskäyttäjän kanssa on keskiössä, on syytä kyetä varmistamaan, että käyttöliittymä toimii kuin vettä vain. Laravellin tapauksessa tämä varmistus tarkoittaa, että kukin HTML-sivu - joka siis edustaa tiettyä käyttöliittymän osaa - sisältää tarvittavat toiminnot, jotta applikaation käyttö on sujuvaa.</p>
+
+<p>Mutta miten varmistua siitä, että käyttöliittymä tarjoaa tarvittavat toiminnot? Yksi tapa on silmämääräisesti selata käyttöliittymää. Ihmisaivot tekevät automaattisesti näin saapuessaan esim. Wikipedian etusivulle - luomme ikäänkuin <em>mentaalisen kartan</em> kaikista applikaation tarjoamista mahdollisuuksista.</p>
+
+<p>Homman voi tietenkin myös automatisoida, ja se kannattaa automatisoida. <strong>Sen sijaan että silmämääräisesti tarkistaisimme käyttöliittymän, annetaan erillisen tietokoneohjelman tarkistaa käyttöliittymä.</strong></p>
+
+<p>Tätä on automatisoitu käyttöliittymätestaus.</p>
+
+<h3 id="mitä-testataan-ja-miten">Mitä testataan ja miten?</h3>
+
+<p>Käyttöliittymätestauksessa pääpaino on varmistaa, että applikaation käyttöliittymä tarjoaa tarvittavat toiminnot, jotta applikaation käyttö on sujuvaa.</p>
+
+<p>Tyypillisen web-applikaation käyttöliittymä koostuu isosta kasasta <em>HTML-sivuja</em>. Täten web-applikaation kohdalla käyttöliittymätestaus tarkoittaa kutakuinkin HTML-sivujen sisällön testausta. Eli varmistetaan, että kukin HTML-sivu sisältää tarvittavat <em>toiminnot, tiedot ja ohjeet</em>, jotta vuorovaikutus applikaation kanssa onnistuu odotetusti.</p>
+
+<p>Kirjoitetaan ensimmäinen testi. Oletetaan, että olemme rakentamassa uutta Wikipediaa. Wikipedian keskiössä on <em>artikkeli</em>, joten on luontevaa aloittaa ohjelmoimalla tarvittavat toiminnot yksittäisen artikkelin lukemista ja ylläpitoa varten.</p>
+
+<p>Mitä toimintoja haluamme kytkeä osaksi konseptia nimeltä <em>artikkeli</em>? Ainakin mahdollisuuden <em>lukea</em> artikkeli. Lisäksi olisi kiva voida <em>muokata</em> artikkelia. Aloitetaan näistä kahdesta.</p>
+
+<p>Entä millainen käyttöliittymän tulee olla, jotta <em>lukeminen</em> ja <em>muokkaaminen</em> onnistuvat?</p>
+
+<p>Lukemista varten tarvitsemme jotain mitä lukea. Eli artikkelin sisällön tulee olla ihmissilmin nähtävillä.</p>
+
+<p>Muokkausta varten tarvitsemme jonkinlaisen linkin tai nappulan, jonka kautta siirtyä artikkelin muokkaustilaan.</p>
+
+<p>Testimme näyttää yleisilmeeltään tältä.</p>
+
+<pre><code class="language-php">
+use \Integrated\Extensions\Laravel as IntegrationTest;
+
+class ArtikkeliTesti extends IntegrationTest {
+
+	public function testaaLukuMahdollisuus {
+
+	}
+
+	public function testaaMuokkausMahdollisuus {
+
+
+	}
+	
+
+}
+
+</code></pre>
+
+<p>Seuraavaksi on syytä miettiä, miten nuo testit suoritetaan. Käyttöliittymätestauksen koko pointti on, että testaus suoritetaan ikäänkuin ihmiskäyttäjä toimisi testaajana. Oikeasti tuon testauksen tekee tietokoneohjelma, mutta tietokoneohjelma simuloi ihmisen toimintaa.</p>
+
+<p>Paras tapa suorittaa käyttöliittymätestaus on siis toistaa niitä toimintoja, joita oikea ihmiskäyttäjä tekisi mikäli käyttäisi applikaatiota.</p>
+
+<pre><code class="language-php">
+// ArtikkeliTesti.php
+
+use \Integrated\Extensions\Laravel as IntegrationTest;
+
+class ArtikkeliTesti extends IntegrationTest {
+
+	public function testaaLukuMahdollisuus {
+			// Simuloidaan ihmiskäyttäjää
+			
+
+			// Kirjoita selaimen osoiteriville tietyn artikkelin www-osoite
+			$this-&gt;visit('/artikkelit/seppo-raty');
+
+			// Nyt edessämme pitäisi olla Seppo Rädystä kertova artikkeli
+			$this-&gt;seePageIs('seppo-raty');
+
+			// Artikkelin tulisi mainita hänen urheilulajinsa...
+			$this-&gt;see('keihäänheitto');
+
+			// ... ja muutama kuolematon sitaatti
+			$this-&gt;see('Saksa on paska maa');
+			$this-&gt;see('Vittuillakseni heilutin');
+
+			// Jos kaikki ylläolevat ehdot täyttyvät, voimme
+			// luottaa, että kyseessä on Rädyn wikipedia-artikkeli.
+
+	}
+
+	public function testaaMuokkausMahdollisuus {
+			// Simuloidaan ihmiskäyttäjää
+			
+			// Kirjoita selaimen osoiteriville tietyn artikkelin www-osoite
+			$this-&gt;visit('/artikkelit/seppo-raty');
+
+			// Emme ole kiinnostuneita artikkelin sisällöstä, mutta
+			// olemme kiinnostuneita muokkausmahdollisuudesta.
+
+			// Varmistetaan, että &quot;Muokkaa&quot;-nappula on olemassa, ja että
+			// sitä klikkaamalla avautuu muokkausnäkymä!
+			$this-&gt;click('Muokkaa')-&gt;seePageIs('/seppo-raty/muokkaa');
+
+			// Jos ylläolevat ehdot täyttyvät, voimme luottaa,
+			// että muokkaustoiminto on olemassa.
+
+	}
+	
+
+}
+
+</code></pre>
+
+<p>Ylläolevat kaksi testiä - luku ja muokkaus - voidaan suorittaa automatisoidusti. Ihmiskäyttäjää ei tarvita. Testiä varten luotu tietokoneohjelma ajaa ylläolevat testit, ja varmistaa, että kaikki oletukset/ehdot täyttyvät. Mikäli jokin ehto ei täyty, asiasta raportoidaan eteenpäin (esim. kehittäjälle).</p>
+
+<p>Ylläolevan kaltaisilla yksittäisillä testeillä voimme varmistaa pala palalta koko käyttöliittymän toiminnan. Entä jos haluamme testata toiminnon <em>uuden artikkelin luonti</em>? Se onnistuu näin.</p>
+
+<pre><code class="language-php">
+// ArtikkeliTesti.php
+
+// Muut testit kuten ennenkin
+
+public function testaaArtikkelinLuonti() {
+	
+	// Artikkelin luontia varten käyttäjälle näytetään
+	// HTML-lomake, johon artikkelin tiedot täytetään.
+
+	$this-&gt;visit('/luo-artikkeli')-&gt;andSee('artikkeliluonti');
+
+	// Varmista, että HTML-lomake on olemassa yrittämällä täyttää se...
+	$this
+	-&gt;type('Nollaversio IT', '#artikkelin_nimi') // Kirjoita nimi
+	-&gt;type('Ihan ok firma.', '#artikkelin_teksti') // Kirjoita sisältö
+	-&gt;press('Luo artikkeli'); // Paina &quot;Submit&quot;-nappulaa
+	-&gt;andSee('Uusi artikkeli luotu!') // Varmista luonnin onnistuminen.
+	// Varmista että olemme juuri luodun artikkelin sivulla.
+	-&gt;onPage('/artikkelit/nollaversio-it'); 
+
+}
+
+</code></pre>
+
+<p>Ylläolevan kaltaisilla testeillä voimme testata ilman epäluotettava ihmissilmän tarvetta koko käyttöliittymämme!</p>
+
+<blockquote>
+<p>Loppukaneetti: on syytä huomata, että käyttöliittymätestaus keskittyy <em>olennaisten seikkojen</em> testaamiseen. Se ei testaa sitä, onko sivun värimaailma &lsquo;ihmissilmää miellyttävä&rsquo;, onko fonttikoko sopiva tai ovatko sivun eri komponentit nätisti rivissä.</p>
+
+<p>Automatisoitu testaus keskittyy testaamaan aspekteja, jotka ovat a) ylipäätänsä testattavissa ja b) elintärkeitä applikaation toiminnan kannalta.</p>
+
+<p>Värimaailma <em>ei ole</em> elintärkeä applikaation toiminnan kannalta, ainakaan Wikipedian tapauksessa. Sen sijaan mahdollisuus muokata artikkelia <em>on</em> elintärkeä applikaation toiminnan kannalta.</p>
+
+<p>Jokaisella applikaatiolla on tietenkin omat reunaehtonsa sen suhteen, mitkä aspektit ovat tärkeitä ja mitkä eivät.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>
