@@ -4,4 +4,4 @@ This is a finnish development blog for my company Nollaversio IT. It focuses mos
 
 Blog is compiled into static assets using [Hugo](https://gohugo.io/)
 
-### Licence: Creative Commons (CC BY-NC-ND 4.0)
+### Licence: Creative Commons (cc-by-sa-4.0)
