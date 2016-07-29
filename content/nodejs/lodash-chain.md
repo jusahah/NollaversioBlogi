@@ -54,7 +54,7 @@ console.log(jaettulista); // [[1,2,3], [4,5,6], [7,8]]
 
 Ero on kuin yöllä ja päivällä.
 
-Niin hieno kuin lodash onkin, siinä on puutteensa. **Tai näin minä luulin vähintään vuoden päivät**. Kunnes hoksasin dokumentaatio lukemalla, että puute olikin vain illuusio. Löysin metodin nimeltä *chain*.
+Niin hieno kuin lodash onkin, siinä on puutteensa. **Tai näin minä luulin vähintään vuoden päivät**. Kunnes hoksasin dokumentaatiota lukemalla, että puute olikin vain illuusio. Löysin metodin nimeltä *chain*.
 
 ### Chain() - mihin sitä tarvitaan?
 
@@ -77,8 +77,8 @@ Ylläoleva algoritmi näyttää lodashin avulla *naivisti* toteutettuna seuraava
 var lista = [1.9, 2.0, 2.1, 0.2];
 
 var pyoristetyt = _.map(lista, Math.round);
-var nollatPois  = _.compact(lista);
-var tulo = _.reduce(lista, function(t, luku) {
+var nollatPois  = _.compact(pyoristetyt);
+var tulo = _.reduce(nollatPois, function(t, luku) {
   return t * luku;
 }, 1);
 
