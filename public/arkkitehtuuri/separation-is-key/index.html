@@ -1,0 +1,361 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Neljä lähestymistapaa toiminnallisuuksien abstraktointiin &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Neljä lähestymistapaa toiminnallisuuksien abstraktointiin</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Mon, Aug 1, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Aloitetaan heti esimerkillä. Tehtävämme on luoda pieni skripti, joka käy hakemassa dataa (listan numeroita) palvelimelta, käsittelee tuon datan ja näyttää käsittelyn tulokset ihmiskäyttäjälle.</p>
+
+<p>Verrataan neljää eri ratkaisua, jotka kaikki toteuttavat em. vaatimuksen, mutta käyttävät erilaisia lähestymistapoja mitä tulee koodin strukturointiin.</p>
+
+<p><em>(Käytän kielenä Javascriptiä, mutta artikkelin aihe ei ole Javascriptiin sidottu)</em></p>
+
+<p>Ratkaisu #1:</p>
+
+<pre><code class="language-javascript">
+$.ajax({
+  url: 'serveri.php'
+}).done(function(data) {
+  // Käsittele data
+  var summa = _.reduce(data, function(sum, datanum) {
+    return sum + datanum;
+  }, 0);
+
+  // Näytetään summa käyttäjälle
+  alert(&quot;Summa on &quot; + summa);
+});
+
+</code></pre>
+
+<p>Ratkaisu #2:</p>
+
+<pre><code class="language-javascript">
+var vastaanotaData = function(data) {
+  // Käsittele data
+  var summa = _.reduce(data, function(sum, datanum) {
+    return sum + datanum;
+  }, 0);
+
+  // Näytetään summa käyttäjälle
+  alert(&quot;Summa on &quot; + summa);
+}
+
+$.ajax({
+  url: 'serveri.php'
+}).done(vastaanotaData);
+
+</code></pre>
+
+<p>Ratkaisu #3:</p>
+
+<pre><code class="language-javascript">
+var kasitteleData = function(data) {
+  // Käsittele data
+  return _.reduce(data, function(sum, datanum) {
+    return sum + datanum;
+  }, 0);
+}
+
+var naytaSumma = function(summa) {
+  // Näytetään summa käyttäjälle
+  alert(&quot;Summa on &quot; + summa);
+}
+
+$.ajax({
+  url: 'serveri.php'
+}).done(function(data) {
+  var summa = kasitteleData(data);
+  naytaSumma(summa);
+});
+
+</code></pre>
+
+<p>Ratkaisu #4:</p>
+
+<pre><code class="language-javascript">
+var vastaanotaData = function(data) {
+  var summa = kasitteleData(data);
+  naytaSumma(summa);
+}
+
+var kasitteleData = function(data) {
+  // Käsittele data
+  return _.reduce(data, function(sum, datanum) {
+    return sum + datanum;
+  }, 0);
+}
+
+var naytaSumma = function(summa) {
+  // Näytetään summa käyttäjälle
+  alert(&quot;Summa on &quot; + summa);
+}
+
+$.ajax({
+  url: 'serveri.php'
+}).done(vastaanotaData);
+
+</code></pre>
+
+<h4 id="neljä-eri-ratkaisua-samaan-ongelmaan-mikä-on-paras">Neljä eri ratkaisua samaan ongelmaan - mikä on paras?</h4>
+
+<p>Lähdetään analysoimaan eri ratkaisuja.</p>
+
+<h3 id="ratkaisu-1">Ratkaisu #1</h3>
+
+<pre><code class="language-javascript">
+$.ajax({
+  url: 'serveri.php'
+}).done(function(data) {
+  // Käsittele data
+  var summa = _.reduce(data, function(sum, datanum) {
+    return sum + datanum;
+  }, 0);
+
+  // Näytetään summa käyttäjälle
+  alert(&quot;Summa on &quot; + summa);
+});
+
+</code></pre>
+
+<p>Ensimmäisessä ratkaisussa kaikki koodi elää kivasti sisäkkäin <em>ajax</em>-kutsun sisällä. Datan vastaanotto, käsittely ja näyttäminen käyttäjälle ovat eroteltuna <strong>riveittäin</strong>, eivät <strong>funktioittain</strong>. Ratkaisu #1 edustaa alhaisinta abstraktion tasoa - eri toiminnallisuudet on kytketty suoraan toistensa perään ilman mahdollisuutta erotella niitä toisistaan.</p>
+
+<p>Mutta miksi kukaan haluaisi erotella niitä toisistaan? Tämä kysymys on erittäin keskeisessä roolissa kaikessa ohjelmoinnissa. Yleensä <em>eri loogiset toiminnot</em> halutaan erotella toisistaan siksi, että yksittäisiä toimintoja voi uudelleenkäyttää muualla. Esimerkiksi datan käsittely on hyödyllinen konsepti ihan itsessään - se on siis hyödyllinen ilman, että käsiteltävä data tulee palvelimelta ja että käsitelty data näytetään käyttäjälle!</p>
+
+<p>Tällä tavoin on loogista, että datan käsittelyä <strong>ei ole</strong> liitetty betonivalulla yhteen niiden toimintojen kanssa, jotka vastaavat vuoropuhelusta palvelimen ja näyttöruudun kanssa.</p>
+
+<p>Ykkösratkaisuissa tämä yhteenliittymä on juurikin betoniin valettu. Eri toimintoja sisältävät koodirivit seuraavat toisiaan kiltisti peräkanaa.</p>
+
+<p>Ratkaisun hyvä puoli on vähäinen koodimäärä. Merkittävin huono puoli on, että <em>datan käsittely</em> ja <em>datan näyttäminen käyttäjälle</em> on sidottuna teräslangalla yhteen - et voi käsitellä dataa ilman, että myös näyttäisit sen käyttäjälle.</p>
+
+<h3 id="ratkaisu-2">Ratkaisu #2</h3>
+
+<pre><code class="language-javascript">
+var vastaanotaData = function(data) {
+  // Käsittele data
+  var summa = _.reduce(data, function(sum, datanum) {
+    return sum + datanum;
+  }, 0);
+
+  // Näytetään summa käyttäjälle
+  alert(&quot;Summa on &quot; + summa);
+}
+
+$.ajax({
+  url: 'serveri.php'
+}).done(vastaanotaData);
+
+</code></pre>
+
+<p>Kakkosratkaisussa koodi selkenee hiukan. Erottelemme datan vastaanoton ja käsittelyn + näytön erilleen. Ajax-kutsulle tarjotaan palanpainikkeeksi <em>vastaanotaData</em>-niminen funktio, joka sisältää &ldquo;käsittelykoodin&rdquo; ja &ldquo;näyttökoodin&rdquo;.</p>
+
+<p>Ratkaisu on hyvä alku - olemme saaneet alkuperäisestä pyhästä kolminaisuudesta (vastaanotto, käsittely, näyttö) yhden osan lohkaistua irralleen. Siirrytään eteenpäin.</p>
+
+<h3 id="ratkaisu-3">Ratkaisu #3</h3>
+
+<pre><code class="language-javascript">
+var kasitteleData = function(data) {
+  // Käsittele data
+  return _.reduce(data, function(sum, datanum) {
+    return sum + datanum;
+  }, 0);
+}
+
+var naytaSumma = function(summa) {
+	// Näytetään summa käyttäjälle
+	alert(&quot;Summa on &quot; + summa);
+}
+
+$.ajax({
+  url: 'serveri.php'
+}).done(function(data) {
+	var summa = kasitteleData(data);
+	naytaSumma(summa);
+});
+
+</code></pre>
+
+<p>Kolmosratkaisussa kaksi jäljellejäänyttä yhteenliitettyä toimenpidettä (käsittely ja näyttö) erotetaan omiksi funktioikseen. Tällä tavoin kaikki kolme toisiinsa kahlittua toimintoa on saatu eroteltua erilleen.</p>
+
+<p>Tämä erilleen erottelu on ohjelmoinnin keskiössä oleva konsepti. Kun erottelu tehdään funktioita käyttäen, sitä kutsutaan nimellä <em>funktionaalinen abstraktio</em>. Käytännössä se vain tarkoittaa, että tietty pala koodia <em>irrotetaan erilleen</em> ja paketoidaan pakettiin nimeltä &lsquo;funktio&rsquo;. Tuota funktiota voi käyttää eri puolilta applikaatiota uudestaan ja uudestaan.</p>
+
+<p>Funktionaalinen abstraktio toimii siis näin:</p>
+
+<pre><code class="language-javascript">// Ei abstraktoitu
+
+var a = 2;
+// Tehdään potenssiin korotus
+var potenssiluku = 3;
+var potenssilaskunTulos = 1;
+for (var i = 0, i &lt; 3; i++) {
+  potenssilaskunTulos = potenssilaskunTulos * a;
+}
+// Potenssiin korotus valmis
+console.log(potenssilaskunTulos); // 8
+
+</code></pre>
+
+<pre><code class="language-javascript">// Funktionaalinen abstraktio suoritettu!
+
+// Luodaan funktio
+function nostaPotenssiin(luku, potenssi) {
+  var potenssilaskunTulos = 1;
+  for (var i = 0, i &lt; potenssi; i++) {
+    potenssilaskunTulos = potenssilaskunTulos * luku;
+  }
+  return potenssilaskunTulos;
+}
+
+// Tehdään potenssiin korotus
+var tulos = nostaPotenssiin(2, 3);
+// Potenssiin korotus valmis
+console.log(tulos); // 8
+
+</code></pre>
+
+<p>Ei sen kummempaa. Siirrytään seuraavaan ratkaisuun.</p>
+
+<h3 id="ratkaisu-4">Ratkaisu #4</h3>
+
+<pre><code class="language-javascript">
+var vastaanotaData = function(data) {
+  var summa = kasitteleData(data);
+  naytaSumma(summa);
+}
+
+var kasitteleData = function(data) {
+  // Käsittele data
+  return _.reduce(data, function(sum, datanum) {
+    return sum + datanum;
+  }, 0);
+}
+
+var naytaSumma = function(summa) {
+  // Näytetään summa käyttäjälle
+  alert(&quot;Summa on &quot; + summa);
+}
+
+$.ajax({
+  url: 'serveri.php'
+}).done(vastaanotaData);
+
+</code></pre>
+
+<p>Ratkaisussa numero 4 viemme funktionaalisen abstraktion vielä yhden askeleen pidemmälle. Saimme jo kolmosratkaisussa eroteltua erilleen alkuperäiset kolme toimintoa - vastaanoton, käsittelyn, ja näytön. Nelosratkaisun ero kolmoseen verrattuna on, että ajax-kutsun kyytipojaksi annettu done-metodin callback on erikseen nimetty ja määritelty funktio. Sen nimi on <em>vastaanotaData</em>.</p>
+
+<p>Vastaavan funktion käyttä toi lisäarvoa ratkaisussa #2, joten takuulla se auttaa myös nyt, vai mitä?</p>
+
+<p>Ei välttämättä.</p>
+
+<p>Tässä kohtaa on hyvä huomata, että ratkaisussa #3 ei ollut funktiota nimeltä <em>vastaanotaData</em>. Se, että sen nimistä funktiota ei ole, ei tarkoita, etteikö toimintoa olisi olemassa. Toiminto oli olemassa jo ratkaisussa #3 - se vain sattui olemaan anonyyminä funktiona. Verrataan:</p>
+
+<pre><code class="language-javascript">
+// Ratkaisu 3 - vastaanotto anonyyminä funktiona
+
+.done(function(data) {
+  var summa = kasitteleData(data);
+  naytaSumma(summa);
+});
+
+// Ratkaisu 4 - vastaanotto erikseen nimettynä funktiona
+
+.done(vastaanotaData);
+
+</code></pre>
+
+<p>Nyt kysymys kuuluukin, onko ratkaisu #3 <strong>automaattisesti</strong> huonompi kuin ratkaisu #4?</p>
+
+<p>Juuri aiemmin mainitsin, että funktionaalinen abstraktio on ohjelmoinnin keskiössä, ja erittäin tärkeä työkalu. Voiko tästä johtaa, että pienikin lisäpotku funktionaalista abstraktiota poikkeuksetta parantaa koodin laatua?</p>
+
+<p>Ei.</p>
+
+<p>Saimme jo ratkaisussa #3 abstraktoitua kaiken sen mitä halusimmekin - eli <em>vastaanoton</em>, <em>käsittelyn</em> ja <em>lopputuloksen näyttämisen ihmiskäyttäjälle</em>.</p>
+
+<p>Ylimääräinen abstraktio tuon kolmosratkaisun päälle ei enää paranna koodia - se saattaa jopa huonontaa sitä. Tässä tapauksessa muutos on lähinnä neutraali.</p>
+
+<p>Huomioitavaa on, että tarjoamme Ajax-kutsun done-metodille kyytipojaksi funktion, joka <em>vastaanottaa</em> palvelimelta tuodun datan. Tuo funktio siis vastaanottaa datan riippumatta sen nimestä tai siitä onko sillä nimeä lainkaan.</p>
+
+<p>Toinen huomiotava asia on, että tuo vastaanotaData-funktio <em>ei tee mitään varsinaista työtä</em>. Se ainoastaan koordinoi kahta kutsua muihin funktioihin. Nuo muut funktiot tekevät ns. oikeaa työtä. Koska vastaanotaData-funktio on ikäänkuin <em>esimies</em>, ei sen abstraktoinnista saa yhtä suurta hyötyä kuin <em>työmiehen</em> toiminnan abstraktoinnista.</p>
+
+<blockquote>
+<p>Funktionaalinen abstraktio - eli &ldquo;koodirivien paketointi funktion sisälle&rdquo; - on äärimmäisen tärkeä työkalu ohjelmoijan arsenaalissa.</p>
+
+<p>Mutta abstraktionkin voi viedä liian pitkälle. Abstraktio toimii vain siihen pisteeseen saakka, jossa viimeinenkin looginen toiminto on eroteltuna omaksi paketikseen. Tämän jälkeen abstraktion lisääminen tuppaa vain sotkemaan koodia.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>
