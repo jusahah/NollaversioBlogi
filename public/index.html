@@ -68,6 +68,219 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://nollaversio.fi/blog/public/laravel/view-composer/">
+        Datan lähetys näkymään
+      </a>
+    </h1>
+
+    <span class="post-date">Wed, Aug 3, 2016</span>
+
+    
+
+<p>Laravellin kaltaisten täysiveristen ohjelmistokehysten yksi hienoimmista ominaisuuksista on <em>datan käsittelyn</em> ja <em>datan näytön</em> erottaminen. Laravellissa konseptit erotetaan toisistaan tiedostotasolla; datan käsittely - ns. bisneslogiikka - elää yhdessä tiedostossa, ja näyttölogiikka elää toisessa tiedostossa.</p>
+
+<p>Bisneslogiikasta vastaava tiedosto olkoot kutsumanimeltään <em>model</em>, näyttölogiikasta vastaavaa tiedostoa kutsukaamme nimellä <em>view</em>.</p>
+
+<p>Yleensä näiden kahden välissä istuu vielä kolmas konseptuaalinen palikka - tiedosto kutsumanimeltään <em>controller</em>. Laravel-kehys perustaakin vahvasti toimintansa nk. MVC-periaatteeseen.</p>
+
+<p>MVC:ssä osa-alueet <strong>model</strong>, <strong>view</strong> ja <strong>controller</strong> erotetaan toisistaan. Erottelun ansiosta applikaation koodipohja on selkeämmin luettavissa ja muokattavissa.</p>
+
+<p>Me yksinkertaistamme kolmijakoa hiukan ja muunnamme sen <em>kaksijaoksi</em>; datan käsittely sisältää MC-kirjaimet, ja datan näyttö sisältää V-kirjaimen.</p>
+
+<p>Tutkitaan kahta eri tapaa siirtää vastikään käsiteltyä dataa näkymän käytettäväksi:</p>
+
+<h3 id="tapa-1">Tapa #1:</h3>
+
+<p>Tapa 1 - siirretään data suoraan view-tiedoston käyttöön.</p>
+
+<pre><code class="language-php">
+// Controller.php
+
+public function index() {
+  // Hankitaan dataa jotenkin
+  $dataset = getDatasetSomehow();
+  // Siirretään data eksplisiittisesti view-tiedoston käyttöön.
+  return view('View')-&gt;with('dataset', $dataset);
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+// View.php
+
+// Renderöidään data ihmiskäyttäjäm nähtäville.
+&lt;?php echo $dataset; ?&gt;
+
+</code></pre>
+
+<p>Tapa 1 on suositelluin tapa. Kutakin näkymätiedostoa (view) otettaessa käyttöön määritämme samalla datan, jonka avulla näkymätiedosto renderöidään lopulliseksi HTML-koodiksi. Voimme vapaasti määrittää mitä dataa siirrämme näkymän käyttöön. Voimme myös käyttää samaa tiedostoa usean eri datapaketin renderöimiseen:</p>
+
+<pre><code class="language-php">
+// Controller1.php
+
+public function index() {.
+  return view('View')-&gt;with('dataset', 1);
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+// Controller2.php
+
+public function index() {.
+  return view('View')-&gt;with('dataset', 2);
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+// Controller3.php
+
+public function index() {.
+  return view('View')-&gt;with('dataset', 3);
+}
+
+</code></pre>
+
+<p>Eri datapaketilla renderöidyt näkymät tuottavat eri HTML-koodit.</p>
+
+<h3 id="tapa-2-määritetään-globaalisti-näkymälle-tarjottava-data">Tapa 2 - määritetään <em>globaalisti</em> näkymälle tarjottava data</h3>
+
+<p>Tapa nro. 1 on yleisin keino siirtää dataa näkymän käyttöön/näytettäväksi.</p>
+
+<p>Mutta entä jos meillä on seuraavanlainen tilanne&hellip; tietty näkymätiedosto renderöidään aina tietyn <em>vakiodatan</em> turvin. Tämän vakiodatan lisäksi tuo näkymä ottaa vastaan myös <em>muuttuvaa dataa</em>. Esimerkki tälläisestä on web-portaali; vakiodata on esimerkiksi paikalliset säätiedot, jotka ovat kaikille käyttäjille samat ja aina nähtävillä (esim. yläreunan widgetin kautta).</p>
+
+<p>Eli kaikki käyttäjät näkevät saman säätilatiedotteen portaalin yläreunassa. Nämä säätiedot ovat näkyvillä kaikilla portaalin alasivuilla.</p>
+
+<p>Muuttuva data on puolestaan kullekin käyttäjälle yksilöllinen, esim. kunkin käyttäjän viimeisin sisäänkirjautuminen. Lisäksi kullakin alasivulla on oma muuttuva datansa.</p>
+
+<p>Voisimme vallan mainiosti määrittää molemmat datapaketit aina näkymätiedostoa renderöidessämme:</p>
+
+<pre><code class="language-php">
+// KirjautumisTiedotController.php
+
+public function index() {
+  $saa = $this-&gt;getSaaTiedot();
+  $viimeisinKirjautuminen = $this-&gt;getLoginInfo();
+  return view('kirjautumistiedot')
+    -&gt;with('saatiedot', $saa)
+    -&gt;with('viimeisinKirjautuminen', $viimeisinKirjautuminen);
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+// VastaanotetutViestitController.php
+
+public function index() {
+  $saa = $this-&gt;getSaaTiedot();
+  $viestit = $this-&gt;getMessagesReceived();
+  return view('viestit_vastaanotettu')
+    -&gt;with('saatiedot', $saa)
+    -&gt;with('viestit', $viestit);
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+// LahetetytViestitController.php
+
+public function index() {
+  $saa = $this-&gt;getSaaTiedot();
+  $viestit = $this-&gt;getMessagesSent();
+  return view('viestit_lahetetty')
+    -&gt;with('saatiedot', $saa)
+    -&gt;with('viestit', $viestit);
+}
+
+</code></pre>
+
+<p>Ylläolevassa esimerkissä meillä on kolme eri näkymätiedostoa - <em>kirjautumistiedot</em>, <em>viestit_vastaanotettu</em> ja <em>viestit_lahetetty</em>.</p>
+
+<p>Kukin niistä hoitaa oman leiviskänsä applikaation käyttöliittymän renderöimisestä ihmiskäyttäjän silmille sopivaksi.</p>
+
+<p>Mutta kullakin näkymällä on <em>ydintehtävän</em> lisäksi myös oheistehtävä, joka on säätietojen renderöinti. Säätiedot ovat näkyvillä kaikilla applikaation alasivuilla, eli kaikki applikaation näkymät joutuvat ne renderöimään. Huomaamme tämän ylläolevissa kolmessa näkymäesimerkissä - kukin näkymä sisältää rivin:</p>
+
+<p><code>-&gt;with('saatiedot', $saa)</code></p>
+
+<p>On myös parempi tapa. Koska säätiedot on sisällytettynä jokaiseen applikaation alasivuun, voimme abstraktoida säätietojen hakeminen ns. <strong>näkymälaatijaan</strong> (engl. view composer).</p>
+
+<p>Näkymälaatija on oma komponenttinsa, joka huolehtii tietyn datapaketin viemisestä eri näkymien saataville <em>automatisoidusti ja keskitetysti</em>. Toisin sanoen, datapakettia ei tarvitse enää määritellä näkymän saataville Controller-tiedoston sisällä, vaan tuo määrittely voidaan tehdä globaalisti näkymälaatijan sisällä.</p>
+
+<p>Näkymälaatijasta tarkempi kuvaus (englanniksi): <a href="https://laravel.com/docs/5.1/views#view-composers">https://laravel.com/docs/5.1/views#view-composers</a>.</p>
+
+<p>Säätietojen hakeminen ja antaminen applikaation <em>kaikkien</em> näkymien saataville onnistuu näin:</p>
+
+<pre><code class="language-php">
+// SaatiedotLaatijaProvider.php
+
+class SaatiedotLaatijaProvider
+{
+  public function boot()
+  {
+    view()-&gt;composer('*', function($view) {
+      $saatiedot = $this-&gt;getSaaTiedot();
+      $view-&gt;with('saatiedot', $saatiedot);
+    });
+  }
+
+  protected function getSaaTiedot() {
+    /* Hanki säätiedot jotenkin */
+  }
+}
+
+
+</code></pre>
+
+<p>Määriteltyämme ylläolevan <em>näkymälaatijan</em> - tässä tapauksessa anonyymi funktio - huolehtimaan säätiedoista, voimme poistaa säätietojen hallinnasta vastaavan koodin kustakin Controllerista.</p>
+
+<pre><code class="language-php">
+// KirjautumisTiedotController.php
+
+public function index() {
+  $viimeisinKirjautuminen = $this-&gt;getLoginInfo();
+  return view('kirjautumistiedot')
+    -&gt;with('viimeisinKirjautuminen', $viimeisinKirjautuminen);
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+// VastaanotetutViestitController.php
+
+public function index() {
+  $viestit = $this-&gt;getMessagesReceived();
+  return view('viestit_vastaanotettu')
+    -&gt;with('viestit', $viestit);
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+// LahetetytViestitController.php
+
+public function index() {
+  $viestit = $this-&gt;getMessagesSent();
+  return view('viestit_lahetetty')
+    -&gt;with('viestit', $viestit);
+}
+
+</code></pre>
+
+<p>Applikaation koodipohja selventyi huomattavasti - enää ei sama säätietojen hakeminen + tarjoaminen näkymän käyttöön elä <em>kolmessa</em> eri sijainnissa, vaan koko säätietoja hallinnoiva koodi elää yhdessä paikassa (laatijatiedoston sisällä).</p>
+
+<blockquote>
+<p>Laravellin <em>näkymälaatija</em> on tehokas konsepti poistamaan tarpeetonta duplikaatiota. Mikäli tietty datapaketti on renderöitävä usealle applikaation alasivulle, on syytä harkita näkymälaatijan käyttöä.</p>
+
+<p>Kuten aina, kyseessä on tradeoff. Näkymälaatijalla saadaan vähennettyä koodin duplikaatiota. Mutta huonona puolena on, että tietyn näkymätiedoston käytettävissä oleva data ei enää ole nähtävillä yhdessä koodilokaatiossa.</p>
+
+<p>Ratkaisussa #1 kaikki näkymälle tarjottava data tuli Controller-tiedostosta. Ratkaisussa #2 osa datasta tulee Controllerista, toinen osa näkymälaatijalta.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://nollaversio.fi/blog/public/nodejs/zip-unzip/">
         Työkalupakin kätköistä - zip() ja unzip()
       </a>
