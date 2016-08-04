@@ -6,8 +6,220 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Wed, 03 Aug 2016 03:49:47 +0300</lastBuildDate>
+    <lastBuildDate>Thu, 04 Aug 2016 04:12:30 +0300</lastBuildDate>
     <atom:link href="http://nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Näkymämalli (view model) helpottaa elämää</title>
+      <link>http://nollaversio.fi/blog/public/laravel/view-model-bliss/</link>
+      <pubDate>Thu, 04 Aug 2016 04:12:30 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/view-model-bliss/</guid>
+      <description>
+
+&lt;p&gt;Laravellin kaltainen laittoman hieno ohjelmistokehys hoitaa valtavan määrän abstraktioita koodarin puolesta. Sisääntulevan palvelunpyynnön hallinta, tietokantayhteyden hallinta, jne&amp;hellip; kaikki on valmiiksi pureskeltu, jotta ohjelmoijaparan ei tarvitse vaivata liiaksi päätään.&lt;/p&gt;
+
+&lt;p&gt;Mutta jotkin asiat Laravel jättää ohjelmoijan omien abstraktiovalintojen armoille. Yksi tälläinen on näkymämallin (engl. view model) konsepti.&lt;/p&gt;
+
+&lt;h3 id=&#34;näkymämalli-vs-malli&#34;&gt;Näkymämalli vs. malli?&lt;/h3&gt;
+
+&lt;p&gt;Ennenkuin keskitymme näkymämalliin, on syytä kerrata ns. &amp;ldquo;tavallisen mallin&amp;rdquo; - eli yksinkertaisesti &amp;ldquo;mallin&amp;rdquo; - olemassaolon tarkoitus.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Malli&lt;/em&gt; edustaa yksittäistä domain-tason objektia. Domain-tason objekti on yksinkertaisesti jokin applikaation ydintehtävän kannalta oleellinen objekti; esimerkiksi nettipankin taustajärjestelmässä tuollainen domain-objekti voisi olla &lt;em&gt;pankkitili&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Yksittäinen malli on ikäänkuin rakennepiirros (engl. blueprint) tuosta objektista; miltä objekti näyttää, mitä toimintoja se sisältää ja jne.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Englanniksi termi &amp;ldquo;model&amp;rdquo; tarkoittaa yleensä laajempaa kokonaisuutta kuin yksittäisen objektin rakennepiirrosta. Tässä yhteydessä käytämme käännöstermiä &amp;ldquo;malli&amp;rdquo; tarkoittamaan juurikin yksittäisen objektin &amp;ldquo;mallia&amp;rdquo;, eli rakennepiirrosta.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Tavallinen malli siis edustaa domain-objektia. Se kuvaa yksityiskohtaisesti, kuinka &lt;em&gt;ympäröivä applikaatio&lt;/em&gt; voi vuorovaikuttaa objektin kanssa. Esimerkiksi &lt;em&gt;pankkitili&lt;/em&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Malli nimeltä &amp;quot;Pankkitili&amp;quot;
+
+// App/Models/Pankkitili.php
+
+class Pankkitili extends Model {
+	
+	public function haeSaldo() {};
+	public function talleta() {};
+	public function nosta() {};
+	public function tilinOmistaja() {};
+
+	// jne..
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;em&gt;Malli&lt;/em&gt; on useimmiten paras suunnitella niin, että se on ainoastaan kiinnostunut domain-tason asioista. Mitä tarkoitan tällä? Tarkoitan, että &lt;strong&gt;mallin tulisi olla autuaan tietämätön käyttöliittymän olemassaolosta.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Jos malli on autuaan tietämätön käyttöliittymän olemassaolosta, malli EI saa sisältää seuraavanlaisia metodeja:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Malli nimeltä &amp;quot;Pankkitili&amp;quot;
+
+// App/Models/Pankkitili.php
+
+class Pankkitili extends Model {
+	// Seuraavat metodit liittyvät käyttöliittymään!
+	// Mallin EI tulisi sisältää seuraavia metodeja, sillä ihannearkkitehtuurissa
+	// malli ei tiedä käyttöliittymän olemassaolosta hölkäsen pöläystä.
+
+	// Etunimi + sukunimi + asiakasnumero
+	public function printtaaOmistajanTiedot() {};
+	// Jos negatiivinen saldo, väri = punainen, muuten väri = vihreä
+	public function varitaSaldo() {};
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevan mallin metodit &lt;em&gt;printtaaOmistajanTiedot&lt;/em&gt; ja &lt;em&gt;varitaSaldo&lt;/em&gt; ovat nk. käyttöliittymämetodeja. Tarkoittaen, että niiden olemassaolon syy on yksinomaan tarjota &lt;em&gt;ihmiskäyttäjälle&lt;/em&gt; monipuolisempi ja visuaalisempi käyttöliittymä.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Itse applikaation ydintarkoituksen kannalta em. metodeilla ei ole osaa eikä arpaa.&lt;/strong&gt; Pankkijärjestelmä itsessään ei ymmärrä miksi ihmeessä negatiivinen saldo tulisi olla punaisella fontilla - vain ihmissilmä ymmärtää punaisen värin tarkoituksen.&lt;/p&gt;
+
+&lt;p&gt;Siksi metodit &lt;em&gt;printtaaOmistajanTiedot&lt;/em&gt; ja &lt;em&gt;varitaSaldo&lt;/em&gt; on syytä abstraktoida ulos &lt;em&gt;mallista&lt;/em&gt; ja siirtää &lt;em&gt;näkymämallin&lt;/em&gt; sisälle.&lt;/p&gt;
+
+&lt;h3 id=&#34;näkymämalli-huolehtii-datan-muokkauksesta-ihmissilmälle-sopivaksi&#34;&gt;Näkymämalli huolehtii datan muokkauksesta ihmissilmälle sopivaksi&lt;/h3&gt;
+
+&lt;p&gt;Näkymämallin tarkoitus on juurikin ottaa vastuulleen &lt;em&gt;mallin&lt;/em&gt; sisältämän datan muokkaus ihmissilmälle sopivaan muotoon. Kun näkymämalli vastaa visuaalisesta representaatiosta, varsinainen &lt;em&gt;malli&lt;/em&gt; voi keskittyä omaan ydintehtäväänsä, eli itse applikaation kanssa vuorovaikutukseen. Eli lyhyesti:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;em&gt;Malli&lt;/em&gt; keskittyy vuorovaikuttamaan applikaation kanssa.&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;Näkymämalli&lt;/em&gt; keskittyy vuorovaikuttamaan ihmiskäyttäjän kanssa.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Jatketaan pankkiesimerkkiämme. Malli on edelleen tämä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Malli nimeltä &amp;quot;Pankkitili&amp;quot;
+
+// App/Models/Pankkitili.php
+
+class Pankkitili extends Model {
+	
+	public function haeSaldo() {};
+	public function talleta() {};
+	public function nosta() {};
+	public function tilinOmistaja() {};
+
+	// jne..
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Luodaan mallin oheen näkymämalli, joka vastaa mm. saldon värittämisestä punaiseksi mikäli tili paukkuu pakkasella.&lt;/p&gt;
+
+&lt;p&gt;Näkymämallin nimeämisessä ohjenuorana on, että mallin nimen perään lisätään &amp;ldquo;Presenter&amp;rdquo;. Täten pankkitilin näkymämalli on &amp;ldquo;PankkitiliPresenter&amp;rdquo;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Näkymämalli nimeltä &amp;quot;PankkitiliPresenter&amp;quot;
+
+// App/ViewModels/PankkitiliPresenter.php
+
+class PankkitiliPresenter extends Model {
+	
+	public function printtaaOmistajanTiedot() {}	
+	public function varitaSaldo() {}
+
+	// jne..
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;käytännön-toteutus-miten-näkymämalli-saa-tietoonsa-mallin&#34;&gt;Käytännön toteutus - miten näkymämalli saa tietoonsa mallin?&lt;/h3&gt;
+
+&lt;p&gt;Yllä loimme pohjustukset kahdelle eri konseptille - malli ja näkymämalli. Loimme mallin nimeltä &lt;strong&gt;Pankkitili&lt;/strong&gt;, ja tuota mallia vastaavan &lt;em&gt;näkymämallin&lt;/em&gt; nimeltä &lt;strong&gt;PankkitiliPresenter&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Seuraavaksi näkymämalli tulee kytkeä yhteen mallin kanssa. &lt;strong&gt;Kytkentä on yhdensuuntainen.&lt;/strong&gt; Pankkitilin ei tarvitse tietää PankkitiliPresenterin olemassaolosta, mutta PankkitiliPresenterin tulee saada käyttöönsä Pankkitili.&lt;/p&gt;
+
+&lt;p&gt;Jos PankkitiliPresenter ei tiedä Pankkitilin olemassaolosta mitään, se ei myöskään voi kutsua Pankkitili-objektin metodeja. Ja PankkitiliPresenterin on pakko kutsua Pankkitilin metodeja, sillä esimerkiksi saldon väritys onnistuu vain jos tuo saldosumma on tiedossa.&lt;/p&gt;
+
+&lt;p&gt;Yksi hyvä tapa hoitaa kytkös on seuraava:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Malli nimeltä &amp;quot;Pankkitili&amp;quot;
+
+// App/Models/Pankkitili.php
+
+class Pankkitili extends Model {
+	
+	public function haeSaldo() {};
+	public function talleta() {};
+	public function nosta() {};
+	public function tilinOmistaja() {};
+
+	public function present() {
+		return new PankkitiliPresenter($this);
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class PankkitiliPresenter extends Model {
+
+	protected $tili;
+
+	public function __construct(Pankkitili $tili) {
+		$this-&amp;gt;tili = $tili;
+	}
+	public function printtaaOmistajanTiedot() {
+		// Varmista että nimet isolla alkukirjaimella.
+		return $this-&amp;gt;capitalize($this-&amp;gt;tili-&amp;gt;tilinOmistaja());
+	}	
+	public function varitaSaldo() {
+		$saldo = $this-&amp;gt;tili-&amp;gt;haeSaldo();
+		// Lisää väritys
+		if ($saldo &amp;lt; 0) {
+			return &#39;&amp;lt;div class=&amp;quot;red&amp;quot;&amp;gt;&#39; . $saldo . &#39;&amp;lt;/div&amp;gt;&#39;;
+		} else {
+			return &#39;&amp;lt;div class=&amp;quot;green&amp;quot;&amp;gt;&#39; . $saldo . &#39;&amp;lt;/div&amp;gt;&#39;;
+		}
+
+	}
+
+	// jne..
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa arkkitehtuurissa Pankkitili-malli sisältää erillisen &lt;em&gt;present&lt;/em&gt;-metodin. Tuo metodi palauttaa PankkitiliPresenter-objektin kutsujan käyttöön.&lt;/p&gt;
+
+&lt;p&gt;PankkitiliPresenter-objektia käyttämällä kutsuja saa luotua helposti HTML-koodin pätkän, joka sisältää saldosumman ja tarvittavan HTML-syntaksin tuon saldosumman värittämiseksi joko vihreäksi tai punaiseksi.&lt;/p&gt;
+
+&lt;p&gt;On huomattavaa, että esimerkiksi &lt;em&gt;varitaSaldo&lt;/em&gt;-metodissa PankkitiliPresenterin tulee kutsua Pankkitilin metodia. Tästä syystä PankkitiliPresenterillä tulee olla aina käytettävissään Pankkitili-objekti.&lt;/p&gt;
+
+&lt;p&gt;Valitsemassamme ratkaisussa tuo Pankkitili-objekti annetaan parametrinä PankkitiliPresenterin konstruktoriin.&lt;/p&gt;
+
+&lt;h3 id=&#34;näkymämallin-käyttö&#34;&gt;Näkymämallin käyttö&lt;/h3&gt;
+
+&lt;p&gt;Ylläolevan ratkaisumme käyttö on helppoa. Aina kun saatavillamme on Pankkitili, on saatavillamme myös PankkitiliPresenter, sillä Pankkitili-malli sisältää metodi PankkitiliPresenter-objektin luomiseen.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// views/Saldoikkuna.php
+
+// Oletetaan, että käytössämme on Pankkitili-objekti nimeltä $pankkitili.
+// Esim. Controllerissa olemme avanneet näkymän kutsulla: 
+// view(&#39;saldoikkuna&#39;)-&amp;gt;with(&#39;pankkitili&#39;, $pankkitili);
+
+&amp;lt;h1&amp;gt;Tämän hetkinen saldosi&amp;lt;/h1&amp;gt;
+&amp;lt;p&amp;gt;&amp;lt;?php echo $pankkitili-&amp;gt;present()-&amp;gt;varitaSaldo() ;?&amp;gt;&amp;lt;/p&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva koodi toimii mainiosti. Aina kun haluamme kutsua jotain PankkitiliPresenterin metodia, käytämme muotoa:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+$pankkitili-&amp;gt;present()-&amp;gt;metodi();
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: näkymämallin käytön koko ydinajatus on, että applikaation kannalta oleelliset toiminnot ja käyttöliittymän kannalta oleelliset toiminnot erotetaan toisistaan. Applikaatiota ei kiinnosta se, millä värisävylle negatiivinen saldo näytetään ihmissilmälle. Ihmissilmää tuo asia kiinnostaa.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Datan lähetys näkymään</title>
@@ -2496,233 +2708,6 @@ function separatePositionsForEachGame(...) {...}
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Aika kaunista.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Nodejs - riippuvuuksien injektointi</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</link>
-      <pubDate>Mon, 11 Jul 2016 06:35:00 +0300</pubDate>
-      
-      <guid>http://nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</guid>
-      <description>
-
-&lt;p&gt;Riippuvuuksien injektointi (engl. dependency injection) on varsin vahva tapa varmistaa modulaarinen koodipohja. Kun tietyn komponentin jokainen alikomponentti otetaan vastaan &amp;ldquo;ulkoa annettuna&amp;rdquo;, on komponenttia mahdollista muokata
-rakentamalla se eri palikoista.&lt;/p&gt;
-
-&lt;p&gt;Alla esimerkki komponentista, joka hallitsee itse riippuvuuksiaan (alikomponenttejaan):&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Termostaatti.js
-
-module.exports = Termostaatti;
-
-function Termostaatti() {
-	this.lampomittari = new Lampomittari();
-	this.tuuletus = new Tuuletusjarjestelma();
-
-	...
-
-}
-
-function Lampomittari() {...}
-function Tuuletusjarjestelma() {...}
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva Termostaatti-komponentti paitsi itse päättää omat alikomponenttinsa, myös sisältää
-alikomponenttien koodin sisuksissaan. Kyseessä on äärimmilleen viety tapa &amp;ldquo;paketoida&amp;rdquo; komponentti
-loogiseksi kokonaisuudeksi, ikäänkuin mustaksi laatikoksi.&lt;/p&gt;
-
-&lt;p&gt;Termostaatin loppukäyttäjän kannalta ratkaisu on peräti toimiva, olettaen, että loppukäyttäjä vain
-haluaa termostaatin käyttöönsä annetussa muodossa.&lt;/p&gt;
-
-&lt;p&gt;Ongelmana kuitenkin on, että esimerkiksi lämpömittarin koodipohjalla olisi ehkä käyttöä muuallakin, esimerkiksi komponenttia &lt;strong&gt;Leivinuuni&lt;/strong&gt; rakennettaessa. Jos lämpömittarin koodi elää &lt;strong&gt;Termostaatin&lt;/strong&gt; sisuksissa, se on käytännössä vangittuna ikuiseen tyrmään.&lt;/p&gt;
-
-&lt;p&gt;Täten helppo tapa parantaa koodia on refaktoroida &lt;strong&gt;Termostaatti&lt;/strong&gt; muotoon, jossa lämpömittari elää omassa kooditiedostossaan, täten helposti siirrettävissä muihin tarkoituksiin.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Termostaatti.js
-
-var Lampomittari = require(&#39;Lampomittari&#39;);
-
-module.exports = Termostaatti;
-
-function Termostaatti() {
-	this.lampomittari = new Lampomittari();
-	this.tuuletus = new Tuuletusjarjestelma();
-	...
-}
-
-function Tuuletusjarjestelma() {...}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-
-// Lampomittari.js
-
-module.exports = Lampomittari;
-
-function Lampomittari() {...}
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;strong&gt;Lampomittari-alikomponentti&lt;/strong&gt; otetaan ylläolevassa esimerkissä erikseen käyttöön osaksi &lt;strong&gt;Termostaatti-komponenttia&lt;/strong&gt;. Lämpömittari ei siis enää elä &lt;strong&gt;Termostaatin&lt;/strong&gt; sisällä. Selkeä parannus aiempaan siinä mielessä, että eri komponenttien koodipohjat ovat entistä paremmin jaoteltuina omiin tiedostoihinsa.&lt;/p&gt;
-
-&lt;p&gt;Varsinainen otsikon ongelma ei silti ratkennut - Termostaatti itse hallitsee alikomponentin ottamisen käyttöön.&lt;/p&gt;
-
-&lt;p&gt;Seuraava parannus on siirtää päätäntävalta pois Termostaatin ulottuvilta. Termostaatin vastuulla ei pidä olla lämpömittarin valinta. Termostaatin vastuulla on huolehtia lämpömittarin mitta-asteikon lukemisesta. Oleellista on, että termostaatti saa käyttöönsä luettavissa olevan lämpömittarin.&lt;/p&gt;
-
-&lt;p&gt;Oletetaan esimerkin nimissä, että meillä on kaksi eri tyyppistä lämpömittaria; digitaalinen mittari ja elohopeamittari.&lt;/p&gt;
-
-&lt;p&gt;Termostaattia ei kiinnosta kumpi mittari on sen käytettävissä KUNHAN VAIN molemmat mittarit ovat luettavissa ongelmitta.&lt;/p&gt;
-
-&lt;p&gt;Mutta meitä huoneiston omistajina asia saattaa kiinnostaa. Emme halua elohopeamittaria, sillä elohopea on ympäristömyrkky. Olemme viherhihhuleita, ja suosimme digitaalista mittaria (jonka toiminta ei perustu elohopean lämpölaajenemiseen).&lt;/p&gt;
-
-&lt;p&gt;Käytännössä meillä on kaksi tapaa toteuttaa koodipohja siten, että termostaatti ei ole edes tietoinen millaisen mittarin se saa käyttöönsä.&lt;/p&gt;
-
-&lt;h3 id=&#34;tapa-1-tiedosto-interface&#34;&gt;Tapa 1 (&amp;ldquo;tiedosto-interface&amp;rdquo;)&lt;/h3&gt;
-
-&lt;p&gt;Helpoin tapa ratkoa ongelma on hoksata, että Lampomittari.js -tiedoston määrittämä komponentti otetaan käyttöön Termostaatti.js-tiedostossa nimellä &amp;ldquo;Lampomittari&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;Toisin sanoen, mitä ikinä Lampomittari.js-tiedosto määrittääkään, termostaatti näkee sen nimellä &amp;ldquo;Lampomittari&amp;rdquo;. Kyseessä on puhdas interface, joka pätee tiedostojärjestelmän tasolla. Niin kauan kuin Lampomittari.js-tiedoston nimi ei muutu, voimme &lt;em&gt;kontrolloida termostaatin sisäistä toimintaa ilman että meidän tarvitsee koskea lainkaan Termostaatti.js-tiedostoon.&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;Eli:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Termostaatti.js
-
-var Lampomittari = require(&#39;Lampomittari&#39;);
-
-module.exports = Termostaatti;
-
-function Termostaatti() {
-	this.lampomittari = new Lampomittari();
-	this.tuuletus = new Tuuletusjarjestelma();
-	...
-}
-
-function Tuuletusjarjestelma() {...}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-
-// Lampomittari.js
-
-module.exports = DigitaalinenLampomittari;
-
-function DigitaalinenLampomittari() {...}
-
-function ElohopeaLampomittari() {...}
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva koodipohja antaa Lampomittari.js-tiedostolle tilaisuuden kontrolloida termostaatin sisäistä toimintaa. Jos haluamme vaihtaa termostaatin lämmonmittauksen vanhan koulukunnan menetelmiin, riittää yksi muutos:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Muutos Lampomittari.js koodiin
-module.exports = ElohopeaLampomittari;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Vielä parempaa - voimme käyttää koko Lampomittari.js-tiedostoa yhtenä suurena &amp;ldquo;dispatchina&amp;rdquo;. Tällöin kaikki eri tyyppiset mittarit elävät omissa tiedostoissaan, ja Lampomittari.js-tiedoston tehtäväksi jää valita niistä yksi ja tarjota sitä ulkopuolisille &amp;ldquo;Lampomittari&amp;rdquo;-interfacen nimissä.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Lampomittari.js
-var ElohopeaMittari = require(&#39;ElohopeaLampomittari&#39;);
-var DigitalMittari  = require(&#39;DigitaalinenLampomittari&#39;);
-var SaunaMittari    = require(&#39;SaunaLampomittari&#39;);
-
-module.exports = SaunaMittari;
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Mutta asiassa on ongelma. Entä jos huoneistoon halutaan &lt;em&gt;useampi&lt;/em&gt; termostaatti? Entä jos eri termostaatit eivät halua käyttää samaa lämmönmittaustapaa?&lt;/p&gt;
-
-&lt;p&gt;Niin kauan kuin Lampomittari.js-tiedosto toimii interfacena, se pystyy tarjoamaan vain yhden tavan mitata lämpötila. Lisäksi tuo tapa on kirjoitettu suoraan lähdekoodiin. Tarkoittaen, että ohjelman ajon aikana tuo valittu tapa on vakio - sitä ei pysty muuttamaan.&lt;/p&gt;
-
-&lt;p&gt;Yksi suht typerä tapa ratkaista ongelma on luoda erillinen Termostaatti-tiedosto jokaista erilaista termostaattia varten:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// ElohopeaTermostaatti.js
-
-var Lampomittari = require(&#39;ElohopeaLampomittari&#39;);
-
-module.exports = Termostaatti;
-
-function Termostaatti() {
-	this.lampomittari = new Lampomittari();
-	this.tuuletus = new Tuuletusjarjestelma();
-	...
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// DigitaalinenTermostaatti.js
-
-var Lampomittari = require(&#39;DigitaalinenLampomittari&#39;);
-
-module.exports = Termostaatti;
-
-function Termostaatti() {
-	this.lampomittari = new Lampomittari();
-	this.tuuletus = new Tuuletusjarjestelma();
-	...
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevassa ei ole mitään järkeä. Huomattavaa on, että eri tiedostojen välillä vain yksi koodirivi muuttuu - valitun lämpömittarin nimi.&lt;/p&gt;
-
-&lt;p&gt;Parempikin tapa on.&lt;/p&gt;
-
-&lt;h3 id=&#34;tapa-2-riippuvuuksien-injektointi-moduuliin&#34;&gt;Tapa 2 (&amp;ldquo;riippuvuuksien injektointi moduuliin&amp;rdquo;)&lt;/h3&gt;
-
-&lt;p&gt;Kaiken päämääränä on se, ettei meidän tarvitse koskea Termostaatti.js-tiedostoon silloin, kun haluamme vaihtaa termostaatin lämmönmittaustapaa. Yllä saavutimme tavoitteen require-komennon kautta; otimme käyttöön require-toiminnolla Lampomittari.fi -komponentin - joka ei itse asiassa ollut komponentti lainkaan, vaan ainoastaan &lt;em&gt;esitti&lt;/em&gt; komponenttia. Oikea komponentti oli piilossa Lampomittari.js-tiedoston selän takana.&lt;/p&gt;
-
-&lt;p&gt;Vaihtoehtoinen tapa toteuttaa tavoitteemme on yksinkertaisesti syöttää tarvittavat alikomponentit sisään samalla kun luomme termostaattia.&lt;/p&gt;
-
-&lt;p&gt;Huomioitavaa on, että syötämme alikomponentit sisään &lt;em&gt;ohjelman ajon aikana&lt;/em&gt;. Toisin sanoen, valinta käytetyistä alikomponenteista on tiedossa vasta ohjelman ajon aikana.&lt;/p&gt;
-
-&lt;p&gt;Tämä on fundamentaaline ero aiempiin ratkaisuyrityksiimme. Aiemmissa ratkaisuissa valinta oli aina &lt;strong&gt;kirjattu suoraan lähdekoodiin&lt;/strong&gt;.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Termostaatti.js
-
-module.exports = function(lampomittari, tuuletusjarjestelma) {
-	// Onko lampomittari digitaalinen vai elohopea? 
-	// Emme tiedä. Emme välitä.
-	return new Termostaatti(lampomittari, tuuletusjarjestelma);
-}
-
-function Termostaatti(lampomittari, tuuletusjarjestelma) {
-	
-	...
-}
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tämä toimintamalli eroaa aiemmista siten, että Termostaatti ottaa vastaan alikomponentit täysin ulkoa annettuina. Termostaatti.js-tiedoston tehtäväksi jää &lt;em&gt;rakentaa termostaatti kytkemällä ulkoatulevat komponentit osaksi kokonaisuutta&lt;/em&gt;. Tästä ajattelumallista käytetään nimitystä &amp;ldquo;Factory&amp;rdquo; eli tehdas. Termostaatin käyttäjä voi vapaasti syöttää haluamansa lämmönmittausmenetelmän sisään termostaattia projektiin lisätessään.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Asuinhuoneisto.js
-
-var termostaattitehdas = require(&#39;Termostaatti&#39;);
-
-var saunanTermostaatti = termostaattitehdas(new SaunaMittari(), new Tuuletus());
-var eteisenTermostaatti = termostaattitehdas(new ElohopeaMittari(), new Tuuletus());
-
-...
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Luonnollisesti tapojen #1 ja #2 välillä trade-off. Tapa 1 mahdollistaa loppukäyttäjän olevan auvoisen tietämätön mistään termostaatin sisäisistä aspekteista. Loppukäyttäjä vain ottaa termostaatin käyttöönsä, luottaen sen toimintaan. Tapa 2 antaa loppukäyttäjälle mahdollisuuden &lt;em&gt;määritellä kustomoituja&lt;/em&gt; termostaatteja. Loppukäyttäjä voi itse rakentaa haluamansa termostaatin ikäänkuin LEGO-palikoita kokoamalla. Jokaisen palikan hän voi valita itse.&lt;/p&gt;
-
-&lt;p&gt;Ero on vastaava kuin Applen läppärin ja itsekootun pöytätietokoneen välillä. Applen läppäri on käytännössä yksi iso musta laatikko, ja sen sisäisten alikomponenttien muuttaminen vaatii Apple-sertifioidun ammattilaisen apua.&lt;/p&gt;
-
-&lt;p&gt;Itsekoottu pöytäkone taas&amp;hellip; riittää, että ruuvaa sivukannen auki, vetää muistikamman irti, asettaa uuden muistikamman tilalle. Noin kahden minuutin juttu.&lt;/p&gt;
 </description>
     </item>
     

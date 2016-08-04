@@ -1,0 +1,285 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Näkymämalli (view model) helpottaa elämää &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Näkymämalli (view model) helpottaa elämää</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Thu, Aug 4, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Laravellin kaltainen laittoman hieno ohjelmistokehys hoitaa valtavan määrän abstraktioita koodarin puolesta. Sisääntulevan palvelunpyynnön hallinta, tietokantayhteyden hallinta, jne&hellip; kaikki on valmiiksi pureskeltu, jotta ohjelmoijaparan ei tarvitse vaivata liiaksi päätään.</p>
+
+<p>Mutta jotkin asiat Laravel jättää ohjelmoijan omien abstraktiovalintojen armoille. Yksi tälläinen on näkymämallin (engl. view model) konsepti.</p>
+
+<h3 id="näkymämalli-vs-malli">Näkymämalli vs. malli?</h3>
+
+<p>Ennenkuin keskitymme näkymämalliin, on syytä kerrata ns. &ldquo;tavallisen mallin&rdquo; - eli yksinkertaisesti &ldquo;mallin&rdquo; - olemassaolon tarkoitus.</p>
+
+<p><em>Malli</em> edustaa yksittäistä domain-tason objektia. Domain-tason objekti on yksinkertaisesti jokin applikaation ydintehtävän kannalta oleellinen objekti; esimerkiksi nettipankin taustajärjestelmässä tuollainen domain-objekti voisi olla <em>pankkitili</em>.</p>
+
+<p>Yksittäinen malli on ikäänkuin rakennepiirros (engl. blueprint) tuosta objektista; miltä objekti näyttää, mitä toimintoja se sisältää ja jne.</p>
+
+<blockquote>
+<p>Englanniksi termi &ldquo;model&rdquo; tarkoittaa yleensä laajempaa kokonaisuutta kuin yksittäisen objektin rakennepiirrosta. Tässä yhteydessä käytämme käännöstermiä &ldquo;malli&rdquo; tarkoittamaan juurikin yksittäisen objektin &ldquo;mallia&rdquo;, eli rakennepiirrosta.</p>
+</blockquote>
+
+<p>Tavallinen malli siis edustaa domain-objektia. Se kuvaa yksityiskohtaisesti, kuinka <em>ympäröivä applikaatio</em> voi vuorovaikuttaa objektin kanssa. Esimerkiksi <em>pankkitili</em>:</p>
+
+<pre><code class="language-php">
+// Malli nimeltä &quot;Pankkitili&quot;
+
+// App/Models/Pankkitili.php
+
+class Pankkitili extends Model {
+	
+	public function haeSaldo() {};
+	public function talleta() {};
+	public function nosta() {};
+	public function tilinOmistaja() {};
+
+	// jne..
+}
+
+</code></pre>
+
+<p><em>Malli</em> on useimmiten paras suunnitella niin, että se on ainoastaan kiinnostunut domain-tason asioista. Mitä tarkoitan tällä? Tarkoitan, että <strong>mallin tulisi olla autuaan tietämätön käyttöliittymän olemassaolosta.</strong></p>
+
+<p>Jos malli on autuaan tietämätön käyttöliittymän olemassaolosta, malli EI saa sisältää seuraavanlaisia metodeja:</p>
+
+<pre><code class="language-php">
+// Malli nimeltä &quot;Pankkitili&quot;
+
+// App/Models/Pankkitili.php
+
+class Pankkitili extends Model {
+	// Seuraavat metodit liittyvät käyttöliittymään!
+	// Mallin EI tulisi sisältää seuraavia metodeja, sillä ihannearkkitehtuurissa
+	// malli ei tiedä käyttöliittymän olemassaolosta hölkäsen pöläystä.
+
+	// Etunimi + sukunimi + asiakasnumero
+	public function printtaaOmistajanTiedot() {};
+	// Jos negatiivinen saldo, väri = punainen, muuten väri = vihreä
+	public function varitaSaldo() {};
+}
+
+</code></pre>
+
+<p>Ylläolevan mallin metodit <em>printtaaOmistajanTiedot</em> ja <em>varitaSaldo</em> ovat nk. käyttöliittymämetodeja. Tarkoittaen, että niiden olemassaolon syy on yksinomaan tarjota <em>ihmiskäyttäjälle</em> monipuolisempi ja visuaalisempi käyttöliittymä.</p>
+
+<p><strong>Itse applikaation ydintarkoituksen kannalta em. metodeilla ei ole osaa eikä arpaa.</strong> Pankkijärjestelmä itsessään ei ymmärrä miksi ihmeessä negatiivinen saldo tulisi olla punaisella fontilla - vain ihmissilmä ymmärtää punaisen värin tarkoituksen.</p>
+
+<p>Siksi metodit <em>printtaaOmistajanTiedot</em> ja <em>varitaSaldo</em> on syytä abstraktoida ulos <em>mallista</em> ja siirtää <em>näkymämallin</em> sisälle.</p>
+
+<h3 id="näkymämalli-huolehtii-datan-muokkauksesta-ihmissilmälle-sopivaksi">Näkymämalli huolehtii datan muokkauksesta ihmissilmälle sopivaksi</h3>
+
+<p>Näkymämallin tarkoitus on juurikin ottaa vastuulleen <em>mallin</em> sisältämän datan muokkaus ihmissilmälle sopivaan muotoon. Kun näkymämalli vastaa visuaalisesta representaatiosta, varsinainen <em>malli</em> voi keskittyä omaan ydintehtäväänsä, eli itse applikaation kanssa vuorovaikutukseen. Eli lyhyesti:</p>
+
+<ol>
+<li><em>Malli</em> keskittyy vuorovaikuttamaan applikaation kanssa.</li>
+<li><em>Näkymämalli</em> keskittyy vuorovaikuttamaan ihmiskäyttäjän kanssa.</li>
+</ol>
+
+<p>Jatketaan pankkiesimerkkiämme. Malli on edelleen tämä:</p>
+
+<pre><code class="language-php">
+// Malli nimeltä &quot;Pankkitili&quot;
+
+// App/Models/Pankkitili.php
+
+class Pankkitili extends Model {
+	
+	public function haeSaldo() {};
+	public function talleta() {};
+	public function nosta() {};
+	public function tilinOmistaja() {};
+
+	// jne..
+}
+
+</code></pre>
+
+<p>Luodaan mallin oheen näkymämalli, joka vastaa mm. saldon värittämisestä punaiseksi mikäli tili paukkuu pakkasella.</p>
+
+<p>Näkymämallin nimeämisessä ohjenuorana on, että mallin nimen perään lisätään &ldquo;Presenter&rdquo;. Täten pankkitilin näkymämalli on &ldquo;PankkitiliPresenter&rdquo;.</p>
+
+<pre><code class="language-php">
+// Näkymämalli nimeltä &quot;PankkitiliPresenter&quot;
+
+// App/ViewModels/PankkitiliPresenter.php
+
+class PankkitiliPresenter extends Model {
+	
+	public function printtaaOmistajanTiedot() {}	
+	public function varitaSaldo() {}
+
+	// jne..
+}
+
+</code></pre>
+
+<h3 id="käytännön-toteutus-miten-näkymämalli-saa-tietoonsa-mallin">Käytännön toteutus - miten näkymämalli saa tietoonsa mallin?</h3>
+
+<p>Yllä loimme pohjustukset kahdelle eri konseptille - malli ja näkymämalli. Loimme mallin nimeltä <strong>Pankkitili</strong>, ja tuota mallia vastaavan <em>näkymämallin</em> nimeltä <strong>PankkitiliPresenter</strong>.</p>
+
+<p>Seuraavaksi näkymämalli tulee kytkeä yhteen mallin kanssa. <strong>Kytkentä on yhdensuuntainen.</strong> Pankkitilin ei tarvitse tietää PankkitiliPresenterin olemassaolosta, mutta PankkitiliPresenterin tulee saada käyttöönsä Pankkitili.</p>
+
+<p>Jos PankkitiliPresenter ei tiedä Pankkitilin olemassaolosta mitään, se ei myöskään voi kutsua Pankkitili-objektin metodeja. Ja PankkitiliPresenterin on pakko kutsua Pankkitilin metodeja, sillä esimerkiksi saldon väritys onnistuu vain jos tuo saldosumma on tiedossa.</p>
+
+<p>Yksi hyvä tapa hoitaa kytkös on seuraava:</p>
+
+<pre><code class="language-php">
+// Malli nimeltä &quot;Pankkitili&quot;
+
+// App/Models/Pankkitili.php
+
+class Pankkitili extends Model {
+	
+	public function haeSaldo() {};
+	public function talleta() {};
+	public function nosta() {};
+	public function tilinOmistaja() {};
+
+	public function present() {
+		return new PankkitiliPresenter($this);
+	}
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+class PankkitiliPresenter extends Model {
+
+	protected $tili;
+
+	public function __construct(Pankkitili $tili) {
+		$this-&gt;tili = $tili;
+	}
+	public function printtaaOmistajanTiedot() {
+		// Varmista että nimet isolla alkukirjaimella.
+		return $this-&gt;capitalize($this-&gt;tili-&gt;tilinOmistaja());
+	}	
+	public function varitaSaldo() {
+		$saldo = $this-&gt;tili-&gt;haeSaldo();
+		// Lisää väritys
+		if ($saldo &lt; 0) {
+			return '&lt;div class=&quot;red&quot;&gt;' . $saldo . '&lt;/div&gt;';
+		} else {
+			return '&lt;div class=&quot;green&quot;&gt;' . $saldo . '&lt;/div&gt;';
+		}
+
+	}
+
+	// jne..
+}
+
+</code></pre>
+
+<p>Ylläolevassa arkkitehtuurissa Pankkitili-malli sisältää erillisen <em>present</em>-metodin. Tuo metodi palauttaa PankkitiliPresenter-objektin kutsujan käyttöön.</p>
+
+<p>PankkitiliPresenter-objektia käyttämällä kutsuja saa luotua helposti HTML-koodin pätkän, joka sisältää saldosumman ja tarvittavan HTML-syntaksin tuon saldosumman värittämiseksi joko vihreäksi tai punaiseksi.</p>
+
+<p>On huomattavaa, että esimerkiksi <em>varitaSaldo</em>-metodissa PankkitiliPresenterin tulee kutsua Pankkitilin metodia. Tästä syystä PankkitiliPresenterillä tulee olla aina käytettävissään Pankkitili-objekti.</p>
+
+<p>Valitsemassamme ratkaisussa tuo Pankkitili-objekti annetaan parametrinä PankkitiliPresenterin konstruktoriin.</p>
+
+<h3 id="näkymämallin-käyttö">Näkymämallin käyttö</h3>
+
+<p>Ylläolevan ratkaisumme käyttö on helppoa. Aina kun saatavillamme on Pankkitili, on saatavillamme myös PankkitiliPresenter, sillä Pankkitili-malli sisältää metodi PankkitiliPresenter-objektin luomiseen.</p>
+
+<pre><code class="language-php">
+// views/Saldoikkuna.php
+
+// Oletetaan, että käytössämme on Pankkitili-objekti nimeltä $pankkitili.
+// Esim. Controllerissa olemme avanneet näkymän kutsulla: 
+// view('saldoikkuna')-&gt;with('pankkitili', $pankkitili);
+
+&lt;h1&gt;Tämän hetkinen saldosi&lt;/h1&gt;
+&lt;p&gt;&lt;?php echo $pankkitili-&gt;present()-&gt;varitaSaldo() ;?&gt;&lt;/p&gt;
+
+</code></pre>
+
+<p>Ylläoleva koodi toimii mainiosti. Aina kun haluamme kutsua jotain PankkitiliPresenterin metodia, käytämme muotoa:</p>
+
+<pre><code class="language-php">
+$pankkitili-&gt;present()-&gt;metodi();
+
+</code></pre>
+
+<blockquote>
+<p>Loppukaneetti: näkymämallin käytön koko ydinajatus on, että applikaation kannalta oleelliset toiminnot ja käyttöliittymän kannalta oleelliset toiminnot erotetaan toisistaan. Applikaatiota ei kiinnosta se, millä värisävylle negatiivinen saldo näytetään ihmissilmälle. Ihmissilmää tuo asia kiinnostaa.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>
