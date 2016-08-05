@@ -68,6 +68,216 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://nollaversio.fi/blog/public/nodejs/es7-async-await/">
+        Async ja Await
+      </a>
+    </h1>
+
+    <span class="post-date">Fri, Aug 5, 2016</span>
+
+    
+
+<p>Kokeilin eilen ensimmäistä kertaa <em>async-await</em> -funktion kirjoittamista Javascriptilla. Kyseessä on uusi ja mullistava tapa ohjelmoida asynkronoidusti toimivia funktioita.</p>
+
+<p>Vastaava tapa on ollut esim. C#-kielessä jo kauan, mutta Javascriptiin ominaisuus on vasta tuloillaan. Se ei ole vielä virallisesti osana Javascript-kieltä. Mutta <a href="https://babeljs.io/">Babelin</a> kaltaisten koodimuuntajien avulla tuota ominaisuutta pääsee testaamaan jo tänään.</p>
+
+<blockquote>
+<p>Async-await ei ole virallisesti tuettu ominaisuus. Tuota ominaisuutta voidaan kuitenkin <em>simuloida</em>. Simulointi onnistuu yksinkertaisesti siten, että async ja await-avainsanoja sisältävä Javascript-koodi käännetään koodiksi, joka ei sisällä async ja await-avainsanoja, mutta toteuttaa vastaavat toiminnot muulla tavoin.</p>
+</blockquote>
+
+<h3 id="minkä-ongelman-async-await-ratkoo">Minkä ongelman async-await ratkoo?</h3>
+
+<p>Kerrataanpa tuikitavallisen funktion määritys ja kutsuminen:</p>
+
+<pre><code class="language-javascript">
+function hae(hetu) {
+  // Meillä on jossain muualla määritelty 'henkiloTietokanta'
+  // niminen Javascript-objekti.
+  return henkiloTietokanta[hetu];
+}
+
+var henkilo = hae('010787-111A');
+console.log(henkilo.nimi); // Jaakko Jantunen
+
+</code></pre>
+
+<p>Ylläoleva on perinteinen, synkronoitu Javascript-funktio. Koodi määrittää funktion, ja tämän jälkeen kutsuu tuota funktiota. Funktiokutsun seurauksena saadaan takaisin <em>Henkilö-objekti</em>, jonka attribuutti <em>nimi</em> printataan käyttäjälle.</p>
+
+<p>Vastaavat funktiot ovat arkipäivää kaikissa yleisimmissä ohjelmointikielissä.</p>
+
+<p>Nyt kysymys kuuluu: entä jos <em>hae</em>-funktio joutuisikin hakemaan henkilön tiedot tietokoneen kovalevyltä?</p>
+
+<p>Vaatimus ei ole poikkeuksellinen, päinvastoin. Henkilötietokanta sisältää miljoonia rivejä tietoa. Tuollaisen tietomäärän pitäminen yksinomaan keskusmuistissa (=Javascript-objektin sisällä) on kutakuinkin mahdotonta. Entä jos palvelin joku kaunis päivä kaatuu? Kaikkien henkilöiden tiedot katoaisivat savuna ilmaan!</p>
+
+<p>Meidän on siis pakko tallettaa henkilötiedot kovalevylle.</p>
+
+<p>Nyt naivisti voisimme yrittää seuraavaa:</p>
+
+<pre><code class="language-javascript">
+// HUOM! Tämä yritelmä ei toimi halutusti!
+
+function hae(hetu) {
+  // Meillä on nyt kovalevyllä 'henkiloTietokanta' tiedosto!
+  // Ladataan ensin tietokanta keskusmuistiin.
+  var tietokanta = kovalevy.lue('henkiloTietokanta');
+  // Haetaan haluttu henkilö. Ei toimi kuten haluamme!
+  return tietokanta[hetu];
+}
+
+var henkilo = hae('010787-111A'); //Error! Cannot read property of undefined!
+
+</code></pre>
+
+<p>Ylläoleva koodi ei toimi. Miksi? <strong>Koska tiedoston lukeminen kovalevyltä keskusmuistiin on asynkronoitu operaatio.</strong> Tämä tarkoittaa, että tiedoston lukeminen keskusmuistiin vie sen verran kauan aikaa, että Javascript-koodiajo siirtyy eteenpäin.</p>
+
+<blockquote>
+<p>Vastaava tilanne syntyy meidän ihmisten elämässä usein. Esimerkkinä pankissa asiointi. Astut sisälle pankkiin ja otat vuoronumeron. Edelläsi jonossa on viisitoista henkilöä. Jäätkö kiltisti odottamaan pankin odotustilaan vai käytkö välillä vaikka lounaalla? Jos odotat varvastakaan liikuttamatta, <strong>toimit synkronoidusti</strong>. Jos käyt muilla asioilla ja palaat paikalle omaa vuoroasi varten myöhemmin, <strong>toimit asynkronoidusti</strong>.</p>
+
+<p>Jotta ylläoleva analogia toimisi vielä täsmällisemmin, pankin tulisi <em>ilmoittaa</em> sinulle kun jono etenee vuoronumerosi kohdalle. Tälläinen järjestelmä on käytössä Helsingin Grand Casinolla - aloittaessasi jonotuksen pokeripöytään, saat taskuusi mukaan piipparin, joka ilmoittaa heti kun pöydässä on tilaa. Jonotuksen ajan voit huoletta törsätä pikkurahat kolikkopeleihin.</p>
+</blockquote>
+
+<p>Koska Javascript-koodiajo siirtyy eteenpäin, tarkoittaa tämä, että seuraava rivi</p>
+
+<p><code>return tietokanta[hetu];</code></p>
+
+<p>on ongelmallinen. Yritämme etsiä tietokanta-objektista henkilöä hetun perusteella. Mutta juuri yllä totesimme, että tiedoston luku kovalevyltä vie muutaman tovin aikaa, ja koodinajo ei jää odottamaan. Toisin sanoen, tietokanta-objekti ei voi sisältää haluttua henkilötietokantaa.</p>
+
+<p>Tilanne on sama kuin jos yrittäisit asua talossa, jonka rakentaminen on aloitettu viisi minuuttia sitten. Taloa ei yksinkertaisesti ole olemassa, joten etpä siinä voi asustellakaan.</p>
+
+<h3 id="mikä-on-ratkaisu">Mikä on ratkaisu?</h3>
+
+<p>Ongelman ydin on siis siinä, että kovalevyltä tiedoston lukeminen on asynkronoitu operaatio, ts. se suoritetaan <em>sitten joskus</em>. Koodiajo ei jää odottamaan tuota operaatiota, vaan pyyhältää surutta eteenpäin.</p>
+
+<p>Tästä syystä tarvitsemme konseptin <em>lupaus</em>, joka palauttaa kovalevy.lue-kutsusta <em>lupausobjektin</em>.</p>
+
+<p>Tuo lupausobjekti sisältää tarvittavat mekanismit henkilötietokannan käyttöä varten <em>sitten joskus</em>.</p>
+
+<pre><code class="language-javascript">
+function hae(hetu) {
+  // Meillä on nyt kovalevyllä 'henkiloTietokanta' tiedosto!
+  // Ladataan tietokanta keskusmuistiin.
+  // Koska kyseessä on asynkronoitu operaatio, palautamme lupausobjektin.
+  var lupaus = kovalevy.lue('henkiloTietokanta');
+
+  // lupaus-objekti saa tulevaisuudessa käyttöönsä henkilötietokannan
+  // Kun näin vihdoin tapahtuu, haluamme etsiä henkilön hetun perusteella!
+  return lupaus.then(function(tietokanta) {
+    return tietokanta[hetu];
+  });
+	
+}
+
+hae('010787-111A').then(function(henkilo) {
+  console.log(henkilo.nimi); // Jaakko Jantunen
+})
+
+</code></pre>
+
+<p>Nyt kaikki toimii jälleen. Olemme turvautuneet lupausobjektin käyttöön. Lupausobjekti tarjoaa kutsuttavaksemme <em>then()</em>-metodin, johon voimme tarjota parametriksi funktion. Tuo funktio saa <em>sitten joskus</em> funktiokutsun yhteydessä sisäänsä tietokannan. Myöhemmin teemme toisen <em>then()</em>-kutsun, jonne työnnämme sisään henkilön nimen printtaavan funktion.</p>
+
+<p>Tässä on koko lupauskonseptin viehätysvoima - voimme ketjuttaa asynkronoituja funktiokutsuja lähes samaan tapaan kuin synkronoituja funktiokutsuja:</p>
+
+<pre><code class="language-javascript">
+// Synkronoidut funktiokutsut
+a(b(c(d(e()))));
+
+// Asynkronoidut funktiokutsut
+
+Promise.resolve(e())
+.then(d)
+.then(c)
+.then(b)
+.then(a)
+
+</code></pre>
+
+<p>Vieläkään emme ole aivan päässet itse postauksen aiheeseen, async-await-kuvioon.</p>
+
+<h3 id="async-await">Async-await</h3>
+
+<p>Ylläoleva henkilön haku toimii mainiosti lupausobjekteja ketjuttamalla. Mutta konsepti silti vaatii <em>lupaus.then()</em>-ketjuihin perustuvan koodaustyyliin. Tälläinen koodityyli ei välttämättä ole yhtä intuitiivinen kuin perinteinen synkronoitu koodaus.</p>
+
+<p><strong>Async-await tarjoaa tavan toteuttaa lupauksiin perustuva koodinajo tavalla, joka visuaalisesti muistuttaa tavanomaista synkronoitua koodaustapaa.</strong></p>
+
+<p>Tämä on (ymmärtääkseni) async-awaitin ainoa etu. Se ei tuo mitään uusia maagisia ominaisuuksia - se vain helpottaa koodinkirjoitusta silloin, kun käytämme asynkronoituja funktiokutsuja.</p>
+
+<p>Katsotaan miten henkilötietojen haku onnistuu async-await-kuvion avulla:</p>
+
+<pre><code class="language-javascript">
+async function hae(hetu) {
+  // Meillä on nyt kovalevyllä 'henkiloTietokanta' tiedosto!
+  // Ladataan tietokanta keskusmuistiin.
+  var tietokanta = await kovalevy.lue('henkiloTietokanta');
+  // Haetaan henkilö
+  return tietokanta[hetu];
+	
+}
+
+hae('010787-111A').then(function(henkilo) {
+  console.log(henkilo.nimi); // Jaakko Jantunen
+})
+
+</code></pre>
+
+<p>Kuten yltä huomaamme, <em>hae</em>-funktio muistuttaa <em>synkronoitua</em> funktiota. Ainoa ero on <strong>async</strong> ja <strong>await</strong> avainsanojen käyttö.</p>
+
+<p><code>async function hae(hetu)</code>
+<code>await kovalevy.lue('henkiloTietokanta')</code></p>
+
+<p>Async merkitsee, että kyseinen funktio palauttaa lupausobjektin. Await puolestaan merkkaa paikan, jossa <em>koodi stoppaa</em> - eli koodinajo jämähtää kuin seinään siksi aikaa, kunnes await-avainsanan perässä oleva lauseke on valmis.</p>
+
+<p>Tässä esimerkissä <em>await</em>-termin perässä oleva lauseke on juurikin tiedoston lukeminen kovalevyltä. Toisin sanoen, <em>await</em> kiltisti odottaa, että kovalevyltä lukeminen on valmis. Vasta lukemisen onnistuttua koodinajo siirtyy eteenpäin kohti riviä <em>return tietokanta[hetu]</em>.</p>
+
+<p>Async-await-kuvion todellinen upeus piilee tilanteessa, jossa saman funktiokutsun sisällä on useita <em>await-stoppauksia</em>:</p>
+
+<pre><code class="language-javascript">
+async function ostaVerkkokaupasta(ostaja, ostajanVerkkopankki, myyjanVerkkopankki, tuote) {
+  // Varmistetaan ostajan tiedot ottamalla yhteys YTJ:n yritystietopalveluun
+  var vahvistettu = await ytj.vahvistaYritys(ostaja);
+  // Varmistetaan tuotteen saatavuus (joku varastolla kipaisee katsomaan).
+  var tuoteSaatavilla = await varasto.tarkistaVarastaSaldo(tuote);
+
+  if (vahvistettu &amp;&amp; tuoteSaatavilla) {
+    // Ostajan tiedot kunnossa ja tuote saatavilla!
+
+    // Nostetaan rahat ostajan verkkopankista.
+    var rahat = await ostajanVerkkopankki.nosta(hinta);
+    // Annetaan rahat myyjälle
+    var maksunTila = await myyjanVerkkopankki.talleta(rahat);
+
+    if (maksunTila === true) {
+      // Tilisiirto onnistui.
+      // Haetaan tuote ja annetaan s asiakkaalle
+      // (Haku tarkoittaa, että joku taas kipaisee varastolle.)
+      return await varasto.haeTuote(tuote);
+    } 
+
+  }
+
+}
+var Nordea = /* rajapinta Nordean verkkopankkiin */
+var OP = /* rajapinta OP:n verkkopankkiin */
+
+ostaVerkkokaupasta('Nollaversio IT', Nordea, OP, 'Poravasara')
+.then(function(poravasara) {
+  if (!poravasara) {
+    return console.log(&quot;Jäi saamatta.&quot;)
+  }
+  console.log(&quot;Poravasara saapunut ja käytettävissä&quot;);
+})
+
+</code></pre>
+
+<p>Yllä funktion <em>ostaVerkkokaupasta</em> sisällä käytämme <strong>await</strong>-termiä viidesti. Jokaisen awaitin kohdalla koodinajo stoppaa ja jää odottamaan asynkronoidun operaation valmistumista. Funktio etenee askel kerrallaan, kunnes lopulta <em>sitten joskus</em> saamme (jos saamme) käyttöömme poravasaran.</p>
+
+<blockquote>
+<p>Loppukaneetti: async-await-kuvio on varsin vahva lisäys Javascriptiin. Tällä hetkellä async- ja await-avainsanoja ei voi vielä käyttää ilman Babelin kaltaista koodimuuntajaa. Noheva Javascript-koodari kuitenkin jo etukäteen tutustuttaa itsensä noiden termien käyttöön, sillä mitä todennäköisimmin tulevaisuuden Javascript perustuu paljolti niiden pohjalle.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://nollaversio.fi/blog/public/laravel/view-model-bliss/">
         Näkymämalli (view model) helpottaa elämää
       </a>
