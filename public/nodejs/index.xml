@@ -6,8 +6,110 @@
     <description>Recent content in Nodejs on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Fri, 05 Aug 2016 06:02:06 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 08 Aug 2016 06:45:45 +0300</lastBuildDate>
     <atom:link href="http://nollaversio.fi/blog/public/nodejs/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Kolme tapaa lukea tiedosto (Node.js)</title>
+      <link>http://nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</link>
+      <pubDate>Mon, 08 Aug 2016 06:45:45 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</guid>
+      <description>
+
+&lt;p&gt;Tiedoston lukeminen on varsin yleinen toimenpide Node.js-applikaatiossa. Alla esittelen lyhyesti kolme tapaa hoitaa luku-urakka.&lt;/p&gt;
+
+&lt;h3 id=&#34;synkronoitu-bufferoitu&#34;&gt;Synkronoitu, bufferoitu&lt;/h3&gt;
+
+&lt;p&gt;Synkronoitu ja bufferoitu tiedostoluku tapahtuu seuraavanlaisesti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var fs = require(&#39;fs&#39;)
+
+var tiedostonSisalto = fs.readFileSync(&#39;tiedosto.txt&#39;, &#39;utf8&#39;);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva koodi on äärimmäisen yksinkertainen. Luemme tiedoston nimeltä &lt;em&gt;tiedosto.txt&lt;/em&gt; ja tallennamme sen sisällön &lt;em&gt;tiedostonSisalto&lt;/em&gt;-muuttujaan. Määritämme erikseen vielä, että tiedoston on enkoodattu utf8-merkistöllä, jotta voimme käsitellä sisältöä oikein.&lt;/p&gt;
+
+&lt;p&gt;Ongelmaksi ylläolevassa muodostuu se, että lukeminen on &lt;strong&gt;synkronoitu&lt;/strong&gt; toimenpide. Toisin sanoen, koko Nodejs:n runtime seisoo tyhjän panttina sen aikaa, kun tiedoston lukeminen kovalevyltä on käynnissä. Näin ei tarvitsisi olla, mutta ylläolevassa näin on.&lt;/p&gt;
+
+&lt;p&gt;Toimintojen suoritusjärjestys on kutakuinkin seuraava:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Node.js-prosessi pyytää käyttöjärjestelmää avaamaan tiedoston.&lt;/li&gt;
+&lt;li&gt;Käyttöjärjestelmä pyytää kovalevyä (sen ajureita) suorittamaan luvun.&lt;/li&gt;
+&lt;li&gt;Tiedoston luku tapahtuu&lt;/li&gt;
+&lt;li&gt;Käyttöjärjestelmä informoi Node.js-prosessia onnistuneesta luvusta.&lt;/li&gt;
+&lt;li&gt;Node.js-prosessi jatkaa suoritustaan.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Ongelman ydin on siinä, että vaiheiden 2-4 ajan Node.js-prosessi seisoo paikallaan.&lt;/p&gt;
+
+&lt;h3 id=&#34;asynkronoitu-bufferoitu&#34;&gt;Asynkronoitu, bufferoitu&lt;/h3&gt;
+
+&lt;p&gt;Ylläoleva ongelma ratkeaa suorittamalla tiedostonluku &lt;strong&gt;asynkronoidusti&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var fs = require(&#39;fs&#39;)
+
+fs.readFile(&#39;tiedosto.txt&#39;, &#39;utf8&#39;, function(err, tiedostonSisalto) {
+	console.log(3)
+});
+
+console.log(1);
+console.log(2);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Sen sijaan, että määrittäisimme paluuarvon sisälleen ottavan muuttujan, syötämme tiedoston lukemisesta vastaavaan Node.js-funktioon kyytipojaksi callback-funktion. Callback-funktio nimensä mukaisesti sitten joskus tulee kutsutuksi, saaden parametrinään tiedoston sisällön.&lt;/p&gt;
+
+&lt;p&gt;Huomioitavaa on, että nyt Node.js-runtime &lt;strong&gt;ei seiso&lt;/strong&gt; tyhjän panttina tiedostoluvun aikana. Sen sijaan tiedoston lukeminen fyysiseltä kovalevyltä tapahtuu yhtäaikaa Node.js-prosessin koodinajon kanssa.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevassa koodissa &lt;em&gt;console.log()&lt;/em&gt;-komennot kuvaavat eri koodirivien suoritusjärjestystä. Callback-funktion sisällä oleva lokkaus tapahtuu viimeisenä.&lt;/p&gt;
+
+&lt;p&gt;Asynkronoitu ja bufferoitu ratkaisu on pätevä, ja yleisesti käytössä. Mutta entä jos emme halua bufferoida koko tiedostoa keskusmuistiin? Jos tiedoston koko on esimerkiksi 20 gigatavua, meillä ei riitä keskusmuistissa edes tila:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+FATAL ERROR: CALL_AND_RETRY_0 Allocation failed - process out of memory
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ratkaisu on striimata tiedosto pienissä paloissa.&lt;/p&gt;
+
+&lt;h3 id=&#34;asynkronoitu-streamattu&#34;&gt;Asynkronoitu, streamattu&lt;/h3&gt;
+
+&lt;p&gt;Kolmas ja viimeinen tapa hoitaa tiedoston lukeminen on &lt;em&gt;striimata&lt;/em&gt; tiedoston sisältö pienissä pätkissä kerrallaan. Tällöin kerrallaan keskusmuistissa on vain pieni osa tiedostoa; kun tuo osa on käsitelty, seuraava osa voi ottaa sen paikan.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var fs = require(&#39;fs&#39;);
+var readStream = fs.createReadStream(&#39;tiedosto.txt&#39;);
+
+readStream.on(&#39;data&#39;, function(chunk) {
+	console.log(chunk);
+});
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa ratkaisussa määritämme callback-funktion, jonka lähetämme kyytipojaksi tiedoston lukemisesta vastaavaan järjestelmäfunktioon. Tässä suhteessa ratkaisu on identtinen #2 ratkaisun kanssa.&lt;/p&gt;
+
+&lt;p&gt;Mutta ero #2 ratkaisuun tulee siinä, mitä tuo callback ottaa parametrinään sisälle. Kakkosratkaisussa koko tiedoston sisältö tuli parametrinä sisään. Nyt tulee vain &lt;em&gt;pieni osa&lt;/em&gt; tiedostoa - sen sijaan callback-funktiota kutsutaan *&lt;em&gt;uudelleen ja uudelleen&lt;/em&gt; niin kauan, kunnes koko tiedosto on pala palalta käsitelty.&lt;/p&gt;
+
+&lt;p&gt;Striimauksen ongelma on, että saamme palat yksitellen. Jos siis haluamme &lt;strong&gt;uudelleenrakentaa&lt;/strong&gt; tiedoston sisällön eheänä kokonaisuutena, meidän täytyy erikseen yhdistää nuo palat yhteen.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: yllä kolme yleisintä tapaa hoitaa tiedoston lukeminen ja käsittely Node.js-applikaatiossa. Eri tavat sopivat eri ongelmiin:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;Synkronoitu ja bufferoitu sopii hyvin Node.js-applikaation initialisaatiovaiheeseen (eli kun applikaatio käynnistyy). Initialisaation aikana applikaatio rakentuu keskusmuistiin, ja varsinaisia loppukäyttäjien HTTP-kutsuja ei vielä käsitellä. Tästä syystä synkronoidun kutsun negatiiviset vaikutukset ovat vähäiset. Myöhemmin applikaation normaalin toiminnan aikana synkronoitu kutsu hidastaa merkittävästi applikaation vasteaikaa.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Asynkronoitu ja bufferoitu sopii erinomaisesti pienten tiedostojen lukemiseen applikaation varsinaisen toiminta-ajon aikana. Applikaatio ei jumahda paikalleen, vaan pysyy käyttökelpoisena ja suorituskykyisenä.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Asynkronoitu ja striimattu sopii suurten tiedostojen lukemiseen. Se sopii myös tapauksissa, joissa tiedoston sisältö voidaan pala palalta lähettää eteenpäin, esim. loppukäyttäjän HTTP-yhteyteen.&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Async ja Await</title>

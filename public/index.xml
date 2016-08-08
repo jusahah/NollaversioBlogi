@@ -6,8 +6,110 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Fri, 05 Aug 2016 06:02:06 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 08 Aug 2016 06:45:45 +0300</lastBuildDate>
     <atom:link href="http://nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Kolme tapaa lukea tiedosto (Node.js)</title>
+      <link>http://nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</link>
+      <pubDate>Mon, 08 Aug 2016 06:45:45 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</guid>
+      <description>
+
+&lt;p&gt;Tiedoston lukeminen on varsin yleinen toimenpide Node.js-applikaatiossa. Alla esittelen lyhyesti kolme tapaa hoitaa luku-urakka.&lt;/p&gt;
+
+&lt;h3 id=&#34;synkronoitu-bufferoitu&#34;&gt;Synkronoitu, bufferoitu&lt;/h3&gt;
+
+&lt;p&gt;Synkronoitu ja bufferoitu tiedostoluku tapahtuu seuraavanlaisesti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var fs = require(&#39;fs&#39;)
+
+var tiedostonSisalto = fs.readFileSync(&#39;tiedosto.txt&#39;, &#39;utf8&#39;);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva koodi on äärimmäisen yksinkertainen. Luemme tiedoston nimeltä &lt;em&gt;tiedosto.txt&lt;/em&gt; ja tallennamme sen sisällön &lt;em&gt;tiedostonSisalto&lt;/em&gt;-muuttujaan. Määritämme erikseen vielä, että tiedoston on enkoodattu utf8-merkistöllä, jotta voimme käsitellä sisältöä oikein.&lt;/p&gt;
+
+&lt;p&gt;Ongelmaksi ylläolevassa muodostuu se, että lukeminen on &lt;strong&gt;synkronoitu&lt;/strong&gt; toimenpide. Toisin sanoen, koko Nodejs:n runtime seisoo tyhjän panttina sen aikaa, kun tiedoston lukeminen kovalevyltä on käynnissä. Näin ei tarvitsisi olla, mutta ylläolevassa näin on.&lt;/p&gt;
+
+&lt;p&gt;Toimintojen suoritusjärjestys on kutakuinkin seuraava:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Node.js-prosessi pyytää käyttöjärjestelmää avaamaan tiedoston.&lt;/li&gt;
+&lt;li&gt;Käyttöjärjestelmä pyytää kovalevyä (sen ajureita) suorittamaan luvun.&lt;/li&gt;
+&lt;li&gt;Tiedoston luku tapahtuu&lt;/li&gt;
+&lt;li&gt;Käyttöjärjestelmä informoi Node.js-prosessia onnistuneesta luvusta.&lt;/li&gt;
+&lt;li&gt;Node.js-prosessi jatkaa suoritustaan.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Ongelman ydin on siinä, että vaiheiden 2-4 ajan Node.js-prosessi seisoo paikallaan.&lt;/p&gt;
+
+&lt;h3 id=&#34;asynkronoitu-bufferoitu&#34;&gt;Asynkronoitu, bufferoitu&lt;/h3&gt;
+
+&lt;p&gt;Ylläoleva ongelma ratkeaa suorittamalla tiedostonluku &lt;strong&gt;asynkronoidusti&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var fs = require(&#39;fs&#39;)
+
+fs.readFile(&#39;tiedosto.txt&#39;, &#39;utf8&#39;, function(err, tiedostonSisalto) {
+	console.log(3)
+});
+
+console.log(1);
+console.log(2);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Sen sijaan, että määrittäisimme paluuarvon sisälleen ottavan muuttujan, syötämme tiedoston lukemisesta vastaavaan Node.js-funktioon kyytipojaksi callback-funktion. Callback-funktio nimensä mukaisesti sitten joskus tulee kutsutuksi, saaden parametrinään tiedoston sisällön.&lt;/p&gt;
+
+&lt;p&gt;Huomioitavaa on, että nyt Node.js-runtime &lt;strong&gt;ei seiso&lt;/strong&gt; tyhjän panttina tiedostoluvun aikana. Sen sijaan tiedoston lukeminen fyysiseltä kovalevyltä tapahtuu yhtäaikaa Node.js-prosessin koodinajon kanssa.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevassa koodissa &lt;em&gt;console.log()&lt;/em&gt;-komennot kuvaavat eri koodirivien suoritusjärjestystä. Callback-funktion sisällä oleva lokkaus tapahtuu viimeisenä.&lt;/p&gt;
+
+&lt;p&gt;Asynkronoitu ja bufferoitu ratkaisu on pätevä, ja yleisesti käytössä. Mutta entä jos emme halua bufferoida koko tiedostoa keskusmuistiin? Jos tiedoston koko on esimerkiksi 20 gigatavua, meillä ei riitä keskusmuistissa edes tila:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+FATAL ERROR: CALL_AND_RETRY_0 Allocation failed - process out of memory
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ratkaisu on striimata tiedosto pienissä paloissa.&lt;/p&gt;
+
+&lt;h3 id=&#34;asynkronoitu-streamattu&#34;&gt;Asynkronoitu, streamattu&lt;/h3&gt;
+
+&lt;p&gt;Kolmas ja viimeinen tapa hoitaa tiedoston lukeminen on &lt;em&gt;striimata&lt;/em&gt; tiedoston sisältö pienissä pätkissä kerrallaan. Tällöin kerrallaan keskusmuistissa on vain pieni osa tiedostoa; kun tuo osa on käsitelty, seuraava osa voi ottaa sen paikan.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var fs = require(&#39;fs&#39;);
+var readStream = fs.createReadStream(&#39;tiedosto.txt&#39;);
+
+readStream.on(&#39;data&#39;, function(chunk) {
+	console.log(chunk);
+});
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa ratkaisussa määritämme callback-funktion, jonka lähetämme kyytipojaksi tiedoston lukemisesta vastaavaan järjestelmäfunktioon. Tässä suhteessa ratkaisu on identtinen #2 ratkaisun kanssa.&lt;/p&gt;
+
+&lt;p&gt;Mutta ero #2 ratkaisuun tulee siinä, mitä tuo callback ottaa parametrinään sisälle. Kakkosratkaisussa koko tiedoston sisältö tuli parametrinä sisään. Nyt tulee vain &lt;em&gt;pieni osa&lt;/em&gt; tiedostoa - sen sijaan callback-funktiota kutsutaan *&lt;em&gt;uudelleen ja uudelleen&lt;/em&gt; niin kauan, kunnes koko tiedosto on pala palalta käsitelty.&lt;/p&gt;
+
+&lt;p&gt;Striimauksen ongelma on, että saamme palat yksitellen. Jos siis haluamme &lt;strong&gt;uudelleenrakentaa&lt;/strong&gt; tiedoston sisällön eheänä kokonaisuutena, meidän täytyy erikseen yhdistää nuo palat yhteen.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: yllä kolme yleisintä tapaa hoitaa tiedoston lukeminen ja käsittely Node.js-applikaatiossa. Eri tavat sopivat eri ongelmiin:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;Synkronoitu ja bufferoitu sopii hyvin Node.js-applikaation initialisaatiovaiheeseen (eli kun applikaatio käynnistyy). Initialisaation aikana applikaatio rakentuu keskusmuistiin, ja varsinaisia loppukäyttäjien HTTP-kutsuja ei vielä käsitellä. Tästä syystä synkronoidun kutsun negatiiviset vaikutukset ovat vähäiset. Myöhemmin applikaation normaalin toiminnan aikana synkronoitu kutsu hidastaa merkittävästi applikaation vasteaikaa.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Asynkronoitu ja bufferoitu sopii erinomaisesti pienten tiedostojen lukemiseen applikaation varsinaisen toiminta-ajon aikana. Applikaatio ei jumahda paikalleen, vaan pysyy käyttökelpoisena ja suorituskykyisenä.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Asynkronoitu ja striimattu sopii suurten tiedostojen lukemiseen. Se sopii myös tapauksissa, joissa tiedoston sisältö voidaan pala palalta lähettää eteenpäin, esim. loppukäyttäjän HTTP-yhteyteen.&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Async ja Await</title>
@@ -2599,179 +2701,6 @@ module.exports = function(sisaantulevaData) {
 
 &lt;p&gt;Tässä tapauksessa &lt;em&gt;tap-funktio&lt;/em&gt; pelastaa päivän suorastaan naurettavan helpolla. Kutsumme &lt;em&gt;printtaaFedererinTulokset&lt;/em&gt;-kirjastofunktiota tap-funktion sisältä, ja kaikki toimii.&lt;/p&gt;
 &lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Raskas koodi erillisessä säikeessä? Lupaus auttaa.</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</link>
-      <pubDate>Mon, 18 Jul 2016 17:11:43 +0300</pubDate>
-      
-      <guid>http://nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</guid>
-      <description>
-
-&lt;p&gt;Javascriptin hauska puoli on, että se ajaa itseään mukavasti yhdessä säikeessä. Tämä tarkoittaa, että kaikki
-koodi ajetaan &lt;em&gt;perätysten&lt;/em&gt;, kiltisti jonossa.&lt;/p&gt;
-
-&lt;p&gt;Eli kun funktio &lt;strong&gt;A&lt;/strong&gt; aloittaa ajonsa, funktio &lt;strong&gt;B&lt;/strong&gt; ei voi aloittaa ennenkuin &lt;strong&gt;A&lt;/strong&gt; on valmis. Täydellinen metafööri Javascriptille onkin McDonaldsin autokaistan jono - jos yksi autoilija jää suustansa kiinni noutotiskille, yksikään takana olevista autoista ei liiku senttiäkään.&lt;/p&gt;
-
-&lt;p&gt;Ohjelmoinnin maailmassa tämä tarkoittaa, että jos yksi funktio rohmuaa prosessorin ajoaikaa viisi sekuntia, kaikki muut ajovuoroa odottavat koodinpätkäset joutuvat vähintään tuon viisi sekuntia odottamaan.&lt;/p&gt;
-
-&lt;p&gt;Tämä kylmä totuus pätee sekä selaimen puolella että serverimaailmassa (Node.js).&lt;/p&gt;
-
-&lt;p&gt;Yksi tapa ratkoa jonotuksen tuomat haasteet on pitää huoli, että jono liikkuu vauhdilla. Mäkkärikin tekee näin - he pitävät huolen, ettei yksittäinen asiakas tuki koko autokaistaa, vaan siirtyy sutjakasti elämässään eteenpäin. Koodin puolella tämä on tehtävissä ohjelmoijan maalaisjärjen käytöllä - ohjelmoija arvioi parhaan kykynsä mukaan kuinka kauan kunkin koodinpätkän ajo kestää.&lt;/p&gt;
-
-&lt;p&gt;Jos ajo kestää kaksi mikrosekuntia, ei ongelmia.&lt;/p&gt;
-
-&lt;p&gt;Jos ajo kestää kaksi sekuntia, niin pulassa ollaan.&lt;/p&gt;
-
-&lt;p&gt;Mikä avuksi tilanteisiin, joissa yksittäinen koodinajo on pitkäkestoinen?&lt;/p&gt;
-
-&lt;h3 id=&#34;luo-uusi-säie-joka-tekee-raskaat-työt&#34;&gt;Luo uusi säie, joka tekee raskaat työt&lt;/h3&gt;
-
-&lt;p&gt;Ratkaisu on yksinkertainen - uusi työmyyrä (säie), joka ottaa kontolleen raskaan työurakan. Selaimessa Web Worker-standardi mahdollistaa säikeen luomisen. Muita &lt;em&gt;järkeviä&lt;/em&gt; vaihtoehtoja ei juuri ole.&lt;/p&gt;
-
-&lt;p&gt;Serveripuolella (Node.js) on enemmän vaihtoehtoja. Yksi vaihtoehto on ajaa raskas koodi kokonaan uudessa Node.js-instanssissa. Eli uudessa käyttöjärjestelmän prosessissa, joka pyörittää Node.js-koodia.&lt;/p&gt;
-
-&lt;p&gt;Se voi olla ihan hyväkin idea, mutta aika raskas, sillä koko Node.js-moottori täytyy ladata uusiksi tätä uutta &amp;ldquo;säiettä&amp;rdquo; varten. Jos koodinajo on pitkäkestoinen, tällä ei ole juuri merkitystä.&lt;/p&gt;
-
-&lt;p&gt;Toinen vaihtoehto olisi käyttää &amp;ldquo;kevyempää säiettä&amp;rdquo;, joka ajetaan jo olemassaolevan Node.js-prosessin alaisuudessa. Tällöin käyttöjärjestelmän ei tarvitse synnyttää uutta prosessia, vaan uusi prosessi syntyy kivasti käyttöjärjestelmän tietämättä asiasta mitään.&lt;/p&gt;
-
-&lt;p&gt;Valitaan kuitenkin vaihtoehto yksi ihan siksi, että yksi parhaista &lt;em&gt;säiekirjastoista&lt;/em&gt; turvautuu siihen.&lt;/p&gt;
-
-&lt;h3 id=&#34;threads-kirjasto-ja-lupaukset&#34;&gt;Threads -kirjasto ja lupaukset&lt;/h3&gt;
-
-&lt;p&gt;Oletetaan, että meillä on koodinpätkä, joka etsii kaikki suomalaiset erisnimet tekstidokumentista. Skripti toimii seuraavasti:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// etsiErisnimet.js
-
-var ERISNIMET = [&#39;Aado&#39;, &#39;Aamu&#39;, &#39;Aapo&#39;, ... , &#39;Yrjö&#39;];
-
-module.exports = function(dokumentti) {
-	
-  var sanat = dokumentti.split(&amp;quot; &amp;quot;); // Erottele välilyönnillä
-
-  var nimet = _.filter(sanat, function(sana) {
-    return ERISNIMET.indexOf(sana) !== -1; // Löytyikö sana nimiluettelosta?
-  })
-
-  // Poista duplikaatit
-  // [&#39;Mikko&#39;, &#39;Mikko&#39;, &#39;Matti&#39;] -&amp;gt; [&#39;Mikko&#39;, &#39;Matti&#39;]
-  return _.uniq(nimet);
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Algoritmi on kompleksisuudeltaan about &lt;em&gt;O(nk)&lt;/em&gt;, jossa &lt;em&gt;n&lt;/em&gt; kuvaa tekstin pituutta ja &lt;em&gt;k&lt;/em&gt; etunimien lukumäärää.
-Ei ehkä ihan optimialgoritmi, mutta what the hell. Käyttö on helppoa.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Testi.js
-var nimiEtsinta = require(&#39;etsiErisnimet&#39;);
-
-var nimet = nimiEtsinta(&#39;Pirkko ja Ville menivät kalaan.&#39;);
-console.log(nimet) // [&#39;Pirkko&#39;, &#39;Ville&#39;]
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Seuraavaksi katsotaan, miten tuo algoritmi saadaan ajettua erillisessä säikeessä.&lt;/p&gt;
-
-&lt;p&gt;Ensinnäkin tarvitsemme säiekirjaston. Sen voi asentaa &lt;em&gt;npm install threads &amp;ndash;save&lt;/em&gt; -komennolla komentorivillä.
-Tämän lisäksi on syytä tehdä pieni muutos etsiErisnimet.js-tiedostoon, jotta se pystyy toimimaan threads-kirjaston kanssa. Muuta ei tarvita.&lt;/p&gt;
-
-&lt;p&gt;Sitten itse koodi. Huomattavaa on, että &lt;em&gt;paketoimme&lt;/em&gt; aiemman erisnimien etsintään erikoistuneen koodin siten, että se voidaan ajaa säikeen sisällä.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// etsiErisnimetThreaded.js
-
-// Tämä moduuli toimii yksinomaan wrapperinä.
-
-var threads = require(&#39;threads&#39;); // Säiekirjasto
-var Promise = require(&#39;bluebird&#39;); // Lupauskirjasto
-
-module.exports = function(dokumentti) {
-
-  return new Promise(function(resolve, reject) {
-    // Luodaan uusi säie
-    // Spawn-funktio ottaa parametrikseen sen moduulin nimen, 
-    // jonka koodin säie ottaa ajaakseen.
-    var thread = threads.spawn(&#39;etsiErisnimet&#39;);
-
-    // Säie on luotu pinnan alla ja valmis toimimaan.
-    // Lähetetään säikeelle viesti
-    thread.send(dokumentti)
-    // ...ja jäädään kuuntelemaan vastausta
-    .on(&#39;message&#39;, function(loydetytErisnimet) {
-      // Resolvoidaan lupaus saaduilla tuloksilla.
-      return resolve(loydetytErisnimet);
-    })
-    .on(&#39;error&#39;, function(error) {
-      // Rejektoidaan lupaus
-      return reject(error);
-    });
-
-  });
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// etsiErisnimet.js
-
-// Aiempi erisnimien etsintä toimii kuten ennenkin, mutta
-// tarvitsemme hiukan lisäkoodia hallitsemaan tiedonvaihtoa
-// säikeiden välillä.
-
-var ERISNIMET = [&#39;Aado&#39;, &#39;Aamu&#39;, &#39;Aapo&#39;, ... , &#39;Yrjö&#39;];
-
-module.exports = function(dokumentti, takaisinlahetys) {
-
-  var sanat = dokumentti.split(&amp;quot; &amp;quot;); // Erottele välilyönnillä
-
-  var nimet = _.filter(sanat, function(sana) {
-    return ERISNIMET.indexOf(sana) !== -1; // Löytyikö sana nimiluettelosta?
-  })
-
-  // Poista duplikaatit
-  // [&#39;Mikko&#39;, &#39;Mikko&#39;, &#39;Matti&#39;] -&amp;gt; [&#39;Mikko&#39;, &#39;Matti&#39;]
-  takaisinlahetys(_.uniq(nimet));
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva koodi on kaikki mitä tarvitsemme. Nyt voimme suorittaa erisnimietsinnän täysin erillään omassa säikeessään!&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// RikosSeurantaApplikaatio.js
-
-var Promise = require(&#39;bluebird&#39;);
-var nimietsinta = require(&#39;etsiErisnimetThreaded&#39;);
-
-function vastaanotaDokumentti(dokumentti) {
-	
-  nimietsinta(dokumentti)
-  .then(function(loydetytNimet) {
-    return tarkistaEpailyttavatNimiParit(loydetytNimet);
-  })
-  .catch(function(error) {
-    console.log(&amp;quot;Nimien etsintä epäonnistui&amp;quot;);
-    console.error(error);
-  })
-}
-
-function tarkistaEpailyttavatNimiParit(nimet) {
-  if (_.intersection([&#39;Ilkka&#39;, &#39;Kanerva&#39;], nimet).length === 2) {
-    // Sekä Ilkka että Kanerva löytyivät, soita Karhuryhmä.
-  }
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tällä tavoin olemme kivasti paketoineet säikeidenhallinnan ikävät sivuseikat lupausta tarjoavat abstraktion taakse. &lt;em&gt;RikosSeurantaApplikaation&lt;/em&gt; ei tarvitse välittää tuon taivaallista säikeiden olemassaolosta - riittää, että se kutsuu tarjottua rajapintaa ja ottaa vastaan &lt;em&gt;lupauksen&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Tuo lupaus sitten jonain kauniina aamuna realisoituu todeksi, ja kaikki ovat tyytyväisiä.&lt;/p&gt;
 </description>
     </item>
     

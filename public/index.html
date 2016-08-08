@@ -68,6 +68,111 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/">
+        Kolme tapaa lukea tiedosto (Node.js)
+      </a>
+    </h1>
+
+    <span class="post-date">Mon, Aug 8, 2016</span>
+
+    
+
+<p>Tiedoston lukeminen on varsin yleinen toimenpide Node.js-applikaatiossa. Alla esittelen lyhyesti kolme tapaa hoitaa luku-urakka.</p>
+
+<h3 id="synkronoitu-bufferoitu">Synkronoitu, bufferoitu</h3>
+
+<p>Synkronoitu ja bufferoitu tiedostoluku tapahtuu seuraavanlaisesti:</p>
+
+<pre><code class="language-javascript">
+var fs = require('fs')
+
+var tiedostonSisalto = fs.readFileSync('tiedosto.txt', 'utf8');
+
+</code></pre>
+
+<p>Ylläoleva koodi on äärimmäisen yksinkertainen. Luemme tiedoston nimeltä <em>tiedosto.txt</em> ja tallennamme sen sisällön <em>tiedostonSisalto</em>-muuttujaan. Määritämme erikseen vielä, että tiedoston on enkoodattu utf8-merkistöllä, jotta voimme käsitellä sisältöä oikein.</p>
+
+<p>Ongelmaksi ylläolevassa muodostuu se, että lukeminen on <strong>synkronoitu</strong> toimenpide. Toisin sanoen, koko Nodejs:n runtime seisoo tyhjän panttina sen aikaa, kun tiedoston lukeminen kovalevyltä on käynnissä. Näin ei tarvitsisi olla, mutta ylläolevassa näin on.</p>
+
+<p>Toimintojen suoritusjärjestys on kutakuinkin seuraava:</p>
+
+<ol>
+<li>Node.js-prosessi pyytää käyttöjärjestelmää avaamaan tiedoston.</li>
+<li>Käyttöjärjestelmä pyytää kovalevyä (sen ajureita) suorittamaan luvun.</li>
+<li>Tiedoston luku tapahtuu</li>
+<li>Käyttöjärjestelmä informoi Node.js-prosessia onnistuneesta luvusta.</li>
+<li>Node.js-prosessi jatkaa suoritustaan.</li>
+</ol>
+
+<p>Ongelman ydin on siinä, että vaiheiden 2-4 ajan Node.js-prosessi seisoo paikallaan.</p>
+
+<h3 id="asynkronoitu-bufferoitu">Asynkronoitu, bufferoitu</h3>
+
+<p>Ylläoleva ongelma ratkeaa suorittamalla tiedostonluku <strong>asynkronoidusti</strong>.</p>
+
+<pre><code class="language-javascript">
+var fs = require('fs')
+
+fs.readFile('tiedosto.txt', 'utf8', function(err, tiedostonSisalto) {
+	console.log(3)
+});
+
+console.log(1);
+console.log(2);
+
+</code></pre>
+
+<p>Sen sijaan, että määrittäisimme paluuarvon sisälleen ottavan muuttujan, syötämme tiedoston lukemisesta vastaavaan Node.js-funktioon kyytipojaksi callback-funktion. Callback-funktio nimensä mukaisesti sitten joskus tulee kutsutuksi, saaden parametrinään tiedoston sisällön.</p>
+
+<p>Huomioitavaa on, että nyt Node.js-runtime <strong>ei seiso</strong> tyhjän panttina tiedostoluvun aikana. Sen sijaan tiedoston lukeminen fyysiseltä kovalevyltä tapahtuu yhtäaikaa Node.js-prosessin koodinajon kanssa.</p>
+
+<p>Ylläolevassa koodissa <em>console.log()</em>-komennot kuvaavat eri koodirivien suoritusjärjestystä. Callback-funktion sisällä oleva lokkaus tapahtuu viimeisenä.</p>
+
+<p>Asynkronoitu ja bufferoitu ratkaisu on pätevä, ja yleisesti käytössä. Mutta entä jos emme halua bufferoida koko tiedostoa keskusmuistiin? Jos tiedoston koko on esimerkiksi 20 gigatavua, meillä ei riitä keskusmuistissa edes tila:</p>
+
+<pre><code class="language-javascript">
+FATAL ERROR: CALL_AND_RETRY_0 Allocation failed - process out of memory
+
+</code></pre>
+
+<p>Ratkaisu on striimata tiedosto pienissä paloissa.</p>
+
+<h3 id="asynkronoitu-streamattu">Asynkronoitu, streamattu</h3>
+
+<p>Kolmas ja viimeinen tapa hoitaa tiedoston lukeminen on <em>striimata</em> tiedoston sisältö pienissä pätkissä kerrallaan. Tällöin kerrallaan keskusmuistissa on vain pieni osa tiedostoa; kun tuo osa on käsitelty, seuraava osa voi ottaa sen paikan.</p>
+
+<pre><code class="language-javascript">
+var fs = require('fs');
+var readStream = fs.createReadStream('tiedosto.txt');
+
+readStream.on('data', function(chunk) {
+	console.log(chunk);
+});
+
+</code></pre>
+
+<p>Ylläolevassa ratkaisussa määritämme callback-funktion, jonka lähetämme kyytipojaksi tiedoston lukemisesta vastaavaan järjestelmäfunktioon. Tässä suhteessa ratkaisu on identtinen #2 ratkaisun kanssa.</p>
+
+<p>Mutta ero #2 ratkaisuun tulee siinä, mitä tuo callback ottaa parametrinään sisälle. Kakkosratkaisussa koko tiedoston sisältö tuli parametrinä sisään. Nyt tulee vain <em>pieni osa</em> tiedostoa - sen sijaan callback-funktiota kutsutaan *<em>uudelleen ja uudelleen</em> niin kauan, kunnes koko tiedosto on pala palalta käsitelty.</p>
+
+<p>Striimauksen ongelma on, että saamme palat yksitellen. Jos siis haluamme <strong>uudelleenrakentaa</strong> tiedoston sisällön eheänä kokonaisuutena, meidän täytyy erikseen yhdistää nuo palat yhteen.</p>
+
+<blockquote>
+<p>Loppukaneetti: yllä kolme yleisintä tapaa hoitaa tiedoston lukeminen ja käsittely Node.js-applikaatiossa. Eri tavat sopivat eri ongelmiin:</p>
+
+<ol>
+<li><p>Synkronoitu ja bufferoitu sopii hyvin Node.js-applikaation initialisaatiovaiheeseen (eli kun applikaatio käynnistyy). Initialisaation aikana applikaatio rakentuu keskusmuistiin, ja varsinaisia loppukäyttäjien HTTP-kutsuja ei vielä käsitellä. Tästä syystä synkronoidun kutsun negatiiviset vaikutukset ovat vähäiset. Myöhemmin applikaation normaalin toiminnan aikana synkronoitu kutsu hidastaa merkittävästi applikaation vasteaikaa.</p></li>
+
+<li><p>Asynkronoitu ja bufferoitu sopii erinomaisesti pienten tiedostojen lukemiseen applikaation varsinaisen toiminta-ajon aikana. Applikaatio ei jumahda paikalleen, vaan pysyy käyttökelpoisena ja suorituskykyisenä.</p></li>
+
+<li><p>Asynkronoitu ja striimattu sopii suurten tiedostojen lukemiseen. Se sopii myös tapauksissa, joissa tiedoston sisältö voidaan pala palalta lähettää eteenpäin, esim. loppukäyttäjän HTTP-yhteyteen.</p></li>
+</ol>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://nollaversio.fi/blog/public/nodejs/es7-async-await/">
         Async ja Await
       </a>
