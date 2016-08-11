@@ -1,0 +1,267 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Rekursiivinen lupausketju ajurina? (osa 2) &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Rekursiivinen lupausketju ajurina? (osa 2)</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Wed, Aug 10, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      <p>(Tämä on jatkoa postaukselle <a href="http://nollaversio.fi/blog/public/nodejs/promise-workflow-manager">Rekursiivinen lupausketju ajurina? (osa 1)</a>)</p>
+
+<p>Rakennan parhaillaan ohjelmakehystä (työ)nimeltään <em>PromiseMonopoly</em>. Tuon kehyksen tarkoitus on valmistuessaan mahdollistaa keskuspalvelimen kautta toimivien vuoropohjaisten pelien helpompi toteuttaminen.</p>
+
+<p>Kehys abstraktoi vastuulleen yhteyksien hallinnan ja ns. game-loopin pyörittämisen. Jälkimmäinen vastuualue on keskeinen osa mitä tahansa vuoropohjaista peliä. Ajatellaan vaikka Monopolia; meillä on viisi pelaajaa, jotka kukin tekevät siirtonsa vuorollaan. Siirtovuoro kiertää ympyrää kullakin hetkellä pelissä mukana olevien pelaajien kesken kunnes lopulta jäljellä on vain yksi pelaaja. Tämä viimeinen mohikaani on pelin voittaja.</p>
+
+<p>Vastaava ympyrää kiertävä siirtovuorojärjestys on ominainen käytännössä kaikille vuoropohjaisille peleille. Ainoa mikä vaihtelee on pelaajien määrä.</p>
+
+<p>Esimerkiksi shakissa siirtovuoro hyppii kahden pelaajan välillä. Shakkipeli päättyy heti kun toinen pelaajista ei enää kykene tekemään siirtoa (eli laudalla on matti tai patti).</p>
+
+<p>Rakennusvaiheessa oleva ohjelmistokehykseni abstraktoi siirtovuorojen hallinnan seuraavalla tavalla:</p>
+
+<pre><code class="language-javascript">
+var peliTila = new Peli();
+
+var SIIRTO_MAX_AIKA = 5000; // Siirtoaika max. viisi sekuntia.
+
+function aloitaPeli(pelaajat) {
+    // Pyydä kutakin pelaajaa yksitellen tekemään siirtonsa  
+	return siirtoKierros(pelaajat)
+	// Pelaajat, jotka eivät jatka seuraavalle siirtokierrokselle saivat 
+	// palautusarvonaan &quot;null&quot;, joten heidät voi filteröidä pois.
+	.then(_.compact)
+	.then(function(mukanaOlevatPelaajat) {
+
+	  if (mukanaOlevaPelaajat.length &lt;= 1) {
+		// Vain yksi tai nolla pelaajaa enää mukana, lopeta peli.
+		throw new LopetaPeli();
+	  }
+
+	  // Peli jatkuu, aloita uusi siirtoKierros 
+	  // Vain yhä mukana olevat pelaajat pääsevät mukaan
+	  // uudelle siirtokierrokselle.
+	  return siirtoKierros(mukanaOlevatPelaajat);
+	})
+	.catch(LopetaPeli, function() {
+		// Peli on päättynyt
+		// Älä rekursoi
+		console.log(&quot;Peli päättynyt&quot;);
+	})
+}
+
+function siirtoKierros(pelaajat) {
+  return Promise.mapSeries(pelaajat, function(pelaaja) {
+    if (pelaaja.hasDisconnected()) return null;
+    return __pyydaSiirtoa(pelaaja);
+  });	
+}
+
+function __pyydaSiirtoa(pelaaja) {
+  // pelaaja.teeSiirto() lähettää pelaajalle pyynnön tehdä siirto.
+  // .timeout() määrittää maksimiajan jonka puitteissa tuo siirto on tehtävä.
+  return pelaaja.teeSiirto().timeout(SIIRTO_MAX_AIKA)
+  .tap(function(siirto) {
+    // Throws &quot;Laitonsiirto&quot;-Error jos kyseessä laiton siirto.
+    return tarkistaSiirronLaillisuus(siirto);
+  })
+  .then(function(siirto) {
+    // Jos pääsemme tänne, siirto on ollut laillinen
+    // Muokkaamme pelin tämän hetkistä tilaa siirron pohjalta.
+    // Pelitila yksinkertaisesti tarkoittaa pelin tämän hetkistä pelitilannetta, esim.
+    // shakkipelissä pelitila tarkoittaa laudalla olevaa asemaa.
+    var uusiPelitila = toteutaSiirto(siirto);
+    // Ilmoitamme uuden tilapäivityksen kaikille pelin osanottajille.
+    // (jotta he pysyvät kärryillä pelin etenemisestä).
+
+    viestiPelaajille(pelaajat, {
+      aihe: 'uusi_siirto_tehty',
+      siirto: siirto,
+      pelitila: uusiPelitila
+    });
+    // Palautamme pelaajan sillä hän jatkaa mukana pelissä.
+    return pelaaja;
+
+    // 
+  })
+  .catch(Laitonsiirto, function() {
+    // Pelaaja yritti tehdä laittoman siirron.
+    // Palauta vuoro pelaajalle ja pyydä tekemään laillinen siirto.
+    // Kutsumme rekursiivisesti tätä funktiota uudestaan.
+    return this.__pyydaSiirtoa(pelaaja);
+
+  })
+  .catch(TimeoutError, function() {
+    // .timeout(aika) metodimme heitti virheen, eli
+    // pelaaja ei ehtinyt tekemään siirtoaan ajoissa.
+
+    // Vakioasetuksena pelaaja häviää pelin, eli palautamme arvon null.
+    return null;
+  })
+
+	
+}
+
+function toteutaSiirto(siirto) {
+  // Muokkaa pelitilaa siirron pohjalta jotenkin ja palauta muokattu pelitila.
+  // Muokkaaminen on pelikohtaista ja kehyksen käyttäjä määrittää muokkausfunktion.
+
+  return peliTila;
+}
+
+function viestiPelaajille(pelaajat, viesti) {
+  // Kutsu kunkin pelaajan &quot;lahetaViesti&quot;-metodia, joka
+  // hoitaa kommunikoinnin pelaajan suuntaan.
+  _.map(pelaajat, function(pelaaja) {
+    pelaaja.lahetaViesti(viesti);
+  });
+}
+
+</code></pre>
+
+<p>Yllä on yksinkertaistettu versio asynkronoidusta game-loopista, joka pyytää vuorotellen pelaajia tekemään siirtojaan kunnes lopulta vain yksi pelaaja on jäljellä.</p>
+
+<p>Koko loopin keskiössä on <strong>Promise.mapSeries</strong>, joka yksi kerrallaan kutsuu <em>__pyydaSiirtoa</em>-funktiota kullekin pelaajalle. <strong>Promise.mapSeries</strong>-kutsun palautusarvo sisältää listan pelaajista, jotka jatkavat peliä seuraavalle kierrokselle.</p>
+
+<p>Tämä lista rakentuu pelaaja pelaajalta sen mukaan, mitä <em>__pyydaSiirtoa</em>-funktio palauttaa. Jos <em>__pyydaSiirtoa</em> palauttaa <em>null</em>, pelaaja ei jatka seuraavalle kierrokselle (= hän on hävinnyt pelin). Jos <em>__pyydaSiirtoa</em> palauttaa <em>Pelaajan</em>, pelaajan jatkaa seuraavalle kierrokselle.</p>
+
+<p>Ylimmällä tasolla funktio <strong>aloitaPeli</strong> laittaa pyörät pyörimään. Se kutsuu rekursiivisesti aina uutta siirtokierrosta pelattavaksi. Kunkin siirtokierroksen päätteeksi se tarkistaa onko peli päättynyt (= vähemmän kuin kaksi pelaajaa jäljellä). Jos ei ole, se aloittaa uuden siirtokierroksen.</p>
+
+<p>Asynkronoidun game-loopin perusominaisuus on, että kaikki funktiot palauttavat <em>lupauksen</em>. Tämä lupaus voidaan sitten ketjuttaa osaksi suurempaa lupausketjua. Poikkeuksena on funktio kuten <strong>viestiPelaajille</strong>, jonka oletetaan suorittavan tehtävänsä välittömästi (viestien lähettäminen kullekin pelaajalle yksinkertaisesti oletetaan onnistuvaksi, myöhemmässä versiossa oletuksesta luovutaan ja käytetään erillistä &ldquo;disconnect&rdquo;-handleria reagoimaan yhteysvirheisiin pelaajan ja palvelimen välillä).</p>
+
+<p>Ylläolevasta koodista puuttuu vielä <em>tärkein</em> ohjelmistokehykselle ominainen aspekti; mahdollisuus kutsua kehyksen käyttäjän määrittämiä lisäfunktioita. Koska esimerkiksi shakkipelissä tehtävän siirron laillisuuden tarkistaminen on varsin erilainen prosessi kuin pokeripelissä tehtävän siirron laillisuuden tarkistaminen, on kehyksen käyttäjän pystyttävä <em>pluggaamaan sisään</em> haluamansa tarkistusfunktio.</p>
+
+<p>Toisin sanoen, tämä kohta koodia:</p>
+
+<pre><code class="language-javascript">
+.tap(function(siirto) {
+   // Throws &quot;Laitonsiirto&quot;-Error jos kyseessä laiton siirto.
+   // Kutsumme staattisesti valittua tarkistusfunktiota.
+   return tarkistaSiirronLaillisuus(siirto);
+})
+
+</code></pre>
+
+<p>menee kutakuinkin muotoon</p>
+
+<pre><code class="language-javascript">
+.tap(function(siirto) {
+   // Throws &quot;Laitonsiirto&quot;-Error jos kyseessä laiton siirto.
+   // Kehyksen käyttäjä tarjoaa meille tarkistusfunktion osana
+   // &quot;laajennukset&quot;-objektia, jonka hän on määrittänyt.
+   return laajennukset['tarkistaSiirronLaillisuus'](siirto);
+})
+
+</code></pre>
+
+<p>Antamalla käyttäjälle vapauden valita <em>laajennukset</em>-objektin funktioiden toteutukset, kehyksen käyttäjä kykenee toteuttamaan haluamansa pelilogiikan kehyksen pohjalle. Esimerkiksi timeout-virhetilanteen hallinta:</p>
+
+<p>Vanha muoto:</p>
+
+<pre><code class="language-javascript">
+.catch(TimeoutError, function() {
+	// .timeout(aika) metodimme heitti virheen, eli
+	// pelaaja ei ehtinyt tekemään siirtoaan ajoissa.
+
+	// Vakioasetuksena pelaaja häviää pelin, eli palautamme arvon null.
+	return null;
+})
+
+</code></pre>
+
+<p>ja uusi muoto:</p>
+
+<pre><code class="language-javascript">
+.catch(TimeoutError, function() {
+	// .timeout(aika) metodimme heitti virheen, eli
+	// pelaaja ei ehtinyt tekemään siirtoaan ajoissa.
+
+	// Annamme kehyksen käyttäjän tarjoaman funktion 
+	// päättää miten reagoidaan
+	return laajennukset['aikaKuluiUmpeen']();
+})
+
+</code></pre>
+
+<p>Huomioitavaa on, että kehyksen käyttäjän tarjoama kutsufunktio voi sisältään myös heittää virhetilanteita, jotka sitten kehyksen lupausketju nappaa kiinni. Tällä tavoin kutsufunktio voi esimerkiksi päättää pelin ennenaikaisesti (= ennen kuin vain yksi tai nolla pelaajaa on jäljellä).</p>
+
+<pre><code class="language-javascript">
+laajennukset['aikaKuluiUmpeen'] = function() {
+	throw new LopetaPeli();
+}
+
+</code></pre>
+
+<p>Jatketaan tästä ensi kerralla.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

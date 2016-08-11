@@ -150,7 +150,7 @@ Käytännössä web-applikaatio siis lähettää lomakesivun mukana CSRF-tunnist
 &lt;blockquote&gt;
 &lt;p&gt;Loppukaneetti: XSS:n avulla saattaa teoriassa olla mahdollista &lt;em&gt;selvittää&lt;/em&gt; CRSF-tunniste kesken hyökkäyksen. Tällöin CSRF-suojaus menettää tehonsa. Tämä vaatii, että XSS-hyökkääjällä on mahdollisuus ajaa mielivaltaista Javascript-koodia uhrinsa www-selaimessa.&lt;/p&gt;
 
-&lt;p&gt;Jos tätä mahdollisuutta ei ole, CSRF-suojaus toimii ja estää muunlaiset hyökkäysyritykset; esim. linkki-injektion, jossa rikollinen on &lt;em&gt;jotenkin&lt;/em&gt; saanut nettipankin käyttöliittymään lisättyä linkin, jota klikkaamalla etukäteen suunniteltu lomakedata lähtee salaa liikkeelle. Koska tuo etukäteen suunniteltu lomakedata ei voi mitenkään tietää ETUKÄTEEN sen hetkisen CSRF-tunnisteen merkkijonoa, CSRF-suojaus toimii ja rikollinen jää nuolemaan näppejään.&lt;/p&gt;
+&lt;p&gt;Jos tätä mahdollisuutta ei ole, CSRF-suojaus toimii ja estää useimmat muunlaiset hyökkäysyritykset; esim. linkki-injektion, jossa rikollinen on &lt;em&gt;jotenkin&lt;/em&gt; saanut nettipankin käyttöliittymään lisättyä linkin, jota klikkaamalla etukäteen suunniteltu lomakedata lähtee salaa liikkeelle. Koska tuo etukäteen suunniteltu lomakedata ei voi mitenkään tietää ETUKÄTEEN sen hetkisen CSRF-tunnisteen merkkijonoa, CSRF-suojaus toimii ja rikollinen jää nuolemaan näppejään.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>

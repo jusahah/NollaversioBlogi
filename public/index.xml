@@ -6,8 +6,319 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Tue, 09 Aug 2016 06:07:23 +0300</lastBuildDate>
+    <lastBuildDate>Thu, 11 Aug 2016 06:38:25 +0300</lastBuildDate>
     <atom:link href="http://nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Asynkronoidun koodin testaus (Mocha)</title>
+      <link>http://nollaversio.fi/blog/public/nodejs/mocha-testing/</link>
+      <pubDate>Thu, 11 Aug 2016 06:38:25 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/nodejs/mocha-testing/</guid>
+      <description>
+
+&lt;p&gt;Rakensin eilen &lt;em&gt;PromiseMonopoly&lt;/em&gt;-nimistä ohjelmistokehystäni jälleen hiukan eteenpäin. Kehys on siinä pisteessä, että on syytä kirjoittaa muutamia yksinkertaisia automatisoituja testejä sille.&lt;/p&gt;
+
+&lt;p&gt;Piskuiseksi ongelmaksi muodostui, että koska kutsut kehyksen sisälle ovat &lt;em&gt;asynkronoituja&lt;/em&gt; - eli palauttavat lupauksen -, testaaminen täytyy myös tehdä asynkronoidusti.&lt;/p&gt;
+
+&lt;p&gt;Maanmainio &lt;a href=&#34;https://mochajs.org/&#34;&gt;Mocha&lt;/a&gt; tuli tässä kohtaa apuun.&lt;/p&gt;
+
+&lt;h3 id=&#34;async-testi-mochalla&#34;&gt;Async-testi Mochalla&lt;/h3&gt;
+
+&lt;p&gt;Kirjoitin kehykselleni allaolevan testin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+describe(&#39;Phase&#39;, function() {
+  describe(&#39;onEnter + onExit&#39;, function() {
+    it(&#39;Phase with empty subphases goes correctly&#39;, function(done) {
+      var tracking = [];
+      var testiphase = new Phase(&#39;testi&#39;, {loop: false}, []);
+      testiphase.onEnter = function() {
+        tracking.push(&amp;quot;START&amp;quot;);
+      }
+
+      testiphase.onExit = function() {
+        tracking.push(&amp;quot;STOP&amp;quot;);
+      }
+      testiphase.__initialize({}, [new Player(whiteUser), new Player(blackUser)]);
+
+      testiphase.__start()
+      .then(function() {
+        expect(tracking).to.deep.equal([&#39;START&#39;, &#39;STOP&#39;]);
+        done();
+      })
+    })
+  })
+})	
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva testi varmistaa, että &lt;em&gt;onEnter&lt;/em&gt;- ja &lt;em&gt;onExit&lt;/em&gt;-kutsufunktiot tulevat kutsutuksi kehyksen toimesta oikeassa järjestyksessä. Eli kutsuessamme &lt;strong&gt;testiphase.__start()&lt;/strong&gt;, myöhemmin meillä on tracking-listassa viestit &amp;ldquo;START&amp;rdquo; ja &amp;ldquo;STOP&amp;rdquo; peräkkäin.&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;expect(tracking).to.deep.equal([&#39;START&#39;, &#39;STOP&#39;]);&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Asynkronoidun testauksen ytimessä Mochalla on tämä koodirivi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+ it(&#39;Phase with empty subphases goes correctly&#39;, function(done) {
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Oleellista ylläolevassa rivissä on &lt;strong&gt;done&lt;/strong&gt;-parametri, jonka testiajon suorittava funktio ottaa vastaan. Mikä tuo mystinen &lt;strong&gt;done&lt;/strong&gt; sitten on? &lt;em&gt;Se on parametri on funktio, jota kutsumalla testi julistetaan suoritetuksi.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Toinen tärkeä on tämä rivi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+ expect(tracking).to.deep.equal([&#39;START&#39;, &#39;STOP&#39;]);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Expect&lt;/strong&gt;-kutsulla suoritamme varsinaisen testin, eli varmistamme, että ohjelma-ajon tuottama tulos on haluttu.&lt;/p&gt;
+
+&lt;p&gt;On syytä huomata, missä tämä expect-kutsu sijaitsee; se on lupausketjun viimeisen &lt;em&gt;then&lt;/em&gt;-metodin sisällä! Tämä tarkoittaa, että varsinainen testaus suoritetaan vasta kun lupausketju on siirtynyt viimeiseen vaiheeseensa. Muita vaihtoehtoja suorittaa testaus ei ole, sillä testauksen kannalta relevantit operaatiot suoritetaan lupausketjun aiemmissa vaiheissa.&lt;/p&gt;
+
+&lt;p&gt;Seuraava esimerkillinen testi EI toimi kuten haluamme:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Ei toimi, async ja sync sekoitettuna!
+
+describe(&#39;Matikka&#39;, function() {
+  describe(&#39;Yhteenlaskut&#39;, function() {
+    it(&#39;2+2=4&#39;, function() {
+      var summa = laskeAsync(2, 2);
+      expect(4).to.equal(summa);
+    })
+  })
+})	
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva ei toimi juuri siksi, että &lt;strong&gt;laskeAsync&lt;/strong&gt; on (nimensä mukaisesti) asynkronoitu funktio. Se ei voi palauttaa haluttua lukua, sillä asynkronoidut funktiokutsut eivät tiedä lopputulosta ajoissa. Tässä tapauksessa oletamme, että &lt;strong&gt;laskeAsync&lt;/strong&gt; suorittaa yhteenlaskun vaikkapa kysymällä Googlen serveriltä lopputulosta. Tuo lopputulos saapuu sitten joskus, riippuen nettiyhteyden nopeudesta.&lt;/p&gt;
+
+&lt;p&gt;Eli ongelma on, että muuttuja &lt;em&gt;summa&lt;/em&gt; ei ole ajoissa tiedossa.&lt;/p&gt;
+
+&lt;p&gt;Ongelma on helppo korjata, ja muuntaa testaus asynkronoituun muotoon:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Toimii, 100% async!
+
+describe(&#39;Matikka&#39;, function() {
+  describe(&#39;Yhteenlaskut&#39;, function() {
+    it(&#39;2+2=4&#39;, function(done) {
+      laskeAsync(2, 2).then(function(summa) {
+        expect(4).to.equal(summa);
+        done();
+      })
+			
+    })
+  })
+})	
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Nyt homma pelittää virheettömästi. Kutsumme &lt;strong&gt;laskeAsync&lt;/strong&gt;-funktiota, jota palauttaa lupauksen. Kun tuo lupaus täyttyy (&lt;em&gt;then()&lt;/em&gt;), meillä on haluamamme &lt;em&gt;summa&lt;/em&gt; saatavilla ja voimme varmistaa &lt;strong&gt;expect&lt;/strong&gt;-kutsun avulla, että tuo summa on neljä.&lt;/p&gt;
+
+&lt;p&gt;Suoritettuamme &lt;strong&gt;expect&lt;/strong&gt;-testin kutsumme funktiota &lt;em&gt;done&lt;/em&gt;, joka ilmoittaa Mochalle, että testaus on tältä osalta valmis. Miksi tuota done-funktiota pitää erikseen kutsua?&lt;/p&gt;
+
+&lt;p&gt;Synkronoidussa versiossa ei tarvitse. Tämä siksi, että Mocha voi olettaa testauksen olevan valmis heti kun kooditiedosto on ajettu kerralla loppuun. Eli siis ollaan saavuttu viimeiselle koodiriville.&lt;/p&gt;
+
+&lt;p&gt;Mutta asynkronoidussa versiossa Mocha ei voi tehdä tuollaisia rämäpäisiä oletuksia. Osa testauskoodista saattaa odottaa vuoroaan. Meidän esimerkissämme näin tekee Googlen palvelimelta yhteenlaskun tulosta odottava koodipätkä. Tällöin Mocha ei voi vain julistaa testejä suoritetuksi heti kun testitiedoston viimeinen koodirivi on nähty ja ajettu; testit ajetaan &lt;em&gt;myöhemmin&lt;/em&gt; ja on syytä jäätä odottamaan testien tuloksia. Done-funktion käyttö mahdollistaa odotuksen - kukin yksittäinen testi ilmoittaa oman done-funktionsa kautta milloin se on valmis.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Rekursiivinen lupausketju ajurina? (osa 2)</title>
+      <link>http://nollaversio.fi/blog/public/nodejs/promise-mapseries/</link>
+      <pubDate>Wed, 10 Aug 2016 03:08:44 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/nodejs/promise-mapseries/</guid>
+      <description>&lt;p&gt;(Tämä on jatkoa postaukselle &lt;a href=&#34;http://nollaversio.fi/blog/public/nodejs/promise-workflow-manager&#34;&gt;Rekursiivinen lupausketju ajurina? (osa 1)&lt;/a&gt;)&lt;/p&gt;
+
+&lt;p&gt;Rakennan parhaillaan ohjelmakehystä (työ)nimeltään &lt;em&gt;PromiseMonopoly&lt;/em&gt;. Tuon kehyksen tarkoitus on valmistuessaan mahdollistaa keskuspalvelimen kautta toimivien vuoropohjaisten pelien helpompi toteuttaminen.&lt;/p&gt;
+
+&lt;p&gt;Kehys abstraktoi vastuulleen yhteyksien hallinnan ja ns. game-loopin pyörittämisen. Jälkimmäinen vastuualue on keskeinen osa mitä tahansa vuoropohjaista peliä. Ajatellaan vaikka Monopolia; meillä on viisi pelaajaa, jotka kukin tekevät siirtonsa vuorollaan. Siirtovuoro kiertää ympyrää kullakin hetkellä pelissä mukana olevien pelaajien kesken kunnes lopulta jäljellä on vain yksi pelaaja. Tämä viimeinen mohikaani on pelin voittaja.&lt;/p&gt;
+
+&lt;p&gt;Vastaava ympyrää kiertävä siirtovuorojärjestys on ominainen käytännössä kaikille vuoropohjaisille peleille. Ainoa mikä vaihtelee on pelaajien määrä.&lt;/p&gt;
+
+&lt;p&gt;Esimerkiksi shakissa siirtovuoro hyppii kahden pelaajan välillä. Shakkipeli päättyy heti kun toinen pelaajista ei enää kykene tekemään siirtoa (eli laudalla on matti tai patti).&lt;/p&gt;
+
+&lt;p&gt;Rakennusvaiheessa oleva ohjelmistokehykseni abstraktoi siirtovuorojen hallinnan seuraavalla tavalla:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var peliTila = new Peli();
+
+var SIIRTO_MAX_AIKA = 5000; // Siirtoaika max. viisi sekuntia.
+
+function aloitaPeli(pelaajat) {
+    // Pyydä kutakin pelaajaa yksitellen tekemään siirtonsa  
+	return siirtoKierros(pelaajat)
+	// Pelaajat, jotka eivät jatka seuraavalle siirtokierrokselle saivat 
+	// palautusarvonaan &amp;quot;null&amp;quot;, joten heidät voi filteröidä pois.
+	.then(_.compact)
+	.then(function(mukanaOlevatPelaajat) {
+
+	  if (mukanaOlevaPelaajat.length &amp;lt;= 1) {
+		// Vain yksi tai nolla pelaajaa enää mukana, lopeta peli.
+		throw new LopetaPeli();
+	  }
+
+	  // Peli jatkuu, aloita uusi siirtoKierros 
+	  // Vain yhä mukana olevat pelaajat pääsevät mukaan
+	  // uudelle siirtokierrokselle.
+	  return siirtoKierros(mukanaOlevatPelaajat);
+	})
+	.catch(LopetaPeli, function() {
+		// Peli on päättynyt
+		// Älä rekursoi
+		console.log(&amp;quot;Peli päättynyt&amp;quot;);
+	})
+}
+
+function siirtoKierros(pelaajat) {
+  return Promise.mapSeries(pelaajat, function(pelaaja) {
+    if (pelaaja.hasDisconnected()) return null;
+    return __pyydaSiirtoa(pelaaja);
+  });	
+}
+
+function __pyydaSiirtoa(pelaaja) {
+  // pelaaja.teeSiirto() lähettää pelaajalle pyynnön tehdä siirto.
+  // .timeout() määrittää maksimiajan jonka puitteissa tuo siirto on tehtävä.
+  return pelaaja.teeSiirto().timeout(SIIRTO_MAX_AIKA)
+  .tap(function(siirto) {
+    // Throws &amp;quot;Laitonsiirto&amp;quot;-Error jos kyseessä laiton siirto.
+    return tarkistaSiirronLaillisuus(siirto);
+  })
+  .then(function(siirto) {
+    // Jos pääsemme tänne, siirto on ollut laillinen
+    // Muokkaamme pelin tämän hetkistä tilaa siirron pohjalta.
+    // Pelitila yksinkertaisesti tarkoittaa pelin tämän hetkistä pelitilannetta, esim.
+    // shakkipelissä pelitila tarkoittaa laudalla olevaa asemaa.
+    var uusiPelitila = toteutaSiirto(siirto);
+    // Ilmoitamme uuden tilapäivityksen kaikille pelin osanottajille.
+    // (jotta he pysyvät kärryillä pelin etenemisestä).
+
+    viestiPelaajille(pelaajat, {
+      aihe: &#39;uusi_siirto_tehty&#39;,
+      siirto: siirto,
+      pelitila: uusiPelitila
+    });
+    // Palautamme pelaajan sillä hän jatkaa mukana pelissä.
+    return pelaaja;
+
+    // 
+  })
+  .catch(Laitonsiirto, function() {
+    // Pelaaja yritti tehdä laittoman siirron.
+    // Palauta vuoro pelaajalle ja pyydä tekemään laillinen siirto.
+    // Kutsumme rekursiivisesti tätä funktiota uudestaan.
+    return this.__pyydaSiirtoa(pelaaja);
+
+  })
+  .catch(TimeoutError, function() {
+    // .timeout(aika) metodimme heitti virheen, eli
+    // pelaaja ei ehtinyt tekemään siirtoaan ajoissa.
+
+    // Vakioasetuksena pelaaja häviää pelin, eli palautamme arvon null.
+    return null;
+  })
+
+	
+}
+
+function toteutaSiirto(siirto) {
+  // Muokkaa pelitilaa siirron pohjalta jotenkin ja palauta muokattu pelitila.
+  // Muokkaaminen on pelikohtaista ja kehyksen käyttäjä määrittää muokkausfunktion.
+
+  return peliTila;
+}
+
+function viestiPelaajille(pelaajat, viesti) {
+  // Kutsu kunkin pelaajan &amp;quot;lahetaViesti&amp;quot;-metodia, joka
+  // hoitaa kommunikoinnin pelaajan suuntaan.
+  _.map(pelaajat, function(pelaaja) {
+    pelaaja.lahetaViesti(viesti);
+  });
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yllä on yksinkertaistettu versio asynkronoidusta game-loopista, joka pyytää vuorotellen pelaajia tekemään siirtojaan kunnes lopulta vain yksi pelaaja on jäljellä.&lt;/p&gt;
+
+&lt;p&gt;Koko loopin keskiössä on &lt;strong&gt;Promise.mapSeries&lt;/strong&gt;, joka yksi kerrallaan kutsuu &lt;em&gt;__pyydaSiirtoa&lt;/em&gt;-funktiota kullekin pelaajalle. &lt;strong&gt;Promise.mapSeries&lt;/strong&gt;-kutsun palautusarvo sisältää listan pelaajista, jotka jatkavat peliä seuraavalle kierrokselle.&lt;/p&gt;
+
+&lt;p&gt;Tämä lista rakentuu pelaaja pelaajalta sen mukaan, mitä &lt;em&gt;__pyydaSiirtoa&lt;/em&gt;-funktio palauttaa. Jos &lt;em&gt;__pyydaSiirtoa&lt;/em&gt; palauttaa &lt;em&gt;null&lt;/em&gt;, pelaaja ei jatka seuraavalle kierrokselle (= hän on hävinnyt pelin). Jos &lt;em&gt;__pyydaSiirtoa&lt;/em&gt; palauttaa &lt;em&gt;Pelaajan&lt;/em&gt;, pelaajan jatkaa seuraavalle kierrokselle.&lt;/p&gt;
+
+&lt;p&gt;Ylimmällä tasolla funktio &lt;strong&gt;aloitaPeli&lt;/strong&gt; laittaa pyörät pyörimään. Se kutsuu rekursiivisesti aina uutta siirtokierrosta pelattavaksi. Kunkin siirtokierroksen päätteeksi se tarkistaa onko peli päättynyt (= vähemmän kuin kaksi pelaajaa jäljellä). Jos ei ole, se aloittaa uuden siirtokierroksen.&lt;/p&gt;
+
+&lt;p&gt;Asynkronoidun game-loopin perusominaisuus on, että kaikki funktiot palauttavat &lt;em&gt;lupauksen&lt;/em&gt;. Tämä lupaus voidaan sitten ketjuttaa osaksi suurempaa lupausketjua. Poikkeuksena on funktio kuten &lt;strong&gt;viestiPelaajille&lt;/strong&gt;, jonka oletetaan suorittavan tehtävänsä välittömästi (viestien lähettäminen kullekin pelaajalle yksinkertaisesti oletetaan onnistuvaksi, myöhemmässä versiossa oletuksesta luovutaan ja käytetään erillistä &amp;ldquo;disconnect&amp;rdquo;-handleria reagoimaan yhteysvirheisiin pelaajan ja palvelimen välillä).&lt;/p&gt;
+
+&lt;p&gt;Ylläolevasta koodista puuttuu vielä &lt;em&gt;tärkein&lt;/em&gt; ohjelmistokehykselle ominainen aspekti; mahdollisuus kutsua kehyksen käyttäjän määrittämiä lisäfunktioita. Koska esimerkiksi shakkipelissä tehtävän siirron laillisuuden tarkistaminen on varsin erilainen prosessi kuin pokeripelissä tehtävän siirron laillisuuden tarkistaminen, on kehyksen käyttäjän pystyttävä &lt;em&gt;pluggaamaan sisään&lt;/em&gt; haluamansa tarkistusfunktio.&lt;/p&gt;
+
+&lt;p&gt;Toisin sanoen, tämä kohta koodia:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+.tap(function(siirto) {
+   // Throws &amp;quot;Laitonsiirto&amp;quot;-Error jos kyseessä laiton siirto.
+   // Kutsumme staattisesti valittua tarkistusfunktiota.
+   return tarkistaSiirronLaillisuus(siirto);
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;menee kutakuinkin muotoon&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+.tap(function(siirto) {
+   // Throws &amp;quot;Laitonsiirto&amp;quot;-Error jos kyseessä laiton siirto.
+   // Kehyksen käyttäjä tarjoaa meille tarkistusfunktion osana
+   // &amp;quot;laajennukset&amp;quot;-objektia, jonka hän on määrittänyt.
+   return laajennukset[&#39;tarkistaSiirronLaillisuus&#39;](siirto);
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Antamalla käyttäjälle vapauden valita &lt;em&gt;laajennukset&lt;/em&gt;-objektin funktioiden toteutukset, kehyksen käyttäjä kykenee toteuttamaan haluamansa pelilogiikan kehyksen pohjalle. Esimerkiksi timeout-virhetilanteen hallinta:&lt;/p&gt;
+
+&lt;p&gt;Vanha muoto:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+.catch(TimeoutError, function() {
+	// .timeout(aika) metodimme heitti virheen, eli
+	// pelaaja ei ehtinyt tekemään siirtoaan ajoissa.
+
+	// Vakioasetuksena pelaaja häviää pelin, eli palautamme arvon null.
+	return null;
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;ja uusi muoto:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+.catch(TimeoutError, function() {
+	// .timeout(aika) metodimme heitti virheen, eli
+	// pelaaja ei ehtinyt tekemään siirtoaan ajoissa.
+
+	// Annamme kehyksen käyttäjän tarjoaman funktion 
+	// päättää miten reagoidaan
+	return laajennukset[&#39;aikaKuluiUmpeen&#39;]();
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Huomioitavaa on, että kehyksen käyttäjän tarjoama kutsufunktio voi sisältään myös heittää virhetilanteita, jotka sitten kehyksen lupausketju nappaa kiinni. Tällä tavoin kutsufunktio voi esimerkiksi päättää pelin ennenaikaisesti (= ennen kuin vain yksi tai nolla pelaajaa on jäljellä).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+laajennukset[&#39;aikaKuluiUmpeen&#39;] = function() {
+	throw new LopetaPeli();
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Jatketaan tästä ensi kerralla.&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Kuinka CSRF toimii?</title>
@@ -150,7 +461,7 @@ Käytännössä web-applikaatio siis lähettää lomakesivun mukana CSRF-tunnist
 &lt;blockquote&gt;
 &lt;p&gt;Loppukaneetti: XSS:n avulla saattaa teoriassa olla mahdollista &lt;em&gt;selvittää&lt;/em&gt; CRSF-tunniste kesken hyökkäyksen. Tällöin CSRF-suojaus menettää tehonsa. Tämä vaatii, että XSS-hyökkääjällä on mahdollisuus ajaa mielivaltaista Javascript-koodia uhrinsa www-selaimessa.&lt;/p&gt;
 
-&lt;p&gt;Jos tätä mahdollisuutta ei ole, CSRF-suojaus toimii ja estää muunlaiset hyökkäysyritykset; esim. linkki-injektion, jossa rikollinen on &lt;em&gt;jotenkin&lt;/em&gt; saanut nettipankin käyttöliittymään lisättyä linkin, jota klikkaamalla etukäteen suunniteltu lomakedata lähtee salaa liikkeelle. Koska tuo etukäteen suunniteltu lomakedata ei voi mitenkään tietää ETUKÄTEEN sen hetkisen CSRF-tunnisteen merkkijonoa, CSRF-suojaus toimii ja rikollinen jää nuolemaan näppejään.&lt;/p&gt;
+&lt;p&gt;Jos tätä mahdollisuutta ei ole, CSRF-suojaus toimii ja estää useimmat muunlaiset hyökkäysyritykset; esim. linkki-injektion, jossa rikollinen on &lt;em&gt;jotenkin&lt;/em&gt; saanut nettipankin käyttöliittymään lisättyä linkin, jota klikkaamalla etukäteen suunniteltu lomakedata lähtee salaa liikkeelle. Koska tuo etukäteen suunniteltu lomakedata ei voi mitenkään tietää ETUKÄTEEN sen hetkisen CSRF-tunnisteen merkkijonoa, CSRF-suojaus toimii ja rikollinen jää nuolemaan näppejään.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>
@@ -2223,481 +2534,6 @@ omat virheensä kiinni.&lt;/em&gt;&lt;/p&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;Ylläoleva checklist on osoittanut hyödyllisyytensä useammassa omassa projektissani. Kun on muistilista, jota seurata orjallisesti, pysyy laatu tasaisena ja työtahti tiiviinä.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Usecase-arkkitehtuurin vahvuus</title>
-      <link>http://nollaversio.fi/blog/public/laravel/usecase-bliss/</link>
-      <pubDate>Fri, 22 Jul 2016 14:44:27 +0300</pubDate>
-      
-      <guid>http://nollaversio.fi/blog/public/laravel/usecase-bliss/</guid>
-      <description>
-
-&lt;p&gt;Usecase-arkkitehtuuri on eräs tapa järjestää Laravel-pohjaisen tietokoneohjelman control flow.&lt;/p&gt;
-
-&lt;p&gt;Mitä usecase-arkkitehtuuri painottaa? Nimensä mukaisesti se pyrkii abstraktoimaan koodin erillisiin käyttötarkoituksiin, usecaseihin.&lt;/p&gt;
-
-&lt;p&gt;Käyttötarkoitus on esim. &amp;ldquo;nosta rahaa pankista&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;Otetaan esimerkki. Kuvitellaan järjestelmä, jossa loppukäyttäjä voi ryhtyä haluamansa pankin asiakkaaksi. Pankkeja on useita, ja asiakas voi yhden järjestelmän kautta hallita asiakkuuksiaan kussakin pankissa.&lt;/p&gt;
-
-&lt;h3 id=&#34;ensimmäinen-usecase-rahan-nosto&#34;&gt;Ensimmäinen usecase - rahan nosto&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// NostaRahaa_useCase.php
-
-public function nostaRahaa(int $pankkiID, int $asiakasID, int $summa) {
-
-	// Alkuvalmistelut, eli varmistetaan että asiakas-ID on olemassa
-	$asiakas = Asiakas::findById($asiakasID); // Throws &amp;quot;EiOlemassa&amp;quot;
-	// Varmistetaan, että pankkiID on olemassa
-	$pankki = Pankki::findById($pankkiID); // Throws &amp;quot;EiOlemassa&amp;quot;
-
-	// Usecasen tunnusmerkkejä on, että siinä tietyt toimenpiteet
-	// suoritetaan järjestyksessä, ja tällä tavoin saavutetaan
-	// haluttu lopputulos.
-
-	// Tässä tapauksessa vaiheet ovat:
-	// 1. Varmista asiakkuus
-	// 2. Nosta rahat
-	// 3. Lähetä ilmoitus nostosta asiakkaalle 
-
-	// Virheet napataan kiinni ylempänä call stäkissä.
-	
-	// #1
-	// Throws &amp;quot;EiAsiakkuutta&amp;quot; mikäli varmistus epäonnistuu.
-	$pankki-&amp;gt;varmistaAsiakkuus($asiakas); 
-
-	// #2
-	// Throws &amp;quot;EiKatetta&amp;quot; mikäli ei tarpeeksi rahaa tilillä.
-	$nostettuSumma = $pankki-&amp;gt;nostaTililta($asiakas, $summa); 
-
-	// #3
-	// Onnistuu aina (oletamme)
-	$asiakas-&amp;gt;lahetaSMS(&#39;nostoHyvaksytty&#39;, [
-		&#39;summa&#39; =&amp;gt; $nostettuSumma,
-		&#39;ajankohta&#39; =&amp;gt; Carbon::now(),
-	]);
-
-}  
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// PankkiController.php
-
-public function nostaRahaa(Request $request, int $pankkiID) {
-	// parametrit tulevat IOC-containerin kautta
-
-	// Validation sisääntullut request jotenkin
-	try {
-		$this-&amp;gt;validateNostoRequest($request); // Throws &amp;quot;ValidaatioVirhe&amp;quot;		
-	} catch (ValidaatioVirhe $vv) {
-		return Response::error(&#39;Nosto epäonnistui - tarkista tiedot&#39;);
-	}
-
-	$asiakasID = $request-&amp;gt;get(&#39;asiakasID&#39;);
-	$summa     = $request-&amp;gt;get(&#39;summa&#39;);
-
-	// Kutsutaan usecasea!
-	try {
-		$nosto = (new NostaRahaa_useCase())-&amp;gt;nostaRahaa($pankkiID, $asiakasID, $summa);
-	} catch (Error $e) {
-		// Ei tarvetta tietää mikä tietty virhe tapahtui, sen sijaan ilmoitetaan
-		// virheviesti käyttäjälle. Viesti kertoo kaiken oleellisen.
-		return Response::error($e);
-	}
-
-	// Kaikki meni oikein mukavasti.
-	return Response::success(&#39;nostoOnnistui&#39;, $nosto);
-
-}
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva usecase-arkkitehtuuri erottelee &lt;em&gt;sisääntulevan palvelupyynnön&lt;/em&gt; käsittelyn ja &lt;em&gt;itse toiminnon läpiviemisen&lt;/em&gt; toisistaan. On syytä muistaa, että rahan nostaminen pankista on palvelupyyntö asiakkaalta pankille. Jotta tuo palvelupyyntö voidaan viedä läpi, täytyy asiakkaan tietokoneen lähettää tekninen palvelupyyntö järjestelmän palvelimelle.&lt;/p&gt;
-
-&lt;p&gt;Tässä onkin &lt;em&gt;kaksi fundamentaalista konseptia&lt;/em&gt;:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;Palvelupyyntö siinä mielessä, että tosimaailmassa minä pyydän sinua tekemään jotain.&lt;/li&gt;
-&lt;li&gt;Palvelupyyntö siinä mielessä, että kasa bittejä siirtyy tietokoneelta toiselle.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;&lt;strong&gt;Jälkimmäinen on pelkkä bittimaailman kuvaus ensimmäisestä&lt;/strong&gt;. Täydellisessä maailmassa jälkimmäiselle konseptille ei olisi lainkaan tarvetta. Mutta meidän maailmassamme on - tieto rahan nostosta täytyy jotenkin välittää kotikoneelta palvelimelle. Se ei välity telepatialla, joten joudumme turvautumaan &lt;em&gt;teknisen palvelupyynnön&lt;/em&gt; lähettämiseen.&lt;/p&gt;
-
-&lt;p&gt;Usecase-arkkitehtuuri mahdollistaa näiden kahden konseptin erottelun &lt;em&gt;kauas&lt;/em&gt; toisistaan. Siis kauas siinä mielessä, että ne sijaitsevat eri tiedostoissa. Tässä on suuri vahvuus.&lt;/p&gt;
-
-&lt;p&gt;Usecase-tiedoston ei tarvitse välittää siitä, millä tavoin asiakkaan kotikone ilmaisi palvelimen suuntaan halunsa nostaa rahaa.&lt;/p&gt;
-
-&lt;p&gt;Sen sijaan Controller-tiedosto (PankkiController.php) välittää tuommoisista alhaisen tason detaljeista. Controller ottaa sisään teknisen palvelupyynnön (siis #2 äskeisessä listassamme!), ja luo sen pohjalta oikean palvelupyynnön (#1 listassamme). Usecase-tiedosto ei koskaan edes tiedä #2 olemassaolosta - se välittää vain #1 käsittelystä.&lt;/p&gt;
-
-&lt;p&gt;Itse asiassa Usecase-tiedosto ei edes tiedä, että se on osa internet-applikaatiota. Sillä kaikki internet-liikenteeseen liittyvä logiikka elää Controller-tiedostossa.&lt;/p&gt;
-
-&lt;h3 id=&#34;toinen-usecase-rahan-siirto&#34;&gt;Toinen usecase - rahan siirto&lt;/h3&gt;
-
-&lt;p&gt;Lisätään järjestelmään toinen usecase. Mitä muuta haluamme pankkijärjestelmältämme kuin nostaa rahaa? No, ainakin siirtää rahaa yhdeltä tililtä toiselle.&lt;/p&gt;
-
-&lt;p&gt;Oletetaan, että rahan siirron voi tehdä miltä tahansa tililtä mille tahansa tilille. Tilien ei tarvitse olla samassa pankissa. Ainoa vaatimus on, että siirron tekevä asiakas omistaa lähtötilin, ja on asiakkaana siinä pankissa, jossa lähtötili sijaitsee.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// SiirraRahaa_useCase.php
-
-public function siirraRahaa(
-	int $lahtoPankkiID, /* Mistä pankista rahat lähtevät? */
-	int $tuloPankkiID, /* Mihin pankkiin rahat saapuvat? */
-	int $lahettajaID,    /* Kenen tili lähtöpankissa? */
-	int $vastaanottajaID,  /* Kenen tili tulopankissa? */
-	int $summa
-) {
-	// Tässä oletetaan, että jokaisella asiakkaalla voi olla max. yksi tili per pankki.
-	// Täten yhdistelmä {pankki, asiakasID} kuvaa yksilöllisesti pankkitilin.
-	// Oikeassa maailmassa käyttäisimme tietenkin *tilinumeroa*, mutta tämä järjestelmä
-	// ei sellaista konseptia tunne.
-
-	// Alkuvalmistelut, eli varmistetaan että lähettäjä ja vastaanottaja ovat olemassa.
-	$lahettaja = Asiakas::findById($asiakasID); // Throws &amp;quot;EiOlemassa&amp;quot;
-	$vastaanottaja = Asiakas::findById($vastaanottajaID); // Throws &amp;quot;EiOlemassa&amp;quot;
-
-	// Varmistetaan, että molemmat pankit ovat olemassa.
-	$lahtoPankki = Pankki::findById($lahtoPankkiID); // Throws &amp;quot;EiOlemassa&amp;quot;
-	$tuloPankki = Pankki::findById($tuloPankkiID); // Throws &amp;quot;EiOlemassa&amp;quot;	
-
-	// Tämän usecasen vaiheet ovat:
-	// 1. Varmista asiakkuudet
-	// 2. Nosta summa lähettäjän tililtä
-	// 3. Lisää summa vastaanottajan tilille
-	// 4. Lähetä ilmoitus nostosta lähettäjälle 
-	// 5. Lähetä ilmoitus saapuneesta rahasummasta vastaanottajalle
-
-	// Virheet napataan kiinni ylempänä call stäkissä.
-	
-	// #1 Varmista asiakkuudet
-	// Throws &amp;quot;EiAsiakkuutta&amp;quot; mikäli varmistus epäonnistuu.
-	$lahtoPankki-&amp;gt;varmistaAsiakkuus($lahettaja); 
-	$tuloPankki-&amp;gt;varmistaAsiakkuus($vastaanottaja); 
-
-	// Koska nosto yhdeltä tililtä ja talletus toiselle tilille
-	// ovat toisistaan *riippuvaisia* operaatioita - eli joko
-	// molemmat onnistuvat tai ei kumpikaan - meidän tulee
-	// turvautua transaktioon.
-
-
-	DB::transaction(function () use ($lahtoPankki, $tuloPankki, $lahettaja, $vastaanottaja, $summa) {
-
-		// #2 Nosta summa lähettäjän tililtä
-		// Throws &amp;quot;EiKatetta&amp;quot; mikäli ei tarpeeksi rahaa tilillä.
-		$nostettuSumma = $lahtoPankki-&amp;gt;nostaTililta($lahettaja, $summa); 
-
-		// #3 Lisää summa vastaanottajan tilille
-		$tuloPankki-&amp;gt;talletaTilille($vastaanottaja, $nostettuSumma);
-	});
-
-	// #4 Lähetä ilmoitus nostosta
-	$lahettaja-&amp;gt;lahetaSMS(&#39;siirtoHyvaksytty&#39;, [
-		&#39;summa&#39; =&amp;gt; $summa,
-		&#39;ajankohta&#39; =&amp;gt; Carbon::now(),
-	]);
-
-	// #5 Lähetä ilmoitus saapuneesta rahasummasta
-	$vastaanottaja-&amp;gt;lahetaSMS(&#39;siirtoSaapunut&#39;, [
-		&#39;summa&#39; =&amp;gt; $summa,
-		&#39;ajankohta&#39; =&amp;gt; Carbon::now(),
-	]);
-}  
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// PankkiController.php
-
-public function nostaRahaa(Request $request, int $pankkiID) {
-	// Kuten ennenkin
-	// ...
-}
-
-public function siirraRahaa(Request $request, int $lahtoPankkiID) {
-	// Parametrit IOC:in kautta
-	// Miksi otamme IOC:n kautta $lahtoPankin, mutta emme $tuloPankkia?
-	// Koska lähettäjä operoi omalla selaimellaan *tietyn* pankin käyttöliittymässä, 
-	// ja kaikki lähettäjän tekemät palvelupyynnöt tehdään tietyn pankin suuntaan.
-	// Toisin sanoen, kaikki sisääntulevat palvelupyynnöt tehdään URL:ään, jonka rakenne
-	// on seuraavanlainen:
-
-	/*
-		http://pankkijarjestelma.fi/pankki/pankkiID/operaatio
-	*/
-
-	// Validoi sisääntullut request jotenkin
-	try {
-		$this-&amp;gt;validateSiirtoRequest($request); // Throws &amp;quot;ValidaatioVirhe&amp;quot;		
-	} catch (ValidaatioVirhe $vv) {
-		return Response::error(&#39;Rahan siirto epäonnistui - tarkista tiedot&#39;);
-	}
-
-	// Haetaan siirtoon liittyvät tiedot.
-	$tuloPankkiID = $request-&amp;gt;get(&#39;tuloPankkiID&#39;);
-	$lahettajaID = $request-&amp;gt;get(&#39;lahettajaID&#39;);
-	$vastaanottajaID = $request-&amp;gt;get(&#39;vastaanottajaID&#39;);
-	$summa     = $request-&amp;gt;get(&#39;summa&#39;);
-
-	// Kutsutaan usecasea!
-	try {
-		(new SiirraRahaa_useCase())-&amp;gt;siirraRahaa(
-			$lahtoPankkiID, 
-			$tuloPankkiID,
-			$lahettajaID,
-			$vastaanottajaID, 
-			$summa
-		);
-
-	} catch (Error $e) {
-		// Ei tarvetta tietää mikä tietty virhe tapahtui, sen sijaan ilmoitetaan
-		// virheviesti käyttäjälle. Viesti kertoo kaiken oleellisen.
-		return Response::error($e);
-	}
-
-	// Kaikki meni oikein mukavasti.
-	return Response::success(&#39;siirtoOnnistui&#39;);	
-
-
-}
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tässä vaiheessa on hyvä mainita eräästä seikasta.&lt;/p&gt;
-
-&lt;p&gt;Kuten huomaamme, sisääntulevan datan validaatio on jaettu kahteen osaan. Esimerkiksi vastaanottajaID:&lt;/p&gt;
-
-&lt;p&gt;1) Ensin validoimme, että vastaanottajaID on mukana sisään tulevassa palvelupyynnössä. Tämä validointi tapahtuu &lt;code&gt;$this-&amp;gt;validateSiirtoRequest($request)&lt;/code&gt; rivillä. Millainen tuo metodi on? Esimerkiksi seuraavanlainen:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-protected function validateSiirtoRequest(Request $request)
-{
-	// Throws &amp;quot;ValidaatioVirhe&amp;quot;
-    $this-&amp;gt;validate($request, [
-        &#39;tuloPankkiID&#39; =&amp;gt; &#39;required|int&#39;,
-        &#39;lahettajaID&#39; =&amp;gt; &#39;required|int&#39;,
-        &#39;vastaanottajaID&#39; =&amp;gt; &#39;required|int&#39;,
-        &#39;summa&#39; =&amp;gt; &#39;required|int|min:0|max:99999999&#39;,
-    ]);
-
-    // Kaikki kunnossa
-    return true;
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Huomioitavaa on, että tämä tarkistus/validatointi tapahtuu &lt;em&gt;controllerin&lt;/em&gt; puolella.&lt;/p&gt;
-
-&lt;p&gt;2) Myöhemmin validoimme/tarkistamme - että kunkin ID:n takaa löytyy oikea, aito objekti. Eli jos pankkiID on 15, järjestelmässämme on olemassa Pankki, jonka ID on 15.&lt;/p&gt;
-
-&lt;p&gt;Tämä tarkistus tapahtuu &lt;em&gt;usecasen&lt;/em&gt; puolella.&lt;/p&gt;
-
-&lt;h3 id=&#34;controller-validaatio-vs-usecase-validaatio&#34;&gt;Controller-validaatio vs. usecase-validaatio&lt;/h3&gt;
-
-&lt;p&gt;Miksi validaatio on jaettu kahteen paikkaan? Eikö olisi selkeämpää, jos molemmat validaatiot tehtäisiin yhdessä ja samassa paikassa?&lt;/p&gt;
-
-&lt;p&gt;Ei.&lt;/p&gt;
-
-&lt;p&gt;On syytä huomata, että nämä kaksi validaatiota tarkistavat &lt;em&gt;eri&lt;/em&gt; asioita.&lt;/p&gt;
-
-&lt;p&gt;Controller-validaatio tarkistaa, että sisääntulevat ID:t ovat &lt;em&gt;numeroita&lt;/em&gt;. Ne eivät saa olla esimerkiksi JPG-kuvia - on vaikea etsiä pankkia JPG-kuvan kautta.&lt;/p&gt;
-
-&lt;p&gt;Usecase-validaatio tarkistaa, että &lt;em&gt;ID-numero&lt;/em&gt; (ja usecasen kohdalla me jo varmuudella tiedämme, että ID on numero, kiitos Controller-validaation!) vastaa jotakin järjestelmässä sijaitsee pankkia. On mahdollista, että palvelupyynnön mukana tullut ID-numero ei vastaa yhtäkään pankkia. Pankkeja ei kuitenkaan ole rajatonta määrää, numeroita sen sijaan on.&lt;/p&gt;
-
-&lt;p&gt;Tässä on ero. &lt;strong&gt;Controller validoi, että sisääntuleva data on oikeanmuotoista. Usecase validoi, että sisääntuleva data on järjellistä järjestelmän kannalta.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;h3 id=&#34;summa-summarum&#34;&gt;Summa summarum&lt;/h3&gt;
-
-&lt;p&gt;Usecase-arkkitehtuurin vahvuus piilee juuri edellisessä huomiossa. Voimme käsitellä &amp;ldquo;ylätason toimintoja&amp;rdquo; selkeinä kokonaisuuksina, eli usecasenaina, käyttötarkoituksina. Samaan aikaan usecase on &lt;em&gt;irrallaan&lt;/em&gt; kaikesta siitä ikävästä, mutta pakollisesta säläkoodista, joka liittyy internet-applikaation tekniseen toteutukseen. Eli HTTP-pyyntöjen hallinnasta, jne.&lt;/p&gt;
-
-&lt;p&gt;Hyvässä web-applikaatiossa päteekin, että itse applikaation ydinkoodi - tässä tapauksessa se koodi, joka suorittaa siirtoja ja nostoja pankkien välillä - ei edes tiedä asuvansa osana web-applikaatiota. Se tietää asuvansa osana &lt;em&gt;applikaatiota&lt;/em&gt;, mutta webin olemassaolosta se on onnellisen tietämätön.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Suojaa tuloväylät - mutta miten?</title>
-      <link>http://nollaversio.fi/blog/public/laravel/protecting-routes/</link>
-      <pubDate>Wed, 20 Jul 2016 20:42:23 +0300</pubDate>
-      
-      <guid>http://nollaversio.fi/blog/public/laravel/protecting-routes/</guid>
-      <description>
-
-&lt;p&gt;Tyypillinen web-applikaatio ottaa vastaan monenlaista palvelupyyntöä. Osa pyynnöistä tulee rekisteröityneiltä käyttäjiltä, osa vierailta, osa hakkereilta, osa sisältää dataa, osa ei.&lt;/p&gt;
-
-&lt;p&gt;Kaiken tämän keskellä applikaatio tulisi kehittää niin, että jokainen sisääntuloväylä on suojattu asianmukaisesti. Eli portti on kunnossa ja pysyy kiinni esim. SQL-injektioille.&lt;/p&gt;
-
-&lt;p&gt;Helppo, nopea tapa huolehtia suojauksesta on jokaisen tuloväylän portilla tarkistaa, että asianmukaiset paperit ovat mukana:&lt;/p&gt;
-
-&lt;h3 id=&#34;versio-1&#34;&gt;versio 1&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// AdminController.php
-
-public function store(Request $request) {
-	$this-&amp;gt;tarkistaAdminOikeudet();
-
-	// Kaikki hyvin, käsittele request
-}
-
-public function index(Request $request) {
-	$this-&amp;gt;tarkistaAdminOikeudet();
-
-	// Kaikki hyvin, käsittele request
-}
-
-public function list(Request $request) {
-	$this-&amp;gt;tarkistaAdminOikeudet();
-
-	// Kaikki hyvin, käsittele request
-}
-
-private function tarkistaAdminOikeudet() {
-	if (Auth::user()-&amp;gt;isNotAdmin()) {
-		throw new Exception(&amp;quot;Admin-oikeudet puuttuvat!&amp;quot;);
-	}
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevasta heti nähdään, että jotain on pielessä. Sama admin-tarkistus joudutaan tekemään kolmesti eri kohdissa.&lt;/p&gt;
-
-&lt;p&gt;Huomattavasti paremman ratkaisun tarjoaa konstruktori-metodi, joka mahdollistaa kaikille public-metodeille &lt;em&gt;yhteisen&lt;/em&gt; tarkistuksen määrittämisen. Eli:&lt;/p&gt;
-
-&lt;h3 id=&#34;versio-2&#34;&gt;versio 2&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// AdminController.php
-
-public function __construct(Request $request) {
-
-	$this-&amp;gt;tarkistaAdminOikeudet();
-}
-
-public function store(Request $request) {
-
-	// Kaikki hyvin, käsittele request
-}
-
-public function index(Request $request) {
-
-	// Kaikki hyvin, käsittele request
-}
-
-public function list(Request $request) {
-
-	// Kaikki hyvin, käsittele request
-}
-
-private function tarkistaAdminOikeudet() {
-	if (Auth::user()-&amp;gt;isNotAdmin()) {
-		throw new Exception(&amp;quot;Admin-oikeudet puuttuvat!&amp;quot;);
-	}
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kuten huomaamme, duplikaatio poistui. Tarkistus tehdään vain yhdessä pisteessä.&lt;/p&gt;
-
-&lt;p&gt;Mutta miksi turhaan edes keksiä pyörää uudestaan? Laravel tarjoaa &amp;ldquo;Middleware&amp;rdquo;-nimisen konseptin käyttöömme. Middleware on käytännössä yksi ylimääräinen kerros internetin ja applikaatiosi välissä. Tuo ylimääräinen &amp;ldquo;rasvakerros&amp;rdquo; soveltuu hyvin admin-tarkistuksen suorituspisteeksi.&lt;/p&gt;
-
-&lt;h3 id=&#34;versio-3&#34;&gt;versio 3&lt;/h3&gt;
-
-&lt;p&gt;// Middleware/TarkistaAdmin.php&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-class TarkistaAdmin
-{
-
-    public function handle($request, Closure $next)
-    {
-        if (Auth::user()-&amp;gt;isNotAdmin()) {
-        	// Ohjataan käyttäjä kirjautumissivulle.
-            return redirect(&#39;kirjaudu_sisaan&#39;);
-        }
-
-        // Kaikki ok!
-        // Muu applikaatio voi luottaa että käyttäjällä on tarvittavat oikeudet!
-
-        return $next($request);
-    }
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// AdminController.php
-
-public function __construct(Request $request) {
-
-	$this-&amp;gt;middleware(&#39;tarkistaAdmin&#39;)
-}
-
-public function store(Request $request) {
-
-	// Kaikki hyvin, käsittele request
-}
-
-public function index(Request $request) {
-
-	// Kaikki hyvin, käsittele request
-}
-
-public function list(Request $request) {
-
-	// Kaikki hyvin, käsittele request
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tämä on jo varsin pätevä ratkaisu. Ensinnäkin admin-tarkistuksen logiikka elää nyt poissa AdminControllerista. Tämä on ihan hyvä, sillä oletettavasti joku muukin komponentti applikaatiossa on kiinnostunut tekemään admin-tarkistuksia. Kun admin-tarkistus elää middleware-kerroksessa, se on kaikkien applikaation osasten käytettävissä.&lt;/p&gt;
-
-&lt;p&gt;Noin muutenkin on järkevintä tsekata admin-oikeudet mahdollisimman aikaisin. Tilanne on vastaava kuin lentokentällä - turvatarkastus tapahtuu &lt;em&gt;keskitetysti&lt;/em&gt; ennen lähtöporteille siirtymistä. Millainen sotku syntyisi, jos turvatarkastus järjestettäisiin kunkin lähtöportin edessä erikseen? Aikamoinen.&lt;/p&gt;
-
-&lt;p&gt;Sama konsepti pätee web-applikaatioon - mitä aiemmin tarkastukset tehdään, sitä parempi. Aikainen tarkastus selkeyttää kaikkien osapuolten toimintaa. Lentokentälläkin on helpompi kuljeskella, kun turvatarkastus on rajattu tietylle alueelle.&lt;/p&gt;
-
-&lt;p&gt;Laravellin middleware-konsepti lisää myös uusia mahdollisuuksia valikoimaamme. Voimme esimerkiksi määrittää suoraan konstruktorissa, mille kaikille sisääntuloväylille (eli public metodeille) haluamme middleware-suojauksen pätevän.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// AdminController.php
-
-public function __construct(Request $request) {
-
-	$this-&amp;gt;middleware(&#39;tarkistaAdmin&#39;, [&#39;only&#39; =&amp;gt; [
-		&#39;store&#39;,
-		&#39;update&#39;
-	]]);
-}
-
-public function store(Request $request) {
-
-	// SUOJATTU!
-}
-
-public function update(Request $request) {
-
-	// SUOJATTU!
-}
-
-public function index(Request $request) {
-
-	// EI SUOJATTU!
-}
-
-public function list(Request $request) {
-
-	// EI SUOJATTU!
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kätevää, varsin kätevää. Esimerkin &lt;em&gt;only&lt;/em&gt;-attribuutin lisäksi meillä on käytössämme &lt;em&gt;except&lt;/em&gt;-attribuutti, joka
-toimii nimensä mukaisesti - se suojaa kaikki muut väylät paitsi erikseen &lt;em&gt;except&lt;/em&gt;:in perässä määritellyt.&lt;/p&gt;
 </description>
     </item>
     

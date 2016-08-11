@@ -68,6 +68,323 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://nollaversio.fi/blog/public/nodejs/mocha-testing/">
+        Asynkronoidun koodin testaus (Mocha)
+      </a>
+    </h1>
+
+    <span class="post-date">Thu, Aug 11, 2016</span>
+
+    
+
+<p>Rakensin eilen <em>PromiseMonopoly</em>-nimistä ohjelmistokehystäni jälleen hiukan eteenpäin. Kehys on siinä pisteessä, että on syytä kirjoittaa muutamia yksinkertaisia automatisoituja testejä sille.</p>
+
+<p>Piskuiseksi ongelmaksi muodostui, että koska kutsut kehyksen sisälle ovat <em>asynkronoituja</em> - eli palauttavat lupauksen -, testaaminen täytyy myös tehdä asynkronoidusti.</p>
+
+<p>Maanmainio <a href="https://mochajs.org/">Mocha</a> tuli tässä kohtaa apuun.</p>
+
+<h3 id="async-testi-mochalla">Async-testi Mochalla</h3>
+
+<p>Kirjoitin kehykselleni allaolevan testin:</p>
+
+<pre><code class="language-javascript">
+describe('Phase', function() {
+  describe('onEnter + onExit', function() {
+    it('Phase with empty subphases goes correctly', function(done) {
+      var tracking = [];
+      var testiphase = new Phase('testi', {loop: false}, []);
+      testiphase.onEnter = function() {
+        tracking.push(&quot;START&quot;);
+      }
+
+      testiphase.onExit = function() {
+        tracking.push(&quot;STOP&quot;);
+      }
+      testiphase.__initialize({}, [new Player(whiteUser), new Player(blackUser)]);
+
+      testiphase.__start()
+      .then(function() {
+        expect(tracking).to.deep.equal(['START', 'STOP']);
+        done();
+      })
+    })
+  })
+})	
+
+</code></pre>
+
+<p>Ylläoleva testi varmistaa, että <em>onEnter</em>- ja <em>onExit</em>-kutsufunktiot tulevat kutsutuksi kehyksen toimesta oikeassa järjestyksessä. Eli kutsuessamme <strong>testiphase.__start()</strong>, myöhemmin meillä on tracking-listassa viestit &ldquo;START&rdquo; ja &ldquo;STOP&rdquo; peräkkäin.</p>
+
+<p><code>expect(tracking).to.deep.equal(['START', 'STOP']);</code></p>
+
+<p>Asynkronoidun testauksen ytimessä Mochalla on tämä koodirivi:</p>
+
+<pre><code class="language-javascript">
+ it('Phase with empty subphases goes correctly', function(done) {
+
+</code></pre>
+
+<p>Oleellista ylläolevassa rivissä on <strong>done</strong>-parametri, jonka testiajon suorittava funktio ottaa vastaan. Mikä tuo mystinen <strong>done</strong> sitten on? <em>Se on parametri on funktio, jota kutsumalla testi julistetaan suoritetuksi.</em></p>
+
+<p>Toinen tärkeä on tämä rivi:</p>
+
+<pre><code class="language-javascript">
+ expect(tracking).to.deep.equal(['START', 'STOP']);
+
+</code></pre>
+
+<p><strong>Expect</strong>-kutsulla suoritamme varsinaisen testin, eli varmistamme, että ohjelma-ajon tuottama tulos on haluttu.</p>
+
+<p>On syytä huomata, missä tämä expect-kutsu sijaitsee; se on lupausketjun viimeisen <em>then</em>-metodin sisällä! Tämä tarkoittaa, että varsinainen testaus suoritetaan vasta kun lupausketju on siirtynyt viimeiseen vaiheeseensa. Muita vaihtoehtoja suorittaa testaus ei ole, sillä testauksen kannalta relevantit operaatiot suoritetaan lupausketjun aiemmissa vaiheissa.</p>
+
+<p>Seuraava esimerkillinen testi EI toimi kuten haluamme:</p>
+
+<pre><code class="language-javascript">
+// Ei toimi, async ja sync sekoitettuna!
+
+describe('Matikka', function() {
+  describe('Yhteenlaskut', function() {
+    it('2+2=4', function() {
+      var summa = laskeAsync(2, 2);
+      expect(4).to.equal(summa);
+    })
+  })
+})	
+
+</code></pre>
+
+<p>Ylläoleva ei toimi juuri siksi, että <strong>laskeAsync</strong> on (nimensä mukaisesti) asynkronoitu funktio. Se ei voi palauttaa haluttua lukua, sillä asynkronoidut funktiokutsut eivät tiedä lopputulosta ajoissa. Tässä tapauksessa oletamme, että <strong>laskeAsync</strong> suorittaa yhteenlaskun vaikkapa kysymällä Googlen serveriltä lopputulosta. Tuo lopputulos saapuu sitten joskus, riippuen nettiyhteyden nopeudesta.</p>
+
+<p>Eli ongelma on, että muuttuja <em>summa</em> ei ole ajoissa tiedossa.</p>
+
+<p>Ongelma on helppo korjata, ja muuntaa testaus asynkronoituun muotoon:</p>
+
+<pre><code class="language-javascript">
+// Toimii, 100% async!
+
+describe('Matikka', function() {
+  describe('Yhteenlaskut', function() {
+    it('2+2=4', function(done) {
+      laskeAsync(2, 2).then(function(summa) {
+        expect(4).to.equal(summa);
+        done();
+      })
+			
+    })
+  })
+})	
+
+</code></pre>
+
+<p>Nyt homma pelittää virheettömästi. Kutsumme <strong>laskeAsync</strong>-funktiota, jota palauttaa lupauksen. Kun tuo lupaus täyttyy (<em>then()</em>), meillä on haluamamme <em>summa</em> saatavilla ja voimme varmistaa <strong>expect</strong>-kutsun avulla, että tuo summa on neljä.</p>
+
+<p>Suoritettuamme <strong>expect</strong>-testin kutsumme funktiota <em>done</em>, joka ilmoittaa Mochalle, että testaus on tältä osalta valmis. Miksi tuota done-funktiota pitää erikseen kutsua?</p>
+
+<p>Synkronoidussa versiossa ei tarvitse. Tämä siksi, että Mocha voi olettaa testauksen olevan valmis heti kun kooditiedosto on ajettu kerralla loppuun. Eli siis ollaan saavuttu viimeiselle koodiriville.</p>
+
+<p>Mutta asynkronoidussa versiossa Mocha ei voi tehdä tuollaisia rämäpäisiä oletuksia. Osa testauskoodista saattaa odottaa vuoroaan. Meidän esimerkissämme näin tekee Googlen palvelimelta yhteenlaskun tulosta odottava koodipätkä. Tällöin Mocha ei voi vain julistaa testejä suoritetuksi heti kun testitiedoston viimeinen koodirivi on nähty ja ajettu; testit ajetaan <em>myöhemmin</em> ja on syytä jäätä odottamaan testien tuloksia. Done-funktion käyttö mahdollistaa odotuksen - kukin yksittäinen testi ilmoittaa oman done-funktionsa kautta milloin se on valmis.</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="http://nollaversio.fi/blog/public/nodejs/promise-mapseries/">
+        Rekursiivinen lupausketju ajurina? (osa 2)
+      </a>
+    </h1>
+
+    <span class="post-date">Wed, Aug 10, 2016</span>
+
+    <p>(Tämä on jatkoa postaukselle <a href="http://nollaversio.fi/blog/public/nodejs/promise-workflow-manager">Rekursiivinen lupausketju ajurina? (osa 1)</a>)</p>
+
+<p>Rakennan parhaillaan ohjelmakehystä (työ)nimeltään <em>PromiseMonopoly</em>. Tuon kehyksen tarkoitus on valmistuessaan mahdollistaa keskuspalvelimen kautta toimivien vuoropohjaisten pelien helpompi toteuttaminen.</p>
+
+<p>Kehys abstraktoi vastuulleen yhteyksien hallinnan ja ns. game-loopin pyörittämisen. Jälkimmäinen vastuualue on keskeinen osa mitä tahansa vuoropohjaista peliä. Ajatellaan vaikka Monopolia; meillä on viisi pelaajaa, jotka kukin tekevät siirtonsa vuorollaan. Siirtovuoro kiertää ympyrää kullakin hetkellä pelissä mukana olevien pelaajien kesken kunnes lopulta jäljellä on vain yksi pelaaja. Tämä viimeinen mohikaani on pelin voittaja.</p>
+
+<p>Vastaava ympyrää kiertävä siirtovuorojärjestys on ominainen käytännössä kaikille vuoropohjaisille peleille. Ainoa mikä vaihtelee on pelaajien määrä.</p>
+
+<p>Esimerkiksi shakissa siirtovuoro hyppii kahden pelaajan välillä. Shakkipeli päättyy heti kun toinen pelaajista ei enää kykene tekemään siirtoa (eli laudalla on matti tai patti).</p>
+
+<p>Rakennusvaiheessa oleva ohjelmistokehykseni abstraktoi siirtovuorojen hallinnan seuraavalla tavalla:</p>
+
+<pre><code class="language-javascript">
+var peliTila = new Peli();
+
+var SIIRTO_MAX_AIKA = 5000; // Siirtoaika max. viisi sekuntia.
+
+function aloitaPeli(pelaajat) {
+    // Pyydä kutakin pelaajaa yksitellen tekemään siirtonsa  
+	return siirtoKierros(pelaajat)
+	// Pelaajat, jotka eivät jatka seuraavalle siirtokierrokselle saivat 
+	// palautusarvonaan &quot;null&quot;, joten heidät voi filteröidä pois.
+	.then(_.compact)
+	.then(function(mukanaOlevatPelaajat) {
+
+	  if (mukanaOlevaPelaajat.length &lt;= 1) {
+		// Vain yksi tai nolla pelaajaa enää mukana, lopeta peli.
+		throw new LopetaPeli();
+	  }
+
+	  // Peli jatkuu, aloita uusi siirtoKierros 
+	  // Vain yhä mukana olevat pelaajat pääsevät mukaan
+	  // uudelle siirtokierrokselle.
+	  return siirtoKierros(mukanaOlevatPelaajat);
+	})
+	.catch(LopetaPeli, function() {
+		// Peli on päättynyt
+		// Älä rekursoi
+		console.log(&quot;Peli päättynyt&quot;);
+	})
+}
+
+function siirtoKierros(pelaajat) {
+  return Promise.mapSeries(pelaajat, function(pelaaja) {
+    if (pelaaja.hasDisconnected()) return null;
+    return __pyydaSiirtoa(pelaaja);
+  });	
+}
+
+function __pyydaSiirtoa(pelaaja) {
+  // pelaaja.teeSiirto() lähettää pelaajalle pyynnön tehdä siirto.
+  // .timeout() määrittää maksimiajan jonka puitteissa tuo siirto on tehtävä.
+  return pelaaja.teeSiirto().timeout(SIIRTO_MAX_AIKA)
+  .tap(function(siirto) {
+    // Throws &quot;Laitonsiirto&quot;-Error jos kyseessä laiton siirto.
+    return tarkistaSiirronLaillisuus(siirto);
+  })
+  .then(function(siirto) {
+    // Jos pääsemme tänne, siirto on ollut laillinen
+    // Muokkaamme pelin tämän hetkistä tilaa siirron pohjalta.
+    // Pelitila yksinkertaisesti tarkoittaa pelin tämän hetkistä pelitilannetta, esim.
+    // shakkipelissä pelitila tarkoittaa laudalla olevaa asemaa.
+    var uusiPelitila = toteutaSiirto(siirto);
+    // Ilmoitamme uuden tilapäivityksen kaikille pelin osanottajille.
+    // (jotta he pysyvät kärryillä pelin etenemisestä).
+
+    viestiPelaajille(pelaajat, {
+      aihe: 'uusi_siirto_tehty',
+      siirto: siirto,
+      pelitila: uusiPelitila
+    });
+    // Palautamme pelaajan sillä hän jatkaa mukana pelissä.
+    return pelaaja;
+
+    // 
+  })
+  .catch(Laitonsiirto, function() {
+    // Pelaaja yritti tehdä laittoman siirron.
+    // Palauta vuoro pelaajalle ja pyydä tekemään laillinen siirto.
+    // Kutsumme rekursiivisesti tätä funktiota uudestaan.
+    return this.__pyydaSiirtoa(pelaaja);
+
+  })
+  .catch(TimeoutError, function() {
+    // .timeout(aika) metodimme heitti virheen, eli
+    // pelaaja ei ehtinyt tekemään siirtoaan ajoissa.
+
+    // Vakioasetuksena pelaaja häviää pelin, eli palautamme arvon null.
+    return null;
+  })
+
+	
+}
+
+function toteutaSiirto(siirto) {
+  // Muokkaa pelitilaa siirron pohjalta jotenkin ja palauta muokattu pelitila.
+  // Muokkaaminen on pelikohtaista ja kehyksen käyttäjä määrittää muokkausfunktion.
+
+  return peliTila;
+}
+
+function viestiPelaajille(pelaajat, viesti) {
+  // Kutsu kunkin pelaajan &quot;lahetaViesti&quot;-metodia, joka
+  // hoitaa kommunikoinnin pelaajan suuntaan.
+  _.map(pelaajat, function(pelaaja) {
+    pelaaja.lahetaViesti(viesti);
+  });
+}
+
+</code></pre>
+
+<p>Yllä on yksinkertaistettu versio asynkronoidusta game-loopista, joka pyytää vuorotellen pelaajia tekemään siirtojaan kunnes lopulta vain yksi pelaaja on jäljellä.</p>
+
+<p>Koko loopin keskiössä on <strong>Promise.mapSeries</strong>, joka yksi kerrallaan kutsuu <em>__pyydaSiirtoa</em>-funktiota kullekin pelaajalle. <strong>Promise.mapSeries</strong>-kutsun palautusarvo sisältää listan pelaajista, jotka jatkavat peliä seuraavalle kierrokselle.</p>
+
+<p>Tämä lista rakentuu pelaaja pelaajalta sen mukaan, mitä <em>__pyydaSiirtoa</em>-funktio palauttaa. Jos <em>__pyydaSiirtoa</em> palauttaa <em>null</em>, pelaaja ei jatka seuraavalle kierrokselle (= hän on hävinnyt pelin). Jos <em>__pyydaSiirtoa</em> palauttaa <em>Pelaajan</em>, pelaajan jatkaa seuraavalle kierrokselle.</p>
+
+<p>Ylimmällä tasolla funktio <strong>aloitaPeli</strong> laittaa pyörät pyörimään. Se kutsuu rekursiivisesti aina uutta siirtokierrosta pelattavaksi. Kunkin siirtokierroksen päätteeksi se tarkistaa onko peli päättynyt (= vähemmän kuin kaksi pelaajaa jäljellä). Jos ei ole, se aloittaa uuden siirtokierroksen.</p>
+
+<p>Asynkronoidun game-loopin perusominaisuus on, että kaikki funktiot palauttavat <em>lupauksen</em>. Tämä lupaus voidaan sitten ketjuttaa osaksi suurempaa lupausketjua. Poikkeuksena on funktio kuten <strong>viestiPelaajille</strong>, jonka oletetaan suorittavan tehtävänsä välittömästi (viestien lähettäminen kullekin pelaajalle yksinkertaisesti oletetaan onnistuvaksi, myöhemmässä versiossa oletuksesta luovutaan ja käytetään erillistä &ldquo;disconnect&rdquo;-handleria reagoimaan yhteysvirheisiin pelaajan ja palvelimen välillä).</p>
+
+<p>Ylläolevasta koodista puuttuu vielä <em>tärkein</em> ohjelmistokehykselle ominainen aspekti; mahdollisuus kutsua kehyksen käyttäjän määrittämiä lisäfunktioita. Koska esimerkiksi shakkipelissä tehtävän siirron laillisuuden tarkistaminen on varsin erilainen prosessi kuin pokeripelissä tehtävän siirron laillisuuden tarkistaminen, on kehyksen käyttäjän pystyttävä <em>pluggaamaan sisään</em> haluamansa tarkistusfunktio.</p>
+
+<p>Toisin sanoen, tämä kohta koodia:</p>
+
+<pre><code class="language-javascript">
+.tap(function(siirto) {
+   // Throws &quot;Laitonsiirto&quot;-Error jos kyseessä laiton siirto.
+   // Kutsumme staattisesti valittua tarkistusfunktiota.
+   return tarkistaSiirronLaillisuus(siirto);
+})
+
+</code></pre>
+
+<p>menee kutakuinkin muotoon</p>
+
+<pre><code class="language-javascript">
+.tap(function(siirto) {
+   // Throws &quot;Laitonsiirto&quot;-Error jos kyseessä laiton siirto.
+   // Kehyksen käyttäjä tarjoaa meille tarkistusfunktion osana
+   // &quot;laajennukset&quot;-objektia, jonka hän on määrittänyt.
+   return laajennukset['tarkistaSiirronLaillisuus'](siirto);
+})
+
+</code></pre>
+
+<p>Antamalla käyttäjälle vapauden valita <em>laajennukset</em>-objektin funktioiden toteutukset, kehyksen käyttäjä kykenee toteuttamaan haluamansa pelilogiikan kehyksen pohjalle. Esimerkiksi timeout-virhetilanteen hallinta:</p>
+
+<p>Vanha muoto:</p>
+
+<pre><code class="language-javascript">
+.catch(TimeoutError, function() {
+	// .timeout(aika) metodimme heitti virheen, eli
+	// pelaaja ei ehtinyt tekemään siirtoaan ajoissa.
+
+	// Vakioasetuksena pelaaja häviää pelin, eli palautamme arvon null.
+	return null;
+})
+
+</code></pre>
+
+<p>ja uusi muoto:</p>
+
+<pre><code class="language-javascript">
+.catch(TimeoutError, function() {
+	// .timeout(aika) metodimme heitti virheen, eli
+	// pelaaja ei ehtinyt tekemään siirtoaan ajoissa.
+
+	// Annamme kehyksen käyttäjän tarjoaman funktion 
+	// päättää miten reagoidaan
+	return laajennukset['aikaKuluiUmpeen']();
+})
+
+</code></pre>
+
+<p>Huomioitavaa on, että kehyksen käyttäjän tarjoama kutsufunktio voi sisältään myös heittää virhetilanteita, jotka sitten kehyksen lupausketju nappaa kiinni. Tällä tavoin kutsufunktio voi esimerkiksi päättää pelin ennenaikaisesti (= ennen kuin vain yksi tai nolla pelaajaa on jäljellä).</p>
+
+<pre><code class="language-javascript">
+laajennukset['aikaKuluiUmpeen'] = function() {
+	throw new LopetaPeli();
+}
+
+</code></pre>
+
+<p>Jatketaan tästä ensi kerralla.</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://nollaversio.fi/blog/public/laravel/csrf/">
         Kuinka CSRF toimii?
       </a>
@@ -210,7 +527,7 @@ Käytännössä web-applikaatio siis lähettää lomakesivun mukana CSRF-tunnist
 <blockquote>
 <p>Loppukaneetti: XSS:n avulla saattaa teoriassa olla mahdollista <em>selvittää</em> CRSF-tunniste kesken hyökkäyksen. Tällöin CSRF-suojaus menettää tehonsa. Tämä vaatii, että XSS-hyökkääjällä on mahdollisuus ajaa mielivaltaista Javascript-koodia uhrinsa www-selaimessa.</p>
 
-<p>Jos tätä mahdollisuutta ei ole, CSRF-suojaus toimii ja estää muunlaiset hyökkäysyritykset; esim. linkki-injektion, jossa rikollinen on <em>jotenkin</em> saanut nettipankin käyttöliittymään lisättyä linkin, jota klikkaamalla etukäteen suunniteltu lomakedata lähtee salaa liikkeelle. Koska tuo etukäteen suunniteltu lomakedata ei voi mitenkään tietää ETUKÄTEEN sen hetkisen CSRF-tunnisteen merkkijonoa, CSRF-suojaus toimii ja rikollinen jää nuolemaan näppejään.</p>
+<p>Jos tätä mahdollisuutta ei ole, CSRF-suojaus toimii ja estää useimmat muunlaiset hyökkäysyritykset; esim. linkki-injektion, jossa rikollinen on <em>jotenkin</em> saanut nettipankin käyttöliittymään lisättyä linkin, jota klikkaamalla etukäteen suunniteltu lomakedata lähtee salaa liikkeelle. Koska tuo etukäteen suunniteltu lomakedata ei voi mitenkään tietää ETUKÄTEEN sen hetkisen CSRF-tunnisteen merkkijonoa, CSRF-suojaus toimii ja rikollinen jää nuolemaan näppejään.</p>
 </blockquote>
 
   </div>
