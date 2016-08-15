@@ -6,8 +6,170 @@
     <description>Recent content in Arkkitehtuuris on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Mon, 01 Aug 2016 13:50:30 +0300</lastBuildDate>
+    <lastBuildDate>Fri, 12 Aug 2016 06:46:20 +0300</lastBuildDate>
     <atom:link href="http://nollaversio.fi/blog/public/arkkitehtuuri/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Poikkeuksen väärinkäyttö?</title>
+      <link>http://nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</link>
+      <pubDate>Fri, 12 Aug 2016 06:46:20 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</guid>
+      <description>
+
+&lt;p&gt;Yksi suht usein tarvittava algoritmi on tietyn arvon etsiminen binaaripuusta. Etsinnän voi suorittaa esimerkiksi näin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) loytynyt = true;
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti
+    etsiAlipuu(juuri.vasenHaara, arvo);
+    etsiAlipuu(juuri.oikeaHaara, arvo);
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  etsiAlipuu(puu, arvo);
+
+  return loytynyt;
+
+}
+
+// Kutsutaan etsintäfunktiota
+var binaaripuu = /* rakenna puu, ei oleellista etsinnän kannalta */
+var tulos = etsiArvoBinaaripuusta(binaaripuu, &#39;hauki&#39;);
+console.log(tulos); // true tai false
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva toimii. Mutta etsintä käy koko puun rekursiivisesti läpi &lt;em&gt;kaikissa tapauksissa&lt;/em&gt;, ml. siinä erikoistapauksessa, että arvo löytyy heti koko puun juuresta.&lt;/p&gt;
+
+&lt;p&gt;Arvokas huomio funktion tehokkuuden kannalta onkin huomata, että heti kun arvo on löytynyt, ei jäljellä olevan puun läpikäyminen ole järkevää. Se on vain ajanhukkaa.&lt;/p&gt;
+
+&lt;p&gt;Asia on korvattavissa pitämällä huolen, että arvon löytyessä puuetsintää ei jatketa ko. oksan kohdalta alaspäin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) loytynyt = true;
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
+    // mutta vain jos arvoa ei löytynyt!
+    else {
+      etsiAlipuu(juuri.vasenHaara, arvo);
+      etsiAlipuu(juuri.oikeaHaara, arvo);   	
+    }
+
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  etsiAlipuu(puu, arvo);
+
+  return loytynyt;
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva on himpun verran parempi tapa hoitaa etsintä. Mutta edelleenkin etsintä jatkuu tarpeettoman kauan. Asian voi tarkistaa seuraavalla ajatuskokeella; puu jaetaan kahteen haaraan, vasen ja oikea. Kumpikin haara etsitään &lt;em&gt;erikseen&lt;/em&gt;. &lt;strong&gt;Jos arvo löytyy heti vasemman haaran alkupäästä, ainoastaan vasemman haaran etsintä stoppaa&lt;/strong&gt;. Oikean haaran etsintä joutuu yhä käymään läpi koko oikean puolen puun.&lt;/p&gt;
+
+&lt;p&gt;Tämä huomio johtaa meidät pieneen ongelmaan. Binaaripuulle on ominaista suorittaa etsintä binaarisesti - eli jakamalla jäljellä oleva puu aina kahteen osaan. Kumpikin osa saa oman &amp;ldquo;etsintäpartionsa&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Mutta optimaalisinta olisi jos nuo kaksi etsintäpartiota voisivat kommunikoida keskenään. Näin ei kummassakaan ylläolevassa ratkaisussa ole. Kommunikaatio ei ole mahdollista - vasen partio ja oikea partio rämpivät täysin toisistaan erillään ja itsenäisesti.&lt;/p&gt;
+
+&lt;p&gt;Haluamme saavuttaa tilanteen, jossa &lt;strong&gt;heti kun oikean puolen etsintäpartio löytää arvon, se viestittää tiedon vasemman puolen partiolle&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Kuinka saavuttaa tälläinen kommunikaatio?&lt;/p&gt;
+
+&lt;h3 id=&#34;poikkeus-apuun&#34;&gt;Poikkeus apuun&lt;/h3&gt;
+
+&lt;p&gt;Käytännössä kaikki yleisimmät ohjelmointikielet tarjoavat konseptin nimeltä &lt;em&gt;poikkeus&lt;/em&gt; (engl. exception). Poikkeus on tarkoitettu ohjelman ajon aikana tapahtuvien virhetilanteiden hallintaan. Jos esimerkiksi yrität jakaa nollalla, ohjelma heittää poikkeuksen, joka kertoo että metsään mentiin.&lt;/p&gt;
+
+&lt;p&gt;Mikään laki ei estä käyttämästä poikkeuksia myös muihin tarkoituksiin kuin ns. aitojen virhetilanteiden käsittelyyn.&lt;/p&gt;
+
+&lt;p&gt;Voimme luoda &lt;em&gt;keinotekoisen virhetilanteen&lt;/em&gt;, joka heittää poikkeuksen. Tuollainen keinotekoinen &amp;ldquo;virhe&amp;rdquo; voi olla esimerkiksi halutun arvon löytyminen binaaripuusta:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) throw new Error(&amp;quot;Löytyi!&amp;quot;);
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
+    etsiAlipuu(juuri.vasenHaara, arvo);
+    etsiAlipuu(juuri.oikeaHaara, arvo);   	
+    
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  try {
+    etsiAlipuu(puu, arvo);
+  } catch (e) {
+    loytynyt = true;
+  }
+
+  return loytynyt;
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva koodi toimii halutusti. Mutta mikä parasta, ylläolevassa koodissa &lt;em&gt;kaikki&lt;/em&gt; etsintäpartiot heittävät hanskat tiskiin heti kun arvo on löytynyt. Miksi näin? Koska heittämällä poikkeuksen - heti kun arvo löytyy - koodinajo &lt;em&gt;rullaa&lt;/em&gt; itsensä suoraan &lt;strong&gt;catch-komentoon&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Toisin sanoen, heti kun arvo löytyy, hyödynnämme Javascriptin sisäänrakennettua poikkeusten hallintaa ja luomme keinotekoisen virhetilanteen. Tuo virhetilanne &lt;em&gt;abortoi&lt;/em&gt; kaiken käynnissä olevan etsinnän ja siirtää koodinajon catch-komennon riville:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Heti kun arvo on löytynyt, koodi pomppaa tänne
+catch (e) {
+  loytynyt = true;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Catch-komennon sisällä yksinkertaisesti merkkaamme arvon löydetyksi. Tämän jälkeen koodinajo jatkaa catch-komentoa seuraavalta riviltä.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevaa koodia voi vielä hiukan parantaa. Ei ole mikään pakko heittää &lt;em&gt;geneeristä&lt;/em&gt; poikkeusta, vaan luokaamme suosiolla sopivasti nimetty &lt;em&gt;spesiaalipoikkeus&lt;/em&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Spesiaalipoikkeuksen määritys
+// Huom! Spesiaalipoikkeuksen täytyy ekstentoida Error-objektia.
+function ArvoLoytyi() {};
+ArvoLoytyi.prototype = new Error();
+
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) throw new ArvoLoytyi(&amp;quot;Löytyi!&amp;quot;);
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
+    etsiAlipuu(juuri.vasenHaara, arvo);
+    etsiAlipuu(juuri.oikeaHaara, arvo);   	
+    
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  try {
+    etsiAlipuu(puu, arvo);
+  } catch (err) {
+    if (err instanceof ArvoLoytyi) {
+    	// Arvo on löytynyt
+    	loytynyt = true;
+    } else {
+    	// Jotain muuta meni pieleen, arvo ei löytynyt.
+    	// Heitä poikkeus uudelleen, joku muu huolehtikoot...
+    	throw err;
+    }
+    
+  }
+
+  return loytynyt;
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: monet tahot suhtautuvat &lt;em&gt;erittäin&lt;/em&gt; epäilevästi poikkeusten väärinkäyttöön ylläolevan esimerkin tavoin. Epäilevässä suhtautumisessa on perusteensa - poikkeukset on luotu ohjelman ajon aikana tapahtuvien virheiden käsittelyyn, ja valtaosa ohjelmoijista lähtee tästä oletuksesta liikkeelle. Mikäli poikkeusta käyttää muuhun tarkoitukseen, on asia syytä selkeästi ilmaista lähdekoodin kommenteissa - tällä tavalla (ehkä, kenties) vältytään väärinkäsityksiltä.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Neljä lähestymistapaa toiminnallisuuksien abstraktointiin</title>

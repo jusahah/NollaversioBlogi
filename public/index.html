@@ -68,6 +68,345 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://nollaversio.fi/blog/public/laravel/email-laravel/">
+        Emailin lähetys Laravellista
+      </a>
+    </h1>
+
+    <span class="post-date">Mon, Aug 15, 2016</span>
+
+    
+
+<p>Moni web-applikaatio joutuu lähettämään sähköposteja. Tyypillinen tarve sähköpostin lähetykselle syntyy käyttäjän rekisteröityessä applikaatioon; jonkinlainen tervetuloviesti olisi mukava lähettää käyttäjän suuntaan, jotta hän tuntisi olonsa tervetulleeksi.</p>
+
+<p>Laravel tekee emailin puskemisesta eetteriin erittäin helppoa. Otetaan esimerkiksi <em>lottoapplikaatio</em>, joka arpoo kerran viikossa lottovoittajan kaikkien osallistujien joukosta. (Tässä esimerkissä ei siis arvota numeroita, vaan valitaan satunnaisesti yksi voittaja suuresta määrästä osallistujia).</p>
+
+<pre><code class="language-php">
+// Lotto.php
+
+public function valitseVoittaja(array $osallistujat) {
+  // Arvo voittaja satunnaisesti
+  $voittaja = $osallistujat-&gt;random();
+  // Lähetä voittajalle onnittelu-sähköposti
+  Mail::raw('Olet voittanut jotain!', function($email) use ($voittaja) {
+    $email-&gt;from('lotto@veikkaus.fi', 'Veikkaus');
+    // Voittajan email-osoite on tallennettu osaksi käyttäjä-objektia
+    $email-&gt;to($voittaja-&gt;email);
+  });
+	
+}
+
+</code></pre>
+
+<p>Ylläoleva koodinpätkä arpoo voittajan, ja lähettää hänelle onnitteluviestin käyttäen <em>Mail::raw()</em>-metodia. Mail::raw() yksinkertaisesti lähettää email-viestin pelkkänä leipätekstinä. Viestin voi lähettää myös HTML-muotoilun kera:</p>
+
+<pre><code class="language-php">
+// Lotto.php
+
+public function valitseVoittaja(array $osallistujat) {
+  // Arvo voittaja satunnaisesti
+  $voittaja = $osallistujat-&gt;random();
+  // Lähetä voittajalle onnittelu-sähköposti
+  Mail::send('emails.voitto', ['voittaja' =&gt; $voittaja] function($email) use ($voittaja) {
+    $email-&gt;from('lotto@veikkaus.fi', 'Veikkaus');
+    // Voittajan email-osoite on tallennettu osaksi käyttäjä-objektia
+    $email-&gt;to($voittaja-&gt;email);
+  });
+	
+}
+
+
+// Views/emails/voitto.blade.php
+
+&lt;h1&gt;Olet voittanut jättipotin!&lt;/h1&gt;
+&lt;p&gt;Onnittelut {{$voittaja-&gt;etunimi}}, olet juuri rikastunut oikein urakalla.&lt;/p&gt;
+
+
+</code></pre>
+
+<h3 id="tukitoimenpide-vs-ydintoimenpide">Tukitoimenpide vs. ydintoimenpide</h3>
+
+<p>Ylläoleva koodaustyyli, jossa emailin lähetys suoritetaan suoraan arvontametodin sisältä, on ihan toimiva. Mutta on syytä tehdä pesäero ydintoimenpiteen ja tukitoimenpiteen välille.</p>
+
+<p>Lottovoittajan arvonta on <em>ydintoimenpide</em>. Ilman voittajan arvontaa koko lottoapplikaatio olisi aika turha.</p>
+
+<p>Sähköpostin lähettäminen voittajalle taas voidaan nähdä joko <em>ydintoimenpiteenä</em> tai <em>tukitoimenpiteenä</em>. Minä näkisin sen <em>tukitoimenpiteenä</em>. Ensinnäkin lottovoittaja tuskin on kiinnostunut siitä tavasta, jolla hänelle ilmoitetaan voitosta. Emailin lähettäminen on tässä mielessä toissijaista - oleellista on, että tieto jotenkin tavoittaa tulevan miljonäärimme.</p>
+
+<p>Ylläolevat ratkaisumme emailin lähettämiseen noudattivat kutakuinkin seuraavaa kaavaa:</p>
+
+<blockquote>
+<p>Ydinmetodi</p>
+
+<p>&ndash; ydintoimenpide</p>
+
+<p>&ndash; tukitoimenpide</p>
+</blockquote>
+
+<p>Toisin sanoen, tukitoimenpiteet on yllä <em>ripoteltu</em> ydintoimenpiteiden sekaan.</p>
+
+<p>Toinenkin vaihtoehto on olemassa:</p>
+
+<blockquote>
+<p>Ydinmetodi</p>
+
+<p>&ndash; ydintoimenpide</p>
+
+<p>Tukimetodi</p>
+
+<p>&ndash; tukitoimenpide</p>
+</blockquote>
+
+<p>Jälkimmäisessä ratkaisussa ydintoimenpiteet - kuten arvonta, jonka suorittaminen oikeaoppisesti on ensiarvoisen tärkeää koko lottoapplikaation toiminnan kannalta - on eroteltu tukitoimenpiteistä. Kysymykseksi jää nyt, miten ydinmetodi saa kutsuttua/ilmoitettua tukimetodille, että tietty tukitoimenpide (tässä tapauksessa sähköpostin lähetys) on syytä suorittaa.</p>
+
+<p>Paras tapa lienee eristää tukitoimenpiteet <em>Event Listener</em>-objektin sisälle:</p>
+
+<pre><code class="language-php">
+/////////////////////////////
+// App/Events/ArvontaSuoritettu.php
+
+class ArvontaSuoritettu extends Event
+{
+
+    public $voittaja;
+
+    public function __construct(User $voittaja)
+    {
+        $this-&gt;voittaja = $voittaja;
+    }
+}
+
+
+/////////////////////////////
+// App/Listeners/LahetaTietoVoittajalle.php
+
+class LahetaTietoVoittajalle
+{
+
+    public function __construct()
+    {
+
+    }
+
+    public function handle(ArvontaSuoritettu $arvontaInfo)
+    {
+      $voittaja = $arvontaInfo-&gt;voittaja;	
+      // Lähetetään sähköposti voittajalle
+      Mail::raw('Olet voittanut jotain!', function($email) use ($voittaja) {
+        $email-&gt;from('lotto@veikkaus.fi', 'Veikkaus');
+        // Voittajan email-osoite on tallennettu osaksi User-objektia
+        $email-&gt;to($voittaja-&gt;email);
+      });
+        
+    }
+}
+
+
+/////////////////////////////
+// Lotto.php
+
+public function valitseVoittaja(array $osallistujat) {
+  // Arvo voittaja satunnaisesti
+  $voittaja = $osallistujat-&gt;random();
+
+  // Ilmoita muulle applikaatiolle, että voittaja on valittu!
+  // HUOM! Tämä metodi ei välitä siitä, lähetetäänkö voittajalle
+  // sähköposti, kirje vai vaikka savumerkki. Tämän metodin 
+  // ainoa vastuualue on ilmoittaa, että voittaja on valittu.
+
+  // Joku muu huolehtii voittajalle ilmoittamisesta.
+
+  // Luo event ja ammu se eetteriin.
+  event(new ArvontaSuoritettu($voittaja));
+
+}
+
+</code></pre>
+
+<p>Ylläoleva ratkaisu on hyvin erilainen alkuperäiseen verrattuna. <strong>Se näyttää monimutkaisemmalta, mutta ei ole.</strong> Se on yksinkertaisempi, sillä vastuualueet elävät nyt omissa kivoissa lokeroissaan. Lottoarvonnan suorittava <em>valitseVoittaja</em>-metodi ei räpellä sähköpostien kanssa - sen sijaan se yksinkertaisesti luo ohjelmistokehyksen <em>sisäisen tiedoksiannon</em>.</p>
+
+<p>Tuo tiedoksianto kulkeutuu <em>LahetaTietoVoittajalle</em>-kuuntelijan korviin, joka tiedoksiantoon perustuen luo ja lähettää sähköpostin.</p>
+
+<p>Uusi jaottelu on täten selvä; ydinmetodi huolehtii ydintoimenpiteistä, ja tukimetodi (LahetaTietoVoittajalle::handle) huolehtii tukitoimenpiteistä.</p>
+
+<blockquote>
+<p>Loppukaneetti: ydintoimenpiteiden ja tukitoimenpiteiden erottelu on usein järkevä tapa selkeyttää applikaation koodia.</p>
+
+<p>Vaan kuinka hyödyllistä tuo jaottelu lopulta on?</p>
+
+<p>Tilanne on sama kuin yritysmaailmassa. Nollaversio IT:n kaltaisessa pienessä nakkipuljussa yksi mies voi hoitaa niin markkinoinnin, ohjelmoinnin kuin laskutuksenkin. Suuressa pörssiyhtiössä yksi henkilö ei millään kykene hoitamaan kaikkia arkirutiineja, vaan vastuualueet on jaettava usean työntekijän kesken. Yksi toteuttaa asiakasprojektit (=ydintoimenpide), toinen pyörittää lakiosastoa (=tukitoimenpide), kolmas luuttuaa toimiston lattiat (=tukitoimenpide).</p>
+
+<p>Eli mitä monimutkaisempi web-applikaatio on kyseessä, sitä tärkeämpää on tehdä pesäero ydintoimintojen ja tukitoimintojen välille.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="http://nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/">
+        Poikkeuksen väärinkäyttö?
+      </a>
+    </h1>
+
+    <span class="post-date">Fri, Aug 12, 2016</span>
+
+    
+
+<p>Yksi suht usein tarvittava algoritmi on tietyn arvon etsiminen binaaripuusta. Etsinnän voi suorittaa esimerkiksi näin:</p>
+
+<pre><code class="language-javascript">
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) loytynyt = true;
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti
+    etsiAlipuu(juuri.vasenHaara, arvo);
+    etsiAlipuu(juuri.oikeaHaara, arvo);
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  etsiAlipuu(puu, arvo);
+
+  return loytynyt;
+
+}
+
+// Kutsutaan etsintäfunktiota
+var binaaripuu = /* rakenna puu, ei oleellista etsinnän kannalta */
+var tulos = etsiArvoBinaaripuusta(binaaripuu, 'hauki');
+console.log(tulos); // true tai false
+
+</code></pre>
+
+<p>Ylläoleva toimii. Mutta etsintä käy koko puun rekursiivisesti läpi <em>kaikissa tapauksissa</em>, ml. siinä erikoistapauksessa, että arvo löytyy heti koko puun juuresta.</p>
+
+<p>Arvokas huomio funktion tehokkuuden kannalta onkin huomata, että heti kun arvo on löytynyt, ei jäljellä olevan puun läpikäyminen ole järkevää. Se on vain ajanhukkaa.</p>
+
+<p>Asia on korvattavissa pitämällä huolen, että arvon löytyessä puuetsintää ei jatketa ko. oksan kohdalta alaspäin:</p>
+
+<pre><code class="language-javascript">
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) loytynyt = true;
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
+    // mutta vain jos arvoa ei löytynyt!
+    else {
+      etsiAlipuu(juuri.vasenHaara, arvo);
+      etsiAlipuu(juuri.oikeaHaara, arvo);   	
+    }
+
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  etsiAlipuu(puu, arvo);
+
+  return loytynyt;
+
+}
+
+</code></pre>
+
+<p>Ylläoleva on himpun verran parempi tapa hoitaa etsintä. Mutta edelleenkin etsintä jatkuu tarpeettoman kauan. Asian voi tarkistaa seuraavalla ajatuskokeella; puu jaetaan kahteen haaraan, vasen ja oikea. Kumpikin haara etsitään <em>erikseen</em>. <strong>Jos arvo löytyy heti vasemman haaran alkupäästä, ainoastaan vasemman haaran etsintä stoppaa</strong>. Oikean haaran etsintä joutuu yhä käymään läpi koko oikean puolen puun.</p>
+
+<p>Tämä huomio johtaa meidät pieneen ongelmaan. Binaaripuulle on ominaista suorittaa etsintä binaarisesti - eli jakamalla jäljellä oleva puu aina kahteen osaan. Kumpikin osa saa oman &ldquo;etsintäpartionsa&rdquo;.</p>
+
+<p>Mutta optimaalisinta olisi jos nuo kaksi etsintäpartiota voisivat kommunikoida keskenään. Näin ei kummassakaan ylläolevassa ratkaisussa ole. Kommunikaatio ei ole mahdollista - vasen partio ja oikea partio rämpivät täysin toisistaan erillään ja itsenäisesti.</p>
+
+<p>Haluamme saavuttaa tilanteen, jossa <strong>heti kun oikean puolen etsintäpartio löytää arvon, se viestittää tiedon vasemman puolen partiolle</strong>.</p>
+
+<p>Kuinka saavuttaa tälläinen kommunikaatio?</p>
+
+<h3 id="poikkeus-apuun">Poikkeus apuun</h3>
+
+<p>Käytännössä kaikki yleisimmät ohjelmointikielet tarjoavat konseptin nimeltä <em>poikkeus</em> (engl. exception). Poikkeus on tarkoitettu ohjelman ajon aikana tapahtuvien virhetilanteiden hallintaan. Jos esimerkiksi yrität jakaa nollalla, ohjelma heittää poikkeuksen, joka kertoo että metsään mentiin.</p>
+
+<p>Mikään laki ei estä käyttämästä poikkeuksia myös muihin tarkoituksiin kuin ns. aitojen virhetilanteiden käsittelyyn.</p>
+
+<p>Voimme luoda <em>keinotekoisen virhetilanteen</em>, joka heittää poikkeuksen. Tuollainen keinotekoinen &ldquo;virhe&rdquo; voi olla esimerkiksi halutun arvon löytyminen binaaripuusta:</p>
+
+<pre><code class="language-javascript">
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) throw new Error(&quot;Löytyi!&quot;);
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
+    etsiAlipuu(juuri.vasenHaara, arvo);
+    etsiAlipuu(juuri.oikeaHaara, arvo);   	
+    
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  try {
+    etsiAlipuu(puu, arvo);
+  } catch (e) {
+    loytynyt = true;
+  }
+
+  return loytynyt;
+
+}
+
+</code></pre>
+
+<p>Ylläoleva koodi toimii halutusti. Mutta mikä parasta, ylläolevassa koodissa <em>kaikki</em> etsintäpartiot heittävät hanskat tiskiin heti kun arvo on löytynyt. Miksi näin? Koska heittämällä poikkeuksen - heti kun arvo löytyy - koodinajo <em>rullaa</em> itsensä suoraan <strong>catch-komentoon</strong>.</p>
+
+<p>Toisin sanoen, heti kun arvo löytyy, hyödynnämme Javascriptin sisäänrakennettua poikkeusten hallintaa ja luomme keinotekoisen virhetilanteen. Tuo virhetilanne <em>abortoi</em> kaiken käynnissä olevan etsinnän ja siirtää koodinajon catch-komennon riville:</p>
+
+<pre><code class="language-javascript">// Heti kun arvo on löytynyt, koodi pomppaa tänne
+catch (e) {
+  loytynyt = true;
+}
+</code></pre>
+
+<p>Catch-komennon sisällä yksinkertaisesti merkkaamme arvon löydetyksi. Tämän jälkeen koodinajo jatkaa catch-komentoa seuraavalta riviltä.</p>
+
+<p>Ylläolevaa koodia voi vielä hiukan parantaa. Ei ole mikään pakko heittää <em>geneeristä</em> poikkeusta, vaan luokaamme suosiolla sopivasti nimetty <em>spesiaalipoikkeus</em>:</p>
+
+<pre><code class="language-javascript">
+// Spesiaalipoikkeuksen määritys
+// Huom! Spesiaalipoikkeuksen täytyy ekstentoida Error-objektia.
+function ArvoLoytyi() {};
+ArvoLoytyi.prototype = new Error();
+
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) throw new ArvoLoytyi(&quot;Löytyi!&quot;);
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
+    etsiAlipuu(juuri.vasenHaara, arvo);
+    etsiAlipuu(juuri.oikeaHaara, arvo);   	
+    
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  try {
+    etsiAlipuu(puu, arvo);
+  } catch (err) {
+    if (err instanceof ArvoLoytyi) {
+    	// Arvo on löytynyt
+    	loytynyt = true;
+    } else {
+    	// Jotain muuta meni pieleen, arvo ei löytynyt.
+    	// Heitä poikkeus uudelleen, joku muu huolehtikoot...
+    	throw err;
+    }
+    
+  }
+
+  return loytynyt;
+
+}
+
+</code></pre>
+
+<blockquote>
+<p>Loppukaneetti: monet tahot suhtautuvat <em>erittäin</em> epäilevästi poikkeusten väärinkäyttöön ylläolevan esimerkin tavoin. Epäilevässä suhtautumisessa on perusteensa - poikkeukset on luotu ohjelman ajon aikana tapahtuvien virheiden käsittelyyn, ja valtaosa ohjelmoijista lähtee tästä oletuksesta liikkeelle. Mikäli poikkeusta käyttää muuhun tarkoitukseen, on asia syytä selkeästi ilmaista lähdekoodin kommenteissa - tällä tavalla (ehkä, kenties) vältytään väärinkäsityksiltä.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://nollaversio.fi/blog/public/nodejs/mocha-testing/">
         Asynkronoidun koodin testaus (Mocha)
       </a>

@@ -6,8 +6,179 @@
     <description>Recent content in Laravels on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Tue, 09 Aug 2016 06:07:23 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 15 Aug 2016 06:15:21 +0300</lastBuildDate>
     <atom:link href="http://nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Emailin lähetys Laravellista</title>
+      <link>http://nollaversio.fi/blog/public/laravel/email-laravel/</link>
+      <pubDate>Mon, 15 Aug 2016 06:15:21 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/email-laravel/</guid>
+      <description>
+
+&lt;p&gt;Moni web-applikaatio joutuu lähettämään sähköposteja. Tyypillinen tarve sähköpostin lähetykselle syntyy käyttäjän rekisteröityessä applikaatioon; jonkinlainen tervetuloviesti olisi mukava lähettää käyttäjän suuntaan, jotta hän tuntisi olonsa tervetulleeksi.&lt;/p&gt;
+
+&lt;p&gt;Laravel tekee emailin puskemisesta eetteriin erittäin helppoa. Otetaan esimerkiksi &lt;em&gt;lottoapplikaatio&lt;/em&gt;, joka arpoo kerran viikossa lottovoittajan kaikkien osallistujien joukosta. (Tässä esimerkissä ei siis arvota numeroita, vaan valitaan satunnaisesti yksi voittaja suuresta määrästä osallistujia).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Lotto.php
+
+public function valitseVoittaja(array $osallistujat) {
+  // Arvo voittaja satunnaisesti
+  $voittaja = $osallistujat-&amp;gt;random();
+  // Lähetä voittajalle onnittelu-sähköposti
+  Mail::raw(&#39;Olet voittanut jotain!&#39;, function($email) use ($voittaja) {
+    $email-&amp;gt;from(&#39;lotto@veikkaus.fi&#39;, &#39;Veikkaus&#39;);
+    // Voittajan email-osoite on tallennettu osaksi käyttäjä-objektia
+    $email-&amp;gt;to($voittaja-&amp;gt;email);
+  });
+	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva koodinpätkä arpoo voittajan, ja lähettää hänelle onnitteluviestin käyttäen &lt;em&gt;Mail::raw()&lt;/em&gt;-metodia. Mail::raw() yksinkertaisesti lähettää email-viestin pelkkänä leipätekstinä. Viestin voi lähettää myös HTML-muotoilun kera:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Lotto.php
+
+public function valitseVoittaja(array $osallistujat) {
+  // Arvo voittaja satunnaisesti
+  $voittaja = $osallistujat-&amp;gt;random();
+  // Lähetä voittajalle onnittelu-sähköposti
+  Mail::send(&#39;emails.voitto&#39;, [&#39;voittaja&#39; =&amp;gt; $voittaja] function($email) use ($voittaja) {
+    $email-&amp;gt;from(&#39;lotto@veikkaus.fi&#39;, &#39;Veikkaus&#39;);
+    // Voittajan email-osoite on tallennettu osaksi käyttäjä-objektia
+    $email-&amp;gt;to($voittaja-&amp;gt;email);
+  });
+	
+}
+
+
+// Views/emails/voitto.blade.php
+
+&amp;lt;h1&amp;gt;Olet voittanut jättipotin!&amp;lt;/h1&amp;gt;
+&amp;lt;p&amp;gt;Onnittelut {{$voittaja-&amp;gt;etunimi}}, olet juuri rikastunut oikein urakalla.&amp;lt;/p&amp;gt;
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;tukitoimenpide-vs-ydintoimenpide&#34;&gt;Tukitoimenpide vs. ydintoimenpide&lt;/h3&gt;
+
+&lt;p&gt;Ylläoleva koodaustyyli, jossa emailin lähetys suoritetaan suoraan arvontametodin sisältä, on ihan toimiva. Mutta on syytä tehdä pesäero ydintoimenpiteen ja tukitoimenpiteen välille.&lt;/p&gt;
+
+&lt;p&gt;Lottovoittajan arvonta on &lt;em&gt;ydintoimenpide&lt;/em&gt;. Ilman voittajan arvontaa koko lottoapplikaatio olisi aika turha.&lt;/p&gt;
+
+&lt;p&gt;Sähköpostin lähettäminen voittajalle taas voidaan nähdä joko &lt;em&gt;ydintoimenpiteenä&lt;/em&gt; tai &lt;em&gt;tukitoimenpiteenä&lt;/em&gt;. Minä näkisin sen &lt;em&gt;tukitoimenpiteenä&lt;/em&gt;. Ensinnäkin lottovoittaja tuskin on kiinnostunut siitä tavasta, jolla hänelle ilmoitetaan voitosta. Emailin lähettäminen on tässä mielessä toissijaista - oleellista on, että tieto jotenkin tavoittaa tulevan miljonäärimme.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevat ratkaisumme emailin lähettämiseen noudattivat kutakuinkin seuraavaa kaavaa:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Ydinmetodi&lt;/p&gt;
+
+&lt;p&gt;&amp;ndash; ydintoimenpide&lt;/p&gt;
+
+&lt;p&gt;&amp;ndash; tukitoimenpide&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Toisin sanoen, tukitoimenpiteet on yllä &lt;em&gt;ripoteltu&lt;/em&gt; ydintoimenpiteiden sekaan.&lt;/p&gt;
+
+&lt;p&gt;Toinenkin vaihtoehto on olemassa:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Ydinmetodi&lt;/p&gt;
+
+&lt;p&gt;&amp;ndash; ydintoimenpide&lt;/p&gt;
+
+&lt;p&gt;Tukimetodi&lt;/p&gt;
+
+&lt;p&gt;&amp;ndash; tukitoimenpide&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Jälkimmäisessä ratkaisussa ydintoimenpiteet - kuten arvonta, jonka suorittaminen oikeaoppisesti on ensiarvoisen tärkeää koko lottoapplikaation toiminnan kannalta - on eroteltu tukitoimenpiteistä. Kysymykseksi jää nyt, miten ydinmetodi saa kutsuttua/ilmoitettua tukimetodille, että tietty tukitoimenpide (tässä tapauksessa sähköpostin lähetys) on syytä suorittaa.&lt;/p&gt;
+
+&lt;p&gt;Paras tapa lienee eristää tukitoimenpiteet &lt;em&gt;Event Listener&lt;/em&gt;-objektin sisälle:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+/////////////////////////////
+// App/Events/ArvontaSuoritettu.php
+
+class ArvontaSuoritettu extends Event
+{
+
+    public $voittaja;
+
+    public function __construct(User $voittaja)
+    {
+        $this-&amp;gt;voittaja = $voittaja;
+    }
+}
+
+
+/////////////////////////////
+// App/Listeners/LahetaTietoVoittajalle.php
+
+class LahetaTietoVoittajalle
+{
+
+    public function __construct()
+    {
+
+    }
+
+    public function handle(ArvontaSuoritettu $arvontaInfo)
+    {
+      $voittaja = $arvontaInfo-&amp;gt;voittaja;	
+      // Lähetetään sähköposti voittajalle
+      Mail::raw(&#39;Olet voittanut jotain!&#39;, function($email) use ($voittaja) {
+        $email-&amp;gt;from(&#39;lotto@veikkaus.fi&#39;, &#39;Veikkaus&#39;);
+        // Voittajan email-osoite on tallennettu osaksi User-objektia
+        $email-&amp;gt;to($voittaja-&amp;gt;email);
+      });
+        
+    }
+}
+
+
+/////////////////////////////
+// Lotto.php
+
+public function valitseVoittaja(array $osallistujat) {
+  // Arvo voittaja satunnaisesti
+  $voittaja = $osallistujat-&amp;gt;random();
+
+  // Ilmoita muulle applikaatiolle, että voittaja on valittu!
+  // HUOM! Tämä metodi ei välitä siitä, lähetetäänkö voittajalle
+  // sähköposti, kirje vai vaikka savumerkki. Tämän metodin 
+  // ainoa vastuualue on ilmoittaa, että voittaja on valittu.
+
+  // Joku muu huolehtii voittajalle ilmoittamisesta.
+
+  // Luo event ja ammu se eetteriin.
+  event(new ArvontaSuoritettu($voittaja));
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva ratkaisu on hyvin erilainen alkuperäiseen verrattuna. &lt;strong&gt;Se näyttää monimutkaisemmalta, mutta ei ole.&lt;/strong&gt; Se on yksinkertaisempi, sillä vastuualueet elävät nyt omissa kivoissa lokeroissaan. Lottoarvonnan suorittava &lt;em&gt;valitseVoittaja&lt;/em&gt;-metodi ei räpellä sähköpostien kanssa - sen sijaan se yksinkertaisesti luo ohjelmistokehyksen &lt;em&gt;sisäisen tiedoksiannon&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tuo tiedoksianto kulkeutuu &lt;em&gt;LahetaTietoVoittajalle&lt;/em&gt;-kuuntelijan korviin, joka tiedoksiantoon perustuen luo ja lähettää sähköpostin.&lt;/p&gt;
+
+&lt;p&gt;Uusi jaottelu on täten selvä; ydinmetodi huolehtii ydintoimenpiteistä, ja tukimetodi (LahetaTietoVoittajalle::handle) huolehtii tukitoimenpiteistä.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: ydintoimenpiteiden ja tukitoimenpiteiden erottelu on usein järkevä tapa selkeyttää applikaation koodia.&lt;/p&gt;
+
+&lt;p&gt;Vaan kuinka hyödyllistä tuo jaottelu lopulta on?&lt;/p&gt;
+
+&lt;p&gt;Tilanne on sama kuin yritysmaailmassa. Nollaversio IT:n kaltaisessa pienessä nakkipuljussa yksi mies voi hoitaa niin markkinoinnin, ohjelmoinnin kuin laskutuksenkin. Suuressa pörssiyhtiössä yksi henkilö ei millään kykene hoitamaan kaikkia arkirutiineja, vaan vastuualueet on jaettava usean työntekijän kesken. Yksi toteuttaa asiakasprojektit (=ydintoimenpide), toinen pyörittää lakiosastoa (=tukitoimenpide), kolmas luuttuaa toimiston lattiat (=tukitoimenpide).&lt;/p&gt;
+
+&lt;p&gt;Eli mitä monimutkaisempi web-applikaatio on kyseessä, sitä tärkeämpää on tehdä pesäero ydintoimintojen ja tukitoimintojen välille.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Kuinka CSRF toimii?</title>

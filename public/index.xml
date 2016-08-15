@@ -6,8 +6,341 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Thu, 11 Aug 2016 06:38:25 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 15 Aug 2016 06:15:21 +0300</lastBuildDate>
     <atom:link href="http://nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Emailin lähetys Laravellista</title>
+      <link>http://nollaversio.fi/blog/public/laravel/email-laravel/</link>
+      <pubDate>Mon, 15 Aug 2016 06:15:21 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/email-laravel/</guid>
+      <description>
+
+&lt;p&gt;Moni web-applikaatio joutuu lähettämään sähköposteja. Tyypillinen tarve sähköpostin lähetykselle syntyy käyttäjän rekisteröityessä applikaatioon; jonkinlainen tervetuloviesti olisi mukava lähettää käyttäjän suuntaan, jotta hän tuntisi olonsa tervetulleeksi.&lt;/p&gt;
+
+&lt;p&gt;Laravel tekee emailin puskemisesta eetteriin erittäin helppoa. Otetaan esimerkiksi &lt;em&gt;lottoapplikaatio&lt;/em&gt;, joka arpoo kerran viikossa lottovoittajan kaikkien osallistujien joukosta. (Tässä esimerkissä ei siis arvota numeroita, vaan valitaan satunnaisesti yksi voittaja suuresta määrästä osallistujia).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Lotto.php
+
+public function valitseVoittaja(array $osallistujat) {
+  // Arvo voittaja satunnaisesti
+  $voittaja = $osallistujat-&amp;gt;random();
+  // Lähetä voittajalle onnittelu-sähköposti
+  Mail::raw(&#39;Olet voittanut jotain!&#39;, function($email) use ($voittaja) {
+    $email-&amp;gt;from(&#39;lotto@veikkaus.fi&#39;, &#39;Veikkaus&#39;);
+    // Voittajan email-osoite on tallennettu osaksi käyttäjä-objektia
+    $email-&amp;gt;to($voittaja-&amp;gt;email);
+  });
+	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva koodinpätkä arpoo voittajan, ja lähettää hänelle onnitteluviestin käyttäen &lt;em&gt;Mail::raw()&lt;/em&gt;-metodia. Mail::raw() yksinkertaisesti lähettää email-viestin pelkkänä leipätekstinä. Viestin voi lähettää myös HTML-muotoilun kera:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Lotto.php
+
+public function valitseVoittaja(array $osallistujat) {
+  // Arvo voittaja satunnaisesti
+  $voittaja = $osallistujat-&amp;gt;random();
+  // Lähetä voittajalle onnittelu-sähköposti
+  Mail::send(&#39;emails.voitto&#39;, [&#39;voittaja&#39; =&amp;gt; $voittaja] function($email) use ($voittaja) {
+    $email-&amp;gt;from(&#39;lotto@veikkaus.fi&#39;, &#39;Veikkaus&#39;);
+    // Voittajan email-osoite on tallennettu osaksi käyttäjä-objektia
+    $email-&amp;gt;to($voittaja-&amp;gt;email);
+  });
+	
+}
+
+
+// Views/emails/voitto.blade.php
+
+&amp;lt;h1&amp;gt;Olet voittanut jättipotin!&amp;lt;/h1&amp;gt;
+&amp;lt;p&amp;gt;Onnittelut {{$voittaja-&amp;gt;etunimi}}, olet juuri rikastunut oikein urakalla.&amp;lt;/p&amp;gt;
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;tukitoimenpide-vs-ydintoimenpide&#34;&gt;Tukitoimenpide vs. ydintoimenpide&lt;/h3&gt;
+
+&lt;p&gt;Ylläoleva koodaustyyli, jossa emailin lähetys suoritetaan suoraan arvontametodin sisältä, on ihan toimiva. Mutta on syytä tehdä pesäero ydintoimenpiteen ja tukitoimenpiteen välille.&lt;/p&gt;
+
+&lt;p&gt;Lottovoittajan arvonta on &lt;em&gt;ydintoimenpide&lt;/em&gt;. Ilman voittajan arvontaa koko lottoapplikaatio olisi aika turha.&lt;/p&gt;
+
+&lt;p&gt;Sähköpostin lähettäminen voittajalle taas voidaan nähdä joko &lt;em&gt;ydintoimenpiteenä&lt;/em&gt; tai &lt;em&gt;tukitoimenpiteenä&lt;/em&gt;. Minä näkisin sen &lt;em&gt;tukitoimenpiteenä&lt;/em&gt;. Ensinnäkin lottovoittaja tuskin on kiinnostunut siitä tavasta, jolla hänelle ilmoitetaan voitosta. Emailin lähettäminen on tässä mielessä toissijaista - oleellista on, että tieto jotenkin tavoittaa tulevan miljonäärimme.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevat ratkaisumme emailin lähettämiseen noudattivat kutakuinkin seuraavaa kaavaa:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Ydinmetodi&lt;/p&gt;
+
+&lt;p&gt;&amp;ndash; ydintoimenpide&lt;/p&gt;
+
+&lt;p&gt;&amp;ndash; tukitoimenpide&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Toisin sanoen, tukitoimenpiteet on yllä &lt;em&gt;ripoteltu&lt;/em&gt; ydintoimenpiteiden sekaan.&lt;/p&gt;
+
+&lt;p&gt;Toinenkin vaihtoehto on olemassa:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Ydinmetodi&lt;/p&gt;
+
+&lt;p&gt;&amp;ndash; ydintoimenpide&lt;/p&gt;
+
+&lt;p&gt;Tukimetodi&lt;/p&gt;
+
+&lt;p&gt;&amp;ndash; tukitoimenpide&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Jälkimmäisessä ratkaisussa ydintoimenpiteet - kuten arvonta, jonka suorittaminen oikeaoppisesti on ensiarvoisen tärkeää koko lottoapplikaation toiminnan kannalta - on eroteltu tukitoimenpiteistä. Kysymykseksi jää nyt, miten ydinmetodi saa kutsuttua/ilmoitettua tukimetodille, että tietty tukitoimenpide (tässä tapauksessa sähköpostin lähetys) on syytä suorittaa.&lt;/p&gt;
+
+&lt;p&gt;Paras tapa lienee eristää tukitoimenpiteet &lt;em&gt;Event Listener&lt;/em&gt;-objektin sisälle:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+/////////////////////////////
+// App/Events/ArvontaSuoritettu.php
+
+class ArvontaSuoritettu extends Event
+{
+
+    public $voittaja;
+
+    public function __construct(User $voittaja)
+    {
+        $this-&amp;gt;voittaja = $voittaja;
+    }
+}
+
+
+/////////////////////////////
+// App/Listeners/LahetaTietoVoittajalle.php
+
+class LahetaTietoVoittajalle
+{
+
+    public function __construct()
+    {
+
+    }
+
+    public function handle(ArvontaSuoritettu $arvontaInfo)
+    {
+      $voittaja = $arvontaInfo-&amp;gt;voittaja;	
+      // Lähetetään sähköposti voittajalle
+      Mail::raw(&#39;Olet voittanut jotain!&#39;, function($email) use ($voittaja) {
+        $email-&amp;gt;from(&#39;lotto@veikkaus.fi&#39;, &#39;Veikkaus&#39;);
+        // Voittajan email-osoite on tallennettu osaksi User-objektia
+        $email-&amp;gt;to($voittaja-&amp;gt;email);
+      });
+        
+    }
+}
+
+
+/////////////////////////////
+// Lotto.php
+
+public function valitseVoittaja(array $osallistujat) {
+  // Arvo voittaja satunnaisesti
+  $voittaja = $osallistujat-&amp;gt;random();
+
+  // Ilmoita muulle applikaatiolle, että voittaja on valittu!
+  // HUOM! Tämä metodi ei välitä siitä, lähetetäänkö voittajalle
+  // sähköposti, kirje vai vaikka savumerkki. Tämän metodin 
+  // ainoa vastuualue on ilmoittaa, että voittaja on valittu.
+
+  // Joku muu huolehtii voittajalle ilmoittamisesta.
+
+  // Luo event ja ammu se eetteriin.
+  event(new ArvontaSuoritettu($voittaja));
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva ratkaisu on hyvin erilainen alkuperäiseen verrattuna. &lt;strong&gt;Se näyttää monimutkaisemmalta, mutta ei ole.&lt;/strong&gt; Se on yksinkertaisempi, sillä vastuualueet elävät nyt omissa kivoissa lokeroissaan. Lottoarvonnan suorittava &lt;em&gt;valitseVoittaja&lt;/em&gt;-metodi ei räpellä sähköpostien kanssa - sen sijaan se yksinkertaisesti luo ohjelmistokehyksen &lt;em&gt;sisäisen tiedoksiannon&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tuo tiedoksianto kulkeutuu &lt;em&gt;LahetaTietoVoittajalle&lt;/em&gt;-kuuntelijan korviin, joka tiedoksiantoon perustuen luo ja lähettää sähköpostin.&lt;/p&gt;
+
+&lt;p&gt;Uusi jaottelu on täten selvä; ydinmetodi huolehtii ydintoimenpiteistä, ja tukimetodi (LahetaTietoVoittajalle::handle) huolehtii tukitoimenpiteistä.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: ydintoimenpiteiden ja tukitoimenpiteiden erottelu on usein järkevä tapa selkeyttää applikaation koodia.&lt;/p&gt;
+
+&lt;p&gt;Vaan kuinka hyödyllistä tuo jaottelu lopulta on?&lt;/p&gt;
+
+&lt;p&gt;Tilanne on sama kuin yritysmaailmassa. Nollaversio IT:n kaltaisessa pienessä nakkipuljussa yksi mies voi hoitaa niin markkinoinnin, ohjelmoinnin kuin laskutuksenkin. Suuressa pörssiyhtiössä yksi henkilö ei millään kykene hoitamaan kaikkia arkirutiineja, vaan vastuualueet on jaettava usean työntekijän kesken. Yksi toteuttaa asiakasprojektit (=ydintoimenpide), toinen pyörittää lakiosastoa (=tukitoimenpide), kolmas luuttuaa toimiston lattiat (=tukitoimenpide).&lt;/p&gt;
+
+&lt;p&gt;Eli mitä monimutkaisempi web-applikaatio on kyseessä, sitä tärkeämpää on tehdä pesäero ydintoimintojen ja tukitoimintojen välille.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Poikkeuksen väärinkäyttö?</title>
+      <link>http://nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</link>
+      <pubDate>Fri, 12 Aug 2016 06:46:20 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</guid>
+      <description>
+
+&lt;p&gt;Yksi suht usein tarvittava algoritmi on tietyn arvon etsiminen binaaripuusta. Etsinnän voi suorittaa esimerkiksi näin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) loytynyt = true;
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti
+    etsiAlipuu(juuri.vasenHaara, arvo);
+    etsiAlipuu(juuri.oikeaHaara, arvo);
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  etsiAlipuu(puu, arvo);
+
+  return loytynyt;
+
+}
+
+// Kutsutaan etsintäfunktiota
+var binaaripuu = /* rakenna puu, ei oleellista etsinnän kannalta */
+var tulos = etsiArvoBinaaripuusta(binaaripuu, &#39;hauki&#39;);
+console.log(tulos); // true tai false
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva toimii. Mutta etsintä käy koko puun rekursiivisesti läpi &lt;em&gt;kaikissa tapauksissa&lt;/em&gt;, ml. siinä erikoistapauksessa, että arvo löytyy heti koko puun juuresta.&lt;/p&gt;
+
+&lt;p&gt;Arvokas huomio funktion tehokkuuden kannalta onkin huomata, että heti kun arvo on löytynyt, ei jäljellä olevan puun läpikäyminen ole järkevää. Se on vain ajanhukkaa.&lt;/p&gt;
+
+&lt;p&gt;Asia on korvattavissa pitämällä huolen, että arvon löytyessä puuetsintää ei jatketa ko. oksan kohdalta alaspäin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) loytynyt = true;
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
+    // mutta vain jos arvoa ei löytynyt!
+    else {
+      etsiAlipuu(juuri.vasenHaara, arvo);
+      etsiAlipuu(juuri.oikeaHaara, arvo);   	
+    }
+
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  etsiAlipuu(puu, arvo);
+
+  return loytynyt;
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva on himpun verran parempi tapa hoitaa etsintä. Mutta edelleenkin etsintä jatkuu tarpeettoman kauan. Asian voi tarkistaa seuraavalla ajatuskokeella; puu jaetaan kahteen haaraan, vasen ja oikea. Kumpikin haara etsitään &lt;em&gt;erikseen&lt;/em&gt;. &lt;strong&gt;Jos arvo löytyy heti vasemman haaran alkupäästä, ainoastaan vasemman haaran etsintä stoppaa&lt;/strong&gt;. Oikean haaran etsintä joutuu yhä käymään läpi koko oikean puolen puun.&lt;/p&gt;
+
+&lt;p&gt;Tämä huomio johtaa meidät pieneen ongelmaan. Binaaripuulle on ominaista suorittaa etsintä binaarisesti - eli jakamalla jäljellä oleva puu aina kahteen osaan. Kumpikin osa saa oman &amp;ldquo;etsintäpartionsa&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Mutta optimaalisinta olisi jos nuo kaksi etsintäpartiota voisivat kommunikoida keskenään. Näin ei kummassakaan ylläolevassa ratkaisussa ole. Kommunikaatio ei ole mahdollista - vasen partio ja oikea partio rämpivät täysin toisistaan erillään ja itsenäisesti.&lt;/p&gt;
+
+&lt;p&gt;Haluamme saavuttaa tilanteen, jossa &lt;strong&gt;heti kun oikean puolen etsintäpartio löytää arvon, se viestittää tiedon vasemman puolen partiolle&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Kuinka saavuttaa tälläinen kommunikaatio?&lt;/p&gt;
+
+&lt;h3 id=&#34;poikkeus-apuun&#34;&gt;Poikkeus apuun&lt;/h3&gt;
+
+&lt;p&gt;Käytännössä kaikki yleisimmät ohjelmointikielet tarjoavat konseptin nimeltä &lt;em&gt;poikkeus&lt;/em&gt; (engl. exception). Poikkeus on tarkoitettu ohjelman ajon aikana tapahtuvien virhetilanteiden hallintaan. Jos esimerkiksi yrität jakaa nollalla, ohjelma heittää poikkeuksen, joka kertoo että metsään mentiin.&lt;/p&gt;
+
+&lt;p&gt;Mikään laki ei estä käyttämästä poikkeuksia myös muihin tarkoituksiin kuin ns. aitojen virhetilanteiden käsittelyyn.&lt;/p&gt;
+
+&lt;p&gt;Voimme luoda &lt;em&gt;keinotekoisen virhetilanteen&lt;/em&gt;, joka heittää poikkeuksen. Tuollainen keinotekoinen &amp;ldquo;virhe&amp;rdquo; voi olla esimerkiksi halutun arvon löytyminen binaaripuusta:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) throw new Error(&amp;quot;Löytyi!&amp;quot;);
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
+    etsiAlipuu(juuri.vasenHaara, arvo);
+    etsiAlipuu(juuri.oikeaHaara, arvo);   	
+    
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  try {
+    etsiAlipuu(puu, arvo);
+  } catch (e) {
+    loytynyt = true;
+  }
+
+  return loytynyt;
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva koodi toimii halutusti. Mutta mikä parasta, ylläolevassa koodissa &lt;em&gt;kaikki&lt;/em&gt; etsintäpartiot heittävät hanskat tiskiin heti kun arvo on löytynyt. Miksi näin? Koska heittämällä poikkeuksen - heti kun arvo löytyy - koodinajo &lt;em&gt;rullaa&lt;/em&gt; itsensä suoraan &lt;strong&gt;catch-komentoon&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Toisin sanoen, heti kun arvo löytyy, hyödynnämme Javascriptin sisäänrakennettua poikkeusten hallintaa ja luomme keinotekoisen virhetilanteen. Tuo virhetilanne &lt;em&gt;abortoi&lt;/em&gt; kaiken käynnissä olevan etsinnän ja siirtää koodinajon catch-komennon riville:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Heti kun arvo on löytynyt, koodi pomppaa tänne
+catch (e) {
+  loytynyt = true;
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Catch-komennon sisällä yksinkertaisesti merkkaamme arvon löydetyksi. Tämän jälkeen koodinajo jatkaa catch-komentoa seuraavalta riviltä.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevaa koodia voi vielä hiukan parantaa. Ei ole mikään pakko heittää &lt;em&gt;geneeristä&lt;/em&gt; poikkeusta, vaan luokaamme suosiolla sopivasti nimetty &lt;em&gt;spesiaalipoikkeus&lt;/em&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Spesiaalipoikkeuksen määritys
+// Huom! Spesiaalipoikkeuksen täytyy ekstentoida Error-objektia.
+function ArvoLoytyi() {};
+ArvoLoytyi.prototype = new Error();
+
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) throw new ArvoLoytyi(&amp;quot;Löytyi!&amp;quot;);
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
+    etsiAlipuu(juuri.vasenHaara, arvo);
+    etsiAlipuu(juuri.oikeaHaara, arvo);   	
+    
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  try {
+    etsiAlipuu(puu, arvo);
+  } catch (err) {
+    if (err instanceof ArvoLoytyi) {
+    	// Arvo on löytynyt
+    	loytynyt = true;
+    } else {
+    	// Jotain muuta meni pieleen, arvo ei löytynyt.
+    	// Heitä poikkeus uudelleen, joku muu huolehtikoot...
+    	throw err;
+    }
+    
+  }
+
+  return loytynyt;
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: monet tahot suhtautuvat &lt;em&gt;erittäin&lt;/em&gt; epäilevästi poikkeusten väärinkäyttöön ylläolevan esimerkin tavoin. Epäilevässä suhtautumisessa on perusteensa - poikkeukset on luotu ohjelman ajon aikana tapahtuvien virheiden käsittelyyn, ja valtaosa ohjelmoijista lähtee tästä oletuksesta liikkeelle. Mikäli poikkeusta käyttää muuhun tarkoitukseen, on asia syytä selkeästi ilmaista lähdekoodin kommenteissa - tällä tavalla (ehkä, kenties) vältytään väärinkäsityksiltä.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Asynkronoidun koodin testaus (Mocha)</title>
@@ -2269,271 +2602,6 @@ public function vapaatKuonot() {
 
 &lt;p&gt;Kyseessä on klassinen tradeoff.&lt;/p&gt;
 &lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Filteröi epäonnistujat pois (reflect &#43; filter)</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/promise-filter/</link>
-      <pubDate>Mon, 25 Jul 2016 17:28:05 +0300</pubDate>
-      
-      <guid>http://nollaversio.fi/blog/public/nodejs/promise-filter/</guid>
-      <description>
-
-&lt;p&gt;Lupauskirjasto &lt;em&gt;Bluebirdin&lt;/em&gt; yksi vähemmän tunnetuista apumetodeista on &lt;strong&gt;reflect()&lt;/strong&gt;. Ainakin allekirjoittaneelle tuo apufunktio pysyi tuntemattomana hyvää matkaa toista vuotta - ei vain tullut pakottavaa tarvetta, ja ongelmat sai aina ratkottua muutenkin.&lt;/p&gt;
-
-&lt;p&gt;Näin jälkikäteen ajateltuna nuo &amp;ldquo;muut&amp;rdquo; ratkaisut olivat aika hirveitä sekasotkuja, jotka toimivat jos jaksoivat.&lt;/p&gt;
-
-&lt;p&gt;Sittemmin otin reflectin käyttöön.&lt;/p&gt;
-
-&lt;h3 id=&#34;minkä-ongelman-promise-reflect-ratkoo&#34;&gt;Minkä ongelman Promise.reflect() ratkoo?&lt;/h3&gt;
-
-&lt;p&gt;Varsin usein omissa applikaatioissani on toiminnallisuuksia, joiden onnistunut läpivienti &lt;em&gt;ei ole kriittistä&lt;/em&gt;. Jotkut toiminnot ovat luonteeltaan sellaisia, että ei niin väliä mikäli toiminto epäonnistuu nolosti. &lt;strong&gt;Tärkeintä on, että yhden vähäpätöisen toiminnon epäonnistuminen ei vedä mukanaan koko applikaatiota vessan pöntöstä alas.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Puhtaan perinteisessä synkronoidussa koodissa on luonnollista, että epäonnistunut toiminto napataan kiinni &lt;em&gt;try-catch&lt;/em&gt; -siepparilla. Esim.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var _       = require(&#39;lodash&#39;);
-var Promise = require(&#39;bluebird&#39;);
-
-// SyncVarkaus.js
-
-function kopioiBlogi(urls) {
-
-	// Käydään yksitellen pihistämässä blogien HTML-sisältö.
-	var blogiSisallot = _.map(urls, function(blogiURL) {
-		var sisalto; // Täytetään sisällöllä
-		try {
-			sisalto = syncRequest(blogiURL);
-		} catch (e) {
-			// No, pöllintä ei onnistunut. Eipä hätiä.
-			// Rikolliset aikeemme kohdistuvat seuraavaan uhriin.
-			console.warn(&#39;Pölliminen epäonnistui - seuraava uhri sisään.&#39;);
-		}	
-
-		return sisalto;	
-
-	})
-	
-	// blogiSisallot sisältää pöllityt sisällöt niistä blogeista,
-	// joiden kähvellys EI epäonnistunut nolosti. Luuserit roikkuvat
-	// vielä mukana undefined-arvoina. Mutta eivät pitkään.
-
-	// Compact() suodattaa töpeksijät roskakoriin.
-	return _.compact(blogiSisallot);
-}
-
-// Rikollisen uramme alkupiste.
-var tulokset = kopioiBlogi([
-	&#39;http://www.pollitasta.fi&#39;,
-	&#39;http://www.tuplaamo.fi&#39;,
-	&#39;http://www.nollaversio.fi/public/blog&#39;
-]);
-
-// Bestseller tiedossa.
-koostaKirja(tulokset);
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva on mukavaa perinteistä sync-koodia, jossa jokainen toiminto suoritetaan peräkanaa yksitellen. Ja try-catch-sieppari toimii kuin unelma.&lt;/p&gt;
-
-&lt;p&gt;Mutta kun Javascriptin (ja maalaisjärjen) luonteeseen kuuluu, että jokaista varkautta ei tarvitse tehdä perätysten. Niitä kun voi tehdä myös &lt;em&gt;samanaikaisesti&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Siirrytään ihanaan lupausten maailmaan, ja suoritetaan rikossarjamme asynkronoidusti.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// AsyncVarkaus.js
-
-function kopioiBlogi(urls) {
-
-	return Promise.resolve(urls)
-	.map(function(blogiURL) {
-		// Jokainen request lähtee liikkeelle yht&#39;aikaa.
-		return asyncRequest(blogiURL);
-	})
-	.catch(function(err) {
-		// Jotain meni nolosti pieleen.
-	})
-
-}
-
-kopioiBlogi([
-	&#39;http://www.pollitasta.fi&#39;,
-	&#39;http://www.tuplaamo.fi&#39;,
-	&#39;http://www.nollaversio.fi/public/blog&#39;
-]).then(function(tulokset) {
-	return koostaKirja(tulokset);
-}).then(function(kirja) {
-	// Valitaan sopivan korruptoitunut kustantaja.
-	talentumMedia.julkaise(kirja);
-})
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kaikki näyttää pintapuolin hyvältä. Käyttämällä &lt;em&gt;Promise.map&lt;/em&gt;-metodia ammumme kaikki pöllimisyritykset käyntiin &lt;em&gt;samanaikaisesti&lt;/em&gt;. Kukin kähvellys joko onnistuu tai epäonnistuu. Epäonnistuminen tippuu kivasti &lt;em&gt;.catch()&lt;/em&gt;-sieppariin, joka sitten tekee jotain.&lt;/p&gt;
-
-&lt;p&gt;Mutta asiassa on ongelma. &lt;strong&gt;Jos yksikin yritys epäonnistuu, kaikki epäonnistuvat.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Tämä on &lt;em&gt;.map&lt;/em&gt;-metodin ominaisuus - map-lupaus julistaa itsensä onnistujaksi &lt;strong&gt;vain&lt;/strong&gt; jos jokainen sen alaisuudessa hyörivistä lupauksista onnistuu.&lt;/p&gt;
-
-&lt;p&gt;Jos yksikin alainen töpeksii, map-lupaus vetää pultit ja rikkoo kaiken. Siis estää ketään muutakaan onnistumasta.&lt;/p&gt;
-
-&lt;p&gt;Kerrataan vielä tämä tärkeä pointti uusiksi - &lt;strong&gt;map-lupaus epäonnistuu jos yhdenkin blogin pölliminen epäonnistuu!&lt;/strong&gt;. Ja jos yksikin rosvous menee päin honkia, kaikki onnistuneet pöllimiset päätyvät jäteastiaan. Yksi kaikkien, ja kaikki yhden puolesta. Tämä ei tietenkään ole mitä haluamme.&lt;/p&gt;
-
-&lt;p&gt;Me haluamme, että jos yksi ryöstö menee reisille, muut ryöstöt voivat yhä onnistua.&lt;/p&gt;
-
-&lt;p&gt;Sata kultakelloa on parempi kuin 99, mutta 99 kultakelloa on parempi kuin pyöreä nolla.&lt;/p&gt;
-
-&lt;p&gt;Joten miten korjata asia?&lt;/p&gt;
-
-&lt;h3 id=&#34;reflect&#34;&gt;Reflect()&lt;/h3&gt;
-
-&lt;p&gt;Ratkaisu on sopivaan paikkaan sijoitettu reflect()-apumetodi.&lt;/p&gt;
-
-&lt;p&gt;Miksi reflect() toimii? Koska reflect() nappaa kiinni sekä &lt;em&gt;onnistumiset&lt;/em&gt; että &lt;em&gt;epäonnistumiset&lt;/em&gt;, ja välittää tiedon eteenpäin ns. neutraalissa muodossa.&lt;/p&gt;
-
-&lt;p&gt;Ikäänkuin luuseri ja maailmanmestari kävelisivät tasa-arvoisina rinta rinnan. Reflect() on koodimaailman emakko - kaikki kelpaa ruuaksi. Ja toisesta päästä tuleva tavara on aina vakioitua.&lt;/p&gt;
-
-&lt;p&gt;Katsotaanpa:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// AsyncVarkaus.js
-
-function kopioiBlogi(urls) {
-
-	return Promise.resolve(urls)
-	.map(function(blogiURL) {
-		// Yksittäinen varkaus - kokeillaan onnistuuko?
-		return asyncRequest(blogiURL).reflect();
-	})
-	.filter(function(varkausLupaus) {
-		// Suodatetaan(!) pois epäonnistuneet ryöstöt!
-		return varkausLupaus.isFulfilled();
-	})
-	.map(function(onnistunutVarkaus) {
-		// Vain onnistuneet rosvoukset jäljellä.
-		// Joudumme kutsumaan teknisen apufunktion joka
-		// hakee lopullisen tuloksen lupauksen syövereistä.
-		return onnistunutVarkaus.value();
-	})
-
-	// Huomion arvoista, että emme tarvitse -catch-siepparia lainkaan!
-	// Miksi? Koska kaikki luuserit on jo siivilöity ylempänä.
-	// Yksikään päivänpilaaja ei elä tänne saakka.
-
-}
-
-kopioiBlogi([
-	&#39;http://www.pollitasta.fi&#39;,
-	&#39;http://www.tuplaamo.fi&#39;,
-	&#39;http://www.nollaversio.fi/public/blog&#39;
-]).tap(function(tulokset) {
-
-	// Tulokset sisältää listan niistä blogisisällöistä, 
-	// joiden ryöstö meni nappiin. 
-
-	// Kokoa sisällöistä ikioma kirja.
-	var valmisKirja = _.chain(tulokset)
-	.reduce(function(kirja, pollittyBlogi) {
-		kirja.lisaaUusiLuku(pollittyBlogi);
-	}, new Kirja(&#39;Pölli Tästä Reloaded&#39;))
-	.value();
-
-	talentumMedia.julkaise(valmisKirja);
-})
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevassa koodissa huomattavaa ovat seuraavat rivit:&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;.filter(function(varkausLupaus) {...}&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Apumetodi &lt;em&gt;.filter&lt;/em&gt; (nimensä mukaisesti) suodattaa luuserit pois.&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;return asyncRequest(blogiURL).reflect();&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Teemme requestin, ja kutsumme heti apumetodia &lt;em&gt;reflect()&lt;/em&gt;. Kutsumalla reflectiä saamme luotua
-(ja palautetta ympäröivästä funktiosta ulos) uudentyyppisen lupauksen, joka &lt;em&gt;itse osaa napata
-omat virheensä kiinni.&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;Jännittävää. Olemme ikäänkuin koulineet parannetun Pokemonin, joka on sisäsiisti.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: kun tietty operaatio on &lt;em&gt;valinnainen&lt;/em&gt;, toisin sanoen sen onnistuminen ei ole kriittisen tärkeää, on syytä muistaa &lt;em&gt;reflect() + filter()&lt;/em&gt; -kikka.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Ps. Huomasitko muuten, että käytimme yllä metodia &lt;strong&gt;tap()&lt;/strong&gt; perinteisen &lt;strong&gt;then&lt;/strong&gt;-metodin sijaan:&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;.tap(function(tulokset) {...}&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Tämä siksi, että julkaisun suorittava anonyymi funktiomme on päätepiste. Se ei palauta mitään takaisin liukuhihnalle. &lt;a href=&#34;http://nollaversio.fi/blog/public/nodejs/promise-tap/&#34;&gt;Lisää tap vs. then eroista aiemmasta blogikirjoituksessani.&lt;/a&gt;&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Muistilista uutta Laravel-projektia aloittaessa</title>
-      <link>http://nollaversio.fi/blog/public/laravel/start-checklist/</link>
-      <pubDate>Fri, 22 Jul 2016 16:14:13 +0300</pubDate>
-      
-      <guid>http://nollaversio.fi/blog/public/laravel/start-checklist/</guid>
-      <description>
-
-&lt;p&gt;Olen ihastanut suuresti &lt;a href=&#34;https://en.wikipedia.org/wiki/The_Checklist_Manifesto&#34; target=&#34;_blank&#34;&gt;checklist-manifestoon.&lt;/a&gt; Manifeston hengessä loin alkukesästä itselleni muistilistan asioista, joita uutta Laravel-projektia aloittaessa tulee ottaa huomioon.&lt;/p&gt;
-
-&lt;p&gt;Monet listan kohdista pätevät yleisesti kaikkiin ohjelmistoprojekteihin.&lt;/p&gt;
-
-&lt;h3 id=&#34;laravel-checklist&#34;&gt;Laravel-checklist&lt;/h3&gt;
-
-&lt;h4 id=&#34;vaiheet-1-3-projektikansion-valmistelu-projekti-boilerplate-etc&#34;&gt;Vaiheet 1-3: Projektikansion valmistelu, projekti-boilerplate, etc&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;1. Alusta Git-repo projektikansioon, luo Github-repo, kytke yhteen.&lt;/li&gt;
-&lt;li&gt;2. Lataa Composer.phar projektikansioon&lt;/li&gt;
-&lt;li&gt;3. Kloonaa Laravel-boilerplate&lt;/li&gt;
-&lt;li&gt;4. Muokkaa hakemisto-oikeudet (mm. Laravellin storage-kansio)&lt;/li&gt;
-&lt;li&gt;5. Luo uusi Sublime-projekti&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;vaiheet-6-9-tietokannan-luonti-valmistelu-tietokantayhteys-email-testaus&#34;&gt;Vaiheet 6-9: Tietokannan luonti, valmistelu, tietokantayhteys, email-testaus&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;6. Luo uusi tietokanta (esim. phpMyAdmin:in kautta)&lt;/li&gt;
-&lt;li&gt;7. Päivitä projektitiedostoihin tietokannan käyttäjätunnus + salasana.&lt;/li&gt;
-&lt;li&gt;8. Aseta email-ajuri osoittamaan testitiedostoon (loki).&lt;/li&gt;
-&lt;li&gt;9. Luo &amp;ldquo;finnish&amp;rdquo;-kielitiedosto.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;vaiheet-10-12-ensimmäiset-tietokantataulut-relaatiot-mallit-models&#34;&gt;Vaiheet 10-12: Ensimmäiset tietokantataulut, relaatiot, mallit (models)&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;10. Suorita &amp;lsquo;php artisan make:auth&amp;rsquo;, joka luo käyttäjähallinnan tietokantaan.&lt;/li&gt;
-&lt;li&gt;11. Luo mallit kuvaamaan domain-käsitteitä. Tässä vaiheessa riittää tyhjä tiedosto kullekin mallille.&lt;/li&gt;
-&lt;li&gt;12. Luo applikaation migraatiot (yksi per malli). Hahmottele kunkin mallin tietorakenne.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;vaiheet-13-15-seeders-tehtaat-migraatioiden-toiminnan-varmistus&#34;&gt;Vaiheet 13-15: Seeders, tehtaat, migraatioiden toiminnan varmistus&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;13. Luo seeder-tehtaat (seeder factories) kullekin mallille.&lt;/li&gt;
-&lt;li&gt;14. Luo seeder-tehtaiden avulla (feikki)käyttäjiä ym. domain-objekteja.&lt;/li&gt;
-&lt;li&gt;15. Testaa, että migraatiot toimivat ja että relaatiot eri mallien välillä ovat kunnossa.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Tähän muistilistani päättyy. Tästä eteenpäin alkaa ns. raaka työ, eli itse applikaation toimintalogiikan ja käyttöliittymän ohjelmointi.&lt;/p&gt;
-
-&lt;p&gt;Tämä on se pisin ja uuvuttavin vaihe projektissa. &lt;em&gt;Vaiheet 1-15 ovat verrattavissa arkkitehdin työhön. Vaiheet 16-20 ovat verrattavissa kirvesmiehen työhön.&lt;/em&gt;&lt;/p&gt;
-
-&lt;h4 id=&#34;vaiheet-16-20-toteuta-logiikka-käyttöliittymä-jne&#34;&gt;Vaiheet 16-20: Toteuta logiikka, käyttöliittymä, jne.&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;16. Hahmottele, koodaa, testaa, näpyttele sormet kipeäksi.&lt;/li&gt;
-&lt;li&gt;17. Kiroile, paisko pari hiirtä tusinan päreiksi, harkitse puutarhurin uraa.&lt;/li&gt;
-&lt;li&gt;18. Onnistu lopulta ratkomaan ongelmat.&lt;/li&gt;
-&lt;li&gt;19. Juhlista valmista applikaatiota.&lt;/li&gt;
-&lt;li&gt;20. Aloita seuraava projekti.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Ylläoleva checklist on osoittanut hyödyllisyytensä useammassa omassa projektissani. Kun on muistilista, jota seurata orjallisesti, pysyy laatu tasaisena ja työtahti tiiviinä.&lt;/p&gt;
 </description>
     </item>
     
