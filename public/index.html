@@ -68,6 +68,264 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://nollaversio.fi/blog/public/laravel/require-vs-include/">
+        Require vs Include
+      </a>
+    </h1>
+
+    <span class="post-date">Wed, Aug 17, 2016</span>
+
+    
+
+<p>PHP:ssa on mahdollisuus <em>sisällyttää</em> yhden tiedoston koodipätkä toisen tiedoston sisälle skriptiä ajettaessa. Tämä sisällytys onnistuu joko <em>require</em> tai <em>include</em> komennoilla:</p>
+
+<pre><code class="language-php">
+// Auto.php
+
+require 'Ratti.php'
+
+class Auto (Ratti $ratti, $autoMerkki) {
+	//...
+}
+
+$volvo = new Auto(new Ratti, 'Volvo');
+
+</code></pre>
+
+<pre><code class="language-php">
+// Ratti.php
+
+class Ratti() {
+	//...
+}
+
+</code></pre>
+
+<p>tai</p>
+
+<pre><code class="language-php">
+// Auto.php
+
+include 'Ratti.php'
+
+class Auto (Ratti $ratti, $autoMerkki) {
+	//...
+}
+
+$volvo = new Auto(new Ratti, 'Volvo');
+
+</code></pre>
+
+<pre><code class="language-php">
+// Ratti.php
+
+class Ratti() {
+	//...
+}
+
+</code></pre>
+
+<p>Yllä koodiesimerkit eroavat toisistaan vain yhden rivin suhteen; ensimmäinen esimerkki turvautuu PHP:n komentosanaan <em>require</em>, jälkimmäinen esimerkki käyttää termiä <em>include</em>. Mitä eroa näillä kahdella on?</p>
+
+<h3 id="require-vs-include">Require vs. include</h3>
+
+<p>On ensin syytä ymmärtää näiden kahden termin yhtäläisyys; molemmat tuovat ulkoisen tiedoston sisältämän koodin osaksi sitä tiedostoa, jossa termi sijaitsee.</p>
+
+<p>Ne siis käytännössä <em>copypastaavat</em> palan koodia tismalleen siihen kohtaan, jossa require/include-termiä käytetään.</p>
+
+<p>Kahden termin välinen ero on yksikertainen.</p>
+
+<p><strong>Require vaatii, että copypastattava tiedosto on olemassa.</strong></p>
+
+<p><strong>Include EI vaadi copypastattavan tiedoston olemassaoloa.</strong></p>
+
+<p>Require on siis hiukka tiukkapipoisempi versio include-käskystä. Mutta mitä tarkoittaa &ldquo;vaatia tiedoston olemassaolo&rdquo;?</p>
+
+<p>Se tarkoittaa yksinkertaisesti sitä, että jos <em>require</em> yrittää sisällyttää olemattoman tiedoston, PHP-skripti räjähtää käsiin. Teknisesti tarkempi termi tälle posahtamiselle on keskeyttää skriptin suoritus virhekoodilla &ldquo;Fatal error&rdquo;. Yhtäkaikki, asiat menevät päin honkia.</p>
+
+<p>Jos puolestaan <em>include</em> yrittää sisällyttää olemattoman tiedoston, PHP-skripti ei räjähdä käsiin, vaan jatkaa suoritustaan kuin mitään ei olisi tapahtunut.</p>
+
+<p>Tästä kaikesta herää kysymys; jos haluamme sisällyttää yhden kooditiedoston sisältämän koodin osaksi toista tiedostoa, kaipa me vaadimme tuon tiedoston olemassaolon?</p>
+
+<p>Asia ei aina välttämättä ole näin. Esimerkkinä tilanne, jossa meillä on tietyt vakioasetukset PHP-skriptillemme. Nuo vakioasetukset määritetään koko applikaation elinkaaren ensihetkillä.</p>
+
+<p>Vakioasetukset voidaan kuitenkin ylikirjoittaa erillisen <em>asetustiedoston</em> avulla. Jos asetustiedosto on olemassa, sen sisältämä koodi <em>korvaa</em> vakioasetukset omilla asetuksillaan.</p>
+
+<p>Jos asetustiedostoa ei ole olemassa, vakioasetukset jäävät voimaan.</p>
+
+<p>Ylläolevan esimerkin mukaisen rakenteen voi toteuttaa <em>include</em>-käskyllä näin:</p>
+
+<pre><code class="language-php">
+// applikaatio.php
+
+// Vakioasetukset
+$tcpPortti = &quot;8080&quot;;
+$tcpTimeout = 5000;
+
+// Tuodaan sisään korvaavat asetukset sisältävä tiedosto
+// HUOM! Jos tiedosto ei ole olemassa, mitään ei tapahdu
+// ja vakioasetukset jäävät voimaan!
+include &quot;kayttajan_asetukset.php&quot;;
+
+// ... rakenna applikaatio yms. käyttäen yllämääriteltyjä asetuksia
+
+</code></pre>
+
+<pre><code class="language-php">
+// kayttajan_asetukset.php
+
+// Käyttäjän erilliset, korvaavat asetukset
+$tcpPortti = &quot;3000&quot;;
+$tcpTimeout = 12000;
+
+</code></pre>
+
+<p>Jos <em>kayttajan_asetukset.php</em>-tiedostoa ei ole olemassa, vakioasetukset jäävät voimaan. Jos tuo tiedosto on olemassa, käyttäjän omat asetukset korvaavat (muuttujat alustetaan uusiin arvoihin!) vakioasetukset.</p>
+
+<blockquote>
+<p>Include-käsky on toimiva tapauksissa, joissa sisällytettävä koodi <em>tuo valinnaisia lisäominaisuuksia</em> ympäröivän koodin käyttöön.</p>
+
+<p>Require-käsky on asianmukainen tapauksissa, joissa sisällytettävä koodi on elintärkeä applikaation toiminnan kannalta, ja tiedoston puuttuminen on syytä nähdä virhetilanteena.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="http://nollaversio.fi/blog/public/laravel/testing-with-db-transactions/">
+        Yksikkötestaus ja tietokanta-transaktio
+      </a>
+    </h1>
+
+    <span class="post-date">Tue, Aug 16, 2016</span>
+
+    
+
+<p>Yksikkötestaus (engl. Unit Testing) on tehty Laravellissa helpoksi. Ei muuta kuin määrittää testiluokan, ja pinnan alla testiajuri hoitaa loput.</p>
+
+<p>Tähän tyyliin:</p>
+
+<pre><code class="language-php">
+class LentokoneTesti extends TestCase {
+	
+  public function lentokoneella_on_kaksi_siipea() {
+    // Oletetaan, että meillä on Lentokone-malli olemassa.
+    $lentokone = new LentoKone()
+
+    // Varmistetaan, että siipien lkm on kaksi.
+    $this-&gt;assertEquals($lentokone-&gt;siivet-&gt;count(), 2);
+
+  }
+}
+
+</code></pre>
+
+<p>Kaikki hyvin yllä. Luomme Eloquent-mallin pohjalta objektin nimeltä <em>lentokone</em>, ja tarkistamme, että tuolla lentsikalla on kaksi kpl siipiä.</p>
+
+<p>Huomionarvoista on, että ylläolevassa testissä emme käytä tietokantaa lainkaan. Tämä on ihanteellista. Mutta joissain testeissä on kovin vaikea välttää tietokannan käyttöä:</p>
+
+<pre><code class="language-php">
+class LentokenttaTesti extends TestCase {
+	
+public function kentta_evaa_laskeutumisluvan_jos_kiitoradat_taynna() {
+
+  $helsinkiVantaa = Lentokentta::create(['kiitoradat' =&gt; [
+    'itäinen', 'läntinen', 'pohjoinen'
+  ]]);
+
+  // Luodaan neljä kappaletta lentokoneita
+  // Laravellin factory-apumetodi auttaa.
+  factory(Lentokone::class, 4)-&gt;create();
+
+  // Lentokoneet ja lentokenttä on lisätty tietokantaan! 
+  // Toisin sanoen, meidän on käytettävä tietokantaa suorittaaksemme testin loppuosan.
+
+  // Varmistetaan, että lentokoneet tosiaan ovat tietokannassa.
+  $koneet = Lentokone::all();
+
+  // Lentokoneita tulisi siis olla neljä kpl
+  $this-&gt;assertEquals($koneet-&gt;count(), 4);
+
+  // Assignoidaan kullekin koneelle yksi kiitorata laskeutumiseen.
+  $helsinkiVantaa-&gt;assignoiKiitorata($koneet[0]);
+  $helsinkiVantaa-&gt;assignoiKiitorata($koneet[1]);
+  $helsinkiVantaa-&gt;assignoiKiitorata($koneet[2]);
+
+  // Nyt Helsinki-Vantaan kaikki kolme kiitorataa ovat käytössä, joten
+  // viimeinen kone EI voi saada omaa kiitorataansa.
+
+  // Varmistetaan, että lentokenttä ei sisällä vapaita kiitoratoja.
+  $this-&gt;assertEquals($helsinkiVantaa-&gt;vapaatKiitoradat()-&gt;count(), 0);
+
+  // Varmistetaan, että yritys assignoida olematon kiitorata johtaa virhetilanteeseen!
+  // (En ole itsekään ihan varma miten tämä toteutetaan, mutta jotenkin seuraavasti...)
+  $this-&gt;expectException(EiVapaitaKiitoratoja::class);
+
+  $helsinkiVantaa-&gt;assignoiKiitorata($koneet[3]);
+
+  // Nyt äskettäin asetetun exception handlerin tulisi olla lauennut.
+
+  }
+}
+
+</code></pre>
+
+<p>Ylläoleva testi käyttää tietokantaa. Ensin se luo tietokantaan yhden lentokentän ja neljä lentokonetta. Sen jälkeen testi suorittaa testilogiikan tietokantaan turvautuen.</p>
+
+<p>Ylläolevan ongelma on, että kun testi on valmis, testin aikana luodut objektit jäävät lojumaan tietokantaan. Tämä on epämieluisa tilanne. Parhaimmillaan se on pelkkä suorituskykyongelma, pahimmillaan se johtaa tilanteisiin, joissa testi menee pieleen koska tietokanta sisältää ennalta-arvaamatonta roskaa.</p>
+
+<h3 id="use-databasetransactions">Use DatabaseTransactions</h3>
+
+<p>Tietokannan resetointi testin jälkeen on helppoa. Suorastaan laittoman helppoa. Lisätään vain yksi rivi koodia:</p>
+
+<pre><code class="language-php">
+class LentokenttaTesti extends TestCase {
+
+  // Uusi rivi
+  use DatabaseTransactions;
+	
+  public function kentta_evaa_laskeutumisluvan_jos_kiitoradat_taynna() {
+
+    // Kuten aiemmin
+
+  }
+}
+
+</code></pre>
+
+<p>Lisäämällä rivin <em>use DatabaseTransactions</em> Laravel-kehys huolehtii omatoimisesti tietokannan putsaamisesta testin päätteeksi.</p>
+
+<p>DatabaseTransactions on siis <em>Trait</em>, joka käytännössä copypastaa <em>LentokenttaTesti</em>-luokkaan sopivat putsaustoiminnot. Testi suorituu nyt näin:</p>
+
+<pre><code class="language-php">
+class LentokenttaTesti extends TestCase {
+
+  use DatabaseTransactions;
+	
+  public function kentta_evaa_laskeutumisluvan_jos_kiitoradat_taynna() {
+
+    // Puhdas tietokanta
+
+    // Kuten aiemmin, luodaan objekteja tietokantaan.
+    // Sitten testataan, testataan niin pirusti.
+
+    // Tyhjennä tietokanta
+
+  }
+}
+
+</code></pre>
+
+<p>Varsin kätevää.</p>
+
+<blockquote>
+<p>Tietokannan resetointi alkuperäiseen tilaan noudattaa nk. &ldquo;same world&rdquo;-periaatetta. Periaate tarkoittaa, että tietty testi ajetaan aina vakioidussa ympäristössä. Tässä tapauksessa tuo vakioympäristö on tyhjä tietokanta.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://nollaversio.fi/blog/public/laravel/email-laravel/">
         Emailin lähetys Laravellista
       </a>

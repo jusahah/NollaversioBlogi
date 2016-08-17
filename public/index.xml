@@ -6,8 +6,260 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Mon, 15 Aug 2016 06:15:21 +0300</lastBuildDate>
+    <lastBuildDate>Wed, 17 Aug 2016 03:40:31 +0300</lastBuildDate>
     <atom:link href="http://nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Require vs Include</title>
+      <link>http://nollaversio.fi/blog/public/laravel/require-vs-include/</link>
+      <pubDate>Wed, 17 Aug 2016 03:40:31 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/require-vs-include/</guid>
+      <description>
+
+&lt;p&gt;PHP:ssa on mahdollisuus &lt;em&gt;sisällyttää&lt;/em&gt; yhden tiedoston koodipätkä toisen tiedoston sisälle skriptiä ajettaessa. Tämä sisällytys onnistuu joko &lt;em&gt;require&lt;/em&gt; tai &lt;em&gt;include&lt;/em&gt; komennoilla:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Auto.php
+
+require &#39;Ratti.php&#39;
+
+class Auto (Ratti $ratti, $autoMerkki) {
+	//...
+}
+
+$volvo = new Auto(new Ratti, &#39;Volvo&#39;);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Ratti.php
+
+class Ratti() {
+	//...
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;tai&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Auto.php
+
+include &#39;Ratti.php&#39;
+
+class Auto (Ratti $ratti, $autoMerkki) {
+	//...
+}
+
+$volvo = new Auto(new Ratti, &#39;Volvo&#39;);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Ratti.php
+
+class Ratti() {
+	//...
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yllä koodiesimerkit eroavat toisistaan vain yhden rivin suhteen; ensimmäinen esimerkki turvautuu PHP:n komentosanaan &lt;em&gt;require&lt;/em&gt;, jälkimmäinen esimerkki käyttää termiä &lt;em&gt;include&lt;/em&gt;. Mitä eroa näillä kahdella on?&lt;/p&gt;
+
+&lt;h3 id=&#34;require-vs-include&#34;&gt;Require vs. include&lt;/h3&gt;
+
+&lt;p&gt;On ensin syytä ymmärtää näiden kahden termin yhtäläisyys; molemmat tuovat ulkoisen tiedoston sisältämän koodin osaksi sitä tiedostoa, jossa termi sijaitsee.&lt;/p&gt;
+
+&lt;p&gt;Ne siis käytännössä &lt;em&gt;copypastaavat&lt;/em&gt; palan koodia tismalleen siihen kohtaan, jossa require/include-termiä käytetään.&lt;/p&gt;
+
+&lt;p&gt;Kahden termin välinen ero on yksikertainen.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Require vaatii, että copypastattava tiedosto on olemassa.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Include EI vaadi copypastattavan tiedoston olemassaoloa.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Require on siis hiukka tiukkapipoisempi versio include-käskystä. Mutta mitä tarkoittaa &amp;ldquo;vaatia tiedoston olemassaolo&amp;rdquo;?&lt;/p&gt;
+
+&lt;p&gt;Se tarkoittaa yksinkertaisesti sitä, että jos &lt;em&gt;require&lt;/em&gt; yrittää sisällyttää olemattoman tiedoston, PHP-skripti räjähtää käsiin. Teknisesti tarkempi termi tälle posahtamiselle on keskeyttää skriptin suoritus virhekoodilla &amp;ldquo;Fatal error&amp;rdquo;. Yhtäkaikki, asiat menevät päin honkia.&lt;/p&gt;
+
+&lt;p&gt;Jos puolestaan &lt;em&gt;include&lt;/em&gt; yrittää sisällyttää olemattoman tiedoston, PHP-skripti ei räjähdä käsiin, vaan jatkaa suoritustaan kuin mitään ei olisi tapahtunut.&lt;/p&gt;
+
+&lt;p&gt;Tästä kaikesta herää kysymys; jos haluamme sisällyttää yhden kooditiedoston sisältämän koodin osaksi toista tiedostoa, kaipa me vaadimme tuon tiedoston olemassaolon?&lt;/p&gt;
+
+&lt;p&gt;Asia ei aina välttämättä ole näin. Esimerkkinä tilanne, jossa meillä on tietyt vakioasetukset PHP-skriptillemme. Nuo vakioasetukset määritetään koko applikaation elinkaaren ensihetkillä.&lt;/p&gt;
+
+&lt;p&gt;Vakioasetukset voidaan kuitenkin ylikirjoittaa erillisen &lt;em&gt;asetustiedoston&lt;/em&gt; avulla. Jos asetustiedosto on olemassa, sen sisältämä koodi &lt;em&gt;korvaa&lt;/em&gt; vakioasetukset omilla asetuksillaan.&lt;/p&gt;
+
+&lt;p&gt;Jos asetustiedostoa ei ole olemassa, vakioasetukset jäävät voimaan.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevan esimerkin mukaisen rakenteen voi toteuttaa &lt;em&gt;include&lt;/em&gt;-käskyllä näin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// applikaatio.php
+
+// Vakioasetukset
+$tcpPortti = &amp;quot;8080&amp;quot;;
+$tcpTimeout = 5000;
+
+// Tuodaan sisään korvaavat asetukset sisältävä tiedosto
+// HUOM! Jos tiedosto ei ole olemassa, mitään ei tapahdu
+// ja vakioasetukset jäävät voimaan!
+include &amp;quot;kayttajan_asetukset.php&amp;quot;;
+
+// ... rakenna applikaatio yms. käyttäen yllämääriteltyjä asetuksia
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// kayttajan_asetukset.php
+
+// Käyttäjän erilliset, korvaavat asetukset
+$tcpPortti = &amp;quot;3000&amp;quot;;
+$tcpTimeout = 12000;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Jos &lt;em&gt;kayttajan_asetukset.php&lt;/em&gt;-tiedostoa ei ole olemassa, vakioasetukset jäävät voimaan. Jos tuo tiedosto on olemassa, käyttäjän omat asetukset korvaavat (muuttujat alustetaan uusiin arvoihin!) vakioasetukset.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Include-käsky on toimiva tapauksissa, joissa sisällytettävä koodi &lt;em&gt;tuo valinnaisia lisäominaisuuksia&lt;/em&gt; ympäröivän koodin käyttöön.&lt;/p&gt;
+
+&lt;p&gt;Require-käsky on asianmukainen tapauksissa, joissa sisällytettävä koodi on elintärkeä applikaation toiminnan kannalta, ja tiedoston puuttuminen on syytä nähdä virhetilanteena.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Yksikkötestaus ja tietokanta-transaktio</title>
+      <link>http://nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</link>
+      <pubDate>Tue, 16 Aug 2016 06:37:20 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</guid>
+      <description>
+
+&lt;p&gt;Yksikkötestaus (engl. Unit Testing) on tehty Laravellissa helpoksi. Ei muuta kuin määrittää testiluokan, ja pinnan alla testiajuri hoitaa loput.&lt;/p&gt;
+
+&lt;p&gt;Tähän tyyliin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class LentokoneTesti extends TestCase {
+	
+  public function lentokoneella_on_kaksi_siipea() {
+    // Oletetaan, että meillä on Lentokone-malli olemassa.
+    $lentokone = new LentoKone()
+
+    // Varmistetaan, että siipien lkm on kaksi.
+    $this-&amp;gt;assertEquals($lentokone-&amp;gt;siivet-&amp;gt;count(), 2);
+
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kaikki hyvin yllä. Luomme Eloquent-mallin pohjalta objektin nimeltä &lt;em&gt;lentokone&lt;/em&gt;, ja tarkistamme, että tuolla lentsikalla on kaksi kpl siipiä.&lt;/p&gt;
+
+&lt;p&gt;Huomionarvoista on, että ylläolevassa testissä emme käytä tietokantaa lainkaan. Tämä on ihanteellista. Mutta joissain testeissä on kovin vaikea välttää tietokannan käyttöä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class LentokenttaTesti extends TestCase {
+	
+public function kentta_evaa_laskeutumisluvan_jos_kiitoradat_taynna() {
+
+  $helsinkiVantaa = Lentokentta::create([&#39;kiitoradat&#39; =&amp;gt; [
+    &#39;itäinen&#39;, &#39;läntinen&#39;, &#39;pohjoinen&#39;
+  ]]);
+
+  // Luodaan neljä kappaletta lentokoneita
+  // Laravellin factory-apumetodi auttaa.
+  factory(Lentokone::class, 4)-&amp;gt;create();
+
+  // Lentokoneet ja lentokenttä on lisätty tietokantaan! 
+  // Toisin sanoen, meidän on käytettävä tietokantaa suorittaaksemme testin loppuosan.
+
+  // Varmistetaan, että lentokoneet tosiaan ovat tietokannassa.
+  $koneet = Lentokone::all();
+
+  // Lentokoneita tulisi siis olla neljä kpl
+  $this-&amp;gt;assertEquals($koneet-&amp;gt;count(), 4);
+
+  // Assignoidaan kullekin koneelle yksi kiitorata laskeutumiseen.
+  $helsinkiVantaa-&amp;gt;assignoiKiitorata($koneet[0]);
+  $helsinkiVantaa-&amp;gt;assignoiKiitorata($koneet[1]);
+  $helsinkiVantaa-&amp;gt;assignoiKiitorata($koneet[2]);
+
+  // Nyt Helsinki-Vantaan kaikki kolme kiitorataa ovat käytössä, joten
+  // viimeinen kone EI voi saada omaa kiitorataansa.
+
+  // Varmistetaan, että lentokenttä ei sisällä vapaita kiitoratoja.
+  $this-&amp;gt;assertEquals($helsinkiVantaa-&amp;gt;vapaatKiitoradat()-&amp;gt;count(), 0);
+
+  // Varmistetaan, että yritys assignoida olematon kiitorata johtaa virhetilanteeseen!
+  // (En ole itsekään ihan varma miten tämä toteutetaan, mutta jotenkin seuraavasti...)
+  $this-&amp;gt;expectException(EiVapaitaKiitoratoja::class);
+
+  $helsinkiVantaa-&amp;gt;assignoiKiitorata($koneet[3]);
+
+  // Nyt äskettäin asetetun exception handlerin tulisi olla lauennut.
+
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva testi käyttää tietokantaa. Ensin se luo tietokantaan yhden lentokentän ja neljä lentokonetta. Sen jälkeen testi suorittaa testilogiikan tietokantaan turvautuen.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevan ongelma on, että kun testi on valmis, testin aikana luodut objektit jäävät lojumaan tietokantaan. Tämä on epämieluisa tilanne. Parhaimmillaan se on pelkkä suorituskykyongelma, pahimmillaan se johtaa tilanteisiin, joissa testi menee pieleen koska tietokanta sisältää ennalta-arvaamatonta roskaa.&lt;/p&gt;
+
+&lt;h3 id=&#34;use-databasetransactions&#34;&gt;Use DatabaseTransactions&lt;/h3&gt;
+
+&lt;p&gt;Tietokannan resetointi testin jälkeen on helppoa. Suorastaan laittoman helppoa. Lisätään vain yksi rivi koodia:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class LentokenttaTesti extends TestCase {
+
+  // Uusi rivi
+  use DatabaseTransactions;
+	
+  public function kentta_evaa_laskeutumisluvan_jos_kiitoradat_taynna() {
+
+    // Kuten aiemmin
+
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Lisäämällä rivin &lt;em&gt;use DatabaseTransactions&lt;/em&gt; Laravel-kehys huolehtii omatoimisesti tietokannan putsaamisesta testin päätteeksi.&lt;/p&gt;
+
+&lt;p&gt;DatabaseTransactions on siis &lt;em&gt;Trait&lt;/em&gt;, joka käytännössä copypastaa &lt;em&gt;LentokenttaTesti&lt;/em&gt;-luokkaan sopivat putsaustoiminnot. Testi suorituu nyt näin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class LentokenttaTesti extends TestCase {
+
+  use DatabaseTransactions;
+	
+  public function kentta_evaa_laskeutumisluvan_jos_kiitoradat_taynna() {
+
+    // Puhdas tietokanta
+
+    // Kuten aiemmin, luodaan objekteja tietokantaan.
+    // Sitten testataan, testataan niin pirusti.
+
+    // Tyhjennä tietokanta
+
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Varsin kätevää.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Tietokannan resetointi alkuperäiseen tilaan noudattaa nk. &amp;ldquo;same world&amp;rdquo;-periaatetta. Periaate tarkoittaa, että tietty testi ajetaan aina vakioidussa ympäristössä. Tässä tapauksessa tuo vakioympäristö on tyhjä tietokanta.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Emailin lähetys Laravellista</title>
@@ -2216,392 +2468,6 @@ console.log(tulo); // 8
 &lt;p&gt;Putken/liukuhihnan loppupäädyssä kutsumme metodia &lt;em&gt;value()&lt;/em&gt;, joka hakee lopullisen palautusarvon.&lt;/p&gt;
 
 &lt;p&gt;Kyseessä on erittäin vahva ja ennenkaikkea modulaarinen koodaustapa. Ketjuta funktiokutsut ja juoksuta haluamasi dataa ketjun lävitse. Yhdestä päästä menee raaka-aineet sisään, toisesta päästä tulee valmis tuote ulos.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Käyttöliittymän testaus (automatisointi)</title>
-      <link>http://nollaversio.fi/blog/public/laravel/testing-routes/</link>
-      <pubDate>Wed, 27 Jul 2016 06:11:10 +0300</pubDate>
-      
-      <guid>http://nollaversio.fi/blog/public/laravel/testing-routes/</guid>
-      <description>
-
-&lt;p&gt;Perinteisen web-applikaation peruspointti on tarjota käyttäjilleen mahdollisuus vuorovaikuttaa itsensä (&lt;em&gt;esim. kerätä tänään dataa talteen, ja hyödyntää kerättyä dataa huomenna&lt;/em&gt;) ja/tai toistensa kanssa web-applikaation kautta.&lt;/p&gt;
-
-&lt;p&gt;Jotta tämä vuorovaikutus onnistuisi, täytyy web-applikaation tarjota jonkinmoinen käyttöliittymä.&lt;/p&gt;
-
-&lt;p&gt;Tyypillisessä tietokantapohjaisessa web-sovelluksesta tuo käyttöliittymä on HTML-sivu, joka sisältää linkit applikaation tarjoamiin toiminnallisuuksiin. Linkkejä klikkailemalla voi vuorovaikuttaa applikaation kanssa. Malliesimerkki tälläisestä applikaatiosta on vaikkapa Wikipedia.&lt;/p&gt;
-
-&lt;p&gt;Vuorovaikutus ihmiskäyttäjän kanssa on monen web-sovelluksen keskeisin huolenaihe. Toki on erikseen web-sovellukset, jotka &lt;em&gt;eivät&lt;/em&gt; vuorovaikuta ihmiskäyttäjän kanssa, vaan käyvät tiedonvaihtoa toisen web-sovelluksen kanssa. Malliesimerkki tälläisestä applikaatiosta on osakepörssin rajapinta. Tuo rajapinta käy keskustelua muiden applikaatioiden - mm. uutissivustojen pörssikurssien päivityksestä vastaavien ohjelmien - kanssa.&lt;/p&gt;
-
-&lt;h3 id=&#34;voiko-tietokoneohjelma-simuloida-ihmiskäyttäjää&#34;&gt;Voiko tietokoneohjelma simuloida ihmiskäyttäjää?&lt;/h3&gt;
-
-&lt;p&gt;Koska useimmilla applikaatioilla kommunikaatio ihmiskäyttäjän kanssa on keskiössä, on syytä kyetä varmistamaan, että käyttöliittymä toimii kuin vettä vain. Laravellin tapauksessa tämä varmistus tarkoittaa, että kukin HTML-sivu - joka siis edustaa tiettyä käyttöliittymän osaa - sisältää tarvittavat toiminnot, jotta applikaation käyttö on sujuvaa.&lt;/p&gt;
-
-&lt;p&gt;Mutta miten varmistua siitä, että käyttöliittymä tarjoaa tarvittavat toiminnot? Yksi tapa on silmämääräisesti selata käyttöliittymää. Ihmisaivot tekevät automaattisesti näin saapuessaan esim. Wikipedian etusivulle - luomme ikäänkuin &lt;em&gt;mentaalisen kartan&lt;/em&gt; kaikista applikaation tarjoamista mahdollisuuksista.&lt;/p&gt;
-
-&lt;p&gt;Homman voi tietenkin myös automatisoida, ja se kannattaa automatisoida. &lt;strong&gt;Sen sijaan että silmämääräisesti tarkistaisimme käyttöliittymän, annetaan erillisen tietokoneohjelman tarkistaa käyttöliittymä.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Tätä on automatisoitu käyttöliittymätestaus.&lt;/p&gt;
-
-&lt;h3 id=&#34;mitä-testataan-ja-miten&#34;&gt;Mitä testataan ja miten?&lt;/h3&gt;
-
-&lt;p&gt;Käyttöliittymätestauksessa pääpaino on varmistaa, että applikaation käyttöliittymä tarjoaa tarvittavat toiminnot, jotta applikaation käyttö on sujuvaa.&lt;/p&gt;
-
-&lt;p&gt;Tyypillisen web-applikaation käyttöliittymä koostuu isosta kasasta &lt;em&gt;HTML-sivuja&lt;/em&gt;. Täten web-applikaation kohdalla käyttöliittymätestaus tarkoittaa kutakuinkin HTML-sivujen sisällön testausta. Eli varmistetaan, että kukin HTML-sivu sisältää tarvittavat &lt;em&gt;toiminnot, tiedot ja ohjeet&lt;/em&gt;, jotta vuorovaikutus applikaation kanssa onnistuu odotetusti.&lt;/p&gt;
-
-&lt;p&gt;Kirjoitetaan ensimmäinen testi. Oletetaan, että olemme rakentamassa uutta Wikipediaa. Wikipedian keskiössä on &lt;em&gt;artikkeli&lt;/em&gt;, joten on luontevaa aloittaa ohjelmoimalla tarvittavat toiminnot yksittäisen artikkelin lukemista ja ylläpitoa varten.&lt;/p&gt;
-
-&lt;p&gt;Mitä toimintoja haluamme kytkeä osaksi konseptia nimeltä &lt;em&gt;artikkeli&lt;/em&gt;? Ainakin mahdollisuuden &lt;em&gt;lukea&lt;/em&gt; artikkeli. Lisäksi olisi kiva voida &lt;em&gt;muokata&lt;/em&gt; artikkelia. Aloitetaan näistä kahdesta.&lt;/p&gt;
-
-&lt;p&gt;Entä millainen käyttöliittymän tulee olla, jotta &lt;em&gt;lukeminen&lt;/em&gt; ja &lt;em&gt;muokkaaminen&lt;/em&gt; onnistuvat?&lt;/p&gt;
-
-&lt;p&gt;Lukemista varten tarvitsemme jotain mitä lukea. Eli artikkelin sisällön tulee olla ihmissilmin nähtävillä.&lt;/p&gt;
-
-&lt;p&gt;Muokkausta varten tarvitsemme jonkinlaisen linkin tai nappulan, jonka kautta siirtyä artikkelin muokkaustilaan.&lt;/p&gt;
-
-&lt;p&gt;Testimme näyttää yleisilmeeltään tältä.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-use \Integrated\Extensions\Laravel as IntegrationTest;
-
-class ArtikkeliTesti extends IntegrationTest {
-
-	public function testaaLukuMahdollisuus {
-
-	}
-
-	public function testaaMuokkausMahdollisuus {
-
-
-	}
-	
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Seuraavaksi on syytä miettiä, miten nuo testit suoritetaan. Käyttöliittymätestauksen koko pointti on, että testaus suoritetaan ikäänkuin ihmiskäyttäjä toimisi testaajana. Oikeasti tuon testauksen tekee tietokoneohjelma, mutta tietokoneohjelma simuloi ihmisen toimintaa.&lt;/p&gt;
-
-&lt;p&gt;Paras tapa suorittaa käyttöliittymätestaus on siis toistaa niitä toimintoja, joita oikea ihmiskäyttäjä tekisi mikäli käyttäisi applikaatiota.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// ArtikkeliTesti.php
-
-use \Integrated\Extensions\Laravel as IntegrationTest;
-
-class ArtikkeliTesti extends IntegrationTest {
-
-	public function testaaLukuMahdollisuus {
-			// Simuloidaan ihmiskäyttäjää
-			
-
-			// Kirjoita selaimen osoiteriville tietyn artikkelin www-osoite
-			$this-&amp;gt;visit(&#39;/artikkelit/seppo-raty&#39;);
-
-			// Nyt edessämme pitäisi olla Seppo Rädystä kertova artikkeli
-			$this-&amp;gt;seePageIs(&#39;seppo-raty&#39;);
-
-			// Artikkelin tulisi mainita hänen urheilulajinsa...
-			$this-&amp;gt;see(&#39;keihäänheitto&#39;);
-
-			// ... ja muutama kuolematon sitaatti
-			$this-&amp;gt;see(&#39;Saksa on paska maa&#39;);
-			$this-&amp;gt;see(&#39;Vittuillakseni heilutin&#39;);
-
-			// Jos kaikki ylläolevat ehdot täyttyvät, voimme
-			// luottaa, että kyseessä on Rädyn wikipedia-artikkeli.
-
-	}
-
-	public function testaaMuokkausMahdollisuus {
-			// Simuloidaan ihmiskäyttäjää
-			
-			// Kirjoita selaimen osoiteriville tietyn artikkelin www-osoite
-			$this-&amp;gt;visit(&#39;/artikkelit/seppo-raty&#39;);
-
-			// Emme ole kiinnostuneita artikkelin sisällöstä, mutta
-			// olemme kiinnostuneita muokkausmahdollisuudesta.
-
-			// Varmistetaan, että &amp;quot;Muokkaa&amp;quot;-nappula on olemassa, ja että
-			// sitä klikkaamalla avautuu muokkausnäkymä!
-			$this-&amp;gt;click(&#39;Muokkaa&#39;)-&amp;gt;seePageIs(&#39;/seppo-raty/muokkaa&#39;);
-
-			// Jos ylläolevat ehdot täyttyvät, voimme luottaa,
-			// että muokkaustoiminto on olemassa.
-
-	}
-	
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevat kaksi testiä - luku ja muokkaus - voidaan suorittaa automatisoidusti. Ihmiskäyttäjää ei tarvita. Testiä varten luotu tietokoneohjelma ajaa ylläolevat testit, ja varmistaa, että kaikki oletukset/ehdot täyttyvät. Mikäli jokin ehto ei täyty, asiasta raportoidaan eteenpäin (esim. kehittäjälle).&lt;/p&gt;
-
-&lt;p&gt;Ylläolevan kaltaisilla yksittäisillä testeillä voimme varmistaa pala palalta koko käyttöliittymän toiminnan. Entä jos haluamme testata toiminnon &lt;em&gt;uuden artikkelin luonti&lt;/em&gt;? Se onnistuu näin.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// ArtikkeliTesti.php
-
-// Muut testit kuten ennenkin
-
-public function testaaArtikkelinLuonti() {
-	
-	// Artikkelin luontia varten käyttäjälle näytetään
-	// HTML-lomake, johon artikkelin tiedot täytetään.
-
-	$this-&amp;gt;visit(&#39;/luo-artikkeli&#39;)-&amp;gt;andSee(&#39;artikkeliluonti&#39;);
-
-	// Varmista, että HTML-lomake on olemassa yrittämällä täyttää se...
-	$this
-	-&amp;gt;type(&#39;Nollaversio IT&#39;, &#39;#artikkelin_nimi&#39;) // Kirjoita nimi
-	-&amp;gt;type(&#39;Ihan ok firma.&#39;, &#39;#artikkelin_teksti&#39;) // Kirjoita sisältö
-	-&amp;gt;press(&#39;Luo artikkeli&#39;); // Paina &amp;quot;Submit&amp;quot;-nappulaa
-	-&amp;gt;andSee(&#39;Uusi artikkeli luotu!&#39;) // Varmista luonnin onnistuminen.
-	// Varmista että olemme juuri luodun artikkelin sivulla.
-	-&amp;gt;onPage(&#39;/artikkelit/nollaversio-it&#39;); 
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevan kaltaisilla testeillä voimme testata ilman epäluotettava ihmissilmän tarvetta koko käyttöliittymämme!&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: on syytä huomata, että käyttöliittymätestaus keskittyy &lt;em&gt;olennaisten seikkojen&lt;/em&gt; testaamiseen. Se ei testaa sitä, onko sivun värimaailma &amp;lsquo;ihmissilmää miellyttävä&amp;rsquo;, onko fonttikoko sopiva tai ovatko sivun eri komponentit nätisti rivissä.&lt;/p&gt;
-
-&lt;p&gt;Automatisoitu testaus keskittyy testaamaan aspekteja, jotka ovat a) ylipäätänsä testattavissa ja b) elintärkeitä applikaation toiminnan kannalta.&lt;/p&gt;
-
-&lt;p&gt;Värimaailma &lt;em&gt;ei ole&lt;/em&gt; elintärkeä applikaation toiminnan kannalta, ainakaan Wikipedian tapauksessa. Sen sijaan mahdollisuus muokata artikkelia &lt;em&gt;on&lt;/em&gt; elintärkeä applikaation toiminnan kannalta.&lt;/p&gt;
-
-&lt;p&gt;Jokaisella applikaatiolla on tietenkin omat reunaehtonsa sen suhteen, mitkä aspektit ovat tärkeitä ja mitkä eivät.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Varausten hallinta tietokannan tasolla</title>
-      <link>http://nollaversio.fi/blog/public/laravel/reservation-pattern/</link>
-      <pubDate>Tue, 26 Jul 2016 11:32:03 +0300</pubDate>
-      
-      <guid>http://nollaversio.fi/blog/public/laravel/reservation-pattern/</guid>
-      <description>
-
-&lt;p&gt;Otetaan esimerkki seuraavankaltaisesta applikaatiosta. Applikaatio mahdollistaa uhanalaisten sarvikuonojen ostamisen lemmikeiksi. Afrikan salametsästäjät (tai tässä tapauksessa &amp;lsquo;salakidnappaajat&amp;rsquo;) tuovat järjestelmään uusia sarvikuonoja, joita eurooppalaiset intoilijat ostavat.&lt;/p&gt;
-
-&lt;p&gt;Ostoprosessi ei kuitenkaan ole yksinkertainen. Kukin sarvikuono varataan ostoprosessin ajaksi - mikäli ostoprosessi menee onnistuneesti läpi, sarvikuonopolo rahdataan Eurooppaan uudelle isännälleen. Mikäli ostoprosessi ei mene lävitse, sarvikuono vapautuu takaisin markkinapaikalle.&lt;/p&gt;
-
-&lt;p&gt;Tietokanta voisi olla esim. tämän kaltainen:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
-
-| id |   ostaja  | hinta | tullut_myyntiin |
-| -- | --------- | ----- | --------------- |
-| 1  |   NULL    |  25   |   1.6.2016      |
-| 2  |   NULL    |  32   |   3.6.2016      |
-| 3  |   2       |  26   |   4.6.2016      |
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code&gt;// Ostajat-taulu
-
-| id |   nimi    |  maa  |   email         |
-| -- | --------- | ----- | --------------- |
-| 1  |   Pekka   |  FI   |   pekka@24.fi   |
-| 2  |   Mikko   |  FI   |   m85@gmail.com |
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Järjestelmä toimii ylläolevia tauluja hyödyntäen. Ostaja kirjautuu sarvikuonojen markkinapaikalle - se miten tuo kirjautuminen tapahtuu ei ole tässä esimerkissä oleellista. Sen jälkeen hän selaa ostettavissa olevia sarvikuonoja. &lt;em&gt;Sarvikuonot&lt;/em&gt;-taulusta saadaan helposti haettu vapaana (ostomielessä) olevat kuonokkaat - vapaalla sarvikuonolla &lt;em&gt;ostaja&lt;/em&gt;-sarake on tyhjä (NULL).&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;SELECT * from Sarvikuonot WHERE ostaja=NULL&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Mutta kuten alussa mainitsimme, haluamme myös sallia sarvikuonon &lt;em&gt;varauksen&lt;/em&gt; itse ostoprosessin ajaksi.&lt;/p&gt;
-
-&lt;p&gt;Miksi tämä on tärkeää? &lt;strong&gt;Siksi, että muuten saattaisi hyvinkin käydä niin, että useampi henkilö yrittäisi samanaikaisesti ostaa samaa kuonokasta.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Ongelman ydin on siinä, että sarvikuonon &lt;em&gt;ostaja&lt;/em&gt;-sarake päivitetään vasta aivan ostoprosessin lopussa. Tämä on loogista siinä mielessä, että ostos ei ole vahvistettu kuin vasta prosessin lopussa.&lt;/p&gt;
-
-&lt;p&gt;Mutta järjestelmän muiden asiakkaiden tämä ei ole optimaalista. On varsin ikävää jos joku heistä aloittaa oman ostoprosessinsa sarvikuonosta, jota sinä olet parhaillaan maksamassa Nordean nettipankissa. Kun maksusi menee läpi, tuo toinen asiakas on umpikujassa.&lt;/p&gt;
-
-&lt;p&gt;Hänen kannaltaan on varsin ikävää, mikäli ostos epäonnistuu aivan kalkkiviivoilla. Vähemmästäkin ihminen repii juurikasvunsa.&lt;/p&gt;
-
-&lt;p&gt;Ongelman ydin siis on, että ostoprosessilla on &lt;strong&gt;alku&lt;/strong&gt; ja &lt;strong&gt;loppu&lt;/strong&gt;. Mikäli ostoprosessi olisi pistemäinen tapahtuma, mitään ongelmaa ei olisi. Varaus ja osto tapahtuisivat tismalleen samalla ajan hetkellä, joten tarve varauksen olemassaololle poistuisi.&lt;/p&gt;
-
-&lt;p&gt;Esimerkkinä tälläisestä pistetapahtumasta on ruokakaupassa käynti. Sanotaan, että maitohyllyllä on tasan yksi maitopurkki. Kauppaan saapuu kaksi perhekuntaa maito-ostoksille.&lt;/p&gt;
-
-&lt;p&gt;Kumpi poppoo tuon maitopurtilon saa mukaansa? Kumpi ensimmäisenä sen hyllyltä nappaa. Voittaja vie maidon. Seuraava käsi hapuilee pelkkää tyhjää ilmaa. Tyhjyyttä kohti kurotteleva kyllä varsin nopeasti hoksaa, että maito meni jo, joten hänen ei tarvitse jatkaa ostoprosessiaan eteenpäin. Ainoastaan voittaja kävelee kohti kassapistettä.&lt;/p&gt;
-
-&lt;p&gt;Ratkaiskaamme sarvikuonojen &lt;em&gt;varaus vs. osto&lt;/em&gt; -ongelma lisäämällä erillinen varaus-sarake tietokantatauluun.&lt;/p&gt;
-
-&lt;h3 id=&#34;varaus-ja-osto-eriteltynä-tietokannassa&#34;&gt;Varaus ja osto eriteltynä tietokannassa&lt;/h3&gt;
-
-&lt;p&gt;Uusi Sarvikuonot-taulu näyttää tältä:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
-
-| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
-| -- | --------- | ------- | ----- | --------------- |
-| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
-| 2  |   NULL    |  1      |   32  |   3.6.2016      |
-| 3  |   2       |  2      |   26  |   4.6.2016      |
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Järjestelmä toimii seuraavanlaisesti: heti kun potentiaalinen kuonoaddikti aloittaa ostoprosessin, hänen ostajanumeronsa lisätään sarvikuonon &lt;em&gt;varaaja&lt;/em&gt;-kenttään.&lt;/p&gt;
-
-&lt;p&gt;Tällä tavoin taulu sisältää tiedon siitä, että kyseistä sarvikuonoa &lt;em&gt;ollaan parhaillaan ostamassa&lt;/em&gt;. Muille asiakkaille tuota sarvikasta ei tarvitse näyttää listauksissa - heidän kannaltaan sarvikuono on jo myyty. Täten ostettavissa olevat sarvikuonot haetaan tietokantakomennolla:&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;SELECT * from Sarvikuonot WHERE varaaja=NULL&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Kun varausta tekevä taho sitten lopulta &lt;em&gt;vahvistaa&lt;/em&gt; kuonokkaan oston, tieto vahvistuksesta päivitetään tauluun &lt;em&gt;ostaja&lt;/em&gt;-sarakkeeseen.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
-// Sarvikuonon #2 osto vahvistettu ostajalle #1.
-
-| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
-| -- | --------- | ------- | ----- | --------------- |
-| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
-| 2  |   1       |  1      |   32  |   3.6.2016      |
-| 3  |   2       |  2      |   26  |   4.6.2016      |
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kaksi eri asiakasta eivät voi enää aloittaa ostoprosessia samasta sarvikuonosta samanaikaisesti. Erinomaista. Onko järjestelmämme nyt täydellinen?&lt;/p&gt;
-
-&lt;p&gt;Ei todellakaan.&lt;/p&gt;
-
-&lt;p&gt;Entä jos ostoprosessi ei menekään läpi? Koska &lt;em&gt;varaaja&lt;/em&gt;-kenttä on jo täytetty, sarvikuono on muiden asiakkaiden näkökulmasta ostettu. Mutta jos ostoprosessi menee pieleen (ehkä ostaja tulee katumapäälle kesken maksamisen), tuo sarvikuono on ikuisesti jumissa limbossa.&lt;/p&gt;
-
-&lt;p&gt;Tarvitsemme siis mekanismin, joka jollain tavoin &lt;em&gt;vapauttaa&lt;/em&gt; limboon joutuneet sarvikuonot. Mekanismiksi on kaksi hyvää vaihtoehtoa.&lt;/p&gt;
-
-&lt;h3 id=&#34;varausten-vapautus-aktiivinen-vs-passiivinen&#34;&gt;Varausten vapautus - aktiivinen vs. passiivinen&lt;/h3&gt;
-
-&lt;p&gt;Kerrataan, tietokantataulumme näyttää tältä:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
-
-| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
-| -- | --------- | ------- | ----- | --------------- |
-| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
-| 2  |   NULL    |  1      |   32  |   3.6.2016      |
-| 3  |   2       |  2      |   26  |   4.6.2016      |
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ja potentiaalinen ostajamme #1 yllättäen saa aivoinfraktin ja poistuu linjoilta. Hän ei tule enää koskaan ostamaan edes tikkukaramellia saati savannin hyökkäysvaunua. Joten tehtävämme on jollain tavoin &lt;em&gt;poistaa&lt;/em&gt; varaus sarvikuonolta #2.&lt;/p&gt;
-
-&lt;h4 id=&#34;aktiivinen-poisto&#34;&gt;Aktiivinen poisto&lt;/h4&gt;
-
-&lt;p&gt;Yksi tapa hoitaa poistot on pitää yllä erillistä &lt;em&gt;poisto-ohjelmaa&lt;/em&gt;, joka tasaisin väliajoin käy etsimässä + poistamassa &lt;em&gt;erääntyneitä&lt;/em&gt; varauksia.&lt;/p&gt;
-
-&lt;p&gt;Vastaavan kaltainen systeemi on käytössä hotelleissa - jos et ole viimeistään klo 18 vastaanottamassa huoneesi avainta, varauksesi poistetaan asiakaspalvelijan toimesta.&lt;/p&gt;
-
-&lt;p&gt;Meidän sarvikuonomarkkinapaikkamme kohdalla loogisinta on kirjata ylös ajankohta, jolloin ostoprosessi alkoi. Vaadimme ostajilta, että heidän tulee suorittaa ostoprosessinsa läpi yhden tunnin aikana. Jos ostoprosessi on epäonnistunut (tai yhä kesken!) tuon yhden tunnin rajapyykin umpeuduttua, varaus poistetaan.&lt;/p&gt;
-
-&lt;p&gt;Muokataan tauluamme, jotta saamme kirjattua ylös varauksen tekoajankohdan:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
-
-| id |   ostaja  | varaaja | hinta | tullut_myyntiin |   varaus_tehty    |
-| -- | --------- | ------- | ----- | --------------- | ----------------- |
-| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |       NULL        |
-| 2  |   NULL    |  1      |   32  |   3.6.2016      | 26.7.16 klo 12.15 |
-| 3  |   2       |  2      |   26  |   4.6.2016      | 21.7.16 klo 17.33 |
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ohessa pieni skripti, joka pyörii ikäänkuin &lt;em&gt;taustapalveluna&lt;/em&gt;, käyden
-tasaisin väliajoin poistamassa erääntyneet varaukset:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Tätä skriptiä kutsutaan esim. käyttöjärjestelmän cron-tabin toimesta.
-// Esimerkiksi aina 1 minuutin välein.
-
-// Aloita tietokanta-transaktio
-DB::transaction(function() {
-	// Rajapyykkinä toimii ajankohta yksi tunti sitten.
-	$aikaRajapyykki = Carbon::now()-&amp;gt;subHour();
-
-	// Sarvikuonot, jotka ovat erääntyneet, 
-	// mutta ei ostettu (&#39;ostaja&#39; on NULL),
-	// tyhjennetään varaustiedot
-	Sarvikuono
-		::where(&#39;varaus_tehty&#39;, &amp;lt;, $aikaRajapyykki)
-		-&amp;gt;where(&#39;ostaja&#39;, NULL)
-		-&amp;gt;update([
-			&#39;varaaja&#39; =&amp;gt; NULL,
-			&#39;varaus_tehty&#39; =&amp;gt; NULL
-		]);
-});
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kun ylläoleva skripti on käynyt poistamassa varauksen tiedot, on sarvikuono #2 jälleen muiden
-markkinapaikan kävijöiden nähtävissä.&lt;/p&gt;
-
-&lt;p&gt;On myös toinen keino, ns. passiivinen poisto.&lt;/p&gt;
-
-&lt;h4 id=&#34;passiivinen&#34;&gt;Passiivinen&lt;/h4&gt;
-
-&lt;p&gt;Aktiivisessa poistossa meillä on erillinen, itse itseään kontrolloiva/ajastava prosessi (=&lt;em&gt;käyttöjärjestelmän prosessi&lt;/em&gt;), joka käy tasaisin väliajoin tekemässä poistot. Tuo prosessi elää omaa elämäänsä irrallaan siitä prosessista, joka pyörittää markkinapaikkaamme.&lt;/p&gt;
-
-&lt;p&gt;Toinen vaihtoehto on jättää varauksen tiedot maatumaan tietokantaan, ja suorittaa erääntyneiden varausten käsittely suoraan applikaatiomme ydinkoodin puolella.&lt;/p&gt;
-
-&lt;p&gt;Tämä on läpeensä sysimusta idea, mutta esimerkin omaisesti esittelen myös sen.&lt;/p&gt;
-
-&lt;p&gt;Sarvikuonot-taulu ei muutu mihinkään. Se on edelleen tälläinen:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
-
-| id |   ostaja  | varaaja | hinta | tullut_myyntiin |   varaus_tehty    |
-| -- | --------- | ------- | ----- | --------------- | ----------------- |
-| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |       NULL        |
-| 2  |   NULL    |  1      |   32  |   3.6.2016      | 26.7.16 klo 12.15 |
-| 3  |   2       |  2      |   26  |   4.6.2016      | 21.7.16 klo 17.33 |
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Erillisen skriptin sijasta meillä on &lt;em&gt;suoraan applikaatiomme sisuksiin koodattu sopivat reagoinnit&lt;/em&gt; erääntyneisiin varauksiin.&lt;/p&gt;
-
-&lt;p&gt;Esimerkiksi ostettavissa olevien kuonojen listaus näyttää nyt tältä:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;// SarvikuonoController.php
-
-public function vapaatKuonot() {
-
-	// Vapaat kuonot ovat niitä, joilla pätee joko:
-	// 1) &#39;varaaja&#39; on tyhjä (NULL)
-	// 2) &#39;varaus_tehty&#39; ajankohta yli 1 tunti sitten
-
-	$aikaRajapyykki = Carbon::now()-&amp;gt;subHour();
-	$vapaat = Sarvikuonot
-		::where(&#39;varaus_tehty&#39;, &amp;lt;, $aikaRajapyykki)
-		-&amp;gt;where(&#39;ostaja&#39;, NULL)
-		-&amp;gt;get();
-
-	return View::make(&#39;listaus&#39;, compact(&#39;vapaat&#39;));	
-
-	
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Muut toiminnot joutuvat nyt turvautumaan vastaavaan logiikkaan. Esimerkiksi ostoprosessin lopussa on vielä kerran varmistettava, että varaus on yhä voimassa. Homma toimii, joten kuten.&lt;/p&gt;
-
-&lt;p&gt;Passiivisessa lähestymistavassa on puolensakin. Ylimääräinen prosessin (aktiivinen) olemassaolo lisää järjestelmän kuormitusta ja luo uudenlaisen bugityypin - jos erillinen poistoprosessi kaatuu, varaukset eivät enää eräänny lainkaan. Passiivisessa mallissa tätä riskiä ei ole, sillä &amp;ldquo;erääntyminen&amp;rdquo; on koodattu suoraan osaksi ydinalgoritmia.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: passiivisen ja aktiivisen lähestymistavan ero on pohjimmiltaan filosofinen, ja siitä löytyy oikean elämän esimerkkejä kosolti. Otetaan esimerkiksi käteisen rahan käyttö.&lt;/p&gt;
-
-&lt;p&gt;Yksi nostaa joka kuukausi 100 euroa käteistä, ja sujauttaa setelit lompakkoonsa. Jos hän kuukauden aikana tarvitsee käteistä, hän voi luottaa siihen, että sitä lompakosta löytyy. Hänen ei tarvitse jokaisen kirppariostoksen kohdalla erikseen miettiä asiaa.&lt;/p&gt;
-
-&lt;p&gt;Toinen ei nosta käteistä rahaa, vaan kantaa mukanaan yksinomaan muovirahaa. Hänen ei tarvitse huolehtia kuukausittaisesta Otto-automaatilla vierailusta. Mutta jos hän joskus sattuu tarvitsemaan käteistä, hänellä ei sitä ole. Toisin sanoen, jokaista ostosta tehdessään hänen täytyy erikseen varmistaa, että muoviraha käy.&lt;/p&gt;
-
-&lt;p&gt;Kyseessä on klassinen tradeoff.&lt;/p&gt;
-&lt;/blockquote&gt;
 </description>
     </item>
     

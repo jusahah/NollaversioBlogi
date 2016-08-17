@@ -3,7 +3,17 @@
   
   <url>
     <loc>http://nollaversio.fi/blog/public/</loc>
-    <lastmod>2016-08-15T06:15:21+03:00</lastmod>
+    <lastmod>2016-08-17T03:40:31+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://nollaversio.fi/blog/public/laravel/require-vs-include/</loc>
+    <lastmod>2016-08-17T03:40:31+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</loc>
+    <lastmod>2016-08-16T06:37:20+03:00</lastmod>
   </url>
   
   <url>
