@@ -11,10 +11,11 @@ PHP:ssa on mahdollisuus *sisällyttää* yhden tiedoston koodipätkä toisen tie
 
 // Auto.php
 
-require 'Ratti.php'
+require 'Ratti.php';
 
-class Auto (Ratti $ratti, $autoMerkki) {
-	//...
+class Auto {
+  public function __construct(Ratti $ratti, $autoMerkki) {...}
+  //...
 }
 
 $volvo = new Auto(new Ratti, 'Volvo');
@@ -24,7 +25,7 @@ $volvo = new Auto(new Ratti, 'Volvo');
 
 // Ratti.php
 
-class Ratti() {
+class Ratti {
 	//...
 }
 
@@ -36,10 +37,11 @@ tai
 
 // Auto.php
 
-include 'Ratti.php'
+include 'Ratti.php';
 
-class Auto (Ratti $ratti, $autoMerkki) {
-	//...
+class Auto {
+  public function __construct(Ratti $ratti, $autoMerkki) {...}
+  //...
 }
 
 $volvo = new Auto(new Ratti, 'Volvo');
@@ -49,7 +51,7 @@ $volvo = new Auto(new Ratti, 'Volvo');
 
 // Ratti.php
 
-class Ratti() {
+class Ratti {
 	//...
 }
 

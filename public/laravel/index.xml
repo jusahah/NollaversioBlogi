@@ -22,10 +22,11 @@
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
 // Auto.php
 
-require &#39;Ratti.php&#39;
+require &#39;Ratti.php&#39;;
 
-class Auto (Ratti $ratti, $autoMerkki) {
-	//...
+class Auto {
+  public function __construct(Ratti $ratti, $autoMerkki) {...}
+  //...
 }
 
 $volvo = new Auto(new Ratti, &#39;Volvo&#39;);
@@ -35,7 +36,7 @@ $volvo = new Auto(new Ratti, &#39;Volvo&#39;);
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
 // Ratti.php
 
-class Ratti() {
+class Ratti {
 	//...
 }
 
@@ -46,10 +47,11 @@ class Ratti() {
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
 // Auto.php
 
-include &#39;Ratti.php&#39;
+include &#39;Ratti.php&#39;;
 
-class Auto (Ratti $ratti, $autoMerkki) {
-	//...
+class Auto {
+  public function __construct(Ratti $ratti, $autoMerkki) {...}
+  //...
 }
 
 $volvo = new Auto(new Ratti, &#39;Volvo&#39;);
@@ -59,7 +61,7 @@ $volvo = new Auto(new Ratti, &#39;Volvo&#39;);
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
 // Ratti.php
 
-class Ratti() {
+class Ratti {
 	//...
 }
 
