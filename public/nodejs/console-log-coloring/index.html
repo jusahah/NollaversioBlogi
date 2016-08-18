@@ -1,0 +1,158 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Konsolitulosteen väritys &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Konsolitulosteen väritys</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Thu, Aug 18, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      <p>Löysin muutama kuukausi sitten Node.js-lisäosan nimeltä <a href="https://github.com/chalk/chalk">chalk</a>. Tämä chalk-kirjasto tarjoaa kivan rajapinnan <em>värittää</em> komentorivillä näkyvät console.log-tekstit. Värityksestä on paljon hyötyä tapauksissa, joissa Node.js-skripti printtaa runsaasti tekstiä komentoriville.</p>
+
+<p>Käyttö on helppoa - riittää, että työntää merkkijonon chalk-kirjaston metodikutsun sisälle:</p>
+
+<pre><code class="language-javascript">
+console.log(chalk.cyan(&quot;beforeMove cb&quot;))
+
+</code></pre>
+
+<p>tuottaa seuraavanlaisen lopputuleman:</p>
+
+<p><img src="/blog/public/img/console-log-cyan.png" alt="Turkoosin värinen merkkijono" /></p>
+
+<p>Käytän eri värejä <em>simuloimaan</em> eri käyttäjien kommunikaatiota Node.js-serverin kanssa. Sanotaan esimerkiksi, että meillä on kolme käyttäjää A, B ja C. Nuo kaikki kolme saavat viestejä applikaatiolta. Tuotantokäytössä nuo viestit luonnollisesti menisivät kunkin käyttäjän www-selaimeen, mutta testivaiheessa on helpompaa vain printata kunkin käyttäjän saama viesti komentoriville. Ongelmaksi muodostuu, että <em>komentoriviltä on visuaalisesti vaikea hahmottaa mikä viesti kuuluu millekin käyttäjälle</em>:</p>
+
+<p><img src="/blog/public/img/console-log-users-white.png" alt="Kaikkien käyttäjien kommunikaatio palvelimen kanssa printataan testiajossa komentoriville" /></p>
+
+<p>Chalk-kirjaston avulla voimme assignoida kullekin käyttäjälle oman värin, jolloin on visuaalisesti helppo erottaa eri käyttäjien viestit toisistaan:</p>
+
+<pre><code class="language-javascript">
+// Participant.js
+
+var chalk = require('chalk');
+
+// Määritä kullekin testikäyttäjälle oma väritysfunktio
+var consoleColorers = {
+  'A': chalk.bgGreen,
+  'B': chalk.bgYellow,
+  'C': chalk.bgBlue
+}
+
+function Participant(id, communicator) {
+  // Unique among all participants
+  this.id = id;
+  // communicator is probably Socket-object, can be mocked.
+  this.communicator = communicator;
+
+  this.msg = function(msg) {
+    // Väritä tämän käyttäjän saama viesti hänen omalla värillään
+    // ja printtaa viesti komentoriville.
+    var text = this.id + ': ' + msg.msg;
+    console.log(consoleColorers[this.id](text));
+  }
+
+  // ... muut metodit
+
+}
+
+module.exports = Participant;
+
+</code></pre>
+
+<pre><code class="language-javascript">
+// test.js
+
+var _ = require('lodash'); // _.map-funktiota varten
+var Participant = require('./Participant');
+
+// Luo testipelaajia kolme kpl.
+var players = [new Participant('A', {}), new Participant('B', {}), new Participant('C', {})];
+
+// Lähetä kullekin pelaajalle viesti kerran sekunnissa
+setInterval(function() {
+  _.map(players, function(player) {
+    player.msg({topic: 'testi', msg: 'Sinulle on postia'});
+  })
+}, 1000);
+
+
+</code></pre>
+
+<p>Ylläoleva tuottaa kauniin lopputuloksen komentoriville kun test.js-tiedosto suoritetaan:</p>
+
+<p><img src="/blog/public/img/console-log-users-custom-colors.png" alt="Kullakin käyttäjällä on oma värinsä komentoriville" /></p>
+
+<p>Pohjimmiltaan värien käyttö on tietenkin makukysymys, mutta ainakin itselläni se helpottaa testitulosteen lukemista huomattavasti.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

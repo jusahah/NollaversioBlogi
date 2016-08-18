@@ -1,0 +1,170 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Työkalupakin kätköistä - zip() ja unzip() &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Työkalupakin kätköistä - zip() ja unzip()</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Tue, Aug 2, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Tällä kertaa esittelen lyhyesti maanmainion Lodash-kirjaston apufunktiot <strong>zip</strong> ja <strong>unzip</strong>.</p>
+
+<p>Kuten nimistä saattaa kyetä päättelemään, zip ja unzip tekevät päinvastaisia asioita. Ne ovat loogisesti toistensa käänteisfunktioita:</p>
+
+<p><code>a === unzip(zip(a))</code></p>
+
+<blockquote>
+<p>Käytännössä ylläoleva koodi ei toimi, sillä unzip palauttaa listan, mutta zip ei ota vastaan listaa. Teknisesti ne eivät ole täysin yksi yhteen toistensa käänteisoperaatioita, mutta loogisesti niitä voi ajatella toistensa käänteisfunktioina.</p>
+</blockquote>
+
+<p>Mitä nuo funktiot saavat aikaan?</p>
+
+<h4 id="zip">Zip</h4>
+
+<p>Zip-funktio ottaa vastaan kasan listoja, ja luo ryhmityksen kunkin listan n:nnelle jäsenelle. Huomioitavaa on, että zip ottaa listat vastaan yksitellen omina parametreinaan. Zip-operaation sisällä kaikki listojen &lsquo;ännännet&rsquo; jäsenet ryhmitellään yhteen omaksi listakseen.</p>
+
+<p>Tarve zip-funktion kaltaiselle apufunktiolle ilmenee erinomaisesti seuraavasta.</p>
+
+<p>Esimerkki: meillä on kolme henkilöä, esim. työpaikan työntekijöitä. Kullakin työntekijällä on pituus ja paino. Työpaikan terveystutkimuksen osana tulee selvittää pituus- ja painojakaumat. Zip-funktio mahdollistaa tämän selvityksen luomisen vaivatta.</p>
+
+<pre><code class="language-javascript">
+// Luodaan henkilöitä.
+// Henkilö määritetään pituuden (cm) ja painon (kg) mukaan kahden elementin listana!
+var matti = [168, 67];
+var mikko = [179, 76];
+var pirjo = [154, 51];
+
+// Käytetään zip-apufunktiota, joka ryhmittelee pituudet ja painot erillisiin listoihin.
+var jakaumat = _.zip(matti, mikko, pirjo);
+var pituusjakauma = jakaumat[0];
+var painojakauma = jakaumat[1];
+
+</code></pre>
+
+<h4 id="unzip">Unzip</h4>
+
+<p>Siinä missä <strong>zip</strong> ryhmittelee kasan listoja kunkin listan n:nnen jäsenen mukaan, <strong>unzip</strong> ottaa vastaan ryhmitykset sisältävän listan ja uudelleenkokoaa alkuperäiset listat. Unzip on siis suoraan zip-funktion käänteisoperaatio.</p>
+
+<p>Esimerkki: sääasemat ympäri Suomea mittaavat lämpötilan kerran päivässä, aina klo 18.00. Kerran viikossa kukin sääasema lähettää omat mittaustuloksensa keskuspalvelimelle. Keskuspalvelimen puolella meteorologi on kiinnostunut Suomen keskilämpötilasta kunakin viikonpäivänä. Unzip-operaatiolla tuo koko maan keskilämpötila on helppo selvittää kullekin viikonpäivälle:</p>
+
+<pre><code class="language-javascript">// Yksittäisen aseman tulokset muotoa [ma,ti,ke,to,pe,la,su]
+var mittaustulokset = [
+  [12,16,16,14,18,12,12], // Muonio
+  [16,16,17,17,15,16,19], // Kuopio
+  [20,20,18,20,21,23,21], // Tampere
+];
+
+var lampotilatPaivittain = _.unzip(mittaustulokset);
+// Käytetään _.mean-apufunktiota joka laskee listan jäsenten keskiarvon.
+var keskiarvot = _.map(lampotilatPaivittain, _.mean);
+
+// Keskiarvot sisältää nyt kunkin viikonpäivän keskilämpötilan Suomessa.
+console.log(keskiarvot); // [16, 17.33, 17, ...]
+
+</code></pre>
+
+<p>Otetaan vielä vertailun vuoksi miltä lämpötilojen jaottelu päivälokeroihin näyttäisi <em>ilman</em> unzip-funktiota:</p>
+
+<pre><code class="language-javascript">/////////////////
+//  Ilman zip  //
+/////////////////
+
+// Luodaan lista joka sisältää oman keruulistan kullekin viikonpäivälle.
+var lampotilatPaivittain = [[], [], [], [], [], [], []];
+
+// Kaksi sisäkkäistä for-looppia, toinen luuppaa asemia, toinen viikonpäiviä.
+for (var i = 0, j = mittaustulokset.length; i &lt; j; i++) {
+  for (var i2 = 0; i2 &lt; 7; i2++) {
+    lampotilatPaivittain[i2].push(mittaustulokset[i][i2]);    	
+  }
+}
+
+////////////////////
+//  Zipin kanssa  //
+////////////////////
+
+var lampotilatPaivittain = _.unzip(mittaustulokset);
+
+
+</code></pre>
+
+<p>Ero on - kuten niin kovin usein ohjelmoinnin piirissä - kuin yöllä ja päivällä.</p>
+
+<blockquote>
+<p>Unzip- ja zip-funktiot ovat mukava pieni lisä ohjelmoijan työkalupakkiin. Vastaavan algoritmin kirjoittaminen käsin ei houkuta.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

@@ -1,0 +1,271 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Filteröi epäonnistujat pois (reflect &#43; filter) &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Filteröi epäonnistujat pois (reflect &#43; filter)</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Mon, Jul 25, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Lupauskirjasto <em>Bluebirdin</em> yksi vähemmän tunnetuista apumetodeista on <strong>reflect()</strong>. Ainakin allekirjoittaneelle tuo apufunktio pysyi tuntemattomana hyvää matkaa toista vuotta - ei vain tullut pakottavaa tarvetta, ja ongelmat sai aina ratkottua muutenkin.</p>
+
+<p>Näin jälkikäteen ajateltuna nuo &ldquo;muut&rdquo; ratkaisut olivat aika hirveitä sekasotkuja, jotka toimivat jos jaksoivat.</p>
+
+<p>Sittemmin otin reflectin käyttöön.</p>
+
+<h3 id="minkä-ongelman-promise-reflect-ratkoo">Minkä ongelman Promise.reflect() ratkoo?</h3>
+
+<p>Varsin usein omissa applikaatioissani on toiminnallisuuksia, joiden onnistunut läpivienti <em>ei ole kriittistä</em>. Jotkut toiminnot ovat luonteeltaan sellaisia, että ei niin väliä mikäli toiminto epäonnistuu nolosti. <strong>Tärkeintä on, että yhden vähäpätöisen toiminnon epäonnistuminen ei vedä mukanaan koko applikaatiota vessan pöntöstä alas.</strong></p>
+
+<p>Puhtaan perinteisessä synkronoidussa koodissa on luonnollista, että epäonnistunut toiminto napataan kiinni <em>try-catch</em> -siepparilla. Esim.</p>
+
+<pre><code class="language-javascript">
+var _       = require('lodash');
+var Promise = require('bluebird');
+
+// SyncVarkaus.js
+
+function kopioiBlogi(urls) {
+
+	// Käydään yksitellen pihistämässä blogien HTML-sisältö.
+	var blogiSisallot = _.map(urls, function(blogiURL) {
+		var sisalto; // Täytetään sisällöllä
+		try {
+			sisalto = syncRequest(blogiURL);
+		} catch (e) {
+			// No, pöllintä ei onnistunut. Eipä hätiä.
+			// Rikolliset aikeemme kohdistuvat seuraavaan uhriin.
+			console.warn('Pölliminen epäonnistui - seuraava uhri sisään.');
+		}	
+
+		return sisalto;	
+
+	})
+	
+	// blogiSisallot sisältää pöllityt sisällöt niistä blogeista,
+	// joiden kähvellys EI epäonnistunut nolosti. Luuserit roikkuvat
+	// vielä mukana undefined-arvoina. Mutta eivät pitkään.
+
+	// Compact() suodattaa töpeksijät roskakoriin.
+	return _.compact(blogiSisallot);
+}
+
+// Rikollisen uramme alkupiste.
+var tulokset = kopioiBlogi([
+	'http://www.pollitasta.fi',
+	'http://www.tuplaamo.fi',
+	'http://www.nollaversio.fi/public/blog'
+]);
+
+// Bestseller tiedossa.
+koostaKirja(tulokset);
+
+</code></pre>
+
+<p>Ylläoleva on mukavaa perinteistä sync-koodia, jossa jokainen toiminto suoritetaan peräkanaa yksitellen. Ja try-catch-sieppari toimii kuin unelma.</p>
+
+<p>Mutta kun Javascriptin (ja maalaisjärjen) luonteeseen kuuluu, että jokaista varkautta ei tarvitse tehdä perätysten. Niitä kun voi tehdä myös <em>samanaikaisesti</em>.</p>
+
+<p>Siirrytään ihanaan lupausten maailmaan, ja suoritetaan rikossarjamme asynkronoidusti.</p>
+
+<pre><code class="language-javascript">
+// AsyncVarkaus.js
+
+function kopioiBlogi(urls) {
+
+	return Promise.resolve(urls)
+	.map(function(blogiURL) {
+		// Jokainen request lähtee liikkeelle yht'aikaa.
+		return asyncRequest(blogiURL);
+	})
+	.catch(function(err) {
+		// Jotain meni nolosti pieleen.
+	})
+
+}
+
+kopioiBlogi([
+	'http://www.pollitasta.fi',
+	'http://www.tuplaamo.fi',
+	'http://www.nollaversio.fi/public/blog'
+]).then(function(tulokset) {
+	return koostaKirja(tulokset);
+}).then(function(kirja) {
+	// Valitaan sopivan korruptoitunut kustantaja.
+	talentumMedia.julkaise(kirja);
+})
+
+</code></pre>
+
+<p>Kaikki näyttää pintapuolin hyvältä. Käyttämällä <em>Promise.map</em>-metodia ammumme kaikki pöllimisyritykset käyntiin <em>samanaikaisesti</em>. Kukin kähvellys joko onnistuu tai epäonnistuu. Epäonnistuminen tippuu kivasti <em>.catch()</em>-sieppariin, joka sitten tekee jotain.</p>
+
+<p>Mutta asiassa on ongelma. <strong>Jos yksikin yritys epäonnistuu, kaikki epäonnistuvat.</strong></p>
+
+<p>Tämä on <em>.map</em>-metodin ominaisuus - map-lupaus julistaa itsensä onnistujaksi <strong>vain</strong> jos jokainen sen alaisuudessa hyörivistä lupauksista onnistuu.</p>
+
+<p>Jos yksikin alainen töpeksii, map-lupaus vetää pultit ja rikkoo kaiken. Siis estää ketään muutakaan onnistumasta.</p>
+
+<p>Kerrataan vielä tämä tärkeä pointti uusiksi - <strong>map-lupaus epäonnistuu jos yhdenkin blogin pölliminen epäonnistuu!</strong>. Ja jos yksikin rosvous menee päin honkia, kaikki onnistuneet pöllimiset päätyvät jäteastiaan. Yksi kaikkien, ja kaikki yhden puolesta. Tämä ei tietenkään ole mitä haluamme.</p>
+
+<p>Me haluamme, että jos yksi ryöstö menee reisille, muut ryöstöt voivat yhä onnistua.</p>
+
+<p>Sata kultakelloa on parempi kuin 99, mutta 99 kultakelloa on parempi kuin pyöreä nolla.</p>
+
+<p>Joten miten korjata asia?</p>
+
+<h3 id="reflect">Reflect()</h3>
+
+<p>Ratkaisu on sopivaan paikkaan sijoitettu reflect()-apumetodi.</p>
+
+<p>Miksi reflect() toimii? Koska reflect() nappaa kiinni sekä <em>onnistumiset</em> että <em>epäonnistumiset</em>, ja välittää tiedon eteenpäin ns. neutraalissa muodossa.</p>
+
+<p>Ikäänkuin luuseri ja maailmanmestari kävelisivät tasa-arvoisina rinta rinnan. Reflect() on koodimaailman emakko - kaikki kelpaa ruuaksi. Ja toisesta päästä tuleva tavara on aina vakioitua.</p>
+
+<p>Katsotaanpa:</p>
+
+<pre><code class="language-javascript">
+// AsyncVarkaus.js
+
+function kopioiBlogi(urls) {
+
+	return Promise.resolve(urls)
+	.map(function(blogiURL) {
+		// Yksittäinen varkaus - kokeillaan onnistuuko?
+		return asyncRequest(blogiURL).reflect();
+	})
+	.filter(function(varkausLupaus) {
+		// Suodatetaan(!) pois epäonnistuneet ryöstöt!
+		return varkausLupaus.isFulfilled();
+	})
+	.map(function(onnistunutVarkaus) {
+		// Vain onnistuneet rosvoukset jäljellä.
+		// Joudumme kutsumaan teknisen apufunktion joka
+		// hakee lopullisen tuloksen lupauksen syövereistä.
+		return onnistunutVarkaus.value();
+	})
+
+	// Huomion arvoista, että emme tarvitse -catch-siepparia lainkaan!
+	// Miksi? Koska kaikki luuserit on jo siivilöity ylempänä.
+	// Yksikään päivänpilaaja ei elä tänne saakka.
+
+}
+
+kopioiBlogi([
+	'http://www.pollitasta.fi',
+	'http://www.tuplaamo.fi',
+	'http://www.nollaversio.fi/public/blog'
+]).tap(function(tulokset) {
+
+	// Tulokset sisältää listan niistä blogisisällöistä, 
+	// joiden ryöstö meni nappiin. 
+
+	// Kokoa sisällöistä ikioma kirja.
+	var valmisKirja = _.chain(tulokset)
+	.reduce(function(kirja, pollittyBlogi) {
+		kirja.lisaaUusiLuku(pollittyBlogi);
+	}, new Kirja('Pölli Tästä Reloaded'))
+	.value();
+
+	talentumMedia.julkaise(valmisKirja);
+})
+
+</code></pre>
+
+<p>Ylläolevassa koodissa huomattavaa ovat seuraavat rivit:</p>
+
+<p><code>.filter(function(varkausLupaus) {...}</code></p>
+
+<p>Apumetodi <em>.filter</em> (nimensä mukaisesti) suodattaa luuserit pois.</p>
+
+<p><code>return asyncRequest(blogiURL).reflect();</code></p>
+
+<p>Teemme requestin, ja kutsumme heti apumetodia <em>reflect()</em>. Kutsumalla reflectiä saamme luotua
+(ja palautetta ympäröivästä funktiosta ulos) uudentyyppisen lupauksen, joka <em>itse osaa napata
+omat virheensä kiinni.</em></p>
+
+<p>Jännittävää. Olemme ikäänkuin koulineet parannetun Pokemonin, joka on sisäsiisti.</p>
+
+<blockquote>
+<p>Loppukaneetti: kun tietty operaatio on <em>valinnainen</em>, toisin sanoen sen onnistuminen ei ole kriittisen tärkeää, on syytä muistaa <em>reflect() + filter()</em> -kikka.</p>
+</blockquote>
+
+<p>Ps. Huomasitko muuten, että käytimme yllä metodia <strong>tap()</strong> perinteisen <strong>then</strong>-metodin sijaan:</p>
+
+<p><code>.tap(function(tulokset) {...}</code></p>
+
+<p>Tämä siksi, että julkaisun suorittava anonyymi funktiomme on päätepiste. Se ei palauta mitään takaisin liukuhihnalle. <a href="http://nollaversio.fi/blog/public/nodejs/promise-tap/">Lisää tap vs. then eroista aiemmasta blogikirjoituksessani.</a></p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

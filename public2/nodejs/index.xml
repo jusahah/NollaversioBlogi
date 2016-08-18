@@ -26,11 +26,11 @@ console.log(chalk.cyan(&amp;quot;beforeMove cb&amp;quot;))
 
 &lt;p&gt;tuottaa seuraavanlaisen lopputuleman:&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://nollaversio.fi/blog/public/blog/public/img/console-log-cyan.png&#34; alt=&#34;Turkoosin värinen merkkijono&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://nollaversio.fi/blog/public/img/console-log-cyan.png&#34; alt=&#34;Turkoosin värinen merkkijono&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;Käytän eri värejä &lt;em&gt;simuloimaan&lt;/em&gt; eri käyttäjien kommunikaatiota Node.js-serverin kanssa. Sanotaan esimerkiksi, että meillä on kolme käyttäjää A, B ja C. Nuo kaikki kolme saavat viestejä applikaatiolta. Tuotantokäytössä nuo viestit luonnollisesti menisivät kunkin käyttäjän www-selaimeen, mutta testivaiheessa on helpompaa vain printata kunkin käyttäjän saama viesti komentoriville. Ongelmaksi muodostuu, että &lt;em&gt;komentoriviltä on visuaalisesti vaikea hahmottaa mikä viesti kuuluu millekin käyttäjälle&lt;/em&gt;:&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://nollaversio.fi/blog/public/blog/public/img/console-log-users-white.png&#34; alt=&#34;Kaikkien käyttäjien kommunikaatio palvelimen kanssa printataan testiajossa komentoriville&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://nollaversio.fi/blog/public/img/console-log-users-white.png&#34; alt=&#34;Kaikkien käyttäjien kommunikaatio palvelimen kanssa printataan testiajossa komentoriville&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;Chalk-kirjaston avulla voimme assignoida kullekin käyttäjälle oman värin, jolloin on visuaalisesti helppo erottaa eri käyttäjien viestit toisistaan:&lt;/p&gt;
 
@@ -88,7 +88,7 @@ setInterval(function() {
 
 &lt;p&gt;Ylläoleva tuottaa kauniin lopputuloksen komentoriville kun test.js-tiedosto suoritetaan:&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://nollaversio.fi/blog/public/blog/public/img/console-log-users-custom-colors.png&#34; alt=&#34;Kullakin käyttäjällä on oma värinsä komentoriville&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://nollaversio.fi/blog/public/img/console-log-users-custom-colors.png&#34; alt=&#34;Kullakin käyttäjällä on oma värinsä komentoriville&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;Pohjimmiltaan värien käyttö on tietenkin makukysymys, mutta ainakin itselläni se helpottaa testitulosteen lukemista huomattavasti.&lt;/p&gt;
 </description>

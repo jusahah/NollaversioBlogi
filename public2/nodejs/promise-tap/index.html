@@ -1,0 +1,222 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Lupausketju liukuhihnana - then vs. tap &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Lupausketju liukuhihnana - then vs. tap</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Mon, Jul 18, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Lupausten maailma on kaunis paikka. Pitkä, hyvin abstraktoitu lupausjono on Scarlett Johanssonin vartaloon verrattavissa oleva jumalallisen kauneuden symboli.</p>
+
+<p>Mutta joskus tulee vastaan ongelmia, joihin lupausjono ei luontevasti sovellu. Tai ainakin voisi äkkiseltään <em>luulla</em>, että lupausjono ei toimi halutusti. Yksi tälläinen on seuraava.</p>
+
+<pre><code class="language-javascript">
+// Lupaus jono alkaa
+haeTennisTuloksetPalvelimelta()
+.then(lajittelePelaajittain)
+.then(printtaaFedererinTulokset)
+.then(laskeKunkinPelaajanVoittoprosentti)
+
+</code></pre>
+
+<p>Hyvin kaunis lyhyt lupausjono, jonka asynkronoituun tyyliin etenee askel askeleelta. Koko lupausjono on kuin yksi iso liukuhihna. Kunkin <em>then()</em>-funkkarin kohdalla liukuhihnalla kulkeva tavara ohjataan <em>apufunktioon</em> (esim. lajittelePelaajittain).</p>
+
+<p>Apufunktio voidaan ajatella koneena, joka jollain tavalla <em>muuttaa</em> tai <em>transformoi</em> saamansa esineen. Muutoksen/transformaation jälkeen tavara etenee kohti seuraavaa apufunktiota/käsittelypistettä.</p>
+
+<p>Toimii kuin unelma. Mutta katsotaanpa mitä kunkin askeleen apufunktio palauttaa jonon <em>seuraavalle</em> kaverille tässä meidän tennistuloksia hallinnoivassa esimerkissämme.</p>
+
+<p>Katsotaan vaiheittain:</p>
+
+<h3 id="haetennistuloksetpalvelimelta">haeTennisTuloksetPalvelimelta</h3>
+
+<p><em>null -&gt; tulokset</em></p>
+
+<p>Tämä on selvä peli - se hakee tulokset serveriltä ja työntää ne liukuhihnalle. Tämä vaihe istuu liukuhihnan alussa, joten se ei saa syötettä sisäänsä lainkaan. Sen sijaan se aloittaa hihnan toiminnan puskemalla erikseen palvelimelta haetut tulokset hihnalle.</p>
+
+<hr />
+
+<h3 id="lajittelepelaajittain">lajittelePelaajittain</h3>
+
+<p><em>tulokset -&gt; niputetut tulokset</em></p>
+
+<p>Tämä myös helppo - se ottaa vastaan tulokset, ja lajittelee ne pelaajittain. Eli esimerkiksi Rafael Nadalin kaikki ottelutulokset paketoidaan kivasti yhteen nippuun siten, että myöhemmin niitä on helppo käsitellä erillään muista pelaajista. Tehtyään niputuksen tämä vaihe siirtää tuotetut niput takaisin liukuhihnalle kohti seuraavaa vaihetta.</p>
+
+<hr />
+
+<h3 id="printtaafedererintulokset">printtaaFedererinTulokset</h3>
+
+<p><em>niputetut tulokset -&gt; niputetut tulokset</em></p>
+
+<p>Mutta entä tämä? Mikä on tämän käsittelyvaiheen tarkoitus? Nimensä mukainen. Vaihe etsii juuri niputetuista (pelaajittain!) tuloksista Roger Federerin tulokset, ja printtaa ne paperille. Miksi juuri Federer? En tiedä, eikä se ole oleellista.</p>
+
+<p>Mikä on oleellista on se, että tämä vaihe EI transformoi/muunna koko sisääntulevaa datapakettia johonkin uuteen muotoon.</p>
+
+<p>Joten mitä tämä vaihe sitten palauttaa liukuhihnalle? Me tiedämme alkuperäistä lupausjonoa tarkastelemalla, että seuraava vaihe (<em>laskeKunkinPelaajanVoittoprosentti</em>) odottaa saatavakseen niputetut tulokset. Toisin sanoen, <em>seuraava</em> vaihe odottaa <em>edellisen</em> vaiheen syötettä.</p>
+
+<p>Tämä tarkoittaa, että <em>printtaaFedererinTulokset</em> vaihe on ikäänkuin tyhjänpäiväinen läpikulkupiste. Kuin tyhjä putki. Kuin kone, joka ei tee mitään. Huomioitavaa on, että kone tekee kyllä jotain (printtaa paperille Federerin tulokset), mutta liukuhihnan syötteen näkökulmasta mitään ei tapahdu.</p>
+
+<p><strong>Syöte vain kulkee läpi muuntumatta lainkaan!</strong></p>
+
+<pre><code class="language-javascript">
+// printtaaFedererinTulokset.js
+
+module.exports = function(sisaantulevaData) {
+	
+	var federerTulokset = sisaanTulevaData['Federer'];
+
+	// Emme ole kiinnostuneita tulostuksen onnistumisesta yms.
+	// Kunhan kutsumme tulostusfunktiota ja jatkamme elämäämme eteenpäin.
+	printtaa(federerTulokset);
+
+	// Palautetaan saatu syöte identtisenä takaisin hihnalle.
+	return sisaantulevaData;
+}
+
+</code></pre>
+
+<hr />
+
+<h3 id="laskekunkinpelaajanvoittoprosentti">laskeKunkinPelaajanVoittoprosentti</h3>
+
+<p><em>niputetut tulokset -&gt; voittoprosentit pelaajittain</em></p>
+
+<p>Taas selvä peli - tämä steppi ottaa sisäänsä niputetut tulokset ja aggregoi kunkin pelaajan osalta ne yhteen laskien voittoprosentin.</p>
+
+<p>Ja avot - kaikki toimii.</p>
+
+<hr />
+
+<hr />
+
+<p>Mutta.</p>
+
+<p>Jokin häiritsee <em>printtaaFedererinTulokset</em>-vaiheessa. Tuo vaihe ottaa sisäänsä dataa ja puskee saman datan <em>identtisenä</em> ulos. Mitä järkeä tässä on?</p>
+
+<p><strong>Oleellinen huomio on, että noin maalaisjärjellä ajateltuna <em>printtaaFedererinTulokset</em> ei ole osa liukuhihnaa</strong>. Tai siis että se ei ole mikään <em>käsittelyvaihe</em> lainkaan! Se on enemmänkin vain liukuhihnan päällä sijaitseva tuntoanturi - kun paketti kulkee sen ylitse, jotain tapahtuu jossain. Tässä tapauksessa tuo &ldquo;jotain&rdquo; on, että printteri alkaa sylkemään aanelosta ulos.</p>
+
+<p>Tuntoanturi ei muunna pakettia mitenkään.</p>
+
+<p>Joten kauniin koodin nimissä olemme pakotettuja muokkaamaan lupausjonoa. PrinttaaFedererinTulokset ei saa olla käsittelyvaihe, sen tulee olla anturi.</p>
+
+<h1 id="tap-funktio-on-anturi">Tap-funktio on anturi</h1>
+
+<p>Hoidetaan homma ottamaan käyttöön <em>tap</em>-funktio osana lupausketjua (liukuhihnaa). Tap-funktio on juuri tähän tarkoitukseen soveltuva - se ottaa sisäänsä edellisen vaiheen tuottamaan syötteen, mutta <em>ei tuota mitään ulosmenevää tavaraa</em>!</p>
+
+<p>Toisin sanoen, tap-funktion käyttö mahdollistaa, että tap-funktiota seuraava vaihe saa syötteen sisään tap-funktiota edeltävältä vaiheelta.</p>
+
+<p>Tässä tapauksessa <em>laskeKunkinPelaajanVoittoprosentti</em> saa syötteensä <em>lajittelePelaajittain</em>-vaiheelta. Tämä on juuri mitä haluammekin.</p>
+
+<p>Eli lopullinen muoto.</p>
+
+<pre><code class="language-javascript">
+// Lupaus jono alkaa
+haeTennisTuloksetPalvelimelta()
+.then(lajittelePelaajittain)
+.tap(printtaaFedererinTulokset)
+.then(laskeKunkinPelaajanVoittoprosentti)
+
+</code></pre>
+
+<p>Tap tap. Kaunista ja toteuttaa täydellisesti SINGLE RESPONSIBILITY-prinsiippiä. PrinttaaFedererinTulokset saa sisäänsä tarvittavan datan, mutta sen ei tarvitse huolehtia ulosmenevästä tavarasta lainkaan. Itse vaihe on nyt yhden rivin lyhyempi:</p>
+
+<pre><code>```javascript
+
+// printtaaFedererinTulokset.js
+
+module.exports = function(sisaantulevaData) {
+
+    var federerTulokset = sisaanTulevaData['Federer'];
+
+    // Emme ole kiinnostuneita tulostuksen onnistumisesta yms.
+    // Kunhan kutsumme tulostusfunktiota ja jatkamme elämäämme eteenpäin.
+    printtaa(federerTulokset);
+
+    // Ei tarvitse palauttaa mitään!
+}
+
+```
+</code></pre>
+
+<blockquote>
+<p>Loppukaneetti: On tietenkin selvää, että useimmissa projekteissa tap vs. then -funktion käyttö on aika irrelevantti seikka. Tässä esimerkissä saimme säästettyä yhden rivin koodia, ja hitusen selvennettyä lupausketjun logiikkaa (kokenut koodari huomaa yhdellä silmäyksellä liukuhihnan toimintalogiikan). Hyöty on silti aika minimaalinen ja lähinnä kosmeettinen.</p>
+
+<p>Tap-funktion suurin hyöty tulee silloin, kun joudumme lupausketjun osana kutsumaan koodia, jota emme hallitse. Kuvitellaan, että <em>printtaaFedererinTulokset</em> sijaitsee osana valtavaa, minimoitua JS-kirjastoa. Tuon kirjaston kirjoittaja on oikeaoppisesti koodannut funktion siten, että se ei palauta mitään ulos. Me emme pysty asiaan vaikuttamaan. Joudumme täten tilanteeseen, jossa emme voi käyttää pelkistä <em>then()</em>-vaiheista koostuvaa ketjua - printtaaFedererinTulokset-vaihe rikkoisi tuon ketjun.</p>
+
+<p>Tässä tapauksessa <em>tap-funktio</em> pelastaa päivän suorastaan naurettavan helpolla. Kutsumme <em>printtaaFedererinTulokset</em>-kirjastofunktiota tap-funktion sisältä, ja kaikki toimii.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

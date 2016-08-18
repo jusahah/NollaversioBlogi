@@ -1,0 +1,184 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Laravel vinkit #1 &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Laravel vinkit #1</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Wed, Jul 6, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      <p><strong>Kuinka lisätä uusi raportointitoiminnallisuus ilman muutoksia vanhaan koodipohjaan?</strong></p>
+
+<p><em>Lyhyt vastaus: luomalla palveluntarjoaja, joka määrittää tapahtumakuuntelijan.</em></p>
+
+<p>Laravellilla rakennettu järjestelmä on helposti laajennettavissa palveluntarjoajien kautta. Palveluntarjoajan mahdollistavat arkkitehtuurin rakentamisen siten, että uudet toiminnallisuudet elävät täysin erillään ns. ydinkoodista. Ydinkoodin ei edes tarvitse tietää uuden toiminnallisuuden olemassaolosta.</p>
+
+<p>Paras tapa toteuttaa tämä erilläänolo on käyttää palveluntarjoajia (Service Provider).</p>
+
+<hr />
+
+<p>Käytetään esimerkkinä Nordean pankkijärjestelmää.</p>
+
+<p>Oletetaan, että Nordean mahtava nettipankki sallii asiakkaidensa lisätä pankkitileilleen rahaa. Ahneuspäissään pankkiväki ei ole lisännyt mahdollisuutta nostaa rahaa tililtä - ainoastaan talletus on mahdollista.</p>
+
+<p>Ihana nettipankki toimii kuin unelma, kunnes tulee lakimuutoksen myötä lisävaatimus: jokaisen pankkitilille tehtävän talletuksen jälkeen järjestelmän tulee ilmoittaa viranomaisille ko. pankkitilin uusi saldo.</p>
+
+<p>Oletetaan, että tässä esimerkissä viranomaisilla on upea HTTP-rajapinta nimeltä &ldquo;Pankkipoliisi&rdquo;. Rajapinnan tarkempi toiminta ei ole oleellista, joten oletetaan, että pintaa voidaan kutsua tyyliin:</p>
+
+<p><code>Pankkipoliisi::ilmoita($asiakasID, $uusiSaldo)</code></p>
+
+<p>Miten nykyistä Nordean pankkijärjestelmää tulee muuttaa, jotta lain vaatimus täyttyy?</p>
+
+<hr />
+
+<p>Tarvittava muutos järjestelmän on yksinkertainen. Vanha ydinkoodi - joka huolehtii pankkitilin hallinnasta - voi pysyä tismalleen identtisenä.</p>
+
+<p>Vaatimuksen täyttöä varten lisäämme järjestelmään palveluntarjoajan, joka puolestaan lisää <em>tapahtumakuuntelijan</em>. Tuo tapahtumakuuntelija on kaiken A ja O - se kuuntelee järjestelmän tuottamia tapahtumia ja valikoi niistä jatkokäsittelyyn itselleen mieluisat.</p>
+
+<p>Käytännössä homma toimii siten, että <strong>vanha ydinkoodi tuottaa tapahtumia</strong>, ja <strong>uusi koodipohja reagoi noihin tapahtumiin</strong>.</p>
+
+<p>Tämä patterni on yleismaailmallinen ja soveltuu moniin käyttötarkoituksiin: olemassaoleva järjestelmäkomponentti tuottaa informaatiota, uusi komponentti reagoi tuotettuun informaatioon.</p>
+
+<p>Kaiken pohjalla toimii oletus siitä, että vanha komponentti ei tiedä uuden komponentin olemassaolosta mitään. Parhaimmillaan myöskään uusi komponentti ei havaitse vanhaa komponenttia. Kaikki informaatio kulkee tapahtumien muodossa.</p>
+
+<p>Hieman karrikoiden; vanha komponentti &ldquo;<em>ampuu tapahtumia kohti tyhjyyttä</em>&rdquo;, uusi komponentti &ldquo;<em>vastaanottaa tapahtumia tyhjyydestä</em>&rdquo;.</p>
+
+<p>Tämä on koko arkkitehtuurin perimmäinen ajatus - vanha ja uusi koodipohja elävät täysin omissa maailmoissaan tietämättä mitään toisistaan.</p>
+
+<p>Uusi koodipohja vain ottaa sopivat tapahtumat kiinni.</p>
+
+<p>Vanha ydinkoodi:</p>
+
+<pre><code class="language-php">
+// Models/Pankkitili.php
+
+public function saveCash(ICurrency $amount) {
+
+	// Ei tarvetta transaktiolle kun lisätään rahaa -&gt; menee aina läpi.
+
+	// Lasketaan uusi saldo
+	$this-&gt;balance = $this-&gt;balance + $amount-&gt;convert($this-&gt;accountCurrency);
+	// Päivitetään muutos tietokantaan. 
+	// Luo ja ampuu tapahtuman &quot;pankkitili päivitetty!&quot;.
+	$this-&gt;save();
+
+	return true;
+	
+}
+
+</code></pre>
+
+<p>Yllä siis ydinkoodipohja. Koodi ei missään sisällä ekspliittistä käskyä ampua tapahtumaa. Tapahtuman luonti ja välitys järjestelmän muille komponenteille tapahtuu implisiittisesti, pinnan alla, Laravellin toimesta.</p>
+
+<p>Kun lisätoiminnallisuutta järjestelmään lisätään, <em>ylläolevaan koodipohjaan ei tarvitse koskea</em>. Tämä on koko hajautetun, tapahtumien välitykseen perustuvan arkkitehtuurin keskeisin pointti.</p>
+
+<p>Toteutetaan uusi raportointitoiminnallisuus lisäämällä palveluntarjoaja, jonka vastuulla on napata lennosta sopivat tapahtumat ja reagoida niihin.</p>
+
+<pre><code class="language-php">// Providers/RaportointiPankkipoliisille.php
+
+public function boot() {	
+
+  // Ilmoitetaan halustamme kuunnella Pankkitiliin liittyviä &quot;updated&quot;-tapahtumia.
+  Pankkitili::updated(function($tili) {
+    // Tämä klosuuri ajetaan aina kun tilin saldo on päivittynyt.
+    // Klosuurin sisällä käytössämme on $tili-objekti
+    // $tili edustaa sitä Pankkitiliä, johon päivitys kohdistui.
+
+    // Selvitetään uusi saldo lähettääksemme sen viranomaisille.
+    $uusiSaldo = $tili-&gt;getBalance();
+
+    $poliisi = new Pankkipoliisi(/*api-tunnukset tähän*/);
+
+    // Ilmoitetaan käyttäjän uusi saldo, eli lähetetään käyttäjä-ID ja saldosumma.
+    try {
+      $poliisi-&gt;ilmoita(\Auth::user()-&gt;id(), $uusiSaldo);
+    } catch (\Exception $e) {
+      Log::warning('poliisi_ilmoitus_fail', $e);
+    }
+  });
+}
+
+</code></pre>
+
+<p>Pankkipoliisin asetukset täytyy määritellä jossain config-tiedostossa, mutta periaate on ylläolevan mukainen.</p>
+
+<p>Tiivistettynä:</p>
+
+<ol>
+<li>Vanhan koodipohjan (<em>Pankkitili.php</em>) ei tässä esimerkissä tarvinnut muuttua kun halusimme lisätä uuden toiminnallisuuden järjestelmään.</li>
+<li>Uusi palveluntarjoaja (<em>RaportointiPankkipoliisille.php</em>) lisäsi <strong>laajennuksen</strong> olemassaolevaan järjestelmään.</li>
+<li>Lisätyn laajennuksen määrittämä <em>tapahtumakuuntelija</em> nappaa sopivat tapahtumat kiinni ja reagoi niihin lähettämällä viestin viranomaisille.</li>
+</ol>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

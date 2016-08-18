@@ -1,0 +1,190 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Asynkronoidun koodin testaus (Mocha) &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Asynkronoidun koodin testaus (Mocha)</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Thu, Aug 11, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Rakensin eilen <em>PromiseMonopoly</em>-nimistä ohjelmistokehystäni jälleen hiukan eteenpäin. Kehys on siinä pisteessä, että on syytä kirjoittaa muutamia yksinkertaisia automatisoituja testejä sille.</p>
+
+<p>Piskuiseksi ongelmaksi muodostui, että koska kutsut kehyksen sisälle ovat <em>asynkronoituja</em> - eli palauttavat lupauksen -, testaaminen täytyy myös tehdä asynkronoidusti.</p>
+
+<p>Maanmainio <a href="https://mochajs.org/">Mocha</a> tuli tässä kohtaa apuun.</p>
+
+<h3 id="async-testi-mochalla">Async-testi Mochalla</h3>
+
+<p>Kirjoitin kehykselleni allaolevan testin:</p>
+
+<pre><code class="language-javascript">
+describe('Phase', function() {
+  describe('onEnter + onExit', function() {
+    it('Phase with empty subphases goes correctly', function(done) {
+      var tracking = [];
+      var testiphase = new Phase('testi', {loop: false}, []);
+      testiphase.onEnter = function() {
+        tracking.push(&quot;START&quot;);
+      }
+
+      testiphase.onExit = function() {
+        tracking.push(&quot;STOP&quot;);
+      }
+      testiphase.__initialize({}, [new Player(whiteUser), new Player(blackUser)]);
+
+      testiphase.__start()
+      .then(function() {
+        expect(tracking).to.deep.equal(['START', 'STOP']);
+        done();
+      })
+    })
+  })
+})	
+
+</code></pre>
+
+<p>Ylläoleva testi varmistaa, että <em>onEnter</em>- ja <em>onExit</em>-kutsufunktiot tulevat kutsutuksi kehyksen toimesta oikeassa järjestyksessä. Eli kutsuessamme <strong>testiphase.__start()</strong>, myöhemmin meillä on tracking-listassa viestit &ldquo;START&rdquo; ja &ldquo;STOP&rdquo; peräkkäin.</p>
+
+<p><code>expect(tracking).to.deep.equal(['START', 'STOP']);</code></p>
+
+<p>Asynkronoidun testauksen ytimessä Mochalla on tämä koodirivi:</p>
+
+<pre><code class="language-javascript">
+ it('Phase with empty subphases goes correctly', function(done) {
+
+</code></pre>
+
+<p>Oleellista ylläolevassa rivissä on <strong>done</strong>-parametri, jonka testiajon suorittava funktio ottaa vastaan. Mikä tuo mystinen <strong>done</strong> sitten on? <em>Se on parametri on funktio, jota kutsumalla testi julistetaan suoritetuksi.</em></p>
+
+<p>Toinen tärkeä on tämä rivi:</p>
+
+<pre><code class="language-javascript">
+ expect(tracking).to.deep.equal(['START', 'STOP']);
+
+</code></pre>
+
+<p><strong>Expect</strong>-kutsulla suoritamme varsinaisen testin, eli varmistamme, että ohjelma-ajon tuottama tulos on haluttu.</p>
+
+<p>On syytä huomata, missä tämä expect-kutsu sijaitsee; se on lupausketjun viimeisen <em>then</em>-metodin sisällä! Tämä tarkoittaa, että varsinainen testaus suoritetaan vasta kun lupausketju on siirtynyt viimeiseen vaiheeseensa. Muita vaihtoehtoja suorittaa testaus ei ole, sillä testauksen kannalta relevantit operaatiot suoritetaan lupausketjun aiemmissa vaiheissa.</p>
+
+<p>Seuraava esimerkillinen testi EI toimi kuten haluamme:</p>
+
+<pre><code class="language-javascript">
+// Ei toimi, async ja sync sekoitettuna!
+
+describe('Matikka', function() {
+  describe('Yhteenlaskut', function() {
+    it('2+2=4', function() {
+      var summa = laskeAsync(2, 2);
+      expect(4).to.equal(summa);
+    })
+  })
+})	
+
+</code></pre>
+
+<p>Ylläoleva ei toimi juuri siksi, että <strong>laskeAsync</strong> on (nimensä mukaisesti) asynkronoitu funktio. Se ei voi palauttaa haluttua lukua, sillä asynkronoidut funktiokutsut eivät tiedä lopputulosta ajoissa. Tässä tapauksessa oletamme, että <strong>laskeAsync</strong> suorittaa yhteenlaskun vaikkapa kysymällä Googlen serveriltä lopputulosta. Tuo lopputulos saapuu sitten joskus, riippuen nettiyhteyden nopeudesta.</p>
+
+<p>Eli ongelma on, että muuttuja <em>summa</em> ei ole ajoissa tiedossa.</p>
+
+<p>Ongelma on helppo korjata, ja muuntaa testaus asynkronoituun muotoon:</p>
+
+<pre><code class="language-javascript">
+// Toimii, 100% async!
+
+describe('Matikka', function() {
+  describe('Yhteenlaskut', function() {
+    it('2+2=4', function(done) {
+      laskeAsync(2, 2).then(function(summa) {
+        expect(4).to.equal(summa);
+        done();
+      })
+			
+    })
+  })
+})	
+
+</code></pre>
+
+<p>Nyt homma pelittää virheettömästi. Kutsumme <strong>laskeAsync</strong>-funktiota, jota palauttaa lupauksen. Kun tuo lupaus täyttyy (<em>then()</em>), meillä on haluamamme <em>summa</em> saatavilla ja voimme varmistaa <strong>expect</strong>-kutsun avulla, että tuo summa on neljä.</p>
+
+<p>Suoritettuamme <strong>expect</strong>-testin kutsumme funktiota <em>done</em>, joka ilmoittaa Mochalle, että testaus on tältä osalta valmis. Miksi tuota done-funktiota pitää erikseen kutsua?</p>
+
+<p>Synkronoidussa versiossa ei tarvitse. Tämä siksi, että Mocha voi olettaa testauksen olevan valmis heti kun kooditiedosto on ajettu kerralla loppuun. Eli siis ollaan saavuttu viimeiselle koodiriville.</p>
+
+<p>Mutta asynkronoidussa versiossa Mocha ei voi tehdä tuollaisia rämäpäisiä oletuksia. Osa testauskoodista saattaa odottaa vuoroaan. Meidän esimerkissämme näin tekee Googlen palvelimelta yhteenlaskun tulosta odottava koodipätkä. Tällöin Mocha ei voi vain julistaa testejä suoritetuksi heti kun testitiedoston viimeinen koodirivi on nähty ja ajettu; testit ajetaan <em>myöhemmin</em> ja on syytä jäätä odottamaan testien tuloksia. Done-funktion käyttö mahdollistaa odotuksen - kukin yksittäinen testi ilmoittaa oman done-funktionsa kautta milloin se on valmis.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

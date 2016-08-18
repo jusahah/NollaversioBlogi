@@ -1,0 +1,218 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Chain() -metodi ketjuttaa funktiokutsut &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Chain() -metodi ketjuttaa funktiokutsut</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Thu, Jul 28, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p><a href="http://www.lodash.com">Lodash</a> on varsin hieno apukirjasto Javascriptin ohjelmointiin. Tuo kirjasto sisältää sadoittain pieniä apufunktioita, joiden avulla yleisimmät algoritmit voi toteuttaa nopeasti ja kivuttomasti.</p>
+
+<p>Esimerkkinä vaikka algoritmi listan jakamisesta osiin. Ilman lodashia algoritmi näyttää tältä.</p>
+
+<pre><code class="language-javascript">
+var lista = [1,2,3,4,5,6,7,8];
+var jakoluku = 3;
+
+// Jaetaan lista osiin (jokainen osa on uusi *lista*) siten, että 
+// kukin osa sisältää *jakoluvun* verran elementtejä.
+
+var jaettulista = [];
+
+for (var i = 0, j = lista.length; i &lt; j; i++) {
+  var elementti = lista[i];
+
+  // Jos i on tasajaollinen jakoluvulla,
+  // on aika aloittaa uusi osalista.
+  if (i % jakoluku === 0) {
+    // i on joko 0, 3, 6, 9, ...jne.
+    // Luodaan uusi osalista ja lisätään elementti siihen
+    jaettulista.push([elementti]);
+  }  
+
+  // Jos ei ole tasajaollinen,
+  // lisätään elementti tuoreimpaan osalistaan.
+  else {
+    // Lisätään elementti olemassaolevaan osalistaan
+    jaettulista[jaettulista.length-1].push(elementti);
+  }	
+} 
+
+console.log(jaettulista); // [[1,2,3], [4,5,6], [7,8]]
+
+</code></pre>
+
+<p>Saman saa aikaan Lodashin <strong>.chunk()</strong> metodilla näin:</p>
+
+<pre><code class="language-javascript">var lista = [1,2,3,4,5,6,7,8];
+var jakoluku = 3;
+var jaettulista = _.chunk(lista, jakoluku);
+console.log(jaettulista); // [[1,2,3], [4,5,6], [7,8]]
+
+</code></pre>
+
+<p>Ero on kuin yöllä ja päivällä.</p>
+
+<p>Niin hieno kuin lodash onkin, siinä on puutteensa. <strong>Tai näin minä luulin vähintään vuoden päivät</strong>. Kunnes hoksasin dokumentaatiota lukemalla, että puute olikin vain illuusio. Löysin metodin nimeltä <em>chain</em>.</p>
+
+<h3 id="chain-mihin-sitä-tarvitaan">Chain() - mihin sitä tarvitaan?</h3>
+
+<p>Kuvitellaanpa seuraavanlainen korkean tason algoritmi:</p>
+
+<blockquote>
+<p>Alkuasetelma: meillä on lista desimaalilukuja</p>
+
+<p>Algoritmi:</p>
+
+<ol>
+<li><p>Pyöristä luvut tasaluvuiksi.</p></li>
+
+<li><p>Poista kaikki nollat.</p></li>
+
+<li><p>Kerro luvut yhteen.</p></li>
+</ol>
+</blockquote>
+
+<p>Ylläoleva algoritmi näyttää lodashin avulla <em>naivisti</em> toteutettuna seuraavanlaiselta:</p>
+
+<pre><code class="language-javascript">
+var lista = [1.9, 2.0, 2.1, 0.2];
+
+var pyoristetyt = _.map(lista, Math.round);
+var nollatPois  = _.compact(pyoristetyt);
+var tulo = _.reduce(nollatPois, function(t, luku) {
+  return t * luku;
+}, 1);
+
+// Välivaiheiden tulokset
+console.log(pyoristetyt); // [2,2,2,0]
+console.log(nollatPois); // [2,2,2]
+// Lopullinen tulos eli lukujen tulo
+console.log(tulo); // 8
+
+</code></pre>
+
+<p>Ylläoleva on ihan kiva, mutta huomion arvoista on, että joudumme käyttämään paljon väliaikaisia muuttujia. Välivaiheiden muuttujat <em>pyoristetyt</em> ja <em>nollatPois</em> ovat tälläisiä - algoritmi tallentaa niihin välitulokset, mutta loppukäyttäjä on kiinnostunut vain <em>tulo</em>-muuttujasta.</p>
+
+<p>Yksi ratkaisu on jättää välimuuttujat pois:</p>
+
+<pre><code class="language-javascript">
+var lista = [1.9, 2.0, 2.1, 0.2];
+
+var tulo = _.reduce(_.compact(_.map(lista, Math.round)), function(t, luku) {
+  return t * luku;
+}, 1);
+
+console.log(tulo); // 8
+
+</code></pre>
+
+<p>Ylläoleva lyhempää koodirivien määrää huomattavasti, mutta <strong>vaikeuttaa koodinlukua</strong>. Se näyttää rumalta, ja on vaikea pysyä silmämääräisesti kärryillä siitä, mitkä sulkumerkit muodostavat parin.</p>
+
+<p>Eli trade-off; koodin rivimäärä pieneni, mutta koodinluku vaikeutui merkittävästi.</p>
+
+<p>Mutta meillä on parempikin ratkaisu. Käytetään <strong>chain</strong>-apumetodia.</p>
+
+<h3 id="chain-the-best-of-both-worlds">Chain() - the best of both worlds</h3>
+
+<p>Tässä on chainin varaan tukeutuva ratkaisu:</p>
+
+<pre><code class="language-javascript">
+var lista = [1.9, 2.0, 2.1, 0.2];
+
+var tulo = _
+.chain(lista)
+.map(Math.round)
+.compact()
+.reduce(function(t, luku) {
+  return t * luku;
+}, 1)
+.value();
+
+console.log(tulo); // 8
+
+</code></pre>
+
+<p>Ylläoleva chain-metodiin perustuva ratkaisu vaikuttaa selkeältä voitolta. Se on äärimmäisen helppolukuinen, sillä jokainen uusi metodikutsu alkaa omalta riviltään. Samaan aikaan välimuuttujia ei tarvita! Eli win-win.</p>
+
+<p>Miten chain() toimii pinnan alla? Se muuntaa annetun argumentin (tässä <em>lista</em>) sellaiseen muotoon, että sitä voidaan <strong>juoksuttaa</strong> pitkin ketjua. Sillä chain()-metodi aloittama metodikutsujen sarja voidaan ajatella ketjuna, tai putkena. Tai liukuhihnana. Kukin metodi saa sisäänsä argumentin, muokkaa tuota argumenttia jotenkin, ja pötkäyttää ulos muokatun version argumentista. Seuraava putkenpalanen saa sisälleen tuon muokatun version, ja niin edelleen.</p>
+
+<p>Putken/liukuhihnan loppupäädyssä kutsumme metodia <em>value()</em>, joka hakee lopullisen palautusarvon.</p>
+
+<p>Kyseessä on erittäin vahva ja ennenkaikkea modulaarinen koodaustapa. Ketjuta funktiokutsut ja juoksuta haluamasi dataa ketjun lävitse. Yhdestä päästä menee raaka-aineet sisään, toisesta päästä tulee valmis tuote ulos.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

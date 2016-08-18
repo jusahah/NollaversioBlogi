@@ -1,0 +1,255 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Suojaa tuloväylät - mutta miten? &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Suojaa tuloväylät - mutta miten?</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Wed, Jul 20, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Tyypillinen web-applikaatio ottaa vastaan monenlaista palvelupyyntöä. Osa pyynnöistä tulee rekisteröityneiltä käyttäjiltä, osa vierailta, osa hakkereilta, osa sisältää dataa, osa ei.</p>
+
+<p>Kaiken tämän keskellä applikaatio tulisi kehittää niin, että jokainen sisääntuloväylä on suojattu asianmukaisesti. Eli portti on kunnossa ja pysyy kiinni esim. SQL-injektioille.</p>
+
+<p>Helppo, nopea tapa huolehtia suojauksesta on jokaisen tuloväylän portilla tarkistaa, että asianmukaiset paperit ovat mukana:</p>
+
+<h3 id="versio-1">versio 1</h3>
+
+<pre><code class="language-php">
+// AdminController.php
+
+public function store(Request $request) {
+	$this-&gt;tarkistaAdminOikeudet();
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function index(Request $request) {
+	$this-&gt;tarkistaAdminOikeudet();
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function list(Request $request) {
+	$this-&gt;tarkistaAdminOikeudet();
+
+	// Kaikki hyvin, käsittele request
+}
+
+private function tarkistaAdminOikeudet() {
+	if (Auth::user()-&gt;isNotAdmin()) {
+		throw new Exception(&quot;Admin-oikeudet puuttuvat!&quot;);
+	}
+}
+
+</code></pre>
+
+<p>Ylläolevasta heti nähdään, että jotain on pielessä. Sama admin-tarkistus joudutaan tekemään kolmesti eri kohdissa.</p>
+
+<p>Huomattavasti paremman ratkaisun tarjoaa konstruktori-metodi, joka mahdollistaa kaikille public-metodeille <em>yhteisen</em> tarkistuksen määrittämisen. Eli:</p>
+
+<h3 id="versio-2">versio 2</h3>
+
+<pre><code class="language-php">
+// AdminController.php
+
+public function __construct(Request $request) {
+
+	$this-&gt;tarkistaAdminOikeudet();
+}
+
+public function store(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function index(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function list(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+private function tarkistaAdminOikeudet() {
+	if (Auth::user()-&gt;isNotAdmin()) {
+		throw new Exception(&quot;Admin-oikeudet puuttuvat!&quot;);
+	}
+}
+
+</code></pre>
+
+<p>Kuten huomaamme, duplikaatio poistui. Tarkistus tehdään vain yhdessä pisteessä.</p>
+
+<p>Mutta miksi turhaan edes keksiä pyörää uudestaan? Laravel tarjoaa &ldquo;Middleware&rdquo;-nimisen konseptin käyttöömme. Middleware on käytännössä yksi ylimääräinen kerros internetin ja applikaatiosi välissä. Tuo ylimääräinen &ldquo;rasvakerros&rdquo; soveltuu hyvin admin-tarkistuksen suorituspisteeksi.</p>
+
+<h3 id="versio-3">versio 3</h3>
+
+<p>// Middleware/TarkistaAdmin.php</p>
+
+<pre><code class="language-php">
+class TarkistaAdmin
+{
+
+    public function handle($request, Closure $next)
+    {
+        if (Auth::user()-&gt;isNotAdmin()) {
+        	// Ohjataan käyttäjä kirjautumissivulle.
+            return redirect('kirjaudu_sisaan');
+        }
+
+        // Kaikki ok!
+        // Muu applikaatio voi luottaa että käyttäjällä on tarvittavat oikeudet!
+
+        return $next($request);
+    }
+
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+// AdminController.php
+
+public function __construct(Request $request) {
+
+	$this-&gt;middleware('tarkistaAdmin')
+}
+
+public function store(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function index(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function list(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+</code></pre>
+
+<p>Tämä on jo varsin pätevä ratkaisu. Ensinnäkin admin-tarkistuksen logiikka elää nyt poissa AdminControllerista. Tämä on ihan hyvä, sillä oletettavasti joku muukin komponentti applikaatiossa on kiinnostunut tekemään admin-tarkistuksia. Kun admin-tarkistus elää middleware-kerroksessa, se on kaikkien applikaation osasten käytettävissä.</p>
+
+<p>Noin muutenkin on järkevintä tsekata admin-oikeudet mahdollisimman aikaisin. Tilanne on vastaava kuin lentokentällä - turvatarkastus tapahtuu <em>keskitetysti</em> ennen lähtöporteille siirtymistä. Millainen sotku syntyisi, jos turvatarkastus järjestettäisiin kunkin lähtöportin edessä erikseen? Aikamoinen.</p>
+
+<p>Sama konsepti pätee web-applikaatioon - mitä aiemmin tarkastukset tehdään, sitä parempi. Aikainen tarkastus selkeyttää kaikkien osapuolten toimintaa. Lentokentälläkin on helpompi kuljeskella, kun turvatarkastus on rajattu tietylle alueelle.</p>
+
+<p>Laravellin middleware-konsepti lisää myös uusia mahdollisuuksia valikoimaamme. Voimme esimerkiksi määrittää suoraan konstruktorissa, mille kaikille sisääntuloväylille (eli public metodeille) haluamme middleware-suojauksen pätevän.</p>
+
+<pre><code class="language-php">
+// AdminController.php
+
+public function __construct(Request $request) {
+
+	$this-&gt;middleware('tarkistaAdmin', ['only' =&gt; [
+		'store',
+		'update'
+	]]);
+}
+
+public function store(Request $request) {
+
+	// SUOJATTU!
+}
+
+public function update(Request $request) {
+
+	// SUOJATTU!
+}
+
+public function index(Request $request) {
+
+	// EI SUOJATTU!
+}
+
+public function list(Request $request) {
+
+	// EI SUOJATTU!
+}
+
+</code></pre>
+
+<p>Kätevää, varsin kätevää. Esimerkin <em>only</em>-attribuutin lisäksi meillä on käytössämme <em>except</em>-attribuutti, joka
+toimii nimensä mukaisesti - se suojaa kaikki muut väylät paitsi erikseen <em>except</em>:in perässä määritellyt.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

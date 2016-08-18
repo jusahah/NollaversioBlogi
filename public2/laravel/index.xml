@@ -1,0 +1,2045 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Laravels on Nollaversio IT</title>
+    <link>http://nollaversio.fi/blog/public/laravel/</link>
+    <description>Recent content in Laravels on Nollaversio IT</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fi-fi</language>
+    <lastBuildDate>Wed, 17 Aug 2016 03:40:31 +0300</lastBuildDate>
+    <atom:link href="http://nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Require vs Include</title>
+      <link>http://nollaversio.fi/blog/public/laravel/require-vs-include/</link>
+      <pubDate>Wed, 17 Aug 2016 03:40:31 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/require-vs-include/</guid>
+      <description>
+
+&lt;p&gt;PHP:ssa on mahdollisuus &lt;em&gt;sisällyttää&lt;/em&gt; yhden tiedoston koodipätkä toisen tiedoston sisälle skriptiä ajettaessa. Tämä sisällytys onnistuu joko &lt;em&gt;require&lt;/em&gt; tai &lt;em&gt;include&lt;/em&gt; komennoilla:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Auto.php
+
+require &#39;Ratti.php&#39;;
+
+class Auto {
+  public function __construct(Ratti $ratti, $autoMerkki) {...}
+  //...
+}
+
+$volvo = new Auto(new Ratti, &#39;Volvo&#39;);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Ratti.php
+
+class Ratti {
+	//...
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;tai&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Auto.php
+
+include &#39;Ratti.php&#39;;
+
+class Auto {
+  public function __construct(Ratti $ratti, $autoMerkki) {...}
+  //...
+}
+
+$volvo = new Auto(new Ratti, &#39;Volvo&#39;);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Ratti.php
+
+class Ratti {
+	//...
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yllä koodiesimerkit eroavat toisistaan vain yhden rivin suhteen; ensimmäinen esimerkki turvautuu PHP:n komentosanaan &lt;em&gt;require&lt;/em&gt;, jälkimmäinen esimerkki käyttää termiä &lt;em&gt;include&lt;/em&gt;. Mitä eroa näillä kahdella on?&lt;/p&gt;
+
+&lt;h3 id=&#34;require-vs-include&#34;&gt;Require vs. include&lt;/h3&gt;
+
+&lt;p&gt;On ensin syytä ymmärtää näiden kahden termin yhtäläisyys; molemmat tuovat ulkoisen tiedoston sisältämän koodin osaksi sitä tiedostoa, jossa termi sijaitsee.&lt;/p&gt;
+
+&lt;p&gt;Ne siis käytännössä &lt;em&gt;copypastaavat&lt;/em&gt; palan koodia tismalleen siihen kohtaan, jossa require/include-termiä käytetään.&lt;/p&gt;
+
+&lt;p&gt;Kahden termin välinen ero on yksikertainen.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Require vaatii, että copypastattava tiedosto on olemassa.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Include EI vaadi copypastattavan tiedoston olemassaoloa.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Require on siis hiukka tiukkapipoisempi versio include-käskystä. Mutta mitä tarkoittaa &amp;ldquo;vaatia tiedoston olemassaolo&amp;rdquo;?&lt;/p&gt;
+
+&lt;p&gt;Se tarkoittaa yksinkertaisesti sitä, että jos &lt;em&gt;require&lt;/em&gt; yrittää sisällyttää olemattoman tiedoston, PHP-skripti räjähtää käsiin. Teknisesti tarkempi termi tälle posahtamiselle on keskeyttää skriptin suoritus virhekoodilla &amp;ldquo;Fatal error&amp;rdquo;. Yhtäkaikki, asiat menevät päin honkia.&lt;/p&gt;
+
+&lt;p&gt;Jos puolestaan &lt;em&gt;include&lt;/em&gt; yrittää sisällyttää olemattoman tiedoston, PHP-skripti ei räjähdä käsiin, vaan jatkaa suoritustaan kuin mitään ei olisi tapahtunut.&lt;/p&gt;
+
+&lt;p&gt;Tästä kaikesta herää kysymys; jos haluamme sisällyttää yhden kooditiedoston sisältämän koodin osaksi toista tiedostoa, kaipa me vaadimme tuon tiedoston olemassaolon?&lt;/p&gt;
+
+&lt;p&gt;Asia ei aina välttämättä ole näin. Esimerkkinä tilanne, jossa meillä on tietyt vakioasetukset PHP-skriptillemme. Nuo vakioasetukset määritetään koko applikaation elinkaaren ensihetkillä.&lt;/p&gt;
+
+&lt;p&gt;Vakioasetukset voidaan kuitenkin ylikirjoittaa erillisen &lt;em&gt;asetustiedoston&lt;/em&gt; avulla. Jos asetustiedosto on olemassa, sen sisältämä koodi &lt;em&gt;korvaa&lt;/em&gt; vakioasetukset omilla asetuksillaan.&lt;/p&gt;
+
+&lt;p&gt;Jos asetustiedostoa ei ole olemassa, vakioasetukset jäävät voimaan.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevan esimerkin mukaisen rakenteen voi toteuttaa &lt;em&gt;include&lt;/em&gt;-käskyllä näin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// applikaatio.php
+
+// Vakioasetukset
+$tcpPortti = &amp;quot;8080&amp;quot;;
+$tcpTimeout = 5000;
+
+// Tuodaan sisään korvaavat asetukset sisältävä tiedosto
+// HUOM! Jos tiedosto ei ole olemassa, mitään ei tapahdu
+// ja vakioasetukset jäävät voimaan!
+include &amp;quot;kayttajan_asetukset.php&amp;quot;;
+
+// ... rakenna applikaatio yms. käyttäen yllämääriteltyjä asetuksia
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// kayttajan_asetukset.php
+
+// Käyttäjän erilliset, korvaavat asetukset
+$tcpPortti = &amp;quot;3000&amp;quot;;
+$tcpTimeout = 12000;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Jos &lt;em&gt;kayttajan_asetukset.php&lt;/em&gt;-tiedostoa ei ole olemassa, vakioasetukset jäävät voimaan. Jos tuo tiedosto on olemassa, käyttäjän omat asetukset korvaavat (muuttujat alustetaan uusiin arvoihin!) vakioasetukset.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Include-käsky on toimiva tapauksissa, joissa sisällytettävä koodi &lt;em&gt;tuo valinnaisia lisäominaisuuksia&lt;/em&gt; ympäröivän koodin käyttöön.&lt;/p&gt;
+
+&lt;p&gt;Require-käsky on asianmukainen tapauksissa, joissa sisällytettävä koodi on elintärkeä applikaation toiminnan kannalta, ja tiedoston puuttuminen on syytä nähdä virhetilanteena.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Yksikkötestaus ja tietokanta-transaktio</title>
+      <link>http://nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</link>
+      <pubDate>Tue, 16 Aug 2016 06:37:20 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</guid>
+      <description>
+
+&lt;p&gt;Yksikkötestaus (engl. Unit Testing) on tehty Laravellissa helpoksi. Ei muuta kuin määrittää testiluokan, ja pinnan alla testiajuri hoitaa loput.&lt;/p&gt;
+
+&lt;p&gt;Tähän tyyliin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class LentokoneTesti extends TestCase {
+	
+  public function lentokoneella_on_kaksi_siipea() {
+    // Oletetaan, että meillä on Lentokone-malli olemassa.
+    $lentokone = new LentoKone()
+
+    // Varmistetaan, että siipien lkm on kaksi.
+    $this-&amp;gt;assertEquals($lentokone-&amp;gt;siivet-&amp;gt;count(), 2);
+
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kaikki hyvin yllä. Luomme Eloquent-mallin pohjalta objektin nimeltä &lt;em&gt;lentokone&lt;/em&gt;, ja tarkistamme, että tuolla lentsikalla on kaksi kpl siipiä.&lt;/p&gt;
+
+&lt;p&gt;Huomionarvoista on, että ylläolevassa testissä emme käytä tietokantaa lainkaan. Tämä on ihanteellista. Mutta joissain testeissä on kovin vaikea välttää tietokannan käyttöä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class LentokenttaTesti extends TestCase {
+	
+public function kentta_evaa_laskeutumisluvan_jos_kiitoradat_taynna() {
+
+  $helsinkiVantaa = Lentokentta::create([&#39;kiitoradat&#39; =&amp;gt; [
+    &#39;itäinen&#39;, &#39;läntinen&#39;, &#39;pohjoinen&#39;
+  ]]);
+
+  // Luodaan neljä kappaletta lentokoneita
+  // Laravellin factory-apumetodi auttaa.
+  factory(Lentokone::class, 4)-&amp;gt;create();
+
+  // Lentokoneet ja lentokenttä on lisätty tietokantaan! 
+  // Toisin sanoen, meidän on käytettävä tietokantaa suorittaaksemme testin loppuosan.
+
+  // Varmistetaan, että lentokoneet tosiaan ovat tietokannassa.
+  $koneet = Lentokone::all();
+
+  // Lentokoneita tulisi siis olla neljä kpl
+  $this-&amp;gt;assertEquals($koneet-&amp;gt;count(), 4);
+
+  // Assignoidaan kullekin koneelle yksi kiitorata laskeutumiseen.
+  $helsinkiVantaa-&amp;gt;assignoiKiitorata($koneet[0]);
+  $helsinkiVantaa-&amp;gt;assignoiKiitorata($koneet[1]);
+  $helsinkiVantaa-&amp;gt;assignoiKiitorata($koneet[2]);
+
+  // Nyt Helsinki-Vantaan kaikki kolme kiitorataa ovat käytössä, joten
+  // viimeinen kone EI voi saada omaa kiitorataansa.
+
+  // Varmistetaan, että lentokenttä ei sisällä vapaita kiitoratoja.
+  $this-&amp;gt;assertEquals($helsinkiVantaa-&amp;gt;vapaatKiitoradat()-&amp;gt;count(), 0);
+
+  // Varmistetaan, että yritys assignoida olematon kiitorata johtaa virhetilanteeseen!
+  // (En ole itsekään ihan varma miten tämä toteutetaan, mutta jotenkin seuraavasti...)
+  $this-&amp;gt;expectException(EiVapaitaKiitoratoja::class);
+
+  $helsinkiVantaa-&amp;gt;assignoiKiitorata($koneet[3]);
+
+  // Nyt äskettäin asetetun exception handlerin tulisi olla lauennut.
+
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva testi käyttää tietokantaa. Ensin se luo tietokantaan yhden lentokentän ja neljä lentokonetta. Sen jälkeen testi suorittaa testilogiikan tietokantaan turvautuen.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevan ongelma on, että kun testi on valmis, testin aikana luodut objektit jäävät lojumaan tietokantaan. Tämä on epämieluisa tilanne. Parhaimmillaan se on pelkkä suorituskykyongelma, pahimmillaan se johtaa tilanteisiin, joissa testi menee pieleen koska tietokanta sisältää ennalta-arvaamatonta roskaa.&lt;/p&gt;
+
+&lt;h3 id=&#34;use-databasetransactions&#34;&gt;Use DatabaseTransactions&lt;/h3&gt;
+
+&lt;p&gt;Tietokannan resetointi testin jälkeen on helppoa. Suorastaan laittoman helppoa. Lisätään vain yksi rivi koodia:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class LentokenttaTesti extends TestCase {
+
+  // Uusi rivi
+  use DatabaseTransactions;
+	
+  public function kentta_evaa_laskeutumisluvan_jos_kiitoradat_taynna() {
+
+    // Kuten aiemmin
+
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Lisäämällä rivin &lt;em&gt;use DatabaseTransactions&lt;/em&gt; Laravel-kehys huolehtii omatoimisesti tietokannan putsaamisesta testin päätteeksi.&lt;/p&gt;
+
+&lt;p&gt;DatabaseTransactions on siis &lt;em&gt;Trait&lt;/em&gt;, joka käytännössä copypastaa &lt;em&gt;LentokenttaTesti&lt;/em&gt;-luokkaan sopivat putsaustoiminnot. Testi suorituu nyt näin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class LentokenttaTesti extends TestCase {
+
+  use DatabaseTransactions;
+	
+  public function kentta_evaa_laskeutumisluvan_jos_kiitoradat_taynna() {
+
+    // Puhdas tietokanta
+
+    // Kuten aiemmin, luodaan objekteja tietokantaan.
+    // Sitten testataan, testataan niin pirusti.
+
+    // Tyhjennä tietokanta
+
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Varsin kätevää.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Tietokannan resetointi alkuperäiseen tilaan noudattaa nk. &amp;ldquo;same world&amp;rdquo;-periaatetta. Periaate tarkoittaa, että tietty testi ajetaan aina vakioidussa ympäristössä. Tässä tapauksessa tuo vakioympäristö on tyhjä tietokanta.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Emailin lähetys Laravellista</title>
+      <link>http://nollaversio.fi/blog/public/laravel/email-laravel/</link>
+      <pubDate>Mon, 15 Aug 2016 06:15:21 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/email-laravel/</guid>
+      <description>
+
+&lt;p&gt;Moni web-applikaatio joutuu lähettämään sähköposteja. Tyypillinen tarve sähköpostin lähetykselle syntyy käyttäjän rekisteröityessä applikaatioon; jonkinlainen tervetuloviesti olisi mukava lähettää käyttäjän suuntaan, jotta hän tuntisi olonsa tervetulleeksi.&lt;/p&gt;
+
+&lt;p&gt;Laravel tekee emailin puskemisesta eetteriin erittäin helppoa. Otetaan esimerkiksi &lt;em&gt;lottoapplikaatio&lt;/em&gt;, joka arpoo kerran viikossa lottovoittajan kaikkien osallistujien joukosta. (Tässä esimerkissä ei siis arvota numeroita, vaan valitaan satunnaisesti yksi voittaja suuresta määrästä osallistujia).&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Lotto.php
+
+public function valitseVoittaja(array $osallistujat) {
+  // Arvo voittaja satunnaisesti
+  $voittaja = $osallistujat-&amp;gt;random();
+  // Lähetä voittajalle onnittelu-sähköposti
+  Mail::raw(&#39;Olet voittanut jotain!&#39;, function($email) use ($voittaja) {
+    $email-&amp;gt;from(&#39;lotto@veikkaus.fi&#39;, &#39;Veikkaus&#39;);
+    // Voittajan email-osoite on tallennettu osaksi käyttäjä-objektia
+    $email-&amp;gt;to($voittaja-&amp;gt;email);
+  });
+	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva koodinpätkä arpoo voittajan, ja lähettää hänelle onnitteluviestin käyttäen &lt;em&gt;Mail::raw()&lt;/em&gt;-metodia. Mail::raw() yksinkertaisesti lähettää email-viestin pelkkänä leipätekstinä. Viestin voi lähettää myös HTML-muotoilun kera:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Lotto.php
+
+public function valitseVoittaja(array $osallistujat) {
+  // Arvo voittaja satunnaisesti
+  $voittaja = $osallistujat-&amp;gt;random();
+  // Lähetä voittajalle onnittelu-sähköposti
+  Mail::send(&#39;emails.voitto&#39;, [&#39;voittaja&#39; =&amp;gt; $voittaja] function($email) use ($voittaja) {
+    $email-&amp;gt;from(&#39;lotto@veikkaus.fi&#39;, &#39;Veikkaus&#39;);
+    // Voittajan email-osoite on tallennettu osaksi käyttäjä-objektia
+    $email-&amp;gt;to($voittaja-&amp;gt;email);
+  });
+	
+}
+
+
+// Views/emails/voitto.blade.php
+
+&amp;lt;h1&amp;gt;Olet voittanut jättipotin!&amp;lt;/h1&amp;gt;
+&amp;lt;p&amp;gt;Onnittelut {{$voittaja-&amp;gt;etunimi}}, olet juuri rikastunut oikein urakalla.&amp;lt;/p&amp;gt;
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;tukitoimenpide-vs-ydintoimenpide&#34;&gt;Tukitoimenpide vs. ydintoimenpide&lt;/h3&gt;
+
+&lt;p&gt;Ylläoleva koodaustyyli, jossa emailin lähetys suoritetaan suoraan arvontametodin sisältä, on ihan toimiva. Mutta on syytä tehdä pesäero ydintoimenpiteen ja tukitoimenpiteen välille.&lt;/p&gt;
+
+&lt;p&gt;Lottovoittajan arvonta on &lt;em&gt;ydintoimenpide&lt;/em&gt;. Ilman voittajan arvontaa koko lottoapplikaatio olisi aika turha.&lt;/p&gt;
+
+&lt;p&gt;Sähköpostin lähettäminen voittajalle taas voidaan nähdä joko &lt;em&gt;ydintoimenpiteenä&lt;/em&gt; tai &lt;em&gt;tukitoimenpiteenä&lt;/em&gt;. Minä näkisin sen &lt;em&gt;tukitoimenpiteenä&lt;/em&gt;. Ensinnäkin lottovoittaja tuskin on kiinnostunut siitä tavasta, jolla hänelle ilmoitetaan voitosta. Emailin lähettäminen on tässä mielessä toissijaista - oleellista on, että tieto jotenkin tavoittaa tulevan miljonäärimme.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevat ratkaisumme emailin lähettämiseen noudattivat kutakuinkin seuraavaa kaavaa:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Ydinmetodi&lt;/p&gt;
+
+&lt;p&gt;&amp;ndash; ydintoimenpide&lt;/p&gt;
+
+&lt;p&gt;&amp;ndash; tukitoimenpide&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Toisin sanoen, tukitoimenpiteet on yllä &lt;em&gt;ripoteltu&lt;/em&gt; ydintoimenpiteiden sekaan.&lt;/p&gt;
+
+&lt;p&gt;Toinenkin vaihtoehto on olemassa:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Ydinmetodi&lt;/p&gt;
+
+&lt;p&gt;&amp;ndash; ydintoimenpide&lt;/p&gt;
+
+&lt;p&gt;Tukimetodi&lt;/p&gt;
+
+&lt;p&gt;&amp;ndash; tukitoimenpide&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Jälkimmäisessä ratkaisussa ydintoimenpiteet - kuten arvonta, jonka suorittaminen oikeaoppisesti on ensiarvoisen tärkeää koko lottoapplikaation toiminnan kannalta - on eroteltu tukitoimenpiteistä. Kysymykseksi jää nyt, miten ydinmetodi saa kutsuttua/ilmoitettua tukimetodille, että tietty tukitoimenpide (tässä tapauksessa sähköpostin lähetys) on syytä suorittaa.&lt;/p&gt;
+
+&lt;p&gt;Paras tapa lienee eristää tukitoimenpiteet &lt;em&gt;Event Listener&lt;/em&gt;-objektin sisälle:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+/////////////////////////////
+// App/Events/ArvontaSuoritettu.php
+
+class ArvontaSuoritettu extends Event
+{
+
+    public $voittaja;
+
+    public function __construct(User $voittaja)
+    {
+        $this-&amp;gt;voittaja = $voittaja;
+    }
+}
+
+
+/////////////////////////////
+// App/Listeners/LahetaTietoVoittajalle.php
+
+class LahetaTietoVoittajalle
+{
+
+    public function __construct()
+    {
+
+    }
+
+    public function handle(ArvontaSuoritettu $arvontaInfo)
+    {
+      $voittaja = $arvontaInfo-&amp;gt;voittaja;	
+      // Lähetetään sähköposti voittajalle
+      Mail::raw(&#39;Olet voittanut jotain!&#39;, function($email) use ($voittaja) {
+        $email-&amp;gt;from(&#39;lotto@veikkaus.fi&#39;, &#39;Veikkaus&#39;);
+        // Voittajan email-osoite on tallennettu osaksi User-objektia
+        $email-&amp;gt;to($voittaja-&amp;gt;email);
+      });
+        
+    }
+}
+
+
+/////////////////////////////
+// Lotto.php
+
+public function valitseVoittaja(array $osallistujat) {
+  // Arvo voittaja satunnaisesti
+  $voittaja = $osallistujat-&amp;gt;random();
+
+  // Ilmoita muulle applikaatiolle, että voittaja on valittu!
+  // HUOM! Tämä metodi ei välitä siitä, lähetetäänkö voittajalle
+  // sähköposti, kirje vai vaikka savumerkki. Tämän metodin 
+  // ainoa vastuualue on ilmoittaa, että voittaja on valittu.
+
+  // Joku muu huolehtii voittajalle ilmoittamisesta.
+
+  // Luo event ja ammu se eetteriin.
+  event(new ArvontaSuoritettu($voittaja));
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva ratkaisu on hyvin erilainen alkuperäiseen verrattuna. &lt;strong&gt;Se näyttää monimutkaisemmalta, mutta ei ole.&lt;/strong&gt; Se on yksinkertaisempi, sillä vastuualueet elävät nyt omissa kivoissa lokeroissaan. Lottoarvonnan suorittava &lt;em&gt;valitseVoittaja&lt;/em&gt;-metodi ei räpellä sähköpostien kanssa - sen sijaan se yksinkertaisesti luo ohjelmistokehyksen &lt;em&gt;sisäisen tiedoksiannon&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tuo tiedoksianto kulkeutuu &lt;em&gt;LahetaTietoVoittajalle&lt;/em&gt;-kuuntelijan korviin, joka tiedoksiantoon perustuen luo ja lähettää sähköpostin.&lt;/p&gt;
+
+&lt;p&gt;Uusi jaottelu on täten selvä; ydinmetodi huolehtii ydintoimenpiteistä, ja tukimetodi (LahetaTietoVoittajalle::handle) huolehtii tukitoimenpiteistä.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: ydintoimenpiteiden ja tukitoimenpiteiden erottelu on usein järkevä tapa selkeyttää applikaation koodia.&lt;/p&gt;
+
+&lt;p&gt;Vaan kuinka hyödyllistä tuo jaottelu lopulta on?&lt;/p&gt;
+
+&lt;p&gt;Tilanne on sama kuin yritysmaailmassa. Nollaversio IT:n kaltaisessa pienessä nakkipuljussa yksi mies voi hoitaa niin markkinoinnin, ohjelmoinnin kuin laskutuksenkin. Suuressa pörssiyhtiössä yksi henkilö ei millään kykene hoitamaan kaikkia arkirutiineja, vaan vastuualueet on jaettava usean työntekijän kesken. Yksi toteuttaa asiakasprojektit (=ydintoimenpide), toinen pyörittää lakiosastoa (=tukitoimenpide), kolmas luuttuaa toimiston lattiat (=tukitoimenpide).&lt;/p&gt;
+
+&lt;p&gt;Eli mitä monimutkaisempi web-applikaatio on kyseessä, sitä tärkeämpää on tehdä pesäero ydintoimintojen ja tukitoimintojen välille.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Kuinka CSRF toimii?</title>
+      <link>http://nollaversio.fi/blog/public/laravel/csrf/</link>
+      <pubDate>Tue, 09 Aug 2016 06:07:23 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/csrf/</guid>
+      <description>
+
+&lt;p&gt;Lomakkeiden lähetys ja vastaanotto ovat tyypillisen web-applikaation tärkeimpiä vastuutehtäviä.&lt;/p&gt;
+
+&lt;p&gt;Lomakkeiden ja niiden datalähetysten suojaus on tärkeä aspekti turvallisen web-applikaation kannalta. Keskitytään tässä postauksessa yhteen suojamuuriin; CSRF-suojaukseen.&lt;/p&gt;
+
+&lt;h3 id=&#34;csrf&#34;&gt;CSRF&lt;/h3&gt;
+
+&lt;p&gt;CSRF tulee sanoista &amp;ldquo;Cross-Site Request Forgery&amp;rdquo;. Sanahirviö tarkoittaa yksinkertaisesti tilannetta, jossa &lt;em&gt;rikollinen käyttäjä&lt;/em&gt; huijaa web-applikaatiota luulemaan, että viesti tulee &lt;em&gt;rehelliseltä&lt;/em&gt; käyttäjältä.&lt;/p&gt;
+
+&lt;p&gt;Erityisesti tämä puijaus kohdistuu lomakkeiden lähetyksiin. Tyypillisellä web-applikaatiolla on oltava jokin tapa mahdollistaa käyttäjiensä tallettaa/muokata sisältöä.&lt;/p&gt;
+
+&lt;p&gt;Tuo sisältö voi olla blogipostauksia, pankkimaksuja, lentovarauksia, jne.&lt;/p&gt;
+
+&lt;p&gt;Useimmiten uuden sisällön luomista varten web-applikaatio tarjoaa lomakkeen, jonka täyttämällä ja lähettämällä sisällön luonti tapahtuu.&lt;/p&gt;
+
+&lt;p&gt;Otetaan esimerkkinä pankkisuorituksia hallinnoiva sivusto. Sivustolla voi tehdä tilisiirron täyttämällä lomake:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Lähettäjän tili:&lt;/p&gt;
+
+&lt;p&gt;Saaja:&lt;/p&gt;
+
+&lt;p&gt;Saajan tili:&lt;/p&gt;
+
+&lt;p&gt;Summa:&lt;/p&gt;
+
+&lt;p&gt;Viesti:&lt;/p&gt;
+
+&lt;p&gt;Eräpäivä:&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Lomakkeen alla on &amp;ldquo;Maksa&amp;rdquo;-nappula, jota painamalla lähetys lähtee liikkeelle.&lt;/p&gt;
+
+&lt;p&gt;Ongelmaksi ylläolevassa muodostuu, että kuka tahansa voi luoda ylläolevan kaltaisen datapaketin, ja lähettää sen nettipankkiapplikaation suuntaan. Esimerkiksi minä voisin luoda seuraavanlaisen lähetyksen:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Lähettäjän tili: Kimi Räikkönen FI00112233-4&lt;/p&gt;
+
+&lt;p&gt;Saaja: Jussi Hämäläinen&lt;/p&gt;
+
+&lt;p&gt;Saajan tili: FI22334455-6&lt;/p&gt;
+
+&lt;p&gt;Summa: 1000&lt;/p&gt;
+
+&lt;p&gt;Viesti: Jäätelöraha&lt;/p&gt;
+
+&lt;p&gt;Eräpäivä: 9.8.2016&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Nettipankkiapplikaatio vastaanottaa ylläolevan lomakelähetyksen. Mitä tapahtuu vastaanoton jälkeen?&lt;/p&gt;
+
+&lt;p&gt;Ei mitään, sillä käyttäjä &amp;ldquo;Kimi Räikkönen&amp;rdquo; ei ole kirjautunut sisään. Eli tilisiirtoa ei tapahdu. Huomioitavaa on, että Räikkösen sisäänkirjautuminen ei vaikuta CSRF-suojauksen toimintaan.&lt;/p&gt;
+
+&lt;p&gt;Vain sisäänkirjautuneet käyttäjät voivat luoda tilisiirtoja, joissa &amp;ldquo;Lähettäjän tili&amp;rdquo; on oma tili.&lt;/p&gt;
+
+&lt;p&gt;Mutta mennään askel pidemmälle. Kuvitellaan, että olen &lt;em&gt;jotenkin&lt;/em&gt; onnistunut injektoimaan skriptin nettipankin käyttöliittymään.&lt;/p&gt;
+
+&lt;p&gt;Tällä tarkoitan, että kun nettipankin käyttöliittymäsivu rakennetaan HTML-koodista, olen jollain tavalla onnistunut työntämään tuohon rakennusvaiheeseen palan painikkeeksi haluamaani koodia.&lt;/p&gt;
+
+&lt;p&gt;Ilmiöstä käytetään nimitystä XSS (Cross-Site Scripting).&lt;/p&gt;
+
+&lt;p&gt;XSS:n avulla kykenen toteuttamaan seuraavanlaisen tempun. Seuraavan kerran kun Kimi Räikkönen - siis oikea Kimi, joka tietää omat pankkitunnuksensa - loggautuu nettipankkijärjestelmään sisään ja siirtyy maksusuoritusten luomissivulle, &lt;strong&gt;minun&lt;/strong&gt; määrittämä koodinpätkäni suoritetaan Räikkösen tietokoneen web-selaimessa.&lt;/p&gt;
+
+&lt;p&gt;Mitä tuo minun määrittämä koodinpätkä tekee?&lt;/p&gt;
+
+&lt;p&gt;Se lähettää lomakelähetyksen (kuten yllä, jossa Räikkönen vippasi minulle tonnin jäätelörahaa) nettipankin suuntaan.&lt;/p&gt;
+
+&lt;p&gt;Lomakelähetys saapuu nettipankin rajapintaan. Ja nyt tullaan tärkeään vaiheeseen: &lt;strong&gt;koska Kimi Räikkönen on kirjautunut sisään omilla oikeilla tunnuksillaan, nettipankki luulee, että Räikkönen toden totta on tuon tilisiirron takana&lt;/strong&gt;. Ja miksi ei luulisi?&lt;/p&gt;
+
+&lt;p&gt;Tilisiirron tiedot sisältävä lomakelähetys lähti liikkeelle Räikkösen tietokoneelta. Nettipankkiapplikaatio ei tiedä, että lähetyksen liikkeellelähdön sai aikaan &lt;em&gt;minun&lt;/em&gt; ohjelmoimani skripti, joka &lt;em&gt;ajettiin&lt;/em&gt; Räikkösen www-selaimen sisällä.&lt;/p&gt;
+
+&lt;p&gt;Nettipankille tilanne näyttää siltä, että Räikkönen täytti lomakkeen ja klikkasi &amp;ldquo;Maksa&amp;rdquo;-nappulaa.&lt;/p&gt;
+
+&lt;p&gt;Joten nettipankilla ei ole mitään syytä epäillä, etteikö lomakelähetys olisi aito. Siispä se tekee tilisiirron ja raha vaihtaa omistajaansa.&lt;/p&gt;
+
+&lt;h3 id=&#34;miten-csrf-suojaus-auttaa&#34;&gt;Miten CSRF-suojaus auttaa?&lt;/h3&gt;
+
+&lt;p&gt;CSRF-suojauksen ydinajatus on, että kun käyttäjälle tarjotaan lomaketta täytettäväksi, tuo lomake yksilöidään jollain tunnisteella. Myöhemmin web-applikaatio kykenee tämän yksilöidyn tunnisteen avulla varmistamaan, että saapuva lomakelähetys (esim. tilisiirron tiedot) on luotu asianmukaisesti.&lt;/p&gt;
+
+&lt;p&gt;Eli aiempi datalähetys&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Lähettäjän tili: Kimi Räikkönen FI00112233-4&lt;/p&gt;
+
+&lt;p&gt;Saaja: Jussi Hämäläinen&lt;/p&gt;
+
+&lt;p&gt;Saajan tili: FI22334455-6&lt;/p&gt;
+
+&lt;p&gt;Summa: 1000&lt;/p&gt;
+
+&lt;p&gt;Viesti: Jäätelöraha&lt;/p&gt;
+
+&lt;p&gt;Eräpäivä: 9.8.2016&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;menee nyt muotoon&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;_CSRF: ejse72Hja7299391Jkla28&lt;/p&gt;
+
+&lt;p&gt;Lähettäjän tili: Kimi Räikkönen FI00112233-4&lt;/p&gt;
+
+&lt;p&gt;Saaja: Jussi Hämäläinen&lt;/p&gt;
+
+&lt;p&gt;Saajan tili: FI22334455-6&lt;/p&gt;
+
+&lt;p&gt;Summa: 1000&lt;/p&gt;
+
+&lt;p&gt;Viesti: Jäätelöraha&lt;/p&gt;
+
+&lt;p&gt;Eräpäivä: 9.8.2016&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Kuten huomaamme yltä, lomakedatan yhteyteen on lisätty &amp;ldquo;_CSRF&amp;rdquo;-niminen lomakekenttä.
+Käytännössä web-applikaatio siis lähettää lomakesivun mukana CSRF-tunnisteen, ja myöhemmin vastaanottaa datan sisältäen CSRF-tunnisteen. &lt;strong&gt;Vain jos nämä kaksi CSRF-tunnistetta täsmäävät, applikaatio hyväksyy vastaanotetun datan&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Jos ne eivät täsmää, applikaatio kieltäytyy toimimasta.&lt;/p&gt;
+
+&lt;p&gt;Miksi CSRF-tunnisteiden täsmääminen ratkoo aiemman jäätelörahahuijauksen?&lt;/p&gt;
+
+&lt;p&gt;Yksikertaisesti siksi, että nettipankki osaa yhdistää tarjotun lomakkeen ja vastaanotetun lomakedatan toisiinsa. Täten jos minä XSS:n kautta lähetän tilisiirtolähetyksen (Räikkösen koneelta käsin, kiitos XSS:n), niin nettipankkiapplikaatio tekee seuraavan tarkistukset:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Tilisiirtolähetys lähti liikkeelle sisäänkirjautuneelta käyttäjältä - &amp;gt; check!&lt;/li&gt;
+&lt;li&gt;Tilisiirtolähetyksen CSRF-tunniste täsmää applikaation tallentaman tunnisteen kanssa -&amp;gt; fail!&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;CSRF-tunniste ei täsmää, sillä &lt;em&gt;minun etukäteen tuottamani&lt;/em&gt; lomakelähetys ei tiedä tuota tunnistetta. Tunniste luodaan jokaiselle lomakkeelle erikseen, ja se on satunnainen merkkijono.&lt;/p&gt;
+
+&lt;p&gt;Lopputulos siis on, että nettipankkiapplikaatio &lt;strong&gt;ei&lt;/strong&gt; tee tilisiirtoa, ja jään ilman jäätelörahaa.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: XSS:n avulla saattaa teoriassa olla mahdollista &lt;em&gt;selvittää&lt;/em&gt; CRSF-tunniste kesken hyökkäyksen. Tällöin CSRF-suojaus menettää tehonsa. Tämä vaatii, että XSS-hyökkääjällä on mahdollisuus ajaa mielivaltaista Javascript-koodia uhrinsa www-selaimessa.&lt;/p&gt;
+
+&lt;p&gt;Jos tätä mahdollisuutta ei ole, CSRF-suojaus toimii ja estää useimmat muunlaiset hyökkäysyritykset; esim. linkki-injektion, jossa rikollinen on &lt;em&gt;jotenkin&lt;/em&gt; saanut nettipankin käyttöliittymään lisättyä linkin, jota klikkaamalla etukäteen suunniteltu lomakedata lähtee salaa liikkeelle. Koska tuo etukäteen suunniteltu lomakedata ei voi mitenkään tietää ETUKÄTEEN sen hetkisen CSRF-tunnisteen merkkijonoa, CSRF-suojaus toimii ja rikollinen jää nuolemaan näppejään.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Näkymämalli (view model) helpottaa elämää</title>
+      <link>http://nollaversio.fi/blog/public/laravel/view-model-bliss/</link>
+      <pubDate>Thu, 04 Aug 2016 04:12:30 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/view-model-bliss/</guid>
+      <description>
+
+&lt;p&gt;Laravellin kaltainen laittoman hieno ohjelmistokehys hoitaa valtavan määrän abstraktioita koodarin puolesta. Sisääntulevan palvelunpyynnön hallinta, tietokantayhteyden hallinta, jne&amp;hellip; kaikki on valmiiksi pureskeltu, jotta ohjelmoijaparan ei tarvitse vaivata liiaksi päätään.&lt;/p&gt;
+
+&lt;p&gt;Mutta jotkin asiat Laravel jättää ohjelmoijan omien abstraktiovalintojen armoille. Yksi tälläinen on näkymämallin (engl. view model) konsepti.&lt;/p&gt;
+
+&lt;h3 id=&#34;näkymämalli-vs-malli&#34;&gt;Näkymämalli vs. malli?&lt;/h3&gt;
+
+&lt;p&gt;Ennenkuin keskitymme näkymämalliin, on syytä kerrata ns. &amp;ldquo;tavallisen mallin&amp;rdquo; - eli yksinkertaisesti &amp;ldquo;mallin&amp;rdquo; - olemassaolon tarkoitus.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Malli&lt;/em&gt; edustaa yksittäistä domain-tason objektia. Domain-tason objekti on yksinkertaisesti jokin applikaation ydintehtävän kannalta oleellinen objekti; esimerkiksi nettipankin taustajärjestelmässä tuollainen domain-objekti voisi olla &lt;em&gt;pankkitili&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Yksittäinen malli on ikäänkuin rakennepiirros (engl. blueprint) tuosta objektista; miltä objekti näyttää, mitä toimintoja se sisältää ja jne.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Englanniksi termi &amp;ldquo;model&amp;rdquo; tarkoittaa yleensä laajempaa kokonaisuutta kuin yksittäisen objektin rakennepiirrosta. Tässä yhteydessä käytämme käännöstermiä &amp;ldquo;malli&amp;rdquo; tarkoittamaan juurikin yksittäisen objektin &amp;ldquo;mallia&amp;rdquo;, eli rakennepiirrosta.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Tavallinen malli siis edustaa domain-objektia. Se kuvaa yksityiskohtaisesti, kuinka &lt;em&gt;ympäröivä applikaatio&lt;/em&gt; voi vuorovaikuttaa objektin kanssa. Esimerkiksi &lt;em&gt;pankkitili&lt;/em&gt;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Malli nimeltä &amp;quot;Pankkitili&amp;quot;
+
+// App/Models/Pankkitili.php
+
+class Pankkitili extends Model {
+	
+	public function haeSaldo() {};
+	public function talleta() {};
+	public function nosta() {};
+	public function tilinOmistaja() {};
+
+	// jne..
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;em&gt;Malli&lt;/em&gt; on useimmiten paras suunnitella niin, että se on ainoastaan kiinnostunut domain-tason asioista. Mitä tarkoitan tällä? Tarkoitan, että &lt;strong&gt;mallin tulisi olla autuaan tietämätön käyttöliittymän olemassaolosta.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Jos malli on autuaan tietämätön käyttöliittymän olemassaolosta, malli EI saa sisältää seuraavanlaisia metodeja:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Malli nimeltä &amp;quot;Pankkitili&amp;quot;
+
+// App/Models/Pankkitili.php
+
+class Pankkitili extends Model {
+	// Seuraavat metodit liittyvät käyttöliittymään!
+	// Mallin EI tulisi sisältää seuraavia metodeja, sillä ihannearkkitehtuurissa
+	// malli ei tiedä käyttöliittymän olemassaolosta hölkäsen pöläystä.
+
+	// Etunimi + sukunimi + asiakasnumero
+	public function printtaaOmistajanTiedot() {};
+	// Jos negatiivinen saldo, väri = punainen, muuten väri = vihreä
+	public function varitaSaldo() {};
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevan mallin metodit &lt;em&gt;printtaaOmistajanTiedot&lt;/em&gt; ja &lt;em&gt;varitaSaldo&lt;/em&gt; ovat nk. käyttöliittymämetodeja. Tarkoittaen, että niiden olemassaolon syy on yksinomaan tarjota &lt;em&gt;ihmiskäyttäjälle&lt;/em&gt; monipuolisempi ja visuaalisempi käyttöliittymä.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Itse applikaation ydintarkoituksen kannalta em. metodeilla ei ole osaa eikä arpaa.&lt;/strong&gt; Pankkijärjestelmä itsessään ei ymmärrä miksi ihmeessä negatiivinen saldo tulisi olla punaisella fontilla - vain ihmissilmä ymmärtää punaisen värin tarkoituksen.&lt;/p&gt;
+
+&lt;p&gt;Siksi metodit &lt;em&gt;printtaaOmistajanTiedot&lt;/em&gt; ja &lt;em&gt;varitaSaldo&lt;/em&gt; on syytä abstraktoida ulos &lt;em&gt;mallista&lt;/em&gt; ja siirtää &lt;em&gt;näkymämallin&lt;/em&gt; sisälle.&lt;/p&gt;
+
+&lt;h3 id=&#34;näkymämalli-huolehtii-datan-muokkauksesta-ihmissilmälle-sopivaksi&#34;&gt;Näkymämalli huolehtii datan muokkauksesta ihmissilmälle sopivaksi&lt;/h3&gt;
+
+&lt;p&gt;Näkymämallin tarkoitus on juurikin ottaa vastuulleen &lt;em&gt;mallin&lt;/em&gt; sisältämän datan muokkaus ihmissilmälle sopivaan muotoon. Kun näkymämalli vastaa visuaalisesta representaatiosta, varsinainen &lt;em&gt;malli&lt;/em&gt; voi keskittyä omaan ydintehtäväänsä, eli itse applikaation kanssa vuorovaikutukseen. Eli lyhyesti:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;em&gt;Malli&lt;/em&gt; keskittyy vuorovaikuttamaan applikaation kanssa.&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;Näkymämalli&lt;/em&gt; keskittyy vuorovaikuttamaan ihmiskäyttäjän kanssa.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Jatketaan pankkiesimerkkiämme. Malli on edelleen tämä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Malli nimeltä &amp;quot;Pankkitili&amp;quot;
+
+// App/Models/Pankkitili.php
+
+class Pankkitili extends Model {
+	
+	public function haeSaldo() {};
+	public function talleta() {};
+	public function nosta() {};
+	public function tilinOmistaja() {};
+
+	// jne..
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Luodaan mallin oheen näkymämalli, joka vastaa mm. saldon värittämisestä punaiseksi mikäli tili paukkuu pakkasella.&lt;/p&gt;
+
+&lt;p&gt;Näkymämallin nimeämisessä ohjenuorana on, että mallin nimen perään lisätään &amp;ldquo;Presenter&amp;rdquo;. Täten pankkitilin näkymämalli on &amp;ldquo;PankkitiliPresenter&amp;rdquo;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Näkymämalli nimeltä &amp;quot;PankkitiliPresenter&amp;quot;
+
+// App/ViewModels/PankkitiliPresenter.php
+
+class PankkitiliPresenter extends Model {
+	
+	public function printtaaOmistajanTiedot() {}	
+	public function varitaSaldo() {}
+
+	// jne..
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;käytännön-toteutus-miten-näkymämalli-saa-tietoonsa-mallin&#34;&gt;Käytännön toteutus - miten näkymämalli saa tietoonsa mallin?&lt;/h3&gt;
+
+&lt;p&gt;Yllä loimme pohjustukset kahdelle eri konseptille - malli ja näkymämalli. Loimme mallin nimeltä &lt;strong&gt;Pankkitili&lt;/strong&gt;, ja tuota mallia vastaavan &lt;em&gt;näkymämallin&lt;/em&gt; nimeltä &lt;strong&gt;PankkitiliPresenter&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Seuraavaksi näkymämalli tulee kytkeä yhteen mallin kanssa. &lt;strong&gt;Kytkentä on yhdensuuntainen.&lt;/strong&gt; Pankkitilin ei tarvitse tietää PankkitiliPresenterin olemassaolosta, mutta PankkitiliPresenterin tulee saada käyttöönsä Pankkitili.&lt;/p&gt;
+
+&lt;p&gt;Jos PankkitiliPresenter ei tiedä Pankkitilin olemassaolosta mitään, se ei myöskään voi kutsua Pankkitili-objektin metodeja. Ja PankkitiliPresenterin on pakko kutsua Pankkitilin metodeja, sillä esimerkiksi saldon väritys onnistuu vain jos tuo saldosumma on tiedossa.&lt;/p&gt;
+
+&lt;p&gt;Yksi hyvä tapa hoitaa kytkös on seuraava:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Malli nimeltä &amp;quot;Pankkitili&amp;quot;
+
+// App/Models/Pankkitili.php
+
+class Pankkitili extends Model {
+	
+	public function haeSaldo() {};
+	public function talleta() {};
+	public function nosta() {};
+	public function tilinOmistaja() {};
+
+	public function present() {
+		return new PankkitiliPresenter($this);
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class PankkitiliPresenter extends Model {
+
+	protected $tili;
+
+	public function __construct(Pankkitili $tili) {
+		$this-&amp;gt;tili = $tili;
+	}
+	public function printtaaOmistajanTiedot() {
+		// Varmista että nimet isolla alkukirjaimella.
+		return $this-&amp;gt;capitalize($this-&amp;gt;tili-&amp;gt;tilinOmistaja());
+	}	
+	public function varitaSaldo() {
+		$saldo = $this-&amp;gt;tili-&amp;gt;haeSaldo();
+		// Lisää väritys
+		if ($saldo &amp;lt; 0) {
+			return &#39;&amp;lt;div class=&amp;quot;red&amp;quot;&amp;gt;&#39; . $saldo . &#39;&amp;lt;/div&amp;gt;&#39;;
+		} else {
+			return &#39;&amp;lt;div class=&amp;quot;green&amp;quot;&amp;gt;&#39; . $saldo . &#39;&amp;lt;/div&amp;gt;&#39;;
+		}
+
+	}
+
+	// jne..
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa arkkitehtuurissa Pankkitili-malli sisältää erillisen &lt;em&gt;present&lt;/em&gt;-metodin. Tuo metodi palauttaa PankkitiliPresenter-objektin kutsujan käyttöön.&lt;/p&gt;
+
+&lt;p&gt;PankkitiliPresenter-objektia käyttämällä kutsuja saa luotua helposti HTML-koodin pätkän, joka sisältää saldosumman ja tarvittavan HTML-syntaksin tuon saldosumman värittämiseksi joko vihreäksi tai punaiseksi.&lt;/p&gt;
+
+&lt;p&gt;On huomattavaa, että esimerkiksi &lt;em&gt;varitaSaldo&lt;/em&gt;-metodissa PankkitiliPresenterin tulee kutsua Pankkitilin metodia. Tästä syystä PankkitiliPresenterillä tulee olla aina käytettävissään Pankkitili-objekti.&lt;/p&gt;
+
+&lt;p&gt;Valitsemassamme ratkaisussa tuo Pankkitili-objekti annetaan parametrinä PankkitiliPresenterin konstruktoriin.&lt;/p&gt;
+
+&lt;h3 id=&#34;näkymämallin-käyttö&#34;&gt;Näkymämallin käyttö&lt;/h3&gt;
+
+&lt;p&gt;Ylläolevan ratkaisumme käyttö on helppoa. Aina kun saatavillamme on Pankkitili, on saatavillamme myös PankkitiliPresenter, sillä Pankkitili-malli sisältää metodi PankkitiliPresenter-objektin luomiseen.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// views/Saldoikkuna.php
+
+// Oletetaan, että käytössämme on Pankkitili-objekti nimeltä $pankkitili.
+// Esim. Controllerissa olemme avanneet näkymän kutsulla: 
+// view(&#39;saldoikkuna&#39;)-&amp;gt;with(&#39;pankkitili&#39;, $pankkitili);
+
+&amp;lt;h1&amp;gt;Tämän hetkinen saldosi&amp;lt;/h1&amp;gt;
+&amp;lt;p&amp;gt;&amp;lt;?php echo $pankkitili-&amp;gt;present()-&amp;gt;varitaSaldo() ;?&amp;gt;&amp;lt;/p&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva koodi toimii mainiosti. Aina kun haluamme kutsua jotain PankkitiliPresenterin metodia, käytämme muotoa:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+$pankkitili-&amp;gt;present()-&amp;gt;metodi();
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: näkymämallin käytön koko ydinajatus on, että applikaation kannalta oleelliset toiminnot ja käyttöliittymän kannalta oleelliset toiminnot erotetaan toisistaan. Applikaatiota ei kiinnosta se, millä värisävylle negatiivinen saldo näytetään ihmissilmälle. Ihmissilmää tuo asia kiinnostaa.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Datan lähetys näkymään</title>
+      <link>http://nollaversio.fi/blog/public/laravel/view-composer/</link>
+      <pubDate>Wed, 03 Aug 2016 03:49:47 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/view-composer/</guid>
+      <description>
+
+&lt;p&gt;Laravellin kaltaisten täysiveristen ohjelmistokehysten yksi hienoimmista ominaisuuksista on &lt;em&gt;datan käsittelyn&lt;/em&gt; ja &lt;em&gt;datan näytön&lt;/em&gt; erottaminen. Laravellissa konseptit erotetaan toisistaan tiedostotasolla; datan käsittely - ns. bisneslogiikka - elää yhdessä tiedostossa, ja näyttölogiikka elää toisessa tiedostossa.&lt;/p&gt;
+
+&lt;p&gt;Bisneslogiikasta vastaava tiedosto olkoot kutsumanimeltään &lt;em&gt;model&lt;/em&gt;, näyttölogiikasta vastaavaa tiedostoa kutsukaamme nimellä &lt;em&gt;view&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Yleensä näiden kahden välissä istuu vielä kolmas konseptuaalinen palikka - tiedosto kutsumanimeltään &lt;em&gt;controller&lt;/em&gt;. Laravel-kehys perustaakin vahvasti toimintansa nk. MVC-periaatteeseen.&lt;/p&gt;
+
+&lt;p&gt;MVC:ssä osa-alueet &lt;strong&gt;model&lt;/strong&gt;, &lt;strong&gt;view&lt;/strong&gt; ja &lt;strong&gt;controller&lt;/strong&gt; erotetaan toisistaan. Erottelun ansiosta applikaation koodipohja on selkeämmin luettavissa ja muokattavissa.&lt;/p&gt;
+
+&lt;p&gt;Me yksinkertaistamme kolmijakoa hiukan ja muunnamme sen &lt;em&gt;kaksijaoksi&lt;/em&gt;; datan käsittely sisältää MC-kirjaimet, ja datan näyttö sisältää V-kirjaimen.&lt;/p&gt;
+
+&lt;p&gt;Tutkitaan kahta eri tapaa siirtää vastikään käsiteltyä dataa näkymän käytettäväksi:&lt;/p&gt;
+
+&lt;h3 id=&#34;tapa-1&#34;&gt;Tapa #1:&lt;/h3&gt;
+
+&lt;p&gt;Tapa 1 - siirretään data suoraan view-tiedoston käyttöön.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Controller.php
+
+public function index() {
+  // Hankitaan dataa jotenkin
+  $dataset = getDatasetSomehow();
+  // Siirretään data eksplisiittisesti view-tiedoston käyttöön.
+  return view(&#39;View&#39;)-&amp;gt;with(&#39;dataset&#39;, $dataset);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// View.php
+
+// Renderöidään data ihmiskäyttäjäm nähtäville.
+&amp;lt;?php echo $dataset; ?&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tapa 1 on suositelluin tapa. Kutakin näkymätiedostoa (view) otettaessa käyttöön määritämme samalla datan, jonka avulla näkymätiedosto renderöidään lopulliseksi HTML-koodiksi. Voimme vapaasti määrittää mitä dataa siirrämme näkymän käyttöön. Voimme myös käyttää samaa tiedostoa usean eri datapaketin renderöimiseen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Controller1.php
+
+public function index() {.
+  return view(&#39;View&#39;)-&amp;gt;with(&#39;dataset&#39;, 1);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Controller2.php
+
+public function index() {.
+  return view(&#39;View&#39;)-&amp;gt;with(&#39;dataset&#39;, 2);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Controller3.php
+
+public function index() {.
+  return view(&#39;View&#39;)-&amp;gt;with(&#39;dataset&#39;, 3);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Eri datapaketilla renderöidyt näkymät tuottavat eri HTML-koodit.&lt;/p&gt;
+
+&lt;h3 id=&#34;tapa-2-määritetään-globaalisti-näkymälle-tarjottava-data&#34;&gt;Tapa 2 - määritetään &lt;em&gt;globaalisti&lt;/em&gt; näkymälle tarjottava data&lt;/h3&gt;
+
+&lt;p&gt;Tapa nro. 1 on yleisin keino siirtää dataa näkymän käyttöön/näytettäväksi.&lt;/p&gt;
+
+&lt;p&gt;Mutta entä jos meillä on seuraavanlainen tilanne&amp;hellip; tietty näkymätiedosto renderöidään aina tietyn &lt;em&gt;vakiodatan&lt;/em&gt; turvin. Tämän vakiodatan lisäksi tuo näkymä ottaa vastaan myös &lt;em&gt;muuttuvaa dataa&lt;/em&gt;. Esimerkki tälläisestä on web-portaali; vakiodata on esimerkiksi paikalliset säätiedot, jotka ovat kaikille käyttäjille samat ja aina nähtävillä (esim. yläreunan widgetin kautta).&lt;/p&gt;
+
+&lt;p&gt;Eli kaikki käyttäjät näkevät saman säätilatiedotteen portaalin yläreunassa. Nämä säätiedot ovat näkyvillä kaikilla portaalin alasivuilla.&lt;/p&gt;
+
+&lt;p&gt;Muuttuva data on puolestaan kullekin käyttäjälle yksilöllinen, esim. kunkin käyttäjän viimeisin sisäänkirjautuminen. Lisäksi kullakin alasivulla on oma muuttuva datansa.&lt;/p&gt;
+
+&lt;p&gt;Voisimme vallan mainiosti määrittää molemmat datapaketit aina näkymätiedostoa renderöidessämme:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// KirjautumisTiedotController.php
+
+public function index() {
+  $saa = $this-&amp;gt;getSaaTiedot();
+  $viimeisinKirjautuminen = $this-&amp;gt;getLoginInfo();
+  return view(&#39;kirjautumistiedot&#39;)
+    -&amp;gt;with(&#39;saatiedot&#39;, $saa)
+    -&amp;gt;with(&#39;viimeisinKirjautuminen&#39;, $viimeisinKirjautuminen);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// VastaanotetutViestitController.php
+
+public function index() {
+  $saa = $this-&amp;gt;getSaaTiedot();
+  $viestit = $this-&amp;gt;getMessagesReceived();
+  return view(&#39;viestit_vastaanotettu&#39;)
+    -&amp;gt;with(&#39;saatiedot&#39;, $saa)
+    -&amp;gt;with(&#39;viestit&#39;, $viestit);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// LahetetytViestitController.php
+
+public function index() {
+  $saa = $this-&amp;gt;getSaaTiedot();
+  $viestit = $this-&amp;gt;getMessagesSent();
+  return view(&#39;viestit_lahetetty&#39;)
+    -&amp;gt;with(&#39;saatiedot&#39;, $saa)
+    -&amp;gt;with(&#39;viestit&#39;, $viestit);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa esimerkissä meillä on kolme eri näkymätiedostoa - &lt;em&gt;kirjautumistiedot&lt;/em&gt;, &lt;em&gt;viestit_vastaanotettu&lt;/em&gt; ja &lt;em&gt;viestit_lahetetty&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Kukin niistä hoitaa oman leiviskänsä applikaation käyttöliittymän renderöimisestä ihmiskäyttäjän silmille sopivaksi.&lt;/p&gt;
+
+&lt;p&gt;Mutta kullakin näkymällä on &lt;em&gt;ydintehtävän&lt;/em&gt; lisäksi myös oheistehtävä, joka on säätietojen renderöinti. Säätiedot ovat näkyvillä kaikilla applikaation alasivuilla, eli kaikki applikaation näkymät joutuvat ne renderöimään. Huomaamme tämän ylläolevissa kolmessa näkymäesimerkissä - kukin näkymä sisältää rivin:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;-&amp;gt;with(&#39;saatiedot&#39;, $saa)&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;On myös parempi tapa. Koska säätiedot on sisällytettynä jokaiseen applikaation alasivuun, voimme abstraktoida säätietojen hakeminen ns. &lt;strong&gt;näkymälaatijaan&lt;/strong&gt; (engl. view composer).&lt;/p&gt;
+
+&lt;p&gt;Näkymälaatija on oma komponenttinsa, joka huolehtii tietyn datapaketin viemisestä eri näkymien saataville &lt;em&gt;automatisoidusti ja keskitetysti&lt;/em&gt;. Toisin sanoen, datapakettia ei tarvitse enää määritellä näkymän saataville Controller-tiedoston sisällä, vaan tuo määrittely voidaan tehdä globaalisti näkymälaatijan sisällä.&lt;/p&gt;
+
+&lt;p&gt;Näkymälaatijasta tarkempi kuvaus (englanniksi): &lt;a href=&#34;https://laravel.com/docs/5.1/views#view-composers&#34;&gt;https://laravel.com/docs/5.1/views#view-composers&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Säätietojen hakeminen ja antaminen applikaation &lt;em&gt;kaikkien&lt;/em&gt; näkymien saataville onnistuu näin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// SaatiedotLaatijaProvider.php
+
+class SaatiedotLaatijaProvider
+{
+  public function boot()
+  {
+    view()-&amp;gt;composer(&#39;*&#39;, function($view) {
+      $saatiedot = $this-&amp;gt;getSaaTiedot();
+      $view-&amp;gt;with(&#39;saatiedot&#39;, $saatiedot);
+    });
+  }
+
+  protected function getSaaTiedot() {
+    /* Hanki säätiedot jotenkin */
+  }
+}
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Määriteltyämme ylläolevan &lt;em&gt;näkymälaatijan&lt;/em&gt; - tässä tapauksessa anonyymi funktio - huolehtimaan säätiedoista, voimme poistaa säätietojen hallinnasta vastaavan koodin kustakin Controllerista.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// KirjautumisTiedotController.php
+
+public function index() {
+  $viimeisinKirjautuminen = $this-&amp;gt;getLoginInfo();
+  return view(&#39;kirjautumistiedot&#39;)
+    -&amp;gt;with(&#39;viimeisinKirjautuminen&#39;, $viimeisinKirjautuminen);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// VastaanotetutViestitController.php
+
+public function index() {
+  $viestit = $this-&amp;gt;getMessagesReceived();
+  return view(&#39;viestit_vastaanotettu&#39;)
+    -&amp;gt;with(&#39;viestit&#39;, $viestit);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// LahetetytViestitController.php
+
+public function index() {
+  $viestit = $this-&amp;gt;getMessagesSent();
+  return view(&#39;viestit_lahetetty&#39;)
+    -&amp;gt;with(&#39;viestit&#39;, $viestit);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Applikaation koodipohja selventyi huomattavasti - enää ei sama säätietojen hakeminen + tarjoaminen näkymän käyttöön elä &lt;em&gt;kolmessa&lt;/em&gt; eri sijainnissa, vaan koko säätietoja hallinnoiva koodi elää yhdessä paikassa (laatijatiedoston sisällä).&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Laravellin &lt;em&gt;näkymälaatija&lt;/em&gt; on tehokas konsepti poistamaan tarpeetonta duplikaatiota. Mikäli tietty datapaketti on renderöitävä usealle applikaation alasivulle, on syytä harkita näkymälaatijan käyttöä.&lt;/p&gt;
+
+&lt;p&gt;Kuten aina, kyseessä on tradeoff. Näkymälaatijalla saadaan vähennettyä koodin duplikaatiota. Mutta huonona puolena on, että tietyn näkymätiedoston käytettävissä oleva data ei enää ole nähtävillä yhdessä koodilokaatiossa.&lt;/p&gt;
+
+&lt;p&gt;Ratkaisussa #1 kaikki näkymälle tarjottava data tuli Controller-tiedostosta. Ratkaisussa #2 osa datasta tulee Controllerista, toinen osa näkymälaatijalta.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Käyttöliittymän testaus (automatisointi)</title>
+      <link>http://nollaversio.fi/blog/public/laravel/testing-routes/</link>
+      <pubDate>Wed, 27 Jul 2016 06:11:10 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/testing-routes/</guid>
+      <description>
+
+&lt;p&gt;Perinteisen web-applikaation peruspointti on tarjota käyttäjilleen mahdollisuus vuorovaikuttaa itsensä (&lt;em&gt;esim. kerätä tänään dataa talteen, ja hyödyntää kerättyä dataa huomenna&lt;/em&gt;) ja/tai toistensa kanssa web-applikaation kautta.&lt;/p&gt;
+
+&lt;p&gt;Jotta tämä vuorovaikutus onnistuisi, täytyy web-applikaation tarjota jonkinmoinen käyttöliittymä.&lt;/p&gt;
+
+&lt;p&gt;Tyypillisessä tietokantapohjaisessa web-sovelluksesta tuo käyttöliittymä on HTML-sivu, joka sisältää linkit applikaation tarjoamiin toiminnallisuuksiin. Linkkejä klikkailemalla voi vuorovaikuttaa applikaation kanssa. Malliesimerkki tälläisestä applikaatiosta on vaikkapa Wikipedia.&lt;/p&gt;
+
+&lt;p&gt;Vuorovaikutus ihmiskäyttäjän kanssa on monen web-sovelluksen keskeisin huolenaihe. Toki on erikseen web-sovellukset, jotka &lt;em&gt;eivät&lt;/em&gt; vuorovaikuta ihmiskäyttäjän kanssa, vaan käyvät tiedonvaihtoa toisen web-sovelluksen kanssa. Malliesimerkki tälläisestä applikaatiosta on osakepörssin rajapinta. Tuo rajapinta käy keskustelua muiden applikaatioiden - mm. uutissivustojen pörssikurssien päivityksestä vastaavien ohjelmien - kanssa.&lt;/p&gt;
+
+&lt;h3 id=&#34;voiko-tietokoneohjelma-simuloida-ihmiskäyttäjää&#34;&gt;Voiko tietokoneohjelma simuloida ihmiskäyttäjää?&lt;/h3&gt;
+
+&lt;p&gt;Koska useimmilla applikaatioilla kommunikaatio ihmiskäyttäjän kanssa on keskiössä, on syytä kyetä varmistamaan, että käyttöliittymä toimii kuin vettä vain. Laravellin tapauksessa tämä varmistus tarkoittaa, että kukin HTML-sivu - joka siis edustaa tiettyä käyttöliittymän osaa - sisältää tarvittavat toiminnot, jotta applikaation käyttö on sujuvaa.&lt;/p&gt;
+
+&lt;p&gt;Mutta miten varmistua siitä, että käyttöliittymä tarjoaa tarvittavat toiminnot? Yksi tapa on silmämääräisesti selata käyttöliittymää. Ihmisaivot tekevät automaattisesti näin saapuessaan esim. Wikipedian etusivulle - luomme ikäänkuin &lt;em&gt;mentaalisen kartan&lt;/em&gt; kaikista applikaation tarjoamista mahdollisuuksista.&lt;/p&gt;
+
+&lt;p&gt;Homman voi tietenkin myös automatisoida, ja se kannattaa automatisoida. &lt;strong&gt;Sen sijaan että silmämääräisesti tarkistaisimme käyttöliittymän, annetaan erillisen tietokoneohjelman tarkistaa käyttöliittymä.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Tätä on automatisoitu käyttöliittymätestaus.&lt;/p&gt;
+
+&lt;h3 id=&#34;mitä-testataan-ja-miten&#34;&gt;Mitä testataan ja miten?&lt;/h3&gt;
+
+&lt;p&gt;Käyttöliittymätestauksessa pääpaino on varmistaa, että applikaation käyttöliittymä tarjoaa tarvittavat toiminnot, jotta applikaation käyttö on sujuvaa.&lt;/p&gt;
+
+&lt;p&gt;Tyypillisen web-applikaation käyttöliittymä koostuu isosta kasasta &lt;em&gt;HTML-sivuja&lt;/em&gt;. Täten web-applikaation kohdalla käyttöliittymätestaus tarkoittaa kutakuinkin HTML-sivujen sisällön testausta. Eli varmistetaan, että kukin HTML-sivu sisältää tarvittavat &lt;em&gt;toiminnot, tiedot ja ohjeet&lt;/em&gt;, jotta vuorovaikutus applikaation kanssa onnistuu odotetusti.&lt;/p&gt;
+
+&lt;p&gt;Kirjoitetaan ensimmäinen testi. Oletetaan, että olemme rakentamassa uutta Wikipediaa. Wikipedian keskiössä on &lt;em&gt;artikkeli&lt;/em&gt;, joten on luontevaa aloittaa ohjelmoimalla tarvittavat toiminnot yksittäisen artikkelin lukemista ja ylläpitoa varten.&lt;/p&gt;
+
+&lt;p&gt;Mitä toimintoja haluamme kytkeä osaksi konseptia nimeltä &lt;em&gt;artikkeli&lt;/em&gt;? Ainakin mahdollisuuden &lt;em&gt;lukea&lt;/em&gt; artikkeli. Lisäksi olisi kiva voida &lt;em&gt;muokata&lt;/em&gt; artikkelia. Aloitetaan näistä kahdesta.&lt;/p&gt;
+
+&lt;p&gt;Entä millainen käyttöliittymän tulee olla, jotta &lt;em&gt;lukeminen&lt;/em&gt; ja &lt;em&gt;muokkaaminen&lt;/em&gt; onnistuvat?&lt;/p&gt;
+
+&lt;p&gt;Lukemista varten tarvitsemme jotain mitä lukea. Eli artikkelin sisällön tulee olla ihmissilmin nähtävillä.&lt;/p&gt;
+
+&lt;p&gt;Muokkausta varten tarvitsemme jonkinlaisen linkin tai nappulan, jonka kautta siirtyä artikkelin muokkaustilaan.&lt;/p&gt;
+
+&lt;p&gt;Testimme näyttää yleisilmeeltään tältä.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+use \Integrated\Extensions\Laravel as IntegrationTest;
+
+class ArtikkeliTesti extends IntegrationTest {
+
+	public function testaaLukuMahdollisuus {
+
+	}
+
+	public function testaaMuokkausMahdollisuus {
+
+
+	}
+	
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Seuraavaksi on syytä miettiä, miten nuo testit suoritetaan. Käyttöliittymätestauksen koko pointti on, että testaus suoritetaan ikäänkuin ihmiskäyttäjä toimisi testaajana. Oikeasti tuon testauksen tekee tietokoneohjelma, mutta tietokoneohjelma simuloi ihmisen toimintaa.&lt;/p&gt;
+
+&lt;p&gt;Paras tapa suorittaa käyttöliittymätestaus on siis toistaa niitä toimintoja, joita oikea ihmiskäyttäjä tekisi mikäli käyttäisi applikaatiota.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// ArtikkeliTesti.php
+
+use \Integrated\Extensions\Laravel as IntegrationTest;
+
+class ArtikkeliTesti extends IntegrationTest {
+
+	public function testaaLukuMahdollisuus {
+			// Simuloidaan ihmiskäyttäjää
+			
+
+			// Kirjoita selaimen osoiteriville tietyn artikkelin www-osoite
+			$this-&amp;gt;visit(&#39;/artikkelit/seppo-raty&#39;);
+
+			// Nyt edessämme pitäisi olla Seppo Rädystä kertova artikkeli
+			$this-&amp;gt;seePageIs(&#39;seppo-raty&#39;);
+
+			// Artikkelin tulisi mainita hänen urheilulajinsa...
+			$this-&amp;gt;see(&#39;keihäänheitto&#39;);
+
+			// ... ja muutama kuolematon sitaatti
+			$this-&amp;gt;see(&#39;Saksa on paska maa&#39;);
+			$this-&amp;gt;see(&#39;Vittuillakseni heilutin&#39;);
+
+			// Jos kaikki ylläolevat ehdot täyttyvät, voimme
+			// luottaa, että kyseessä on Rädyn wikipedia-artikkeli.
+
+	}
+
+	public function testaaMuokkausMahdollisuus {
+			// Simuloidaan ihmiskäyttäjää
+			
+			// Kirjoita selaimen osoiteriville tietyn artikkelin www-osoite
+			$this-&amp;gt;visit(&#39;/artikkelit/seppo-raty&#39;);
+
+			// Emme ole kiinnostuneita artikkelin sisällöstä, mutta
+			// olemme kiinnostuneita muokkausmahdollisuudesta.
+
+			// Varmistetaan, että &amp;quot;Muokkaa&amp;quot;-nappula on olemassa, ja että
+			// sitä klikkaamalla avautuu muokkausnäkymä!
+			$this-&amp;gt;click(&#39;Muokkaa&#39;)-&amp;gt;seePageIs(&#39;/seppo-raty/muokkaa&#39;);
+
+			// Jos ylläolevat ehdot täyttyvät, voimme luottaa,
+			// että muokkaustoiminto on olemassa.
+
+	}
+	
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevat kaksi testiä - luku ja muokkaus - voidaan suorittaa automatisoidusti. Ihmiskäyttäjää ei tarvita. Testiä varten luotu tietokoneohjelma ajaa ylläolevat testit, ja varmistaa, että kaikki oletukset/ehdot täyttyvät. Mikäli jokin ehto ei täyty, asiasta raportoidaan eteenpäin (esim. kehittäjälle).&lt;/p&gt;
+
+&lt;p&gt;Ylläolevan kaltaisilla yksittäisillä testeillä voimme varmistaa pala palalta koko käyttöliittymän toiminnan. Entä jos haluamme testata toiminnon &lt;em&gt;uuden artikkelin luonti&lt;/em&gt;? Se onnistuu näin.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// ArtikkeliTesti.php
+
+// Muut testit kuten ennenkin
+
+public function testaaArtikkelinLuonti() {
+	
+	// Artikkelin luontia varten käyttäjälle näytetään
+	// HTML-lomake, johon artikkelin tiedot täytetään.
+
+	$this-&amp;gt;visit(&#39;/luo-artikkeli&#39;)-&amp;gt;andSee(&#39;artikkeliluonti&#39;);
+
+	// Varmista, että HTML-lomake on olemassa yrittämällä täyttää se...
+	$this
+	-&amp;gt;type(&#39;Nollaversio IT&#39;, &#39;#artikkelin_nimi&#39;) // Kirjoita nimi
+	-&amp;gt;type(&#39;Ihan ok firma.&#39;, &#39;#artikkelin_teksti&#39;) // Kirjoita sisältö
+	-&amp;gt;press(&#39;Luo artikkeli&#39;); // Paina &amp;quot;Submit&amp;quot;-nappulaa
+	-&amp;gt;andSee(&#39;Uusi artikkeli luotu!&#39;) // Varmista luonnin onnistuminen.
+	// Varmista että olemme juuri luodun artikkelin sivulla.
+	-&amp;gt;onPage(&#39;/artikkelit/nollaversio-it&#39;); 
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevan kaltaisilla testeillä voimme testata ilman epäluotettava ihmissilmän tarvetta koko käyttöliittymämme!&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: on syytä huomata, että käyttöliittymätestaus keskittyy &lt;em&gt;olennaisten seikkojen&lt;/em&gt; testaamiseen. Se ei testaa sitä, onko sivun värimaailma &amp;lsquo;ihmissilmää miellyttävä&amp;rsquo;, onko fonttikoko sopiva tai ovatko sivun eri komponentit nätisti rivissä.&lt;/p&gt;
+
+&lt;p&gt;Automatisoitu testaus keskittyy testaamaan aspekteja, jotka ovat a) ylipäätänsä testattavissa ja b) elintärkeitä applikaation toiminnan kannalta.&lt;/p&gt;
+
+&lt;p&gt;Värimaailma &lt;em&gt;ei ole&lt;/em&gt; elintärkeä applikaation toiminnan kannalta, ainakaan Wikipedian tapauksessa. Sen sijaan mahdollisuus muokata artikkelia &lt;em&gt;on&lt;/em&gt; elintärkeä applikaation toiminnan kannalta.&lt;/p&gt;
+
+&lt;p&gt;Jokaisella applikaatiolla on tietenkin omat reunaehtonsa sen suhteen, mitkä aspektit ovat tärkeitä ja mitkä eivät.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Varausten hallinta tietokannan tasolla</title>
+      <link>http://nollaversio.fi/blog/public/laravel/reservation-pattern/</link>
+      <pubDate>Tue, 26 Jul 2016 11:32:03 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/reservation-pattern/</guid>
+      <description>
+
+&lt;p&gt;Otetaan esimerkki seuraavankaltaisesta applikaatiosta. Applikaatio mahdollistaa uhanalaisten sarvikuonojen ostamisen lemmikeiksi. Afrikan salametsästäjät (tai tässä tapauksessa &amp;lsquo;salakidnappaajat&amp;rsquo;) tuovat järjestelmään uusia sarvikuonoja, joita eurooppalaiset intoilijat ostavat.&lt;/p&gt;
+
+&lt;p&gt;Ostoprosessi ei kuitenkaan ole yksinkertainen. Kukin sarvikuono varataan ostoprosessin ajaksi - mikäli ostoprosessi menee onnistuneesti läpi, sarvikuonopolo rahdataan Eurooppaan uudelle isännälleen. Mikäli ostoprosessi ei mene lävitse, sarvikuono vapautuu takaisin markkinapaikalle.&lt;/p&gt;
+
+&lt;p&gt;Tietokanta voisi olla esim. tämän kaltainen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
+
+| id |   ostaja  | hinta | tullut_myyntiin |
+| -- | --------- | ----- | --------------- |
+| 1  |   NULL    |  25   |   1.6.2016      |
+| 2  |   NULL    |  32   |   3.6.2016      |
+| 3  |   2       |  26   |   4.6.2016      |
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code&gt;// Ostajat-taulu
+
+| id |   nimi    |  maa  |   email         |
+| -- | --------- | ----- | --------------- |
+| 1  |   Pekka   |  FI   |   pekka@24.fi   |
+| 2  |   Mikko   |  FI   |   m85@gmail.com |
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Järjestelmä toimii ylläolevia tauluja hyödyntäen. Ostaja kirjautuu sarvikuonojen markkinapaikalle - se miten tuo kirjautuminen tapahtuu ei ole tässä esimerkissä oleellista. Sen jälkeen hän selaa ostettavissa olevia sarvikuonoja. &lt;em&gt;Sarvikuonot&lt;/em&gt;-taulusta saadaan helposti haettu vapaana (ostomielessä) olevat kuonokkaat - vapaalla sarvikuonolla &lt;em&gt;ostaja&lt;/em&gt;-sarake on tyhjä (NULL).&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;SELECT * from Sarvikuonot WHERE ostaja=NULL&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Mutta kuten alussa mainitsimme, haluamme myös sallia sarvikuonon &lt;em&gt;varauksen&lt;/em&gt; itse ostoprosessin ajaksi.&lt;/p&gt;
+
+&lt;p&gt;Miksi tämä on tärkeää? &lt;strong&gt;Siksi, että muuten saattaisi hyvinkin käydä niin, että useampi henkilö yrittäisi samanaikaisesti ostaa samaa kuonokasta.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Ongelman ydin on siinä, että sarvikuonon &lt;em&gt;ostaja&lt;/em&gt;-sarake päivitetään vasta aivan ostoprosessin lopussa. Tämä on loogista siinä mielessä, että ostos ei ole vahvistettu kuin vasta prosessin lopussa.&lt;/p&gt;
+
+&lt;p&gt;Mutta järjestelmän muiden asiakkaiden tämä ei ole optimaalista. On varsin ikävää jos joku heistä aloittaa oman ostoprosessinsa sarvikuonosta, jota sinä olet parhaillaan maksamassa Nordean nettipankissa. Kun maksusi menee läpi, tuo toinen asiakas on umpikujassa.&lt;/p&gt;
+
+&lt;p&gt;Hänen kannaltaan on varsin ikävää, mikäli ostos epäonnistuu aivan kalkkiviivoilla. Vähemmästäkin ihminen repii juurikasvunsa.&lt;/p&gt;
+
+&lt;p&gt;Ongelman ydin siis on, että ostoprosessilla on &lt;strong&gt;alku&lt;/strong&gt; ja &lt;strong&gt;loppu&lt;/strong&gt;. Mikäli ostoprosessi olisi pistemäinen tapahtuma, mitään ongelmaa ei olisi. Varaus ja osto tapahtuisivat tismalleen samalla ajan hetkellä, joten tarve varauksen olemassaololle poistuisi.&lt;/p&gt;
+
+&lt;p&gt;Esimerkkinä tälläisestä pistetapahtumasta on ruokakaupassa käynti. Sanotaan, että maitohyllyllä on tasan yksi maitopurkki. Kauppaan saapuu kaksi perhekuntaa maito-ostoksille.&lt;/p&gt;
+
+&lt;p&gt;Kumpi poppoo tuon maitopurtilon saa mukaansa? Kumpi ensimmäisenä sen hyllyltä nappaa. Voittaja vie maidon. Seuraava käsi hapuilee pelkkää tyhjää ilmaa. Tyhjyyttä kohti kurotteleva kyllä varsin nopeasti hoksaa, että maito meni jo, joten hänen ei tarvitse jatkaa ostoprosessiaan eteenpäin. Ainoastaan voittaja kävelee kohti kassapistettä.&lt;/p&gt;
+
+&lt;p&gt;Ratkaiskaamme sarvikuonojen &lt;em&gt;varaus vs. osto&lt;/em&gt; -ongelma lisäämällä erillinen varaus-sarake tietokantatauluun.&lt;/p&gt;
+
+&lt;h3 id=&#34;varaus-ja-osto-eriteltynä-tietokannassa&#34;&gt;Varaus ja osto eriteltynä tietokannassa&lt;/h3&gt;
+
+&lt;p&gt;Uusi Sarvikuonot-taulu näyttää tältä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
+| -- | --------- | ------- | ----- | --------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
+| 2  |   NULL    |  1      |   32  |   3.6.2016      |
+| 3  |   2       |  2      |   26  |   4.6.2016      |
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Järjestelmä toimii seuraavanlaisesti: heti kun potentiaalinen kuonoaddikti aloittaa ostoprosessin, hänen ostajanumeronsa lisätään sarvikuonon &lt;em&gt;varaaja&lt;/em&gt;-kenttään.&lt;/p&gt;
+
+&lt;p&gt;Tällä tavoin taulu sisältää tiedon siitä, että kyseistä sarvikuonoa &lt;em&gt;ollaan parhaillaan ostamassa&lt;/em&gt;. Muille asiakkaille tuota sarvikasta ei tarvitse näyttää listauksissa - heidän kannaltaan sarvikuono on jo myyty. Täten ostettavissa olevat sarvikuonot haetaan tietokantakomennolla:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;SELECT * from Sarvikuonot WHERE varaaja=NULL&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Kun varausta tekevä taho sitten lopulta &lt;em&gt;vahvistaa&lt;/em&gt; kuonokkaan oston, tieto vahvistuksesta päivitetään tauluun &lt;em&gt;ostaja&lt;/em&gt;-sarakkeeseen.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
+// Sarvikuonon #2 osto vahvistettu ostajalle #1.
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
+| -- | --------- | ------- | ----- | --------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
+| 2  |   1       |  1      |   32  |   3.6.2016      |
+| 3  |   2       |  2      |   26  |   4.6.2016      |
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kaksi eri asiakasta eivät voi enää aloittaa ostoprosessia samasta sarvikuonosta samanaikaisesti. Erinomaista. Onko järjestelmämme nyt täydellinen?&lt;/p&gt;
+
+&lt;p&gt;Ei todellakaan.&lt;/p&gt;
+
+&lt;p&gt;Entä jos ostoprosessi ei menekään läpi? Koska &lt;em&gt;varaaja&lt;/em&gt;-kenttä on jo täytetty, sarvikuono on muiden asiakkaiden näkökulmasta ostettu. Mutta jos ostoprosessi menee pieleen (ehkä ostaja tulee katumapäälle kesken maksamisen), tuo sarvikuono on ikuisesti jumissa limbossa.&lt;/p&gt;
+
+&lt;p&gt;Tarvitsemme siis mekanismin, joka jollain tavoin &lt;em&gt;vapauttaa&lt;/em&gt; limboon joutuneet sarvikuonot. Mekanismiksi on kaksi hyvää vaihtoehtoa.&lt;/p&gt;
+
+&lt;h3 id=&#34;varausten-vapautus-aktiivinen-vs-passiivinen&#34;&gt;Varausten vapautus - aktiivinen vs. passiivinen&lt;/h3&gt;
+
+&lt;p&gt;Kerrataan, tietokantataulumme näyttää tältä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
+| -- | --------- | ------- | ----- | --------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
+| 2  |   NULL    |  1      |   32  |   3.6.2016      |
+| 3  |   2       |  2      |   26  |   4.6.2016      |
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ja potentiaalinen ostajamme #1 yllättäen saa aivoinfraktin ja poistuu linjoilta. Hän ei tule enää koskaan ostamaan edes tikkukaramellia saati savannin hyökkäysvaunua. Joten tehtävämme on jollain tavoin &lt;em&gt;poistaa&lt;/em&gt; varaus sarvikuonolta #2.&lt;/p&gt;
+
+&lt;h4 id=&#34;aktiivinen-poisto&#34;&gt;Aktiivinen poisto&lt;/h4&gt;
+
+&lt;p&gt;Yksi tapa hoitaa poistot on pitää yllä erillistä &lt;em&gt;poisto-ohjelmaa&lt;/em&gt;, joka tasaisin väliajoin käy etsimässä + poistamassa &lt;em&gt;erääntyneitä&lt;/em&gt; varauksia.&lt;/p&gt;
+
+&lt;p&gt;Vastaavan kaltainen systeemi on käytössä hotelleissa - jos et ole viimeistään klo 18 vastaanottamassa huoneesi avainta, varauksesi poistetaan asiakaspalvelijan toimesta.&lt;/p&gt;
+
+&lt;p&gt;Meidän sarvikuonomarkkinapaikkamme kohdalla loogisinta on kirjata ylös ajankohta, jolloin ostoprosessi alkoi. Vaadimme ostajilta, että heidän tulee suorittaa ostoprosessinsa läpi yhden tunnin aikana. Jos ostoprosessi on epäonnistunut (tai yhä kesken!) tuon yhden tunnin rajapyykin umpeuduttua, varaus poistetaan.&lt;/p&gt;
+
+&lt;p&gt;Muokataan tauluamme, jotta saamme kirjattua ylös varauksen tekoajankohdan:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |   varaus_tehty    |
+| -- | --------- | ------- | ----- | --------------- | ----------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |       NULL        |
+| 2  |   NULL    |  1      |   32  |   3.6.2016      | 26.7.16 klo 12.15 |
+| 3  |   2       |  2      |   26  |   4.6.2016      | 21.7.16 klo 17.33 |
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ohessa pieni skripti, joka pyörii ikäänkuin &lt;em&gt;taustapalveluna&lt;/em&gt;, käyden
+tasaisin väliajoin poistamassa erääntyneet varaukset:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Tätä skriptiä kutsutaan esim. käyttöjärjestelmän cron-tabin toimesta.
+// Esimerkiksi aina 1 minuutin välein.
+
+// Aloita tietokanta-transaktio
+DB::transaction(function() {
+	// Rajapyykkinä toimii ajankohta yksi tunti sitten.
+	$aikaRajapyykki = Carbon::now()-&amp;gt;subHour();
+
+	// Sarvikuonot, jotka ovat erääntyneet, 
+	// mutta ei ostettu (&#39;ostaja&#39; on NULL),
+	// tyhjennetään varaustiedot
+	Sarvikuono
+		::where(&#39;varaus_tehty&#39;, &amp;lt;, $aikaRajapyykki)
+		-&amp;gt;where(&#39;ostaja&#39;, NULL)
+		-&amp;gt;update([
+			&#39;varaaja&#39; =&amp;gt; NULL,
+			&#39;varaus_tehty&#39; =&amp;gt; NULL
+		]);
+});
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kun ylläoleva skripti on käynyt poistamassa varauksen tiedot, on sarvikuono #2 jälleen muiden
+markkinapaikan kävijöiden nähtävissä.&lt;/p&gt;
+
+&lt;p&gt;On myös toinen keino, ns. passiivinen poisto.&lt;/p&gt;
+
+&lt;h4 id=&#34;passiivinen&#34;&gt;Passiivinen&lt;/h4&gt;
+
+&lt;p&gt;Aktiivisessa poistossa meillä on erillinen, itse itseään kontrolloiva/ajastava prosessi (=&lt;em&gt;käyttöjärjestelmän prosessi&lt;/em&gt;), joka käy tasaisin väliajoin tekemässä poistot. Tuo prosessi elää omaa elämäänsä irrallaan siitä prosessista, joka pyörittää markkinapaikkaamme.&lt;/p&gt;
+
+&lt;p&gt;Toinen vaihtoehto on jättää varauksen tiedot maatumaan tietokantaan, ja suorittaa erääntyneiden varausten käsittely suoraan applikaatiomme ydinkoodin puolella.&lt;/p&gt;
+
+&lt;p&gt;Tämä on läpeensä sysimusta idea, mutta esimerkin omaisesti esittelen myös sen.&lt;/p&gt;
+
+&lt;p&gt;Sarvikuonot-taulu ei muutu mihinkään. Se on edelleen tälläinen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |   varaus_tehty    |
+| -- | --------- | ------- | ----- | --------------- | ----------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |       NULL        |
+| 2  |   NULL    |  1      |   32  |   3.6.2016      | 26.7.16 klo 12.15 |
+| 3  |   2       |  2      |   26  |   4.6.2016      | 21.7.16 klo 17.33 |
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Erillisen skriptin sijasta meillä on &lt;em&gt;suoraan applikaatiomme sisuksiin koodattu sopivat reagoinnit&lt;/em&gt; erääntyneisiin varauksiin.&lt;/p&gt;
+
+&lt;p&gt;Esimerkiksi ostettavissa olevien kuonojen listaus näyttää nyt tältä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;// SarvikuonoController.php
+
+public function vapaatKuonot() {
+
+	// Vapaat kuonot ovat niitä, joilla pätee joko:
+	// 1) &#39;varaaja&#39; on tyhjä (NULL)
+	// 2) &#39;varaus_tehty&#39; ajankohta yli 1 tunti sitten
+
+	$aikaRajapyykki = Carbon::now()-&amp;gt;subHour();
+	$vapaat = Sarvikuonot
+		::where(&#39;varaus_tehty&#39;, &amp;lt;, $aikaRajapyykki)
+		-&amp;gt;where(&#39;ostaja&#39;, NULL)
+		-&amp;gt;get();
+
+	return View::make(&#39;listaus&#39;, compact(&#39;vapaat&#39;));	
+
+	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Muut toiminnot joutuvat nyt turvautumaan vastaavaan logiikkaan. Esimerkiksi ostoprosessin lopussa on vielä kerran varmistettava, että varaus on yhä voimassa. Homma toimii, joten kuten.&lt;/p&gt;
+
+&lt;p&gt;Passiivisessa lähestymistavassa on puolensakin. Ylimääräinen prosessin (aktiivinen) olemassaolo lisää järjestelmän kuormitusta ja luo uudenlaisen bugityypin - jos erillinen poistoprosessi kaatuu, varaukset eivät enää eräänny lainkaan. Passiivisessa mallissa tätä riskiä ei ole, sillä &amp;ldquo;erääntyminen&amp;rdquo; on koodattu suoraan osaksi ydinalgoritmia.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: passiivisen ja aktiivisen lähestymistavan ero on pohjimmiltaan filosofinen, ja siitä löytyy oikean elämän esimerkkejä kosolti. Otetaan esimerkiksi käteisen rahan käyttö.&lt;/p&gt;
+
+&lt;p&gt;Yksi nostaa joka kuukausi 100 euroa käteistä, ja sujauttaa setelit lompakkoonsa. Jos hän kuukauden aikana tarvitsee käteistä, hän voi luottaa siihen, että sitä lompakosta löytyy. Hänen ei tarvitse jokaisen kirppariostoksen kohdalla erikseen miettiä asiaa.&lt;/p&gt;
+
+&lt;p&gt;Toinen ei nosta käteistä rahaa, vaan kantaa mukanaan yksinomaan muovirahaa. Hänen ei tarvitse huolehtia kuukausittaisesta Otto-automaatilla vierailusta. Mutta jos hän joskus sattuu tarvitsemaan käteistä, hänellä ei sitä ole. Toisin sanoen, jokaista ostosta tehdessään hänen täytyy erikseen varmistaa, että muoviraha käy.&lt;/p&gt;
+
+&lt;p&gt;Kyseessä on klassinen tradeoff.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Muistilista uutta Laravel-projektia aloittaessa</title>
+      <link>http://nollaversio.fi/blog/public/laravel/start-checklist/</link>
+      <pubDate>Fri, 22 Jul 2016 16:14:13 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/start-checklist/</guid>
+      <description>
+
+&lt;p&gt;Olen ihastanut suuresti &lt;a href=&#34;https://en.wikipedia.org/wiki/The_Checklist_Manifesto&#34; target=&#34;_blank&#34;&gt;checklist-manifestoon.&lt;/a&gt; Manifeston hengessä loin alkukesästä itselleni muistilistan asioista, joita uutta Laravel-projektia aloittaessa tulee ottaa huomioon.&lt;/p&gt;
+
+&lt;p&gt;Monet listan kohdista pätevät yleisesti kaikkiin ohjelmistoprojekteihin.&lt;/p&gt;
+
+&lt;h3 id=&#34;laravel-checklist&#34;&gt;Laravel-checklist&lt;/h3&gt;
+
+&lt;h4 id=&#34;vaiheet-1-3-projektikansion-valmistelu-projekti-boilerplate-etc&#34;&gt;Vaiheet 1-3: Projektikansion valmistelu, projekti-boilerplate, etc&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;1. Alusta Git-repo projektikansioon, luo Github-repo, kytke yhteen.&lt;/li&gt;
+&lt;li&gt;2. Lataa Composer.phar projektikansioon&lt;/li&gt;
+&lt;li&gt;3. Kloonaa Laravel-boilerplate&lt;/li&gt;
+&lt;li&gt;4. Muokkaa hakemisto-oikeudet (mm. Laravellin storage-kansio)&lt;/li&gt;
+&lt;li&gt;5. Luo uusi Sublime-projekti&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;vaiheet-6-9-tietokannan-luonti-valmistelu-tietokantayhteys-email-testaus&#34;&gt;Vaiheet 6-9: Tietokannan luonti, valmistelu, tietokantayhteys, email-testaus&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;6. Luo uusi tietokanta (esim. phpMyAdmin:in kautta)&lt;/li&gt;
+&lt;li&gt;7. Päivitä projektitiedostoihin tietokannan käyttäjätunnus + salasana.&lt;/li&gt;
+&lt;li&gt;8. Aseta email-ajuri osoittamaan testitiedostoon (loki).&lt;/li&gt;
+&lt;li&gt;9. Luo &amp;ldquo;finnish&amp;rdquo;-kielitiedosto.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;vaiheet-10-12-ensimmäiset-tietokantataulut-relaatiot-mallit-models&#34;&gt;Vaiheet 10-12: Ensimmäiset tietokantataulut, relaatiot, mallit (models)&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;10. Suorita &amp;lsquo;php artisan make:auth&amp;rsquo;, joka luo käyttäjähallinnan tietokantaan.&lt;/li&gt;
+&lt;li&gt;11. Luo mallit kuvaamaan domain-käsitteitä. Tässä vaiheessa riittää tyhjä tiedosto kullekin mallille.&lt;/li&gt;
+&lt;li&gt;12. Luo applikaation migraatiot (yksi per malli). Hahmottele kunkin mallin tietorakenne.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&#34;vaiheet-13-15-seeders-tehtaat-migraatioiden-toiminnan-varmistus&#34;&gt;Vaiheet 13-15: Seeders, tehtaat, migraatioiden toiminnan varmistus&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;13. Luo seeder-tehtaat (seeder factories) kullekin mallille.&lt;/li&gt;
+&lt;li&gt;14. Luo seeder-tehtaiden avulla (feikki)käyttäjiä ym. domain-objekteja.&lt;/li&gt;
+&lt;li&gt;15. Testaa, että migraatiot toimivat ja että relaatiot eri mallien välillä ovat kunnossa.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Tähän muistilistani päättyy. Tästä eteenpäin alkaa ns. raaka työ, eli itse applikaation toimintalogiikan ja käyttöliittymän ohjelmointi.&lt;/p&gt;
+
+&lt;p&gt;Tämä on se pisin ja uuvuttavin vaihe projektissa. &lt;em&gt;Vaiheet 1-15 ovat verrattavissa arkkitehdin työhön. Vaiheet 16-20 ovat verrattavissa kirvesmiehen työhön.&lt;/em&gt;&lt;/p&gt;
+
+&lt;h4 id=&#34;vaiheet-16-20-toteuta-logiikka-käyttöliittymä-jne&#34;&gt;Vaiheet 16-20: Toteuta logiikka, käyttöliittymä, jne.&lt;/h4&gt;
+
+&lt;ul&gt;
+&lt;li&gt;16. Hahmottele, koodaa, testaa, näpyttele sormet kipeäksi.&lt;/li&gt;
+&lt;li&gt;17. Kiroile, paisko pari hiirtä tusinan päreiksi, harkitse puutarhurin uraa.&lt;/li&gt;
+&lt;li&gt;18. Onnistu lopulta ratkomaan ongelmat.&lt;/li&gt;
+&lt;li&gt;19. Juhlista valmista applikaatiota.&lt;/li&gt;
+&lt;li&gt;20. Aloita seuraava projekti.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Ylläoleva checklist on osoittanut hyödyllisyytensä useammassa omassa projektissani. Kun on muistilista, jota seurata orjallisesti, pysyy laatu tasaisena ja työtahti tiiviinä.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Usecase-arkkitehtuurin vahvuus</title>
+      <link>http://nollaversio.fi/blog/public/laravel/usecase-bliss/</link>
+      <pubDate>Fri, 22 Jul 2016 14:44:27 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/usecase-bliss/</guid>
+      <description>
+
+&lt;p&gt;Usecase-arkkitehtuuri on eräs tapa järjestää Laravel-pohjaisen tietokoneohjelman control flow.&lt;/p&gt;
+
+&lt;p&gt;Mitä usecase-arkkitehtuuri painottaa? Nimensä mukaisesti se pyrkii abstraktoimaan koodin erillisiin käyttötarkoituksiin, usecaseihin.&lt;/p&gt;
+
+&lt;p&gt;Käyttötarkoitus on esim. &amp;ldquo;nosta rahaa pankista&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Otetaan esimerkki. Kuvitellaan järjestelmä, jossa loppukäyttäjä voi ryhtyä haluamansa pankin asiakkaaksi. Pankkeja on useita, ja asiakas voi yhden järjestelmän kautta hallita asiakkuuksiaan kussakin pankissa.&lt;/p&gt;
+
+&lt;h3 id=&#34;ensimmäinen-usecase-rahan-nosto&#34;&gt;Ensimmäinen usecase - rahan nosto&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// NostaRahaa_useCase.php
+
+public function nostaRahaa(int $pankkiID, int $asiakasID, int $summa) {
+
+	// Alkuvalmistelut, eli varmistetaan että asiakas-ID on olemassa
+	$asiakas = Asiakas::findById($asiakasID); // Throws &amp;quot;EiOlemassa&amp;quot;
+	// Varmistetaan, että pankkiID on olemassa
+	$pankki = Pankki::findById($pankkiID); // Throws &amp;quot;EiOlemassa&amp;quot;
+
+	// Usecasen tunnusmerkkejä on, että siinä tietyt toimenpiteet
+	// suoritetaan järjestyksessä, ja tällä tavoin saavutetaan
+	// haluttu lopputulos.
+
+	// Tässä tapauksessa vaiheet ovat:
+	// 1. Varmista asiakkuus
+	// 2. Nosta rahat
+	// 3. Lähetä ilmoitus nostosta asiakkaalle 
+
+	// Virheet napataan kiinni ylempänä call stäkissä.
+	
+	// #1
+	// Throws &amp;quot;EiAsiakkuutta&amp;quot; mikäli varmistus epäonnistuu.
+	$pankki-&amp;gt;varmistaAsiakkuus($asiakas); 
+
+	// #2
+	// Throws &amp;quot;EiKatetta&amp;quot; mikäli ei tarpeeksi rahaa tilillä.
+	$nostettuSumma = $pankki-&amp;gt;nostaTililta($asiakas, $summa); 
+
+	// #3
+	// Onnistuu aina (oletamme)
+	$asiakas-&amp;gt;lahetaSMS(&#39;nostoHyvaksytty&#39;, [
+		&#39;summa&#39; =&amp;gt; $nostettuSumma,
+		&#39;ajankohta&#39; =&amp;gt; Carbon::now(),
+	]);
+
+}  
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// PankkiController.php
+
+public function nostaRahaa(Request $request, int $pankkiID) {
+	// parametrit tulevat IOC-containerin kautta
+
+	// Validation sisääntullut request jotenkin
+	try {
+		$this-&amp;gt;validateNostoRequest($request); // Throws &amp;quot;ValidaatioVirhe&amp;quot;		
+	} catch (ValidaatioVirhe $vv) {
+		return Response::error(&#39;Nosto epäonnistui - tarkista tiedot&#39;);
+	}
+
+	$asiakasID = $request-&amp;gt;get(&#39;asiakasID&#39;);
+	$summa     = $request-&amp;gt;get(&#39;summa&#39;);
+
+	// Kutsutaan usecasea!
+	try {
+		$nosto = (new NostaRahaa_useCase())-&amp;gt;nostaRahaa($pankkiID, $asiakasID, $summa);
+	} catch (Error $e) {
+		// Ei tarvetta tietää mikä tietty virhe tapahtui, sen sijaan ilmoitetaan
+		// virheviesti käyttäjälle. Viesti kertoo kaiken oleellisen.
+		return Response::error($e);
+	}
+
+	// Kaikki meni oikein mukavasti.
+	return Response::success(&#39;nostoOnnistui&#39;, $nosto);
+
+}
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva usecase-arkkitehtuuri erottelee &lt;em&gt;sisääntulevan palvelupyynnön&lt;/em&gt; käsittelyn ja &lt;em&gt;itse toiminnon läpiviemisen&lt;/em&gt; toisistaan. On syytä muistaa, että rahan nostaminen pankista on palvelupyyntö asiakkaalta pankille. Jotta tuo palvelupyyntö voidaan viedä läpi, täytyy asiakkaan tietokoneen lähettää tekninen palvelupyyntö järjestelmän palvelimelle.&lt;/p&gt;
+
+&lt;p&gt;Tässä onkin &lt;em&gt;kaksi fundamentaalista konseptia&lt;/em&gt;:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Palvelupyyntö siinä mielessä, että tosimaailmassa minä pyydän sinua tekemään jotain.&lt;/li&gt;
+&lt;li&gt;Palvelupyyntö siinä mielessä, että kasa bittejä siirtyy tietokoneelta toiselle.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;Jälkimmäinen on pelkkä bittimaailman kuvaus ensimmäisestä&lt;/strong&gt;. Täydellisessä maailmassa jälkimmäiselle konseptille ei olisi lainkaan tarvetta. Mutta meidän maailmassamme on - tieto rahan nostosta täytyy jotenkin välittää kotikoneelta palvelimelle. Se ei välity telepatialla, joten joudumme turvautumaan &lt;em&gt;teknisen palvelupyynnön&lt;/em&gt; lähettämiseen.&lt;/p&gt;
+
+&lt;p&gt;Usecase-arkkitehtuuri mahdollistaa näiden kahden konseptin erottelun &lt;em&gt;kauas&lt;/em&gt; toisistaan. Siis kauas siinä mielessä, että ne sijaitsevat eri tiedostoissa. Tässä on suuri vahvuus.&lt;/p&gt;
+
+&lt;p&gt;Usecase-tiedoston ei tarvitse välittää siitä, millä tavoin asiakkaan kotikone ilmaisi palvelimen suuntaan halunsa nostaa rahaa.&lt;/p&gt;
+
+&lt;p&gt;Sen sijaan Controller-tiedosto (PankkiController.php) välittää tuommoisista alhaisen tason detaljeista. Controller ottaa sisään teknisen palvelupyynnön (siis #2 äskeisessä listassamme!), ja luo sen pohjalta oikean palvelupyynnön (#1 listassamme). Usecase-tiedosto ei koskaan edes tiedä #2 olemassaolosta - se välittää vain #1 käsittelystä.&lt;/p&gt;
+
+&lt;p&gt;Itse asiassa Usecase-tiedosto ei edes tiedä, että se on osa internet-applikaatiota. Sillä kaikki internet-liikenteeseen liittyvä logiikka elää Controller-tiedostossa.&lt;/p&gt;
+
+&lt;h3 id=&#34;toinen-usecase-rahan-siirto&#34;&gt;Toinen usecase - rahan siirto&lt;/h3&gt;
+
+&lt;p&gt;Lisätään järjestelmään toinen usecase. Mitä muuta haluamme pankkijärjestelmältämme kuin nostaa rahaa? No, ainakin siirtää rahaa yhdeltä tililtä toiselle.&lt;/p&gt;
+
+&lt;p&gt;Oletetaan, että rahan siirron voi tehdä miltä tahansa tililtä mille tahansa tilille. Tilien ei tarvitse olla samassa pankissa. Ainoa vaatimus on, että siirron tekevä asiakas omistaa lähtötilin, ja on asiakkaana siinä pankissa, jossa lähtötili sijaitsee.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// SiirraRahaa_useCase.php
+
+public function siirraRahaa(
+	int $lahtoPankkiID, /* Mistä pankista rahat lähtevät? */
+	int $tuloPankkiID, /* Mihin pankkiin rahat saapuvat? */
+	int $lahettajaID,    /* Kenen tili lähtöpankissa? */
+	int $vastaanottajaID,  /* Kenen tili tulopankissa? */
+	int $summa
+) {
+	// Tässä oletetaan, että jokaisella asiakkaalla voi olla max. yksi tili per pankki.
+	// Täten yhdistelmä {pankki, asiakasID} kuvaa yksilöllisesti pankkitilin.
+	// Oikeassa maailmassa käyttäisimme tietenkin *tilinumeroa*, mutta tämä järjestelmä
+	// ei sellaista konseptia tunne.
+
+	// Alkuvalmistelut, eli varmistetaan että lähettäjä ja vastaanottaja ovat olemassa.
+	$lahettaja = Asiakas::findById($asiakasID); // Throws &amp;quot;EiOlemassa&amp;quot;
+	$vastaanottaja = Asiakas::findById($vastaanottajaID); // Throws &amp;quot;EiOlemassa&amp;quot;
+
+	// Varmistetaan, että molemmat pankit ovat olemassa.
+	$lahtoPankki = Pankki::findById($lahtoPankkiID); // Throws &amp;quot;EiOlemassa&amp;quot;
+	$tuloPankki = Pankki::findById($tuloPankkiID); // Throws &amp;quot;EiOlemassa&amp;quot;	
+
+	// Tämän usecasen vaiheet ovat:
+	// 1. Varmista asiakkuudet
+	// 2. Nosta summa lähettäjän tililtä
+	// 3. Lisää summa vastaanottajan tilille
+	// 4. Lähetä ilmoitus nostosta lähettäjälle 
+	// 5. Lähetä ilmoitus saapuneesta rahasummasta vastaanottajalle
+
+	// Virheet napataan kiinni ylempänä call stäkissä.
+	
+	// #1 Varmista asiakkuudet
+	// Throws &amp;quot;EiAsiakkuutta&amp;quot; mikäli varmistus epäonnistuu.
+	$lahtoPankki-&amp;gt;varmistaAsiakkuus($lahettaja); 
+	$tuloPankki-&amp;gt;varmistaAsiakkuus($vastaanottaja); 
+
+	// Koska nosto yhdeltä tililtä ja talletus toiselle tilille
+	// ovat toisistaan *riippuvaisia* operaatioita - eli joko
+	// molemmat onnistuvat tai ei kumpikaan - meidän tulee
+	// turvautua transaktioon.
+
+
+	DB::transaction(function () use ($lahtoPankki, $tuloPankki, $lahettaja, $vastaanottaja, $summa) {
+
+		// #2 Nosta summa lähettäjän tililtä
+		// Throws &amp;quot;EiKatetta&amp;quot; mikäli ei tarpeeksi rahaa tilillä.
+		$nostettuSumma = $lahtoPankki-&amp;gt;nostaTililta($lahettaja, $summa); 
+
+		// #3 Lisää summa vastaanottajan tilille
+		$tuloPankki-&amp;gt;talletaTilille($vastaanottaja, $nostettuSumma);
+	});
+
+	// #4 Lähetä ilmoitus nostosta
+	$lahettaja-&amp;gt;lahetaSMS(&#39;siirtoHyvaksytty&#39;, [
+		&#39;summa&#39; =&amp;gt; $summa,
+		&#39;ajankohta&#39; =&amp;gt; Carbon::now(),
+	]);
+
+	// #5 Lähetä ilmoitus saapuneesta rahasummasta
+	$vastaanottaja-&amp;gt;lahetaSMS(&#39;siirtoSaapunut&#39;, [
+		&#39;summa&#39; =&amp;gt; $summa,
+		&#39;ajankohta&#39; =&amp;gt; Carbon::now(),
+	]);
+}  
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// PankkiController.php
+
+public function nostaRahaa(Request $request, int $pankkiID) {
+	// Kuten ennenkin
+	// ...
+}
+
+public function siirraRahaa(Request $request, int $lahtoPankkiID) {
+	// Parametrit IOC:in kautta
+	// Miksi otamme IOC:n kautta $lahtoPankin, mutta emme $tuloPankkia?
+	// Koska lähettäjä operoi omalla selaimellaan *tietyn* pankin käyttöliittymässä, 
+	// ja kaikki lähettäjän tekemät palvelupyynnöt tehdään tietyn pankin suuntaan.
+	// Toisin sanoen, kaikki sisääntulevat palvelupyynnöt tehdään URL:ään, jonka rakenne
+	// on seuraavanlainen:
+
+	/*
+		http://pankkijarjestelma.fi/pankki/pankkiID/operaatio
+	*/
+
+	// Validoi sisääntullut request jotenkin
+	try {
+		$this-&amp;gt;validateSiirtoRequest($request); // Throws &amp;quot;ValidaatioVirhe&amp;quot;		
+	} catch (ValidaatioVirhe $vv) {
+		return Response::error(&#39;Rahan siirto epäonnistui - tarkista tiedot&#39;);
+	}
+
+	// Haetaan siirtoon liittyvät tiedot.
+	$tuloPankkiID = $request-&amp;gt;get(&#39;tuloPankkiID&#39;);
+	$lahettajaID = $request-&amp;gt;get(&#39;lahettajaID&#39;);
+	$vastaanottajaID = $request-&amp;gt;get(&#39;vastaanottajaID&#39;);
+	$summa     = $request-&amp;gt;get(&#39;summa&#39;);
+
+	// Kutsutaan usecasea!
+	try {
+		(new SiirraRahaa_useCase())-&amp;gt;siirraRahaa(
+			$lahtoPankkiID, 
+			$tuloPankkiID,
+			$lahettajaID,
+			$vastaanottajaID, 
+			$summa
+		);
+
+	} catch (Error $e) {
+		// Ei tarvetta tietää mikä tietty virhe tapahtui, sen sijaan ilmoitetaan
+		// virheviesti käyttäjälle. Viesti kertoo kaiken oleellisen.
+		return Response::error($e);
+	}
+
+	// Kaikki meni oikein mukavasti.
+	return Response::success(&#39;siirtoOnnistui&#39;);	
+
+
+}
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tässä vaiheessa on hyvä mainita eräästä seikasta.&lt;/p&gt;
+
+&lt;p&gt;Kuten huomaamme, sisääntulevan datan validaatio on jaettu kahteen osaan. Esimerkiksi vastaanottajaID:&lt;/p&gt;
+
+&lt;p&gt;1) Ensin validoimme, että vastaanottajaID on mukana sisään tulevassa palvelupyynnössä. Tämä validointi tapahtuu &lt;code&gt;$this-&amp;gt;validateSiirtoRequest($request)&lt;/code&gt; rivillä. Millainen tuo metodi on? Esimerkiksi seuraavanlainen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+protected function validateSiirtoRequest(Request $request)
+{
+	// Throws &amp;quot;ValidaatioVirhe&amp;quot;
+    $this-&amp;gt;validate($request, [
+        &#39;tuloPankkiID&#39; =&amp;gt; &#39;required|int&#39;,
+        &#39;lahettajaID&#39; =&amp;gt; &#39;required|int&#39;,
+        &#39;vastaanottajaID&#39; =&amp;gt; &#39;required|int&#39;,
+        &#39;summa&#39; =&amp;gt; &#39;required|int|min:0|max:99999999&#39;,
+    ]);
+
+    // Kaikki kunnossa
+    return true;
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Huomioitavaa on, että tämä tarkistus/validatointi tapahtuu &lt;em&gt;controllerin&lt;/em&gt; puolella.&lt;/p&gt;
+
+&lt;p&gt;2) Myöhemmin validoimme/tarkistamme - että kunkin ID:n takaa löytyy oikea, aito objekti. Eli jos pankkiID on 15, järjestelmässämme on olemassa Pankki, jonka ID on 15.&lt;/p&gt;
+
+&lt;p&gt;Tämä tarkistus tapahtuu &lt;em&gt;usecasen&lt;/em&gt; puolella.&lt;/p&gt;
+
+&lt;h3 id=&#34;controller-validaatio-vs-usecase-validaatio&#34;&gt;Controller-validaatio vs. usecase-validaatio&lt;/h3&gt;
+
+&lt;p&gt;Miksi validaatio on jaettu kahteen paikkaan? Eikö olisi selkeämpää, jos molemmat validaatiot tehtäisiin yhdessä ja samassa paikassa?&lt;/p&gt;
+
+&lt;p&gt;Ei.&lt;/p&gt;
+
+&lt;p&gt;On syytä huomata, että nämä kaksi validaatiota tarkistavat &lt;em&gt;eri&lt;/em&gt; asioita.&lt;/p&gt;
+
+&lt;p&gt;Controller-validaatio tarkistaa, että sisääntulevat ID:t ovat &lt;em&gt;numeroita&lt;/em&gt;. Ne eivät saa olla esimerkiksi JPG-kuvia - on vaikea etsiä pankkia JPG-kuvan kautta.&lt;/p&gt;
+
+&lt;p&gt;Usecase-validaatio tarkistaa, että &lt;em&gt;ID-numero&lt;/em&gt; (ja usecasen kohdalla me jo varmuudella tiedämme, että ID on numero, kiitos Controller-validaation!) vastaa jotakin järjestelmässä sijaitsee pankkia. On mahdollista, että palvelupyynnön mukana tullut ID-numero ei vastaa yhtäkään pankkia. Pankkeja ei kuitenkaan ole rajatonta määrää, numeroita sen sijaan on.&lt;/p&gt;
+
+&lt;p&gt;Tässä on ero. &lt;strong&gt;Controller validoi, että sisääntuleva data on oikeanmuotoista. Usecase validoi, että sisääntuleva data on järjellistä järjestelmän kannalta.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;summa-summarum&#34;&gt;Summa summarum&lt;/h3&gt;
+
+&lt;p&gt;Usecase-arkkitehtuurin vahvuus piilee juuri edellisessä huomiossa. Voimme käsitellä &amp;ldquo;ylätason toimintoja&amp;rdquo; selkeinä kokonaisuuksina, eli usecasenaina, käyttötarkoituksina. Samaan aikaan usecase on &lt;em&gt;irrallaan&lt;/em&gt; kaikesta siitä ikävästä, mutta pakollisesta säläkoodista, joka liittyy internet-applikaation tekniseen toteutukseen. Eli HTTP-pyyntöjen hallinnasta, jne.&lt;/p&gt;
+
+&lt;p&gt;Hyvässä web-applikaatiossa päteekin, että itse applikaation ydinkoodi - tässä tapauksessa se koodi, joka suorittaa siirtoja ja nostoja pankkien välillä - ei edes tiedä asuvansa osana web-applikaatiota. Se tietää asuvansa osana &lt;em&gt;applikaatiota&lt;/em&gt;, mutta webin olemassaolosta se on onnellisen tietämätön.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Suojaa tuloväylät - mutta miten?</title>
+      <link>http://nollaversio.fi/blog/public/laravel/protecting-routes/</link>
+      <pubDate>Wed, 20 Jul 2016 20:42:23 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/protecting-routes/</guid>
+      <description>
+
+&lt;p&gt;Tyypillinen web-applikaatio ottaa vastaan monenlaista palvelupyyntöä. Osa pyynnöistä tulee rekisteröityneiltä käyttäjiltä, osa vierailta, osa hakkereilta, osa sisältää dataa, osa ei.&lt;/p&gt;
+
+&lt;p&gt;Kaiken tämän keskellä applikaatio tulisi kehittää niin, että jokainen sisääntuloväylä on suojattu asianmukaisesti. Eli portti on kunnossa ja pysyy kiinni esim. SQL-injektioille.&lt;/p&gt;
+
+&lt;p&gt;Helppo, nopea tapa huolehtia suojauksesta on jokaisen tuloväylän portilla tarkistaa, että asianmukaiset paperit ovat mukana:&lt;/p&gt;
+
+&lt;h3 id=&#34;versio-1&#34;&gt;versio 1&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// AdminController.php
+
+public function store(Request $request) {
+	$this-&amp;gt;tarkistaAdminOikeudet();
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function index(Request $request) {
+	$this-&amp;gt;tarkistaAdminOikeudet();
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function list(Request $request) {
+	$this-&amp;gt;tarkistaAdminOikeudet();
+
+	// Kaikki hyvin, käsittele request
+}
+
+private function tarkistaAdminOikeudet() {
+	if (Auth::user()-&amp;gt;isNotAdmin()) {
+		throw new Exception(&amp;quot;Admin-oikeudet puuttuvat!&amp;quot;);
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevasta heti nähdään, että jotain on pielessä. Sama admin-tarkistus joudutaan tekemään kolmesti eri kohdissa.&lt;/p&gt;
+
+&lt;p&gt;Huomattavasti paremman ratkaisun tarjoaa konstruktori-metodi, joka mahdollistaa kaikille public-metodeille &lt;em&gt;yhteisen&lt;/em&gt; tarkistuksen määrittämisen. Eli:&lt;/p&gt;
+
+&lt;h3 id=&#34;versio-2&#34;&gt;versio 2&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// AdminController.php
+
+public function __construct(Request $request) {
+
+	$this-&amp;gt;tarkistaAdminOikeudet();
+}
+
+public function store(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function index(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function list(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+private function tarkistaAdminOikeudet() {
+	if (Auth::user()-&amp;gt;isNotAdmin()) {
+		throw new Exception(&amp;quot;Admin-oikeudet puuttuvat!&amp;quot;);
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kuten huomaamme, duplikaatio poistui. Tarkistus tehdään vain yhdessä pisteessä.&lt;/p&gt;
+
+&lt;p&gt;Mutta miksi turhaan edes keksiä pyörää uudestaan? Laravel tarjoaa &amp;ldquo;Middleware&amp;rdquo;-nimisen konseptin käyttöömme. Middleware on käytännössä yksi ylimääräinen kerros internetin ja applikaatiosi välissä. Tuo ylimääräinen &amp;ldquo;rasvakerros&amp;rdquo; soveltuu hyvin admin-tarkistuksen suorituspisteeksi.&lt;/p&gt;
+
+&lt;h3 id=&#34;versio-3&#34;&gt;versio 3&lt;/h3&gt;
+
+&lt;p&gt;// Middleware/TarkistaAdmin.php&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class TarkistaAdmin
+{
+
+    public function handle($request, Closure $next)
+    {
+        if (Auth::user()-&amp;gt;isNotAdmin()) {
+        	// Ohjataan käyttäjä kirjautumissivulle.
+            return redirect(&#39;kirjaudu_sisaan&#39;);
+        }
+
+        // Kaikki ok!
+        // Muu applikaatio voi luottaa että käyttäjällä on tarvittavat oikeudet!
+
+        return $next($request);
+    }
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// AdminController.php
+
+public function __construct(Request $request) {
+
+	$this-&amp;gt;middleware(&#39;tarkistaAdmin&#39;)
+}
+
+public function store(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function index(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+public function list(Request $request) {
+
+	// Kaikki hyvin, käsittele request
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tämä on jo varsin pätevä ratkaisu. Ensinnäkin admin-tarkistuksen logiikka elää nyt poissa AdminControllerista. Tämä on ihan hyvä, sillä oletettavasti joku muukin komponentti applikaatiossa on kiinnostunut tekemään admin-tarkistuksia. Kun admin-tarkistus elää middleware-kerroksessa, se on kaikkien applikaation osasten käytettävissä.&lt;/p&gt;
+
+&lt;p&gt;Noin muutenkin on järkevintä tsekata admin-oikeudet mahdollisimman aikaisin. Tilanne on vastaava kuin lentokentällä - turvatarkastus tapahtuu &lt;em&gt;keskitetysti&lt;/em&gt; ennen lähtöporteille siirtymistä. Millainen sotku syntyisi, jos turvatarkastus järjestettäisiin kunkin lähtöportin edessä erikseen? Aikamoinen.&lt;/p&gt;
+
+&lt;p&gt;Sama konsepti pätee web-applikaatioon - mitä aiemmin tarkastukset tehdään, sitä parempi. Aikainen tarkastus selkeyttää kaikkien osapuolten toimintaa. Lentokentälläkin on helpompi kuljeskella, kun turvatarkastus on rajattu tietylle alueelle.&lt;/p&gt;
+
+&lt;p&gt;Laravellin middleware-konsepti lisää myös uusia mahdollisuuksia valikoimaamme. Voimme esimerkiksi määrittää suoraan konstruktorissa, mille kaikille sisääntuloväylille (eli public metodeille) haluamme middleware-suojauksen pätevän.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// AdminController.php
+
+public function __construct(Request $request) {
+
+	$this-&amp;gt;middleware(&#39;tarkistaAdmin&#39;, [&#39;only&#39; =&amp;gt; [
+		&#39;store&#39;,
+		&#39;update&#39;
+	]]);
+}
+
+public function store(Request $request) {
+
+	// SUOJATTU!
+}
+
+public function update(Request $request) {
+
+	// SUOJATTU!
+}
+
+public function index(Request $request) {
+
+	// EI SUOJATTU!
+}
+
+public function list(Request $request) {
+
+	// EI SUOJATTU!
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kätevää, varsin kätevää. Esimerkin &lt;em&gt;only&lt;/em&gt;-attribuutin lisäksi meillä on käytössämme &lt;em&gt;except&lt;/em&gt;-attribuutti, joka
+toimii nimensä mukaisesti - se suojaa kaikki muut väylät paitsi erikseen &lt;em&gt;except&lt;/em&gt;:in perässä määritellyt.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Laravel vinkit #1</title>
+      <link>http://nollaversio.fi/blog/public/laravel/vinkit1/</link>
+      <pubDate>Wed, 06 Jul 2016 06:28:46 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/vinkit1/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;Kuinka lisätä uusi raportointitoiminnallisuus ilman muutoksia vanhaan koodipohjaan?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Lyhyt vastaus: luomalla palveluntarjoaja, joka määrittää tapahtumakuuntelijan.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Laravellilla rakennettu järjestelmä on helposti laajennettavissa palveluntarjoajien kautta. Palveluntarjoajan mahdollistavat arkkitehtuurin rakentamisen siten, että uudet toiminnallisuudet elävät täysin erillään ns. ydinkoodista. Ydinkoodin ei edes tarvitse tietää uuden toiminnallisuuden olemassaolosta.&lt;/p&gt;
+
+&lt;p&gt;Paras tapa toteuttaa tämä erilläänolo on käyttää palveluntarjoajia (Service Provider).&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Käytetään esimerkkinä Nordean pankkijärjestelmää.&lt;/p&gt;
+
+&lt;p&gt;Oletetaan, että Nordean mahtava nettipankki sallii asiakkaidensa lisätä pankkitileilleen rahaa. Ahneuspäissään pankkiväki ei ole lisännyt mahdollisuutta nostaa rahaa tililtä - ainoastaan talletus on mahdollista.&lt;/p&gt;
+
+&lt;p&gt;Ihana nettipankki toimii kuin unelma, kunnes tulee lakimuutoksen myötä lisävaatimus: jokaisen pankkitilille tehtävän talletuksen jälkeen järjestelmän tulee ilmoittaa viranomaisille ko. pankkitilin uusi saldo.&lt;/p&gt;
+
+&lt;p&gt;Oletetaan, että tässä esimerkissä viranomaisilla on upea HTTP-rajapinta nimeltä &amp;ldquo;Pankkipoliisi&amp;rdquo;. Rajapinnan tarkempi toiminta ei ole oleellista, joten oletetaan, että pintaa voidaan kutsua tyyliin:&lt;/p&gt;
+
+&lt;p&gt;&lt;code&gt;Pankkipoliisi::ilmoita($asiakasID, $uusiSaldo)&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Miten nykyistä Nordean pankkijärjestelmää tulee muuttaa, jotta lain vaatimus täyttyy?&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Tarvittava muutos järjestelmän on yksinkertainen. Vanha ydinkoodi - joka huolehtii pankkitilin hallinnasta - voi pysyä tismalleen identtisenä.&lt;/p&gt;
+
+&lt;p&gt;Vaatimuksen täyttöä varten lisäämme järjestelmään palveluntarjoajan, joka puolestaan lisää &lt;em&gt;tapahtumakuuntelijan&lt;/em&gt;. Tuo tapahtumakuuntelija on kaiken A ja O - se kuuntelee järjestelmän tuottamia tapahtumia ja valikoi niistä jatkokäsittelyyn itselleen mieluisat.&lt;/p&gt;
+
+&lt;p&gt;Käytännössä homma toimii siten, että &lt;strong&gt;vanha ydinkoodi tuottaa tapahtumia&lt;/strong&gt;, ja &lt;strong&gt;uusi koodipohja reagoi noihin tapahtumiin&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tämä patterni on yleismaailmallinen ja soveltuu moniin käyttötarkoituksiin: olemassaoleva järjestelmäkomponentti tuottaa informaatiota, uusi komponentti reagoi tuotettuun informaatioon.&lt;/p&gt;
+
+&lt;p&gt;Kaiken pohjalla toimii oletus siitä, että vanha komponentti ei tiedä uuden komponentin olemassaolosta mitään. Parhaimmillaan myöskään uusi komponentti ei havaitse vanhaa komponenttia. Kaikki informaatio kulkee tapahtumien muodossa.&lt;/p&gt;
+
+&lt;p&gt;Hieman karrikoiden; vanha komponentti &amp;ldquo;&lt;em&gt;ampuu tapahtumia kohti tyhjyyttä&lt;/em&gt;&amp;rdquo;, uusi komponentti &amp;ldquo;&lt;em&gt;vastaanottaa tapahtumia tyhjyydestä&lt;/em&gt;&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Tämä on koko arkkitehtuurin perimmäinen ajatus - vanha ja uusi koodipohja elävät täysin omissa maailmoissaan tietämättä mitään toisistaan.&lt;/p&gt;
+
+&lt;p&gt;Uusi koodipohja vain ottaa sopivat tapahtumat kiinni.&lt;/p&gt;
+
+&lt;p&gt;Vanha ydinkoodi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Models/Pankkitili.php
+
+public function saveCash(ICurrency $amount) {
+
+	// Ei tarvetta transaktiolle kun lisätään rahaa -&amp;gt; menee aina läpi.
+
+	// Lasketaan uusi saldo
+	$this-&amp;gt;balance = $this-&amp;gt;balance + $amount-&amp;gt;convert($this-&amp;gt;accountCurrency);
+	// Päivitetään muutos tietokantaan. 
+	// Luo ja ampuu tapahtuman &amp;quot;pankkitili päivitetty!&amp;quot;.
+	$this-&amp;gt;save();
+
+	return true;
+	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yllä siis ydinkoodipohja. Koodi ei missään sisällä ekspliittistä käskyä ampua tapahtumaa. Tapahtuman luonti ja välitys järjestelmän muille komponenteille tapahtuu implisiittisesti, pinnan alla, Laravellin toimesta.&lt;/p&gt;
+
+&lt;p&gt;Kun lisätoiminnallisuutta järjestelmään lisätään, &lt;em&gt;ylläolevaan koodipohjaan ei tarvitse koskea&lt;/em&gt;. Tämä on koko hajautetun, tapahtumien välitykseen perustuvan arkkitehtuurin keskeisin pointti.&lt;/p&gt;
+
+&lt;p&gt;Toteutetaan uusi raportointitoiminnallisuus lisäämällä palveluntarjoaja, jonka vastuulla on napata lennosta sopivat tapahtumat ja reagoida niihin.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;// Providers/RaportointiPankkipoliisille.php
+
+public function boot() {	
+
+  // Ilmoitetaan halustamme kuunnella Pankkitiliin liittyviä &amp;quot;updated&amp;quot;-tapahtumia.
+  Pankkitili::updated(function($tili) {
+    // Tämä klosuuri ajetaan aina kun tilin saldo on päivittynyt.
+    // Klosuurin sisällä käytössämme on $tili-objekti
+    // $tili edustaa sitä Pankkitiliä, johon päivitys kohdistui.
+
+    // Selvitetään uusi saldo lähettääksemme sen viranomaisille.
+    $uusiSaldo = $tili-&amp;gt;getBalance();
+
+    $poliisi = new Pankkipoliisi(/*api-tunnukset tähän*/);
+
+    // Ilmoitetaan käyttäjän uusi saldo, eli lähetetään käyttäjä-ID ja saldosumma.
+    try {
+      $poliisi-&amp;gt;ilmoita(\Auth::user()-&amp;gt;id(), $uusiSaldo);
+    } catch (\Exception $e) {
+      Log::warning(&#39;poliisi_ilmoitus_fail&#39;, $e);
+    }
+  });
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Pankkipoliisin asetukset täytyy määritellä jossain config-tiedostossa, mutta periaate on ylläolevan mukainen.&lt;/p&gt;
+
+&lt;p&gt;Tiivistettynä:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Vanhan koodipohjan (&lt;em&gt;Pankkitili.php&lt;/em&gt;) ei tässä esimerkissä tarvinnut muuttua kun halusimme lisätä uuden toiminnallisuuden järjestelmään.&lt;/li&gt;
+&lt;li&gt;Uusi palveluntarjoaja (&lt;em&gt;RaportointiPankkipoliisille.php&lt;/em&gt;) lisäsi &lt;strong&gt;laajennuksen&lt;/strong&gt; olemassaolevaan järjestelmään.&lt;/li&gt;
+&lt;li&gt;Lisätyn laajennuksen määrittämä &lt;em&gt;tapahtumakuuntelija&lt;/em&gt; nappaa sopivat tapahtumat kiinni ja reagoi niihin lähettämällä viestin viranomaisille.&lt;/li&gt;
+&lt;/ol&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,297 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Varausten hallinta tietokannan tasolla &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Varausten hallinta tietokannan tasolla</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Tue, Jul 26, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Otetaan esimerkki seuraavankaltaisesta applikaatiosta. Applikaatio mahdollistaa uhanalaisten sarvikuonojen ostamisen lemmikeiksi. Afrikan salametsästäjät (tai tässä tapauksessa &lsquo;salakidnappaajat&rsquo;) tuovat järjestelmään uusia sarvikuonoja, joita eurooppalaiset intoilijat ostavat.</p>
+
+<p>Ostoprosessi ei kuitenkaan ole yksinkertainen. Kukin sarvikuono varataan ostoprosessin ajaksi - mikäli ostoprosessi menee onnistuneesti läpi, sarvikuonopolo rahdataan Eurooppaan uudelle isännälleen. Mikäli ostoprosessi ei mene lävitse, sarvikuono vapautuu takaisin markkinapaikalle.</p>
+
+<p>Tietokanta voisi olla esim. tämän kaltainen:</p>
+
+<pre><code>// Sarvikuonot-taulu
+
+| id |   ostaja  | hinta | tullut_myyntiin |
+| -- | --------- | ----- | --------------- |
+| 1  |   NULL    |  25   |   1.6.2016      |
+| 2  |   NULL    |  32   |   3.6.2016      |
+| 3  |   2       |  26   |   4.6.2016      |
+
+</code></pre>
+
+<pre><code>// Ostajat-taulu
+
+| id |   nimi    |  maa  |   email         |
+| -- | --------- | ----- | --------------- |
+| 1  |   Pekka   |  FI   |   pekka@24.fi   |
+| 2  |   Mikko   |  FI   |   m85@gmail.com |
+
+</code></pre>
+
+<p>Järjestelmä toimii ylläolevia tauluja hyödyntäen. Ostaja kirjautuu sarvikuonojen markkinapaikalle - se miten tuo kirjautuminen tapahtuu ei ole tässä esimerkissä oleellista. Sen jälkeen hän selaa ostettavissa olevia sarvikuonoja. <em>Sarvikuonot</em>-taulusta saadaan helposti haettu vapaana (ostomielessä) olevat kuonokkaat - vapaalla sarvikuonolla <em>ostaja</em>-sarake on tyhjä (NULL).</p>
+
+<p><code>SELECT * from Sarvikuonot WHERE ostaja=NULL</code></p>
+
+<p>Mutta kuten alussa mainitsimme, haluamme myös sallia sarvikuonon <em>varauksen</em> itse ostoprosessin ajaksi.</p>
+
+<p>Miksi tämä on tärkeää? <strong>Siksi, että muuten saattaisi hyvinkin käydä niin, että useampi henkilö yrittäisi samanaikaisesti ostaa samaa kuonokasta.</strong></p>
+
+<p>Ongelman ydin on siinä, että sarvikuonon <em>ostaja</em>-sarake päivitetään vasta aivan ostoprosessin lopussa. Tämä on loogista siinä mielessä, että ostos ei ole vahvistettu kuin vasta prosessin lopussa.</p>
+
+<p>Mutta järjestelmän muiden asiakkaiden tämä ei ole optimaalista. On varsin ikävää jos joku heistä aloittaa oman ostoprosessinsa sarvikuonosta, jota sinä olet parhaillaan maksamassa Nordean nettipankissa. Kun maksusi menee läpi, tuo toinen asiakas on umpikujassa.</p>
+
+<p>Hänen kannaltaan on varsin ikävää, mikäli ostos epäonnistuu aivan kalkkiviivoilla. Vähemmästäkin ihminen repii juurikasvunsa.</p>
+
+<p>Ongelman ydin siis on, että ostoprosessilla on <strong>alku</strong> ja <strong>loppu</strong>. Mikäli ostoprosessi olisi pistemäinen tapahtuma, mitään ongelmaa ei olisi. Varaus ja osto tapahtuisivat tismalleen samalla ajan hetkellä, joten tarve varauksen olemassaololle poistuisi.</p>
+
+<p>Esimerkkinä tälläisestä pistetapahtumasta on ruokakaupassa käynti. Sanotaan, että maitohyllyllä on tasan yksi maitopurkki. Kauppaan saapuu kaksi perhekuntaa maito-ostoksille.</p>
+
+<p>Kumpi poppoo tuon maitopurtilon saa mukaansa? Kumpi ensimmäisenä sen hyllyltä nappaa. Voittaja vie maidon. Seuraava käsi hapuilee pelkkää tyhjää ilmaa. Tyhjyyttä kohti kurotteleva kyllä varsin nopeasti hoksaa, että maito meni jo, joten hänen ei tarvitse jatkaa ostoprosessiaan eteenpäin. Ainoastaan voittaja kävelee kohti kassapistettä.</p>
+
+<p>Ratkaiskaamme sarvikuonojen <em>varaus vs. osto</em> -ongelma lisäämällä erillinen varaus-sarake tietokantatauluun.</p>
+
+<h3 id="varaus-ja-osto-eriteltynä-tietokannassa">Varaus ja osto eriteltynä tietokannassa</h3>
+
+<p>Uusi Sarvikuonot-taulu näyttää tältä:</p>
+
+<pre><code>// Sarvikuonot-taulu
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
+| -- | --------- | ------- | ----- | --------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
+| 2  |   NULL    |  1      |   32  |   3.6.2016      |
+| 3  |   2       |  2      |   26  |   4.6.2016      |
+
+</code></pre>
+
+<p>Järjestelmä toimii seuraavanlaisesti: heti kun potentiaalinen kuonoaddikti aloittaa ostoprosessin, hänen ostajanumeronsa lisätään sarvikuonon <em>varaaja</em>-kenttään.</p>
+
+<p>Tällä tavoin taulu sisältää tiedon siitä, että kyseistä sarvikuonoa <em>ollaan parhaillaan ostamassa</em>. Muille asiakkaille tuota sarvikasta ei tarvitse näyttää listauksissa - heidän kannaltaan sarvikuono on jo myyty. Täten ostettavissa olevat sarvikuonot haetaan tietokantakomennolla:</p>
+
+<p><code>SELECT * from Sarvikuonot WHERE varaaja=NULL</code></p>
+
+<p>Kun varausta tekevä taho sitten lopulta <em>vahvistaa</em> kuonokkaan oston, tieto vahvistuksesta päivitetään tauluun <em>ostaja</em>-sarakkeeseen.</p>
+
+<pre><code>// Sarvikuonot-taulu
+// Sarvikuonon #2 osto vahvistettu ostajalle #1.
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
+| -- | --------- | ------- | ----- | --------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
+| 2  |   1       |  1      |   32  |   3.6.2016      |
+| 3  |   2       |  2      |   26  |   4.6.2016      |
+
+</code></pre>
+
+<p>Kaksi eri asiakasta eivät voi enää aloittaa ostoprosessia samasta sarvikuonosta samanaikaisesti. Erinomaista. Onko järjestelmämme nyt täydellinen?</p>
+
+<p>Ei todellakaan.</p>
+
+<p>Entä jos ostoprosessi ei menekään läpi? Koska <em>varaaja</em>-kenttä on jo täytetty, sarvikuono on muiden asiakkaiden näkökulmasta ostettu. Mutta jos ostoprosessi menee pieleen (ehkä ostaja tulee katumapäälle kesken maksamisen), tuo sarvikuono on ikuisesti jumissa limbossa.</p>
+
+<p>Tarvitsemme siis mekanismin, joka jollain tavoin <em>vapauttaa</em> limboon joutuneet sarvikuonot. Mekanismiksi on kaksi hyvää vaihtoehtoa.</p>
+
+<h3 id="varausten-vapautus-aktiivinen-vs-passiivinen">Varausten vapautus - aktiivinen vs. passiivinen</h3>
+
+<p>Kerrataan, tietokantataulumme näyttää tältä:</p>
+
+<pre><code>// Sarvikuonot-taulu
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
+| -- | --------- | ------- | ----- | --------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
+| 2  |   NULL    |  1      |   32  |   3.6.2016      |
+| 3  |   2       |  2      |   26  |   4.6.2016      |
+
+</code></pre>
+
+<p>Ja potentiaalinen ostajamme #1 yllättäen saa aivoinfraktin ja poistuu linjoilta. Hän ei tule enää koskaan ostamaan edes tikkukaramellia saati savannin hyökkäysvaunua. Joten tehtävämme on jollain tavoin <em>poistaa</em> varaus sarvikuonolta #2.</p>
+
+<h4 id="aktiivinen-poisto">Aktiivinen poisto</h4>
+
+<p>Yksi tapa hoitaa poistot on pitää yllä erillistä <em>poisto-ohjelmaa</em>, joka tasaisin väliajoin käy etsimässä + poistamassa <em>erääntyneitä</em> varauksia.</p>
+
+<p>Vastaavan kaltainen systeemi on käytössä hotelleissa - jos et ole viimeistään klo 18 vastaanottamassa huoneesi avainta, varauksesi poistetaan asiakaspalvelijan toimesta.</p>
+
+<p>Meidän sarvikuonomarkkinapaikkamme kohdalla loogisinta on kirjata ylös ajankohta, jolloin ostoprosessi alkoi. Vaadimme ostajilta, että heidän tulee suorittaa ostoprosessinsa läpi yhden tunnin aikana. Jos ostoprosessi on epäonnistunut (tai yhä kesken!) tuon yhden tunnin rajapyykin umpeuduttua, varaus poistetaan.</p>
+
+<p>Muokataan tauluamme, jotta saamme kirjattua ylös varauksen tekoajankohdan:</p>
+
+<pre><code>// Sarvikuonot-taulu
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |   varaus_tehty    |
+| -- | --------- | ------- | ----- | --------------- | ----------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |       NULL        |
+| 2  |   NULL    |  1      |   32  |   3.6.2016      | 26.7.16 klo 12.15 |
+| 3  |   2       |  2      |   26  |   4.6.2016      | 21.7.16 klo 17.33 |
+
+</code></pre>
+
+<p>Ohessa pieni skripti, joka pyörii ikäänkuin <em>taustapalveluna</em>, käyden
+tasaisin väliajoin poistamassa erääntyneet varaukset:</p>
+
+<pre><code class="language-php">
+// Tätä skriptiä kutsutaan esim. käyttöjärjestelmän cron-tabin toimesta.
+// Esimerkiksi aina 1 minuutin välein.
+
+// Aloita tietokanta-transaktio
+DB::transaction(function() {
+	// Rajapyykkinä toimii ajankohta yksi tunti sitten.
+	$aikaRajapyykki = Carbon::now()-&gt;subHour();
+
+	// Sarvikuonot, jotka ovat erääntyneet, 
+	// mutta ei ostettu ('ostaja' on NULL),
+	// tyhjennetään varaustiedot
+	Sarvikuono
+		::where('varaus_tehty', &lt;, $aikaRajapyykki)
+		-&gt;where('ostaja', NULL)
+		-&gt;update([
+			'varaaja' =&gt; NULL,
+			'varaus_tehty' =&gt; NULL
+		]);
+});
+
+</code></pre>
+
+<p>Kun ylläoleva skripti on käynyt poistamassa varauksen tiedot, on sarvikuono #2 jälleen muiden
+markkinapaikan kävijöiden nähtävissä.</p>
+
+<p>On myös toinen keino, ns. passiivinen poisto.</p>
+
+<h4 id="passiivinen">Passiivinen</h4>
+
+<p>Aktiivisessa poistossa meillä on erillinen, itse itseään kontrolloiva/ajastava prosessi (=<em>käyttöjärjestelmän prosessi</em>), joka käy tasaisin väliajoin tekemässä poistot. Tuo prosessi elää omaa elämäänsä irrallaan siitä prosessista, joka pyörittää markkinapaikkaamme.</p>
+
+<p>Toinen vaihtoehto on jättää varauksen tiedot maatumaan tietokantaan, ja suorittaa erääntyneiden varausten käsittely suoraan applikaatiomme ydinkoodin puolella.</p>
+
+<p>Tämä on läpeensä sysimusta idea, mutta esimerkin omaisesti esittelen myös sen.</p>
+
+<p>Sarvikuonot-taulu ei muutu mihinkään. Se on edelleen tälläinen:</p>
+
+<pre><code>// Sarvikuonot-taulu
+
+| id |   ostaja  | varaaja | hinta | tullut_myyntiin |   varaus_tehty    |
+| -- | --------- | ------- | ----- | --------------- | ----------------- |
+| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |       NULL        |
+| 2  |   NULL    |  1      |   32  |   3.6.2016      | 26.7.16 klo 12.15 |
+| 3  |   2       |  2      |   26  |   4.6.2016      | 21.7.16 klo 17.33 |
+
+</code></pre>
+
+<p>Erillisen skriptin sijasta meillä on <em>suoraan applikaatiomme sisuksiin koodattu sopivat reagoinnit</em> erääntyneisiin varauksiin.</p>
+
+<p>Esimerkiksi ostettavissa olevien kuonojen listaus näyttää nyt tältä:</p>
+
+<pre><code class="language-php">// SarvikuonoController.php
+
+public function vapaatKuonot() {
+
+	// Vapaat kuonot ovat niitä, joilla pätee joko:
+	// 1) 'varaaja' on tyhjä (NULL)
+	// 2) 'varaus_tehty' ajankohta yli 1 tunti sitten
+
+	$aikaRajapyykki = Carbon::now()-&gt;subHour();
+	$vapaat = Sarvikuonot
+		::where('varaus_tehty', &lt;, $aikaRajapyykki)
+		-&gt;where('ostaja', NULL)
+		-&gt;get();
+
+	return View::make('listaus', compact('vapaat'));	
+
+	
+}
+
+</code></pre>
+
+<p>Muut toiminnot joutuvat nyt turvautumaan vastaavaan logiikkaan. Esimerkiksi ostoprosessin lopussa on vielä kerran varmistettava, että varaus on yhä voimassa. Homma toimii, joten kuten.</p>
+
+<p>Passiivisessa lähestymistavassa on puolensakin. Ylimääräinen prosessin (aktiivinen) olemassaolo lisää järjestelmän kuormitusta ja luo uudenlaisen bugityypin - jos erillinen poistoprosessi kaatuu, varaukset eivät enää eräänny lainkaan. Passiivisessa mallissa tätä riskiä ei ole, sillä &ldquo;erääntyminen&rdquo; on koodattu suoraan osaksi ydinalgoritmia.</p>
+
+<blockquote>
+<p>Loppukaneetti: passiivisen ja aktiivisen lähestymistavan ero on pohjimmiltaan filosofinen, ja siitä löytyy oikean elämän esimerkkejä kosolti. Otetaan esimerkiksi käteisen rahan käyttö.</p>
+
+<p>Yksi nostaa joka kuukausi 100 euroa käteistä, ja sujauttaa setelit lompakkoonsa. Jos hän kuukauden aikana tarvitsee käteistä, hän voi luottaa siihen, että sitä lompakosta löytyy. Hänen ei tarvitse jokaisen kirppariostoksen kohdalla erikseen miettiä asiaa.</p>
+
+<p>Toinen ei nosta käteistä rahaa, vaan kantaa mukanaan yksinomaan muovirahaa. Hänen ei tarvitse huolehtia kuukausittaisesta Otto-automaatilla vierailusta. Mutta jos hän joskus sattuu tarvitsemaan käteistä, hänellä ei sitä ole. Toisin sanoen, jokaista ostosta tehdessään hänen täytyy erikseen varmistaa, että muoviraha käy.</p>
+
+<p>Kyseessä on klassinen tradeoff.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

@@ -86,11 +86,11 @@ console.log(chalk.cyan(&quot;beforeMove cb&quot;))
 
 <p>tuottaa seuraavanlaisen lopputuleman:</p>
 
-<p><img src="/blog/public/img/console-log-cyan.png" alt="Turkoosin värinen merkkijono" /></p>
+<p><img src="/img/console-log-cyan.png" alt="Turkoosin värinen merkkijono" /></p>
 
 <p>Käytän eri värejä <em>simuloimaan</em> eri käyttäjien kommunikaatiota Node.js-serverin kanssa. Sanotaan esimerkiksi, että meillä on kolme käyttäjää A, B ja C. Nuo kaikki kolme saavat viestejä applikaatiolta. Tuotantokäytössä nuo viestit luonnollisesti menisivät kunkin käyttäjän www-selaimeen, mutta testivaiheessa on helpompaa vain printata kunkin käyttäjän saama viesti komentoriville. Ongelmaksi muodostuu, että <em>komentoriviltä on visuaalisesti vaikea hahmottaa mikä viesti kuuluu millekin käyttäjälle</em>:</p>
 
-<p><img src="/blog/public/img/console-log-users-white.png" alt="Kaikkien käyttäjien kommunikaatio palvelimen kanssa printataan testiajossa komentoriville" /></p>
+<p><img src="/img/console-log-users-white.png" alt="Kaikkien käyttäjien kommunikaatio palvelimen kanssa printataan testiajossa komentoriville" /></p>
 
 <p>Chalk-kirjaston avulla voimme assignoida kullekin käyttäjälle oman värin, jolloin on visuaalisesti helppo erottaa eri käyttäjien viestit toisistaan:</p>
 
@@ -148,7 +148,7 @@ setInterval(function() {
 
 <p>Ylläoleva tuottaa kauniin lopputuloksen komentoriville kun test.js-tiedosto suoritetaan:</p>
 
-<p><img src="/blog/public/img/console-log-users-custom-colors.png" alt="Kullakin käyttäjällä on oma värinsä komentoriville" /></p>
+<p><img src="/img/console-log-users-custom-colors.png" alt="Kullakin käyttäjällä on oma värinsä komentoriville" /></p>
 
 <p>Pohjimmiltaan värien käyttö on tietenkin makukysymys, mutta ainakin itselläni se helpottaa testitulosteen lukemista huomattavasti.</p>
 

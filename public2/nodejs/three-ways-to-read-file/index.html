@@ -1,0 +1,175 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Kolme tapaa lukea tiedosto (Node.js) &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Kolme tapaa lukea tiedosto (Node.js)</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Mon, Aug 8, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Tiedoston lukeminen on varsin yleinen toimenpide Node.js-applikaatiossa. Alla esittelen lyhyesti kolme tapaa hoitaa luku-urakka.</p>
+
+<h3 id="synkronoitu-bufferoitu">Synkronoitu, bufferoitu</h3>
+
+<p>Synkronoitu ja bufferoitu tiedostoluku tapahtuu seuraavanlaisesti:</p>
+
+<pre><code class="language-javascript">
+var fs = require('fs')
+
+var tiedostonSisalto = fs.readFileSync('tiedosto.txt', 'utf8');
+
+</code></pre>
+
+<p>Ylläoleva koodi on äärimmäisen yksinkertainen. Luemme tiedoston nimeltä <em>tiedosto.txt</em> ja tallennamme sen sisällön <em>tiedostonSisalto</em>-muuttujaan. Määritämme erikseen vielä, että tiedoston on enkoodattu utf8-merkistöllä, jotta voimme käsitellä sisältöä oikein.</p>
+
+<p>Ongelmaksi ylläolevassa muodostuu se, että lukeminen on <strong>synkronoitu</strong> toimenpide. Toisin sanoen, koko Nodejs:n runtime seisoo tyhjän panttina sen aikaa, kun tiedoston lukeminen kovalevyltä on käynnissä. Näin ei tarvitsisi olla, mutta ylläolevassa näin on.</p>
+
+<p>Toimintojen suoritusjärjestys on kutakuinkin seuraava:</p>
+
+<ol>
+<li>Node.js-prosessi pyytää käyttöjärjestelmää avaamaan tiedoston.</li>
+<li>Käyttöjärjestelmä pyytää kovalevyä (sen ajureita) suorittamaan luvun.</li>
+<li>Tiedoston luku tapahtuu</li>
+<li>Käyttöjärjestelmä informoi Node.js-prosessia onnistuneesta luvusta.</li>
+<li>Node.js-prosessi jatkaa suoritustaan.</li>
+</ol>
+
+<p>Ongelman ydin on siinä, että vaiheiden 2-4 ajan Node.js-prosessi seisoo paikallaan.</p>
+
+<h3 id="asynkronoitu-bufferoitu">Asynkronoitu, bufferoitu</h3>
+
+<p>Ylläoleva ongelma ratkeaa suorittamalla tiedostonluku <strong>asynkronoidusti</strong>.</p>
+
+<pre><code class="language-javascript">
+var fs = require('fs')
+
+fs.readFile('tiedosto.txt', 'utf8', function(err, tiedostonSisalto) {
+	console.log(3)
+});
+
+console.log(1);
+console.log(2);
+
+</code></pre>
+
+<p>Sen sijaan, että määrittäisimme paluuarvon sisälleen ottavan muuttujan, syötämme tiedoston lukemisesta vastaavaan Node.js-funktioon kyytipojaksi callback-funktion. Callback-funktio nimensä mukaisesti sitten joskus tulee kutsutuksi, saaden parametrinään tiedoston sisällön.</p>
+
+<p>Huomioitavaa on, että nyt Node.js-runtime <strong>ei seiso</strong> tyhjän panttina tiedostoluvun aikana. Sen sijaan tiedoston lukeminen fyysiseltä kovalevyltä tapahtuu yhtäaikaa Node.js-prosessin koodinajon kanssa.</p>
+
+<p>Ylläolevassa koodissa <em>console.log()</em>-komennot kuvaavat eri koodirivien suoritusjärjestystä. Callback-funktion sisällä oleva lokkaus tapahtuu viimeisenä.</p>
+
+<p>Asynkronoitu ja bufferoitu ratkaisu on pätevä, ja yleisesti käytössä. Mutta entä jos emme halua bufferoida koko tiedostoa keskusmuistiin? Jos tiedoston koko on esimerkiksi 20 gigatavua, meillä ei riitä keskusmuistissa edes tila:</p>
+
+<pre><code class="language-javascript">
+FATAL ERROR: CALL_AND_RETRY_0 Allocation failed - process out of memory
+
+</code></pre>
+
+<p>Ratkaisu on striimata tiedosto pienissä paloissa.</p>
+
+<h3 id="asynkronoitu-streamattu">Asynkronoitu, streamattu</h3>
+
+<p>Kolmas ja viimeinen tapa hoitaa tiedoston lukeminen on <em>striimata</em> tiedoston sisältö pienissä pätkissä kerrallaan. Tällöin kerrallaan keskusmuistissa on vain pieni osa tiedostoa; kun tuo osa on käsitelty, seuraava osa voi ottaa sen paikan.</p>
+
+<pre><code class="language-javascript">
+var fs = require('fs');
+var readStream = fs.createReadStream('tiedosto.txt');
+
+readStream.on('data', function(chunk) {
+	console.log(chunk);
+});
+
+</code></pre>
+
+<p>Ylläolevassa ratkaisussa määritämme callback-funktion, jonka lähetämme kyytipojaksi tiedoston lukemisesta vastaavaan järjestelmäfunktioon. Tässä suhteessa ratkaisu on identtinen #2 ratkaisun kanssa.</p>
+
+<p>Mutta ero #2 ratkaisuun tulee siinä, mitä tuo callback ottaa parametrinään sisälle. Kakkosratkaisussa koko tiedoston sisältö tuli parametrinä sisään. Nyt tulee vain <em>pieni osa</em> tiedostoa - sen sijaan callback-funktiota kutsutaan *<em>uudelleen ja uudelleen</em> niin kauan, kunnes koko tiedosto on pala palalta käsitelty.</p>
+
+<p>Striimauksen ongelma on, että saamme palat yksitellen. Jos siis haluamme <strong>uudelleenrakentaa</strong> tiedoston sisällön eheänä kokonaisuutena, meidän täytyy erikseen yhdistää nuo palat yhteen.</p>
+
+<blockquote>
+<p>Loppukaneetti: yllä kolme yleisintä tapaa hoitaa tiedoston lukeminen ja käsittely Node.js-applikaatiossa. Eri tavat sopivat eri ongelmiin:</p>
+
+<ol>
+<li><p>Synkronoitu ja bufferoitu sopii hyvin Node.js-applikaation initialisaatiovaiheeseen (eli kun applikaatio käynnistyy). Initialisaation aikana applikaatio rakentuu keskusmuistiin, ja varsinaisia loppukäyttäjien HTTP-kutsuja ei vielä käsitellä. Tästä syystä synkronoidun kutsun negatiiviset vaikutukset ovat vähäiset. Myöhemmin applikaation normaalin toiminnan aikana synkronoitu kutsu hidastaa merkittävästi applikaation vasteaikaa.</p></li>
+
+<li><p>Asynkronoitu ja bufferoitu sopii erinomaisesti pienten tiedostojen lukemiseen applikaation varsinaisen toiminta-ajon aikana. Applikaatio ei jumahda paikalleen, vaan pysyy käyttökelpoisena ja suorituskykyisenä.</p></li>
+
+<li><p>Asynkronoitu ja striimattu sopii suurten tiedostojen lukemiseen. Se sopii myös tapauksissa, joissa tiedoston sisältö voidaan pala palalta lähettää eteenpäin, esim. loppukäyttäjän HTTP-yhteyteen.</p></li>
+</ol>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

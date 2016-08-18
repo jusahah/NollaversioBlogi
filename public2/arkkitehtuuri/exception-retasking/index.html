@@ -1,0 +1,235 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Poikkeuksen väärinkäyttö? &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Poikkeuksen väärinkäyttö?</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Fri, Aug 12, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Yksi suht usein tarvittava algoritmi on tietyn arvon etsiminen binaaripuusta. Etsinnän voi suorittaa esimerkiksi näin:</p>
+
+<pre><code class="language-javascript">
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) loytynyt = true;
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti
+    etsiAlipuu(juuri.vasenHaara, arvo);
+    etsiAlipuu(juuri.oikeaHaara, arvo);
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  etsiAlipuu(puu, arvo);
+
+  return loytynyt;
+
+}
+
+// Kutsutaan etsintäfunktiota
+var binaaripuu = /* rakenna puu, ei oleellista etsinnän kannalta */
+var tulos = etsiArvoBinaaripuusta(binaaripuu, 'hauki');
+console.log(tulos); // true tai false
+
+</code></pre>
+
+<p>Ylläoleva toimii. Mutta etsintä käy koko puun rekursiivisesti läpi <em>kaikissa tapauksissa</em>, ml. siinä erikoistapauksessa, että arvo löytyy heti koko puun juuresta.</p>
+
+<p>Arvokas huomio funktion tehokkuuden kannalta onkin huomata, että heti kun arvo on löytynyt, ei jäljellä olevan puun läpikäyminen ole järkevää. Se on vain ajanhukkaa.</p>
+
+<p>Asia on korvattavissa pitämällä huolen, että arvon löytyessä puuetsintää ei jatketa ko. oksan kohdalta alaspäin:</p>
+
+<pre><code class="language-javascript">
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) loytynyt = true;
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
+    // mutta vain jos arvoa ei löytynyt!
+    else {
+      etsiAlipuu(juuri.vasenHaara, arvo);
+      etsiAlipuu(juuri.oikeaHaara, arvo);   	
+    }
+
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  etsiAlipuu(puu, arvo);
+
+  return loytynyt;
+
+}
+
+</code></pre>
+
+<p>Ylläoleva on himpun verran parempi tapa hoitaa etsintä. Mutta edelleenkin etsintä jatkuu tarpeettoman kauan. Asian voi tarkistaa seuraavalla ajatuskokeella; puu jaetaan kahteen haaraan, vasen ja oikea. Kumpikin haara etsitään <em>erikseen</em>. <strong>Jos arvo löytyy heti vasemman haaran alkupäästä, ainoastaan vasemman haaran etsintä stoppaa</strong>. Oikean haaran etsintä joutuu yhä käymään läpi koko oikean puolen puun.</p>
+
+<p>Tämä huomio johtaa meidät pieneen ongelmaan. Binaaripuulle on ominaista suorittaa etsintä binaarisesti - eli jakamalla jäljellä oleva puu aina kahteen osaan. Kumpikin osa saa oman &ldquo;etsintäpartionsa&rdquo;.</p>
+
+<p>Mutta optimaalisinta olisi jos nuo kaksi etsintäpartiota voisivat kommunikoida keskenään. Näin ei kummassakaan ylläolevassa ratkaisussa ole. Kommunikaatio ei ole mahdollista - vasen partio ja oikea partio rämpivät täysin toisistaan erillään ja itsenäisesti.</p>
+
+<p>Haluamme saavuttaa tilanteen, jossa <strong>heti kun oikean puolen etsintäpartio löytää arvon, se viestittää tiedon vasemman puolen partiolle</strong>.</p>
+
+<p>Kuinka saavuttaa tälläinen kommunikaatio?</p>
+
+<h3 id="poikkeus-apuun">Poikkeus apuun</h3>
+
+<p>Käytännössä kaikki yleisimmät ohjelmointikielet tarjoavat konseptin nimeltä <em>poikkeus</em> (engl. exception). Poikkeus on tarkoitettu ohjelman ajon aikana tapahtuvien virhetilanteiden hallintaan. Jos esimerkiksi yrität jakaa nollalla, ohjelma heittää poikkeuksen, joka kertoo että metsään mentiin.</p>
+
+<p>Mikään laki ei estä käyttämästä poikkeuksia myös muihin tarkoituksiin kuin ns. aitojen virhetilanteiden käsittelyyn.</p>
+
+<p>Voimme luoda <em>keinotekoisen virhetilanteen</em>, joka heittää poikkeuksen. Tuollainen keinotekoinen &ldquo;virhe&rdquo; voi olla esimerkiksi halutun arvon löytyminen binaaripuusta:</p>
+
+<pre><code class="language-javascript">
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) throw new Error(&quot;Löytyi!&quot;);
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
+    etsiAlipuu(juuri.vasenHaara, arvo);
+    etsiAlipuu(juuri.oikeaHaara, arvo);   	
+    
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  try {
+    etsiAlipuu(puu, arvo);
+  } catch (e) {
+    loytynyt = true;
+  }
+
+  return loytynyt;
+
+}
+
+</code></pre>
+
+<p>Ylläoleva koodi toimii halutusti. Mutta mikä parasta, ylläolevassa koodissa <em>kaikki</em> etsintäpartiot heittävät hanskat tiskiin heti kun arvo on löytynyt. Miksi näin? Koska heittämällä poikkeuksen - heti kun arvo löytyy - koodinajo <em>rullaa</em> itsensä suoraan <strong>catch-komentoon</strong>.</p>
+
+<p>Toisin sanoen, heti kun arvo löytyy, hyödynnämme Javascriptin sisäänrakennettua poikkeusten hallintaa ja luomme keinotekoisen virhetilanteen. Tuo virhetilanne <em>abortoi</em> kaiken käynnissä olevan etsinnän ja siirtää koodinajon catch-komennon riville:</p>
+
+<pre><code class="language-javascript">// Heti kun arvo on löytynyt, koodi pomppaa tänne
+catch (e) {
+  loytynyt = true;
+}
+</code></pre>
+
+<p>Catch-komennon sisällä yksinkertaisesti merkkaamme arvon löydetyksi. Tämän jälkeen koodinajo jatkaa catch-komentoa seuraavalta riviltä.</p>
+
+<p>Ylläolevaa koodia voi vielä hiukan parantaa. Ei ole mikään pakko heittää <em>geneeristä</em> poikkeusta, vaan luokaamme suosiolla sopivasti nimetty <em>spesiaalipoikkeus</em>:</p>
+
+<pre><code class="language-javascript">
+// Spesiaalipoikkeuksen määritys
+// Huom! Spesiaalipoikkeuksen täytyy ekstentoida Error-objektia.
+function ArvoLoytyi() {};
+ArvoLoytyi.prototype = new Error();
+
+function etsiArvoBinaaripuusta(puu, arvo) {
+  var loytynyt = false;	
+
+  function etsiAlipuu(juuri, arvo) {
+    if (juuri.arvo === arvo) throw new ArvoLoytyi(&quot;Löytyi!&quot;);
+    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
+    etsiAlipuu(juuri.vasenHaara, arvo);
+    etsiAlipuu(juuri.oikeaHaara, arvo);   	
+    
+  }
+  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
+  try {
+    etsiAlipuu(puu, arvo);
+  } catch (err) {
+    if (err instanceof ArvoLoytyi) {
+    	// Arvo on löytynyt
+    	loytynyt = true;
+    } else {
+    	// Jotain muuta meni pieleen, arvo ei löytynyt.
+    	// Heitä poikkeus uudelleen, joku muu huolehtikoot...
+    	throw err;
+    }
+    
+  }
+
+  return loytynyt;
+
+}
+
+</code></pre>
+
+<blockquote>
+<p>Loppukaneetti: monet tahot suhtautuvat <em>erittäin</em> epäilevästi poikkeusten väärinkäyttöön ylläolevan esimerkin tavoin. Epäilevässä suhtautumisessa on perusteensa - poikkeukset on luotu ohjelman ajon aikana tapahtuvien virheiden käsittelyyn, ja valtaosa ohjelmoijista lähtee tästä oletuksesta liikkeelle. Mikäli poikkeusta käyttää muuhun tarkoitukseen, on asia syytä selkeästi ilmaista lähdekoodin kommenteissa - tällä tavalla (ehkä, kenties) vältytään väärinkäsityksiltä.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

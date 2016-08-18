@@ -1,0 +1,232 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Rekursiivinen lupausketju ajurina? (osa 1) &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Rekursiivinen lupausketju ajurina? (osa 1)</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Fri, Jul 29, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Olen epäilemättä varsin ihastunut lupauksiin (<a href="https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</a>). Tässä blogissa on blogin ensimmäisen kuukauden aikana julkaistu neljä kirjoitusta, joiden keskiössä toimii lupausten käyttö. Ja tässä on viides.</p>
+
+<p>Tänään mieltäni askarrutti seuraava lupausten hyödyntämiseen liittyvä ajatus:</p>
+
+<p><strong>Entä jos rakentaisi lupausten varaan yleismaailmallisen &ldquo;task-runnerin&rdquo;, johon kytkeä varsinaiset ominaisuudet <em>service provider</em>-tyyliin.</strong></p>
+
+<blockquote>
+<p>Service Provider on itselleni Laravellin puolelta tutuksi tullut termi. Se tarkoittaa ohjelmakomponenttia, joka ohjelman suorituksen alkuvaiheessa <em>lisää</em> jonkin palvelun osaksi (ohjelma)kokonaisuutta.</p>
+
+<p>Jos itse ohjelmisto on F1-auto, Service Provider on varikkomekanikko, joka ruuvaa kiinni sivupeilit (= lisäominaisuus) osaksi auton runkoa.</p>
+</blockquote>
+
+<p>Pakko myöntää, etten itsekään ole täysin kärryillä mitä ajan tällä konseptilla takaa. Mutta jotain sen suuntaista, että haluaisin rakentaa lupausten varaan uuden ohjelmistokehyksen. Tuo kehys olisi suunnattu hyvin spesifiin käyttötarkoitukseen; vuoropohjaisten moninpelien ohjelmointiin.</p>
+
+<h3 id="voiko-rekursiivinen-lupausketju-toimia-ajurina">Voiko rekursiivinen lupausketju toimia ajurina?</h3>
+
+<p>Kaikkein yleisimmässä muodossaan lupausketju toimii siten, että ketjun osanen suoritetaan <em>heti</em> kun edellisen osanen on saanut oman työnsä päätökseen. Ketju etenee siis yksi osasuoritus kerrallaan järjestyksessä.</p>
+
+<p>Myös kaikki vuoropohjaiset pelit etenevät järjestyksessä; ensin on pelaajan #1 vuoro, sitten pelaajan #2, sitten pelaajan #3, jne. Kun kierros käyty läpi, vuoro siirtyy takaisin pelaajalle #1.</p>
+
+<blockquote>
+<p>Esimerkkejä vuoropohjaisten pelien siirtojärjestyksestä:</p>
+
+<p>Monopoli (3 pelaajaa): p1-&gt;p2-&gt;p3-&gt;p1-&gt;p2-&gt;p3-&gt;p1&hellip;</p>
+
+<p>Shakki (kaksinpeli): p1-&gt;p2-&gt;p1-&gt;p2-&gt;p1&hellip;</p>
+</blockquote>
+
+<p>Monopoli, pokeri, shakki, snooker, curling, laivanupotus&hellip; vuoropohjaisia pelejä on paljon ja todella monenlaisia. Katsotaan esimerkillinen lupauksiin perustuva ajuri, joka suorittaa yhden vuorokierroksen (= kaikki pelaajat tekevät yhden siirron). Käytetään esimerkkinä kolmen pelaajan Monopoli-peliä:</p>
+
+<pre><code class="language-javascript">
+var Promise = require('bluebird');
+
+// Vuorosimulaattori.js
+
+// PeliLoppui-exception
+function PeliLoppui() {};
+PeliLoppui.prototype = new Error;
+
+// Pelin update-metodi, jolla peliä viedään eteenpäin
+function toteutaSiirto(pelaajaNimi, siirto) {
+	// Tee siirto esim. shakkilaudalla.
+}
+
+// Apufunktio nopan heittämiseen, arpoo kaksi lukua 1-6.
+function heitaNoppaa() {
+	// [nopan silmäluku, toisen nopan silmäluku]
+	return [Math.ceil(Math.random()*6), Math.ceil(Math.random()*6)];
+}
+
+
+// Pelaajan #1 siirtovuoro
+function p1Siirto() {
+	return new Promise(function(resolve, reject) {
+		// Heitä noppaa
+		var nopat = heitaNoppaa();
+		// Tee siirto
+		toteutaSiirto('p1', nopat);
+		// Päätä vuoro täyttämällä lupaus.
+		resolve();
+	});
+}
+
+// Pelaajan #2 siirtovuoro
+function p2Siirto() {
+	// Vastaava kuin p1, mutta annetaan vuoro kakkospelaajalle.
+}
+
+// Pelaajan #3 siirtovuoro
+function p3Siirto() {
+	// Vastaava kuin p2, mutta annetaan vuoro kolmospelaajalle.
+}
+
+function aloitaVuorokierros(pelaajat) {
+	// Kunkin pelaajan siirtofunktio on elementtinä *pelaajat*-listassa.
+	// Kutakin funktiota kutsutaan järjestyksessä vuorotellen.
+	
+	// Promise.each-metodi käy pelaajat yksi kerrallaan läpi, antaen
+	// siirtovuoron kullekin pelaajalle kertaalleen.
+
+	Promise.each(pelaajat, function(annaVuoroPelaajalle) {
+		// Muuttuja *annaVuoroPelaajalle* on funktio.
+		// Se on joko *p1Siirto*, *p2Siirto* tai *p3Siirto*!
+		return annaVuoroPelaajalle();
+	})
+	.then(function() {
+		// Siirry seuraavalle kierrokselle!
+		// HUOM! Ikuinen rekursio.
+		// Ilman virhettä peli ei lopu koskaan.
+		aloitaVuorokierros(pelaajat);
+	})
+	.catch(function() {
+		// Pelissä tapahtui virhe, lopeta peli.
+		// Peli lopetetaan heittämällä 'PeliLoppui',
+		// joka napataan kiinni ylempänä call stäkissä.
+		throw new PeliLoppui();
+	})
+
+}
+// Luo kolme pelaajaa
+var pelaajat = [p1Siirto, p2Siirto, p3Siirto];
+// Aloita peli, johon nuo kolme pelaajaa osallistuvat.
+aloitaVuorokierros(pelaajat)
+.catch(PeliLoppui, function() {
+	// Tässä on hyvä paikka kerätä roskat yms.
+	// Tai esim. tallettaa pelin lopputulokset tietokantaan!
+	console.log(&quot;Peli on loppunut, kiitos pelaajille.&quot;)
+})
+
+</code></pre>
+
+<p>Ylläoleva koodi pyörii ikuista looppia <em>aloitaVuorokierros</em>-funktion ympärillä. Tällä tavoin se pystyy simuloimaan esimerkiksi Monopoli-peliä, joka ei pääty koskaan. Huomattavaa on, että koska tuo luuppi pyörii <em>asynkronoidusti</em>, on <em>p1Siirto</em>-funktion sisällä mahdollista <strong>kysyä ihmispelaajalta hänen siirtoaan.</strong></p>
+
+<p>Eli ihmispelaajalle voidaan <em>p1Siirto</em>-funktion sisältä käsin avata vaikka popup-ikkuna selaimessa, ja tuo popup-ikkuna tarjoaa ihmispelaajalle mahdollisuuden päättää siirrostaan. Kun pelaaja klikkaa popup-ikkunasta haluamaansa siirtoa, tieto välittyy palvelimelle, ja pelaajan siirtovuoro päättyy.</p>
+
+<p>Tässä nopea naivi toteutus edellämainitusta:</p>
+
+<pre><code class="language-javascript">
+// Pelaajan #1 TCP-socket tjms. viestintäväylä
+// Se miten tämä socket on luotu on tekninen sivuseikka,
+// jonka vastuu jätettäköön *socket.io*:n kaltaiselle kirjastolle.
+var p1socket = /* luo socket jotenkin */
+
+function p1Siirto() {
+	return new Promise(function(resolve, reject) {
+		// Lähetä ihmispelaajalle tieto siitä, että
+		// nyt on hänen siirtovuoronsa.
+		p1socket.send('Sinun siirtovuorosi - tee siirto.');
+
+		// Tärkeää!
+		// Jää kuuntelemaan ihmispelaajan vastausta!
+		// Ohjaa saatu vastaus suoraan lupauksen täyttävään
+		// resolve-funktioon!
+		p1socket.on('siirto', resolve);
+
+	}
+
+}
+
+// p2Siirto ja p3Siirto vastaavanlaiset...
+
+</code></pre>
+
+<p>Erittäin kaunista. Kunkin pelaajan siirtofunktio vie tiedon ihmispelaajalle, ja jää odottamaan ihmispelaajan vastausta. Kun vastaus saapuu, aiemmin luotu lupaus täytetään ja vuorokierros pyörähtää yhden pykälän eteenpäin.</p>
+
+<p>Ylläoleva algoritmi on toki naurettavan naivi siinä mielessä, että se ei ota juuri mitään erikoistilanteita tai sivuehtoja huomioon. Esimerkiksi siirtovuorolla ei ole aikarajaa - eli pillastunut pelaaja voi kieltäytyä tekemästä siirtoa lainkaan ja tällä tavoin koko peli jää jumiin.</p>
+
+<p>Palataan aikarajaan ja muihin ongelmiin seuraavassa postauksessa. Samalla pääsemme näkemään josko <em>Promise.race</em>-metodista olisi johonkin&hellip;</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

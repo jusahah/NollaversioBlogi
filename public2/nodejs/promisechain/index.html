@@ -1,0 +1,216 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Lupausten mahti - pätkä koodiani &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Lupausten mahti - pätkä koodiani</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Wed, Jul 13, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      <p>Lupaukset (engl. Promise) ovat varsin mahtavia. Siinä missä muuten asynkronoidun funktiokutsun matkapojaksi joutuisi lähettämään callback-funktion, lupaus mahdollistaa koodaustyylin, jossa callback liikkuu <em>varjoissa</em> - siis pinnan alla. Lupaus on käytännössä pieni wrapperi, kuin lahjapaketti, joka kaitsee isällisellä otteella callbackia.</p>
+
+<p>Ehkä suurin hyöty lupauksen käytöstä on kuitenkin se, että virhetilanteet tulevat asianmukaisesti hoidetuksi. Lisäksi ne virheet tulevat hoidetuksi oikeassa paikassa - <em>lupausketjun lopussa</em>. Harva asia on hirveämpää kuin joutua kirjoittamaan <em>varsinaista bisnes-koodia</em> ja <em>virhetilanteisiin reagoivaa hätäapukoodia</em> sikin sokin. Lupausten avulla virhekoodi voi elää visuaalisesti kaukana varsinaisesta koodista. Tämä helpottaa koodinlukua.</p>
+
+<p>Otan esimerkin <em>lupausketjusta</em>, jossa virheisiin reagoiva koodi on upotettu pahnanpohjimmaiseksi. Esimerkki on suoraan applikaatiostani, joka analysoi PGN-shakkipelitiedoston ja raportoi käyttäjälle takaisin pelaajien tekemät huonot siirrot. Huono siirto tarkoittaa siirtoa, jonka seurauksena vastustajan voittomahdollisuudet paranivat merkittävästi.</p>
+
+<pre><code class="language-javascript">
+// Lupausketju
+
+// Lupausketju koostuu kuudesta osavaiheesta, jotka suoritetaan järjestyksessä peräkkäin!
+// Näiden jälkeen on virhetilanteet käsittelevä ekstravaihe.
+
+// #1 PGN-datan separointi eli pelien erottelu toisistaan
+// #2 Jokaisen pelin (map-apufunktio!) muuntaminen kasaksi peliasemia (FEN-muoto)
+// #3 Asemien filteröinti niin, että vain tiettyjen siirtojen asemat ovat mukana
+// #4 Asemien analysointi valittua shakkimoottoria käyttäen.
+// #5 Analysointitulosten paketointi pelikohtaisesti
+// #6 Asemien filteröinti, jätetään vain asemat joissa pelaaja tunaroi
+// #7 Virhetilanteiden hallinta
+
+function processPGN(pgnText) {
+        return Promise.resolve(pgnText)
+        // #1
+        .then(function(pgnText) {
+            return separateGames(pgnText);
+        })
+        // #2
+        .then(function(separatedGames) {
+            return _.map(separatedGames, function(game) {
+                var gameID = uuid.v4(); 
+                // Every position is associated with game id
+                // so we can later know from which game each 
+                // position came from (position.fromgame)
+                return separateIndividualPositions(game, gameID);
+            });
+        })
+        // #3
+        .then(function(allPositions) {
+            // Filter out those not in movenumber range
+            return _.filter(allPositions, function(position) {
+                return position.movenum &gt;= 10 &amp;&amp; position.movenum &lt;= 30;
+            });
+        })
+        // #4
+        .map(analyzePosition, {concurrency: 4} /*Num of parallel engine instances to use?*/)
+        // #5
+        .then(function(results) {
+            // Pack analyzed positions back into games
+            var groupedIntoGames = _.groupBy(results, function(result) { 
+                return result.fromgame;
+            });
+            // Sort positions by movenumber
+            return _.mapValues(groupedIntoGames, function(positions) {
+                return _.sortBy(positions, function(p) { return p.movenum})
+            });
+        })
+        // #6
+        .then(function(groupedIntoGames) {
+            return _.mapValues(groupedIntoGames, function(positions) {
+                if (!positions || positions.length &lt; 2) return [];
+                var currPosition = positions[0];
+
+                return _.compact(_.map(_.tail(positions), function(position) {
+                    var thisEval = parseFloat(position.evaluation);
+                    var evalDiff = Math.abs(thisEval - parseFloat(currPosition.evaluation));
+
+                    var oldFen = currPosition.fen;
+                    var oldBest = currPosition.bestmove;
+                    var oldEval = currPosition.evaluation;
+
+                    // Replace old with the current for next loop run
+                    currPosition = position;
+                    // Evaluation changed &gt; 75 centipawns -&gt; bad move
+                    if (evalDiff &gt; 75) {
+                        // Mistake found
+                        return {
+                            fenBefore: oldFen,
+                            fenAfter: position.fen,
+                            evalBefore: oldEval,
+                            evalAfter: position.evaluation,
+                            movenum: position.movenum,
+                            evalDiff: evalDiff,
+                            playedMove: position.move,
+                            bestMove: oldBest
+                        };
+                    }
+
+                    return null; // Nulls are filtered out later
+
+                    
+                }));
+
+                
+
+
+            });
+        })
+        // #7
+        .catch(function(err) {
+            // Something went wrong, lets bail.
+            console.log(&quot;PGN analysis went wrong&quot;);
+            Log::error(err);
+        })  
+
+
+}
+
+
+</code></pre>
+
+<p>Ylläoleva koodi voitaisiin helposti vielä muuttaa <em>todella</em> helppolukuiseen muotoon
+abstraktoimalla varsinainen bisneskoodi.</p>
+
+<pre><code class="language-javascript">
+function processPGN(pgnText) {
+
+        return Promise.resolve(pgnText)
+        .then(separateGames)
+        .then(separatePositionsForEachGame)
+        .then(filterOutPositionsNotInMoveRange)
+        .map(analyzePosition, {concurrency: 4})
+        .then(packResultsIntoGames)
+        .then(filterOutPositionsWhereNoMistakeWasMade)
+        .catch(handleErrors)    
+}
+
+function separateGames(...) {...}
+function separatePositionsForEachGame(...) {...}
+// jne.
+
+
+</code></pre>
+
+<p>Aika kaunista.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

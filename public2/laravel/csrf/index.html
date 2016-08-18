@@ -1,0 +1,219 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Kuinka CSRF toimii? &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Kuinka CSRF toimii?</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Tue, Aug 9, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Lomakkeiden lähetys ja vastaanotto ovat tyypillisen web-applikaation tärkeimpiä vastuutehtäviä.</p>
+
+<p>Lomakkeiden ja niiden datalähetysten suojaus on tärkeä aspekti turvallisen web-applikaation kannalta. Keskitytään tässä postauksessa yhteen suojamuuriin; CSRF-suojaukseen.</p>
+
+<h3 id="csrf">CSRF</h3>
+
+<p>CSRF tulee sanoista &ldquo;Cross-Site Request Forgery&rdquo;. Sanahirviö tarkoittaa yksinkertaisesti tilannetta, jossa <em>rikollinen käyttäjä</em> huijaa web-applikaatiota luulemaan, että viesti tulee <em>rehelliseltä</em> käyttäjältä.</p>
+
+<p>Erityisesti tämä puijaus kohdistuu lomakkeiden lähetyksiin. Tyypillisellä web-applikaatiolla on oltava jokin tapa mahdollistaa käyttäjiensä tallettaa/muokata sisältöä.</p>
+
+<p>Tuo sisältö voi olla blogipostauksia, pankkimaksuja, lentovarauksia, jne.</p>
+
+<p>Useimmiten uuden sisällön luomista varten web-applikaatio tarjoaa lomakkeen, jonka täyttämällä ja lähettämällä sisällön luonti tapahtuu.</p>
+
+<p>Otetaan esimerkkinä pankkisuorituksia hallinnoiva sivusto. Sivustolla voi tehdä tilisiirron täyttämällä lomake:</p>
+
+<blockquote>
+<p>Lähettäjän tili:</p>
+
+<p>Saaja:</p>
+
+<p>Saajan tili:</p>
+
+<p>Summa:</p>
+
+<p>Viesti:</p>
+
+<p>Eräpäivä:</p>
+</blockquote>
+
+<p>Lomakkeen alla on &ldquo;Maksa&rdquo;-nappula, jota painamalla lähetys lähtee liikkeelle.</p>
+
+<p>Ongelmaksi ylläolevassa muodostuu, että kuka tahansa voi luoda ylläolevan kaltaisen datapaketin, ja lähettää sen nettipankkiapplikaation suuntaan. Esimerkiksi minä voisin luoda seuraavanlaisen lähetyksen:</p>
+
+<blockquote>
+<p>Lähettäjän tili: Kimi Räikkönen FI00112233-4</p>
+
+<p>Saaja: Jussi Hämäläinen</p>
+
+<p>Saajan tili: FI22334455-6</p>
+
+<p>Summa: 1000</p>
+
+<p>Viesti: Jäätelöraha</p>
+
+<p>Eräpäivä: 9.8.2016</p>
+</blockquote>
+
+<p>Nettipankkiapplikaatio vastaanottaa ylläolevan lomakelähetyksen. Mitä tapahtuu vastaanoton jälkeen?</p>
+
+<p>Ei mitään, sillä käyttäjä &ldquo;Kimi Räikkönen&rdquo; ei ole kirjautunut sisään. Eli tilisiirtoa ei tapahdu. Huomioitavaa on, että Räikkösen sisäänkirjautuminen ei vaikuta CSRF-suojauksen toimintaan.</p>
+
+<p>Vain sisäänkirjautuneet käyttäjät voivat luoda tilisiirtoja, joissa &ldquo;Lähettäjän tili&rdquo; on oma tili.</p>
+
+<p>Mutta mennään askel pidemmälle. Kuvitellaan, että olen <em>jotenkin</em> onnistunut injektoimaan skriptin nettipankin käyttöliittymään.</p>
+
+<p>Tällä tarkoitan, että kun nettipankin käyttöliittymäsivu rakennetaan HTML-koodista, olen jollain tavalla onnistunut työntämään tuohon rakennusvaiheeseen palan painikkeeksi haluamaani koodia.</p>
+
+<p>Ilmiöstä käytetään nimitystä XSS (Cross-Site Scripting).</p>
+
+<p>XSS:n avulla kykenen toteuttamaan seuraavanlaisen tempun. Seuraavan kerran kun Kimi Räikkönen - siis oikea Kimi, joka tietää omat pankkitunnuksensa - loggautuu nettipankkijärjestelmään sisään ja siirtyy maksusuoritusten luomissivulle, <strong>minun</strong> määrittämä koodinpätkäni suoritetaan Räikkösen tietokoneen web-selaimessa.</p>
+
+<p>Mitä tuo minun määrittämä koodinpätkä tekee?</p>
+
+<p>Se lähettää lomakelähetyksen (kuten yllä, jossa Räikkönen vippasi minulle tonnin jäätelörahaa) nettipankin suuntaan.</p>
+
+<p>Lomakelähetys saapuu nettipankin rajapintaan. Ja nyt tullaan tärkeään vaiheeseen: <strong>koska Kimi Räikkönen on kirjautunut sisään omilla oikeilla tunnuksillaan, nettipankki luulee, että Räikkönen toden totta on tuon tilisiirron takana</strong>. Ja miksi ei luulisi?</p>
+
+<p>Tilisiirron tiedot sisältävä lomakelähetys lähti liikkeelle Räikkösen tietokoneelta. Nettipankkiapplikaatio ei tiedä, että lähetyksen liikkeellelähdön sai aikaan <em>minun</em> ohjelmoimani skripti, joka <em>ajettiin</em> Räikkösen www-selaimen sisällä.</p>
+
+<p>Nettipankille tilanne näyttää siltä, että Räikkönen täytti lomakkeen ja klikkasi &ldquo;Maksa&rdquo;-nappulaa.</p>
+
+<p>Joten nettipankilla ei ole mitään syytä epäillä, etteikö lomakelähetys olisi aito. Siispä se tekee tilisiirron ja raha vaihtaa omistajaansa.</p>
+
+<h3 id="miten-csrf-suojaus-auttaa">Miten CSRF-suojaus auttaa?</h3>
+
+<p>CSRF-suojauksen ydinajatus on, että kun käyttäjälle tarjotaan lomaketta täytettäväksi, tuo lomake yksilöidään jollain tunnisteella. Myöhemmin web-applikaatio kykenee tämän yksilöidyn tunnisteen avulla varmistamaan, että saapuva lomakelähetys (esim. tilisiirron tiedot) on luotu asianmukaisesti.</p>
+
+<p>Eli aiempi datalähetys</p>
+
+<blockquote>
+<p>Lähettäjän tili: Kimi Räikkönen FI00112233-4</p>
+
+<p>Saaja: Jussi Hämäläinen</p>
+
+<p>Saajan tili: FI22334455-6</p>
+
+<p>Summa: 1000</p>
+
+<p>Viesti: Jäätelöraha</p>
+
+<p>Eräpäivä: 9.8.2016</p>
+</blockquote>
+
+<p>menee nyt muotoon</p>
+
+<blockquote>
+<p>_CSRF: ejse72Hja7299391Jkla28</p>
+
+<p>Lähettäjän tili: Kimi Räikkönen FI00112233-4</p>
+
+<p>Saaja: Jussi Hämäläinen</p>
+
+<p>Saajan tili: FI22334455-6</p>
+
+<p>Summa: 1000</p>
+
+<p>Viesti: Jäätelöraha</p>
+
+<p>Eräpäivä: 9.8.2016</p>
+</blockquote>
+
+<p>Kuten huomaamme yltä, lomakedatan yhteyteen on lisätty &ldquo;_CSRF&rdquo;-niminen lomakekenttä.
+Käytännössä web-applikaatio siis lähettää lomakesivun mukana CSRF-tunnisteen, ja myöhemmin vastaanottaa datan sisältäen CSRF-tunnisteen. <strong>Vain jos nämä kaksi CSRF-tunnistetta täsmäävät, applikaatio hyväksyy vastaanotetun datan</strong>.</p>
+
+<p>Jos ne eivät täsmää, applikaatio kieltäytyy toimimasta.</p>
+
+<p>Miksi CSRF-tunnisteiden täsmääminen ratkoo aiemman jäätelörahahuijauksen?</p>
+
+<p>Yksikertaisesti siksi, että nettipankki osaa yhdistää tarjotun lomakkeen ja vastaanotetun lomakedatan toisiinsa. Täten jos minä XSS:n kautta lähetän tilisiirtolähetyksen (Räikkösen koneelta käsin, kiitos XSS:n), niin nettipankkiapplikaatio tekee seuraavan tarkistukset:</p>
+
+<ol>
+<li>Tilisiirtolähetys lähti liikkeelle sisäänkirjautuneelta käyttäjältä - &gt; check!</li>
+<li>Tilisiirtolähetyksen CSRF-tunniste täsmää applikaation tallentaman tunnisteen kanssa -&gt; fail!</li>
+</ol>
+
+<p>CSRF-tunniste ei täsmää, sillä <em>minun etukäteen tuottamani</em> lomakelähetys ei tiedä tuota tunnistetta. Tunniste luodaan jokaiselle lomakkeelle erikseen, ja se on satunnainen merkkijono.</p>
+
+<p>Lopputulos siis on, että nettipankkiapplikaatio <strong>ei</strong> tee tilisiirtoa, ja jään ilman jäätelörahaa.</p>
+
+<blockquote>
+<p>Loppukaneetti: XSS:n avulla saattaa teoriassa olla mahdollista <em>selvittää</em> CRSF-tunniste kesken hyökkäyksen. Tällöin CSRF-suojaus menettää tehonsa. Tämä vaatii, että XSS-hyökkääjällä on mahdollisuus ajaa mielivaltaista Javascript-koodia uhrinsa www-selaimessa.</p>
+
+<p>Jos tätä mahdollisuutta ei ole, CSRF-suojaus toimii ja estää useimmat muunlaiset hyökkäysyritykset; esim. linkki-injektion, jossa rikollinen on <em>jotenkin</em> saanut nettipankin käyttöliittymään lisättyä linkin, jota klikkaamalla etukäteen suunniteltu lomakedata lähtee salaa liikkeelle. Koska tuo etukäteen suunniteltu lomakedata ei voi mitenkään tietää ETUKÄTEEN sen hetkisen CSRF-tunnisteen merkkijonoa, CSRF-suojaus toimii ja rikollinen jää nuolemaan näppejään.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>
