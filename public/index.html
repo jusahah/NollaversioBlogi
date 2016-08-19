@@ -68,6 +68,122 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://nollaversio.fi/blog/public/laravel/slack-and-laravel/">
+        Slack and Laravel
+      </a>
+    </h1>
+
+    <span class="post-date">Fri, Aug 19, 2016</span>
+
+    <p>Uuden Laravel 5.3 ohjelmistokehyksen avulla web-applikaation integrointi Slackin kanssa on naurettavan helppoa. Otetaan esimerkkinä tapaus, jossa haluamme lähettää tiedoksiantoja Slackin suuntaan.</p>
+
+<p>Sanotaan vaikka, että meillä on Slack-käyttäjänä bisnespersoona Jari Sarasvuo. Applikaatiomme haravoi internettiä etsien blogimainintoja hänen firmastaan Trainer&rsquo;s House. Aina kun joku bloggari kirjoittaa blogiinsa postauksen, jossa termi &lsquo;Trainer&rsquo;s House&rsquo; mainitaan, applikaatiomme tuottaa Slack-viestin ja lähettää sen Sarasvuon Slack-tilille.</p>
+
+<p>Ylimmällä tasolla applikaatiomme toimii esim. näin:</p>
+
+<pre><code class="language-php">
+// BlogiController.php
+
+use App\Notifications\SlackViesti
+
+$this-&gt;blogs = collect([/* lista blogeja */]);
+
+public function tarkistaBlogit() {
+  
+  $maininnat = $this-&gt;blogs-&gt;map(function(blogi) {
+    // Tsekkaa blogi-objektia käyttäen jos uusi maininta havaittu
+    if ($blogi-&gt;uusiMainintaHavaittu()) return $blogi-&gt;haeMaininta();
+    return null;   	
+  })-&gt;filter(function($maininta) {
+    // Filteröi nullit pois
+    return $maininta !== null;
+  });
+
+  // Haetaan tietokannasta Sarasvuon käyttäjä-objekti.
+  $sarasvuo = User::where('nimi', 'Jari Sarasvuo')-&gt;first();
+
+  // Ilmoitetaan Sarasvuon Slack-tilille.
+  $sarasvuo-&gt;notify(new SlackViesti($maininnat));
+
+}
+
+</code></pre>
+
+<p>Ylimmällä tasolla Slack-viestin lähettäminen on juurikin noin helppoa kuin yllä. Toki tarvitsemme vielä lisäksi pari luokkaa:</p>
+
+<pre><code class="language-php">
+// App\Notifications\SlackViesti.php
+
+class SlackViesti {
+
+  protected $maininnat;
+
+  public function __construct($maininnat) {
+    // Talletetaan maininnat jotta voidaan käyttää sitä myöhemmin
+    $this-&gt;maininnat = maininnat;
+  }
+
+  // Kehys kutsuu tätä metodia kun tiedoksianto luodaan ja lähetetään
+  // Parametrinä sisään tulee tässä tapauksessa Sarasvuon käyttäjä-objekti.	
+  public function via($sarasvuo) {
+    // Täällä päätämme mitä tiedoksiantokanavaa haluamme käyttää.
+    return ['slack'];
+
+  }
+
+  public function toSlack($user) {
+    // Hoidetaan Slack-viestin luonti.
+    // Kehys hoitaa loput.
+
+    $mainintaTeksti = $this-&gt;maininnat-&gt;reduce(function($teksti, $maininta) {
+      return $teksti . $maininta-&gt;url . &quot;, &quot;;
+    }, 'Blogimaininnat: ')
+
+    // SlackMessage on Laravel-kehyksen sisäinen apuluokka.
+    return (new SlackMessage)
+      -&gt;line('Uusia Trainers House mainintoja')
+      -&gt;line('Firmasi mainittiin blogeissa ' . $mainintaTeksti);
+  }
+
+
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+// User.php
+
+class User extends Authenticatable {
+
+  // Mahdollistaa tiedoksiantojen lähetyksen käyttäjälle.	
+  use Notifiable;
+
+  // Mahdollistaa Slack-viestien lähettämisen tiettyyn Slack-endpointiin.
+  public function routeNotificationForSlack() {
+    // Sarasvuo on luonut itselleen HTTP-endpointin Slack-appin puolella.
+    // Tässä tapauksessa kirjoitetaan testi-endpoint suoraan lähdekoodiin.
+    // Oikeassa applikaatiossa haluamme tallentaa tuo endpointin tietokantaan.
+
+    return 'https://hooks.slack.com/services/T00000000/B00000000/1234abcd';
+  }
+}
+
+</code></pre>
+
+<p>Ylläolevan koodin kautta Sarasvuo saa suoraan Slackiin ilmoituksia tyyliin:</p>
+
+<blockquote>
+<p>Uusia Trainers House mainintoja</p>
+
+<p>Firmasi mainittiin blogeissa: <a href="http://www.kakkumaakari.fi">http://www.kakkumaakari.fi</a>, <a href="http://nollaversio.fi">http://nollaversio.fi</a></p>
+</blockquote>
+
+<p>Toimii kuin unelma. Laravel tekee tässäkin tapauksessa koodarin elämästä lähes laittoman helppoa.</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://nollaversio.fi/blog/public/nodejs/console-log-coloring/">
         Konsolitulosteen väritys
       </a>

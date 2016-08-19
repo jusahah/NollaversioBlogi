@@ -1,0 +1,186 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title> Slack and Laravel &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Slack and Laravel</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Fri, Aug 19, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      <p>Uuden Laravel 5.3 ohjelmistokehyksen avulla web-applikaation integrointi Slackin kanssa on naurettavan helppoa. Otetaan esimerkkinä tapaus, jossa haluamme lähettää tiedoksiantoja Slackin suuntaan.</p>
+
+<p>Sanotaan vaikka, että meillä on Slack-käyttäjänä bisnespersoona Jari Sarasvuo. Applikaatiomme haravoi internettiä etsien blogimainintoja hänen firmastaan Trainer&rsquo;s House. Aina kun joku bloggari kirjoittaa blogiinsa postauksen, jossa termi &lsquo;Trainer&rsquo;s House&rsquo; mainitaan, applikaatiomme tuottaa Slack-viestin ja lähettää sen Sarasvuon Slack-tilille.</p>
+
+<p>Ylimmällä tasolla applikaatiomme toimii esim. näin:</p>
+
+<pre><code class="language-php">
+// BlogiController.php
+
+use App\Notifications\SlackViesti
+
+$this-&gt;blogs = collect([/* lista blogeja */]);
+
+public function tarkistaBlogit() {
+  
+  $maininnat = $this-&gt;blogs-&gt;map(function(blogi) {
+    // Tsekkaa blogi-objektia käyttäen jos uusi maininta havaittu
+    if ($blogi-&gt;uusiMainintaHavaittu()) return $blogi-&gt;haeMaininta();
+    return null;   	
+  })-&gt;filter(function($maininta) {
+    // Filteröi nullit pois
+    return $maininta !== null;
+  });
+
+  // Haetaan tietokannasta Sarasvuon käyttäjä-objekti.
+  $sarasvuo = User::where('nimi', 'Jari Sarasvuo')-&gt;first();
+
+  // Ilmoitetaan Sarasvuon Slack-tilille.
+  $sarasvuo-&gt;notify(new SlackViesti($maininnat));
+
+}
+
+</code></pre>
+
+<p>Ylimmällä tasolla Slack-viestin lähettäminen on juurikin noin helppoa kuin yllä. Toki tarvitsemme vielä lisäksi pari luokkaa:</p>
+
+<pre><code class="language-php">
+// App\Notifications\SlackViesti.php
+
+class SlackViesti {
+
+  protected $maininnat;
+
+  public function __construct($maininnat) {
+    // Talletetaan maininnat jotta voidaan käyttää sitä myöhemmin
+    $this-&gt;maininnat = maininnat;
+  }
+
+  // Kehys kutsuu tätä metodia kun tiedoksianto luodaan ja lähetetään
+  // Parametrinä sisään tulee tässä tapauksessa Sarasvuon käyttäjä-objekti.	
+  public function via($sarasvuo) {
+    // Täällä päätämme mitä tiedoksiantokanavaa haluamme käyttää.
+    return ['slack'];
+
+  }
+
+  public function toSlack($user) {
+    // Hoidetaan Slack-viestin luonti.
+    // Kehys hoitaa loput.
+
+    $mainintaTeksti = $this-&gt;maininnat-&gt;reduce(function($teksti, $maininta) {
+      return $teksti . $maininta-&gt;url . &quot;, &quot;;
+    }, 'Blogimaininnat: ')
+
+    // SlackMessage on Laravel-kehyksen sisäinen apuluokka.
+    return (new SlackMessage)
+      -&gt;line('Uusia Trainers House mainintoja')
+      -&gt;line('Firmasi mainittiin blogeissa ' . $mainintaTeksti);
+  }
+
+
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+// User.php
+
+class User extends Authenticatable {
+
+  // Mahdollistaa tiedoksiantojen lähetyksen käyttäjälle.	
+  use Notifiable;
+
+  // Mahdollistaa Slack-viestien lähettämisen tiettyyn Slack-endpointiin.
+  public function routeNotificationForSlack() {
+    // Sarasvuo on luonut itselleen HTTP-endpointin Slack-appin puolella.
+    // Tässä tapauksessa kirjoitetaan testi-endpoint suoraan lähdekoodiin.
+    // Oikeassa applikaatiossa haluamme tallentaa tuo endpointin tietokantaan.
+
+    return 'https://hooks.slack.com/services/T00000000/B00000000/1234abcd';
+  }
+}
+
+</code></pre>
+
+<p>Ylläolevan koodin kautta Sarasvuo saa suoraan Slackiin ilmoituksia tyyliin:</p>
+
+<blockquote>
+<p>Uusia Trainers House mainintoja</p>
+
+<p>Firmasi mainittiin blogeissa: <a href="http://www.kakkumaakari.fi">http://www.kakkumaakari.fi</a>, <a href="http://nollaversio.fi">http://nollaversio.fi</a></p>
+</blockquote>
+
+<p>Toimii kuin unelma. Laravel tekee tässäkin tapauksessa koodarin elämästä lähes laittoman helppoa.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

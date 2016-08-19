@@ -6,8 +6,121 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Thu, 18 Aug 2016 05:47:59 +0300</lastBuildDate>
+    <lastBuildDate>Fri, 19 Aug 2016 06:26:46 +0300</lastBuildDate>
     <atom:link href="http://nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Slack and Laravel</title>
+      <link>http://nollaversio.fi/blog/public/laravel/slack-and-laravel/</link>
+      <pubDate>Fri, 19 Aug 2016 06:26:46 +0300</pubDate>
+      
+      <guid>http://nollaversio.fi/blog/public/laravel/slack-and-laravel/</guid>
+      <description>&lt;p&gt;Uuden Laravel 5.3 ohjelmistokehyksen avulla web-applikaation integrointi Slackin kanssa on naurettavan helppoa. Otetaan esimerkkinä tapaus, jossa haluamme lähettää tiedoksiantoja Slackin suuntaan.&lt;/p&gt;
+
+&lt;p&gt;Sanotaan vaikka, että meillä on Slack-käyttäjänä bisnespersoona Jari Sarasvuo. Applikaatiomme haravoi internettiä etsien blogimainintoja hänen firmastaan Trainer&amp;rsquo;s House. Aina kun joku bloggari kirjoittaa blogiinsa postauksen, jossa termi &amp;lsquo;Trainer&amp;rsquo;s House&amp;rsquo; mainitaan, applikaatiomme tuottaa Slack-viestin ja lähettää sen Sarasvuon Slack-tilille.&lt;/p&gt;
+
+&lt;p&gt;Ylimmällä tasolla applikaatiomme toimii esim. näin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// BlogiController.php
+
+use App\Notifications\SlackViesti
+
+$this-&amp;gt;blogs = collect([/* lista blogeja */]);
+
+public function tarkistaBlogit() {
+  
+  $maininnat = $this-&amp;gt;blogs-&amp;gt;map(function(blogi) {
+    // Tsekkaa blogi-objektia käyttäen jos uusi maininta havaittu
+    if ($blogi-&amp;gt;uusiMainintaHavaittu()) return $blogi-&amp;gt;haeMaininta();
+    return null;   	
+  })-&amp;gt;filter(function($maininta) {
+    // Filteröi nullit pois
+    return $maininta !== null;
+  });
+
+  // Haetaan tietokannasta Sarasvuon käyttäjä-objekti.
+  $sarasvuo = User::where(&#39;nimi&#39;, &#39;Jari Sarasvuo&#39;)-&amp;gt;first();
+
+  // Ilmoitetaan Sarasvuon Slack-tilille.
+  $sarasvuo-&amp;gt;notify(new SlackViesti($maininnat));
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylimmällä tasolla Slack-viestin lähettäminen on juurikin noin helppoa kuin yllä. Toki tarvitsemme vielä lisäksi pari luokkaa:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// App\Notifications\SlackViesti.php
+
+class SlackViesti {
+
+  protected $maininnat;
+
+  public function __construct($maininnat) {
+    // Talletetaan maininnat jotta voidaan käyttää sitä myöhemmin
+    $this-&amp;gt;maininnat = maininnat;
+  }
+
+  // Kehys kutsuu tätä metodia kun tiedoksianto luodaan ja lähetetään
+  // Parametrinä sisään tulee tässä tapauksessa Sarasvuon käyttäjä-objekti.	
+  public function via($sarasvuo) {
+    // Täällä päätämme mitä tiedoksiantokanavaa haluamme käyttää.
+    return [&#39;slack&#39;];
+
+  }
+
+  public function toSlack($user) {
+    // Hoidetaan Slack-viestin luonti.
+    // Kehys hoitaa loput.
+
+    $mainintaTeksti = $this-&amp;gt;maininnat-&amp;gt;reduce(function($teksti, $maininta) {
+      return $teksti . $maininta-&amp;gt;url . &amp;quot;, &amp;quot;;
+    }, &#39;Blogimaininnat: &#39;)
+
+    // SlackMessage on Laravel-kehyksen sisäinen apuluokka.
+    return (new SlackMessage)
+      -&amp;gt;line(&#39;Uusia Trainers House mainintoja&#39;)
+      -&amp;gt;line(&#39;Firmasi mainittiin blogeissa &#39; . $mainintaTeksti);
+  }
+
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// User.php
+
+class User extends Authenticatable {
+
+  // Mahdollistaa tiedoksiantojen lähetyksen käyttäjälle.	
+  use Notifiable;
+
+  // Mahdollistaa Slack-viestien lähettämisen tiettyyn Slack-endpointiin.
+  public function routeNotificationForSlack() {
+    // Sarasvuo on luonut itselleen HTTP-endpointin Slack-appin puolella.
+    // Tässä tapauksessa kirjoitetaan testi-endpoint suoraan lähdekoodiin.
+    // Oikeassa applikaatiossa haluamme tallentaa tuo endpointin tietokantaan.
+
+    return &#39;https://hooks.slack.com/services/T00000000/B00000000/1234abcd&#39;;
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevan koodin kautta Sarasvuo saa suoraan Slackiin ilmoituksia tyyliin:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Uusia Trainers House mainintoja&lt;/p&gt;
+
+&lt;p&gt;Firmasi mainittiin blogeissa: &lt;a href=&#34;http://www.kakkumaakari.fi&#34;&gt;http://www.kakkumaakari.fi&lt;/a&gt;, &lt;a href=&#34;http://nollaversio.fi&#34;&gt;http://nollaversio.fi&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Toimii kuin unelma. Laravel tekee tässäkin tapauksessa koodarin elämästä lähes laittoman helppoa.&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Konsolitulosteen väritys</title>
@@ -2251,165 +2364,6 @@ $.ajax({
 
 &lt;p&gt;Mutta abstraktionkin voi viedä liian pitkälle. Abstraktio toimii vain siihen pisteeseen saakka, jossa viimeinenkin looginen toiminto on eroteltuna omaksi paketikseen. Tämän jälkeen abstraktion lisääminen tuppaa vain sotkemaan koodia.&lt;/p&gt;
 &lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Rekursiivinen lupausketju ajurina? (osa 1)</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/promise-workflow-manager/</link>
-      <pubDate>Fri, 29 Jul 2016 21:33:50 +0300</pubDate>
-      
-      <guid>http://nollaversio.fi/blog/public/nodejs/promise-workflow-manager/</guid>
-      <description>
-
-&lt;p&gt;Olen epäilemättä varsin ihastunut lupauksiin (&lt;a href=&#34;https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise&#34;&gt;Promise&lt;/a&gt;). Tässä blogissa on blogin ensimmäisen kuukauden aikana julkaistu neljä kirjoitusta, joiden keskiössä toimii lupausten käyttö. Ja tässä on viides.&lt;/p&gt;
-
-&lt;p&gt;Tänään mieltäni askarrutti seuraava lupausten hyödyntämiseen liittyvä ajatus:&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Entä jos rakentaisi lupausten varaan yleismaailmallisen &amp;ldquo;task-runnerin&amp;rdquo;, johon kytkeä varsinaiset ominaisuudet &lt;em&gt;service provider&lt;/em&gt;-tyyliin.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Service Provider on itselleni Laravellin puolelta tutuksi tullut termi. Se tarkoittaa ohjelmakomponenttia, joka ohjelman suorituksen alkuvaiheessa &lt;em&gt;lisää&lt;/em&gt; jonkin palvelun osaksi (ohjelma)kokonaisuutta.&lt;/p&gt;
-
-&lt;p&gt;Jos itse ohjelmisto on F1-auto, Service Provider on varikkomekanikko, joka ruuvaa kiinni sivupeilit (= lisäominaisuus) osaksi auton runkoa.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Pakko myöntää, etten itsekään ole täysin kärryillä mitä ajan tällä konseptilla takaa. Mutta jotain sen suuntaista, että haluaisin rakentaa lupausten varaan uuden ohjelmistokehyksen. Tuo kehys olisi suunnattu hyvin spesifiin käyttötarkoitukseen; vuoropohjaisten moninpelien ohjelmointiin.&lt;/p&gt;
-
-&lt;h3 id=&#34;voiko-rekursiivinen-lupausketju-toimia-ajurina&#34;&gt;Voiko rekursiivinen lupausketju toimia ajurina?&lt;/h3&gt;
-
-&lt;p&gt;Kaikkein yleisimmässä muodossaan lupausketju toimii siten, että ketjun osanen suoritetaan &lt;em&gt;heti&lt;/em&gt; kun edellisen osanen on saanut oman työnsä päätökseen. Ketju etenee siis yksi osasuoritus kerrallaan järjestyksessä.&lt;/p&gt;
-
-&lt;p&gt;Myös kaikki vuoropohjaiset pelit etenevät järjestyksessä; ensin on pelaajan #1 vuoro, sitten pelaajan #2, sitten pelaajan #3, jne. Kun kierros käyty läpi, vuoro siirtyy takaisin pelaajalle #1.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Esimerkkejä vuoropohjaisten pelien siirtojärjestyksestä:&lt;/p&gt;
-
-&lt;p&gt;Monopoli (3 pelaajaa): p1-&amp;gt;p2-&amp;gt;p3-&amp;gt;p1-&amp;gt;p2-&amp;gt;p3-&amp;gt;p1&amp;hellip;&lt;/p&gt;
-
-&lt;p&gt;Shakki (kaksinpeli): p1-&amp;gt;p2-&amp;gt;p1-&amp;gt;p2-&amp;gt;p1&amp;hellip;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Monopoli, pokeri, shakki, snooker, curling, laivanupotus&amp;hellip; vuoropohjaisia pelejä on paljon ja todella monenlaisia. Katsotaan esimerkillinen lupauksiin perustuva ajuri, joka suorittaa yhden vuorokierroksen (= kaikki pelaajat tekevät yhden siirron). Käytetään esimerkkinä kolmen pelaajan Monopoli-peliä:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var Promise = require(&#39;bluebird&#39;);
-
-// Vuorosimulaattori.js
-
-// PeliLoppui-exception
-function PeliLoppui() {};
-PeliLoppui.prototype = new Error;
-
-// Pelin update-metodi, jolla peliä viedään eteenpäin
-function toteutaSiirto(pelaajaNimi, siirto) {
-	// Tee siirto esim. shakkilaudalla.
-}
-
-// Apufunktio nopan heittämiseen, arpoo kaksi lukua 1-6.
-function heitaNoppaa() {
-	// [nopan silmäluku, toisen nopan silmäluku]
-	return [Math.ceil(Math.random()*6), Math.ceil(Math.random()*6)];
-}
-
-
-// Pelaajan #1 siirtovuoro
-function p1Siirto() {
-	return new Promise(function(resolve, reject) {
-		// Heitä noppaa
-		var nopat = heitaNoppaa();
-		// Tee siirto
-		toteutaSiirto(&#39;p1&#39;, nopat);
-		// Päätä vuoro täyttämällä lupaus.
-		resolve();
-	});
-}
-
-// Pelaajan #2 siirtovuoro
-function p2Siirto() {
-	// Vastaava kuin p1, mutta annetaan vuoro kakkospelaajalle.
-}
-
-// Pelaajan #3 siirtovuoro
-function p3Siirto() {
-	// Vastaava kuin p2, mutta annetaan vuoro kolmospelaajalle.
-}
-
-function aloitaVuorokierros(pelaajat) {
-	// Kunkin pelaajan siirtofunktio on elementtinä *pelaajat*-listassa.
-	// Kutakin funktiota kutsutaan järjestyksessä vuorotellen.
-	
-	// Promise.each-metodi käy pelaajat yksi kerrallaan läpi, antaen
-	// siirtovuoron kullekin pelaajalle kertaalleen.
-
-	Promise.each(pelaajat, function(annaVuoroPelaajalle) {
-		// Muuttuja *annaVuoroPelaajalle* on funktio.
-		// Se on joko *p1Siirto*, *p2Siirto* tai *p3Siirto*!
-		return annaVuoroPelaajalle();
-	})
-	.then(function() {
-		// Siirry seuraavalle kierrokselle!
-		// HUOM! Ikuinen rekursio.
-		// Ilman virhettä peli ei lopu koskaan.
-		aloitaVuorokierros(pelaajat);
-	})
-	.catch(function() {
-		// Pelissä tapahtui virhe, lopeta peli.
-		// Peli lopetetaan heittämällä &#39;PeliLoppui&#39;,
-		// joka napataan kiinni ylempänä call stäkissä.
-		throw new PeliLoppui();
-	})
-
-}
-// Luo kolme pelaajaa
-var pelaajat = [p1Siirto, p2Siirto, p3Siirto];
-// Aloita peli, johon nuo kolme pelaajaa osallistuvat.
-aloitaVuorokierros(pelaajat)
-.catch(PeliLoppui, function() {
-	// Tässä on hyvä paikka kerätä roskat yms.
-	// Tai esim. tallettaa pelin lopputulokset tietokantaan!
-	console.log(&amp;quot;Peli on loppunut, kiitos pelaajille.&amp;quot;)
-})
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva koodi pyörii ikuista looppia &lt;em&gt;aloitaVuorokierros&lt;/em&gt;-funktion ympärillä. Tällä tavoin se pystyy simuloimaan esimerkiksi Monopoli-peliä, joka ei pääty koskaan. Huomattavaa on, että koska tuo luuppi pyörii &lt;em&gt;asynkronoidusti&lt;/em&gt;, on &lt;em&gt;p1Siirto&lt;/em&gt;-funktion sisällä mahdollista &lt;strong&gt;kysyä ihmispelaajalta hänen siirtoaan.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Eli ihmispelaajalle voidaan &lt;em&gt;p1Siirto&lt;/em&gt;-funktion sisältä käsin avata vaikka popup-ikkuna selaimessa, ja tuo popup-ikkuna tarjoaa ihmispelaajalle mahdollisuuden päättää siirrostaan. Kun pelaaja klikkaa popup-ikkunasta haluamaansa siirtoa, tieto välittyy palvelimelle, ja pelaajan siirtovuoro päättyy.&lt;/p&gt;
-
-&lt;p&gt;Tässä nopea naivi toteutus edellämainitusta:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Pelaajan #1 TCP-socket tjms. viestintäväylä
-// Se miten tämä socket on luotu on tekninen sivuseikka,
-// jonka vastuu jätettäköön *socket.io*:n kaltaiselle kirjastolle.
-var p1socket = /* luo socket jotenkin */
-
-function p1Siirto() {
-	return new Promise(function(resolve, reject) {
-		// Lähetä ihmispelaajalle tieto siitä, että
-		// nyt on hänen siirtovuoronsa.
-		p1socket.send(&#39;Sinun siirtovuorosi - tee siirto.&#39;);
-
-		// Tärkeää!
-		// Jää kuuntelemaan ihmispelaajan vastausta!
-		// Ohjaa saatu vastaus suoraan lupauksen täyttävään
-		// resolve-funktioon!
-		p1socket.on(&#39;siirto&#39;, resolve);
-
-	}
-
-}
-
-// p2Siirto ja p3Siirto vastaavanlaiset...
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Erittäin kaunista. Kunkin pelaajan siirtofunktio vie tiedon ihmispelaajalle, ja jää odottamaan ihmispelaajan vastausta. Kun vastaus saapuu, aiemmin luotu lupaus täytetään ja vuorokierros pyörähtää yhden pykälän eteenpäin.&lt;/p&gt;
-
-&lt;p&gt;Ylläoleva algoritmi on toki naurettavan naivi siinä mielessä, että se ei ota juuri mitään erikoistilanteita tai sivuehtoja huomioon. Esimerkiksi siirtovuorolla ei ole aikarajaa - eli pillastunut pelaaja voi kieltäytyä tekemästä siirtoa lainkaan ja tällä tavoin koko peli jää jumiin.&lt;/p&gt;
-
-&lt;p&gt;Palataan aikarajaan ja muihin ongelmiin seuraavassa postauksessa. Samalla pääsemme näkemään josko &lt;em&gt;Promise.race&lt;/em&gt;-metodista olisi johonkin&amp;hellip;&lt;/p&gt;
 </description>
     </item>
     
