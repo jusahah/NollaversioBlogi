@@ -26,26 +26,35 @@
 
 use App\Notifications\SlackViesti
 
-$this-&amp;gt;blogs = collect([/* lista blogeja */]);
+class BlogiController extends Controller {
 
-public function tarkistaBlogit() {
-  
-  $maininnat = $this-&amp;gt;blogs-&amp;gt;map(function(blogi) {
-    // Tsekkaa blogi-objektia käyttäen jos uusi maininta havaittu
-    if ($blogi-&amp;gt;uusiMainintaHavaittu()) return $blogi-&amp;gt;haeMaininta();
-    return null;   	
-  })-&amp;gt;filter(function($maininta) {
-    // Filteröi nullit pois
-    return $maininta !== null;
-  });
+	protected $blogs; // lista blogeja, täytetään jotenkin
 
-  // Haetaan tietokannasta Sarasvuon käyttäjä-objekti.
-  $sarasvuo = User::where(&#39;nimi&#39;, &#39;Jari Sarasvuo&#39;)-&amp;gt;first();
+	// Tätä metodia kutsutaan jonkin ulkoisen skriptin toimesta 
+	// esim. kerran minuutissa, tällä tavoin blogit tulee tarkistetuksi
+	// minuutin välein.
+	public function tarkistaBlogit() {
+	  
+	  $maininnat = $this-&amp;gt;blogs-&amp;gt;map(function(blogi) {
+	    // Tsekkaa blogi-objektia käyttäen jos uusi maininta havaittu
+	    if ($blogi-&amp;gt;uusiMainintaHavaittu()) return $blogi-&amp;gt;haeMaininta();
+	    return null;   	
+	  })-&amp;gt;filter(function($maininta) {
+	    // Filteröi nullit pois
+	    return $maininta !== null;
+	  });
 
-  // Ilmoitetaan Sarasvuon Slack-tilille.
-  $sarasvuo-&amp;gt;notify(new SlackViesti($maininnat));
+	  // Haetaan tietokannasta Sarasvuon käyttäjä-objekti.
+	  $sarasvuo = User::where(&#39;nimi&#39;, &#39;Jari Sarasvuo&#39;)-&amp;gt;first();
+
+	  // Ilmoitetaan Sarasvuon Slack-tilille.
+	  $sarasvuo-&amp;gt;notify(new SlackViesti($maininnat));
+
+	}	
 
 }
+
+
 
 &lt;/code&gt;&lt;/pre&gt;
 
@@ -118,7 +127,11 @@ class User extends Authenticatable {
 &lt;p&gt;Firmasi mainittiin blogeissa: &lt;a href=&#34;http://www.kakkumaakari.fi&#34;&gt;http://www.kakkumaakari.fi&lt;/a&gt;, &lt;a href=&#34;http://nollaversio.fi&#34;&gt;http://nollaversio.fi&lt;/a&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;p&gt;Toimii kuin unelma. Laravel tekee tässäkin tapauksessa koodarin elämästä lähes laittoman helppoa.&lt;/p&gt;
+&lt;p&gt;Nuo ilmoitukset siis menevät suoraan Slackin palvelimelle, josta ne sitten jaetaan Jarille. Hyvä puoli tässä on, että Slack tarjoaa appinsa niin työpöytäkoneeseen, läppäriin kuin mobiilikännykkäänkin. En ihmettelisi ellei pian olisi Slack-appi Teslan monitoiminäyttöönkin.&lt;/p&gt;
+
+&lt;p&gt;Meidän applikaatiomme ei siis tarvitse huolehtia siitä mitä päätelaitetta Sarasvuo käyttää. Riittää, että kutsumme Slack-endpointia.&lt;/p&gt;
+
+&lt;p&gt;Toimii kuin unelma. Laravel tekee tässäkin tapauksessa koodarin elämästä lähes laittoman helppoa. Ja Slack hoitaa loput.&lt;/p&gt;
 </description>
     </item>
     

@@ -17,26 +17,35 @@ Ylimmällä tasolla applikaatiomme toimii esim. näin:
 
 use App\Notifications\SlackViesti
 
-$this->blogs = collect([/* lista blogeja */]);
+class BlogiController extends Controller {
 
-public function tarkistaBlogit() {
-  
-  $maininnat = $this->blogs->map(function(blogi) {
-    // Tsekkaa blogi-objektia käyttäen jos uusi maininta havaittu
-    if ($blogi->uusiMainintaHavaittu()) return $blogi->haeMaininta();
-    return null;   	
-  })->filter(function($maininta) {
-    // Filteröi nullit pois
-    return $maininta !== null;
-  });
+	protected $blogs; // lista blogeja, täytetään jotenkin
 
-  // Haetaan tietokannasta Sarasvuon käyttäjä-objekti.
-  $sarasvuo = User::where('nimi', 'Jari Sarasvuo')->first();
+	// Tätä metodia kutsutaan jonkin ulkoisen skriptin toimesta 
+	// esim. kerran minuutissa, tällä tavoin blogit tulee tarkistetuksi
+	// minuutin välein.
+	public function tarkistaBlogit() {
+	  
+	  $maininnat = $this->blogs->map(function(blogi) {
+	    // Tsekkaa blogi-objektia käyttäen jos uusi maininta havaittu
+	    if ($blogi->uusiMainintaHavaittu()) return $blogi->haeMaininta();
+	    return null;   	
+	  })->filter(function($maininta) {
+	    // Filteröi nullit pois
+	    return $maininta !== null;
+	  });
 
-  // Ilmoitetaan Sarasvuon Slack-tilille.
-  $sarasvuo->notify(new SlackViesti($maininnat));
+	  // Haetaan tietokannasta Sarasvuon käyttäjä-objekti.
+	  $sarasvuo = User::where('nimi', 'Jari Sarasvuo')->first();
+
+	  // Ilmoitetaan Sarasvuon Slack-tilille.
+	  $sarasvuo->notify(new SlackViesti($maininnat));
+
+	}	
 
 }
+
+
 
 ```
 
@@ -109,8 +118,11 @@ Ylläolevan koodin kautta Sarasvuo saa suoraan Slackiin ilmoituksia tyyliin:
 >
 > Firmasi mainittiin blogeissa: http://www.kakkumaakari.fi, http://nollaversio.fi
 
+Nuo ilmoitukset siis menevät suoraan Slackin palvelimelle, josta ne sitten jaetaan Jarille. Hyvä puoli tässä on, että Slack tarjoaa appinsa niin työpöytäkoneeseen, läppäriin kuin mobiilikännykkäänkin. En ihmettelisi ellei pian olisi Slack-appi Teslan monitoiminäyttöönkin. 
 
-Toimii kuin unelma. Laravel tekee tässäkin tapauksessa koodarin elämästä lähes laittoman helppoa.
+Meidän applikaatiomme ei siis tarvitse huolehtia siitä mitä päätelaitetta Sarasvuo käyttää. Riittää, että kutsumme Slack-endpointia.
+
+Toimii kuin unelma. Laravel tekee tässäkin tapauksessa koodarin elämästä lähes laittoman helppoa. Ja Slack hoitaa loput.
 
 
 
