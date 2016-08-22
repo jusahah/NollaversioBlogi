@@ -2,147 +2,152 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/</loc>
+    <lastmod>2016-08-22T03:08:34+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/</loc>
+    <lastmod>2016-08-22T03:08:34+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://www.nollaversio.fi/blog/public/laravel/slack-and-laravel/</loc>
     <lastmod>2016-08-19T06:26:46+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/laravel/slack-and-laravel/</loc>
-    <lastmod>2016-08-19T06:26:46+03:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>http://nollaversio.fi/blog/public/nodejs/console-log-coloring/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/nodejs/console-log-coloring/</loc>
     <lastmod>2016-08-18T05:47:59+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/laravel/require-vs-include/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/laravel/require-vs-include/</loc>
     <lastmod>2016-08-17T03:40:31+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</loc>
     <lastmod>2016-08-16T06:37:20+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/laravel/email-laravel/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/laravel/email-laravel/</loc>
     <lastmod>2016-08-15T06:15:21+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</loc>
     <lastmod>2016-08-12T06:46:20+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/nodejs/mocha-testing/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/nodejs/mocha-testing/</loc>
     <lastmod>2016-08-11T06:38:25+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/nodejs/promise-mapseries/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/nodejs/promise-mapseries/</loc>
     <lastmod>2016-08-10T03:08:44+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/laravel/csrf/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/laravel/csrf/</loc>
     <lastmod>2016-08-09T06:07:23+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</loc>
     <lastmod>2016-08-08T06:45:45+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/nodejs/es7-async-await/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/nodejs/es7-async-await/</loc>
     <lastmod>2016-08-05T06:02:06+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/laravel/view-model-bliss/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/laravel/view-model-bliss/</loc>
     <lastmod>2016-08-04T04:12:30+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/laravel/view-composer/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/laravel/view-composer/</loc>
     <lastmod>2016-08-03T03:49:47+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/nodejs/zip-unzip/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/nodejs/zip-unzip/</loc>
     <lastmod>2016-08-02T11:10:16+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/</loc>
     <lastmod>2016-08-01T13:50:30+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/nodejs/promise-workflow-manager/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/nodejs/promise-workflow-manager/</loc>
     <lastmod>2016-07-29T21:33:50+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/nodejs/lodash-chain/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/nodejs/lodash-chain/</loc>
     <lastmod>2016-07-28T06:39:21+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/laravel/testing-routes/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/laravel/testing-routes/</loc>
     <lastmod>2016-07-27T06:11:10+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/laravel/reservation-pattern/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/laravel/reservation-pattern/</loc>
     <lastmod>2016-07-26T11:32:03+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/nodejs/promise-filter/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/nodejs/promise-filter/</loc>
     <lastmod>2016-07-25T17:28:05+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/laravel/start-checklist/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/laravel/start-checklist/</loc>
     <lastmod>2016-07-22T16:14:13+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/laravel/usecase-bliss/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/laravel/usecase-bliss/</loc>
     <lastmod>2016-07-22T14:44:27+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/laravel/protecting-routes/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/laravel/protecting-routes/</loc>
     <lastmod>2016-07-20T20:42:23+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/nodejs/promise-tap/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/nodejs/promise-tap/</loc>
     <lastmod>2016-07-18T18:02:21+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</loc>
     <lastmod>2016-07-18T17:11:43+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/nodejs/promisechain/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/nodejs/promisechain/</loc>
     <lastmod>2016-07-13T06:48:47+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</loc>
     <lastmod>2016-07-11T06:35:00+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://nollaversio.fi/blog/public/laravel/vinkit1/</loc>
+    <loc>http://www.nollaversio.fi/blog/public/laravel/vinkit1/</loc>
     <lastmod>2016-07-06T06:28:46+03:00</lastmod>
   </url>
   

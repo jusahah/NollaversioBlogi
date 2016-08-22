@@ -2,19 +2,137 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Arkkitehtuuris on Nollaversio IT</title>
-    <link>http://nollaversio.fi/blog/public/arkkitehtuuri/</link>
+    <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/</link>
     <description>Recent content in Arkkitehtuuris on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Fri, 12 Aug 2016 06:46:20 +0300</lastBuildDate>
-    <atom:link href="http://nollaversio.fi/blog/public/arkkitehtuuri/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Mon, 22 Aug 2016 03:08:34 +0300</lastBuildDate>
+    <atom:link href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Ketjutettava rajapinta</title>
+      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/</link>
+      <pubDate>Mon, 22 Aug 2016 03:08:34 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/</guid>
+      <description>&lt;p&gt;Ohjelmoinnin puolella on olemassa kätevä konsepti nimeltä &amp;ldquo;Fluent interface&amp;rdquo;. Paras suomennos tuolle lienee &amp;ldquo;ketjutettava rajapinta&amp;rdquo;, joten käytän sitä.&lt;/p&gt;
+
+&lt;p&gt;Mikä tai millainen on ketjutettava rajapinta? Se on yksinkertaisesti rajapinta, joka mahdollistaa rajapintakutsujen ketjutuksen.&lt;/p&gt;
+
+&lt;p&gt;Otetaan esimerkkinä rajapinnasta, joka &lt;strong&gt;ei&lt;/strong&gt; ole ketjutettava:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Rajapintaluokan &#39;Valot&#39; kautta voi hallita talon valokatkaisijoita
+class Valot {
+
+  // Kukin toggle-metodi sytyttää valot jos ovat pois päältä,
+  // ja sammuttaa valot jos ovat päällä.
+
+  public function toggleVessa() {//...}
+  public function toggleKeittio() {//...}
+  public function toggleOlohuone() {//...}
+  public function toggleMakuuhuone() {//...}
+  public function toggleParveke() {//...}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+$valot = new valot();
+
+// Kutsutaan metodeja
+$valot-&amp;gt;toggleKeittio();
+$valot-&amp;gt;toggleVessa();
+$valot-&amp;gt;toggleMakuuhuone();
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yllä meillä on tavallinen rajapinta. Kutsumme sitä metodi kerrallaan. Koska yksikään metodikutsu ei &lt;em&gt;palauta mitään palautusarvoa&lt;/em&gt; - tai ainakaan emme mitään palautusarvoa ota vastaan - voimme olettaa, että kukin metodikutsu suorittaa jonkin ulkoisen muutoksen (engl. side effect). Jos metodikutsut eivät tuota ulkoisia muutoksia, koko rajapinnan käyttö on yksinkertaisesti turhaa.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Mikäli metodikutsu ei palauta mitään eikä muokkaa yhdenkään ulkoisen tilamuuttujan arvoa, kyseessä on täysin tarpeeton metodikutsu. Sillä KAIKKI metodikutsut tehdään jomman kumman syyn takia; joko ne 1) &lt;em&gt;palauttavat jonkin arvon&lt;/em&gt;, tai ne 2) &lt;em&gt;muokkaavat jotakin ulkoista tilamuuttujaa&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Mitään kolmatta vaihtoehtoa ei ole olemassa, esimerkiksi tulosteen kirjoittaminen käyttäjän nähtäville on versio vaihtoehdosta #2 - siinä tietokoneen näyttöpäätteen tilamuuttujaa (= RAM-keskusmuistin sitä muistialuetta, johon kunkin pikselin tila on tallennettu) muokataan siten, että ihmiskäyttäjä näkee lukea jotain.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Nyt voimme muuntaa ylläolevan koodin &lt;em&gt;fluent interface&lt;/em&gt;:ksi eli ketjutettavaksi rajapinnaksi hyvin yksinkertaisesti.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class Valot {
+
+  public function toggleVessa() {
+    //...
+    // Palautusarvo on oleellista ketjutuksen kannalta. 
+    // Palauttamalla kutsuttavan objektin voimme samantien kutsua sen
+    // jotain metodia (vaikka tätä toggleVessa-metodia!) heti uudestaan.
+    return $this;
+  }
+  public function toggleKeittio() {
+    //...
+    return $this;
+  }
+  public function toggleOlohuone() {
+    //...
+    return $this;
+  }
+  public function toggleMakuuhuone() {
+    //...
+    return $this;
+  }
+  public function toggleParveke() {
+    //...
+    return $this;
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+
+$valot = new Valot();
+
+// Kutsutaan metodeja
+$valot-&amp;gt;toggleKeittio()-&amp;gt;toggleVessa()-&amp;gt;toggleMakuuhuone();
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yltä näemme mitä ketjutus tismalleen tarkoittaa; voimme kunkin metodikutsun palautusarvon &lt;em&gt;kierrättää&lt;/em&gt; ja kutsua sen metodia. Ja koska &lt;strong&gt;kunkin Valot-luokan metodikutsun palautusarvo on Valot-objekti itse&lt;/strong&gt;, ketjutus johtaa identtiseen lopputulemaan alkuperäisen esimerkin kanssa.&lt;/p&gt;
+
+&lt;p&gt;Itseasiassa seuraavat kolme koodipätkää johtavat kaikki identtiseen lopputulemaan:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Tapa 1
+$valot-&amp;gt;toggleKeittio()-&amp;gt;toggleParveke()-&amp;gt;toggleKeittio();
+
+// Tapa 2
+$valot-&amp;gt;toggleKeittio();
+$valot-&amp;gt;toggleParveke();
+$valot-&amp;gt;toggleKeittio();
+
+// Tapa 3
+// Tämä on huonoin tapa mitä tulee koodin selkeyteen, mutta toimii yhtäkaikki.
+$valotKopio1 = $valot-&amp;gt;toggleKeittio();
+$valotKopio2 = $valotKopio1-&amp;gt;toggleParveke();
+$valotKopio3 = $valotKopio2-&amp;gt;toggleKeittio();
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Mitä etua ketjutus sitten tuo? Niin. Ei oikein mitään. Siinä säästää muutaman hassun merkin kun ei tarvitse toistaa &amp;lsquo;$valot&amp;rsquo;-sanaa uudestaan ja uudestaan. Ei kovin merkittävä hyöty.&lt;/p&gt;
+
+&lt;p&gt;Jonkun mielestä ketjutus tekee koodista nätimpää tai helpommin luettavaa. Olen samaa mieltä, mutta kyseessä on ihan puhdas mielipidekysymys.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Huomio! Tässä ketjutettava rajapinta esiteltiin PHP-kielen kautta. Ketjutuksen konsepti ei ole sidonnainen PHP-kieleen, vaan pätee kutakuinkin kaikissa funktiokutsuja tukevissa ohjelmointikielissä.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Poikkeuksen väärinkäyttö?</title>
-      <link>http://nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</link>
+      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</link>
       <pubDate>Fri, 12 Aug 2016 06:46:20 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</guid>
       <description>
 
 &lt;p&gt;Yksi suht usein tarvittava algoritmi on tietyn arvon etsiminen binaaripuusta. Etsinnän voi suorittaa esimerkiksi näin:&lt;/p&gt;
@@ -54,6 +172,7 @@ function etsiArvoBinaaripuusta(puu, arvo) {
   var loytynyt = false;	
 
   function etsiAlipuu(juuri, arvo) {
+    if (!juuri) return;
     if (juuri.arvo === arvo) loytynyt = true;
     // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
     // mutta vain jos arvoa ei löytynyt!
@@ -95,6 +214,7 @@ function etsiArvoBinaaripuusta(puu, arvo) {
   var loytynyt = false;	
 
   function etsiAlipuu(juuri, arvo) {
+    if (!juuri) return;
     if (juuri.arvo === arvo) throw new Error(&amp;quot;Löytyi!&amp;quot;);
     // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
     etsiAlipuu(juuri.vasenHaara, arvo);
@@ -138,6 +258,7 @@ function etsiArvoBinaaripuusta(puu, arvo) {
   var loytynyt = false;	
 
   function etsiAlipuu(juuri, arvo) {
+    if (!juuri) return;
     if (juuri.arvo === arvo) throw new ArvoLoytyi(&amp;quot;Löytyi!&amp;quot;);
     // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
     etsiAlipuu(juuri.vasenHaara, arvo);
@@ -173,10 +294,10 @@ function etsiArvoBinaaripuusta(puu, arvo) {
     
     <item>
       <title>Neljä lähestymistapaa toiminnallisuuksien abstraktointiin</title>
-      <link>http://nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/</link>
+      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/</link>
       <pubDate>Mon, 01 Aug 2016 13:50:30 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/</guid>
       <description>
 
 &lt;p&gt;Aloitetaan heti esimerkillä. Tehtävämme on luoda pieni skripti, joka käy hakemassa dataa (listan numeroita) palvelimelta, käsittelee tuon datan ja näyttää käsittelyn tulokset ihmiskäyttäjälle.&lt;/p&gt;

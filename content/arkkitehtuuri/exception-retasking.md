@@ -44,6 +44,7 @@ function etsiArvoBinaaripuusta(puu, arvo) {
   var loytynyt = false;	
 
   function etsiAlipuu(juuri, arvo) {
+    if (!juuri) return;
     if (juuri.arvo === arvo) loytynyt = true;
     // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
     // mutta vain jos arvoa ei löytynyt!
@@ -86,6 +87,7 @@ function etsiArvoBinaaripuusta(puu, arvo) {
   var loytynyt = false;	
 
   function etsiAlipuu(juuri, arvo) {
+    if (!juuri) return;
     if (juuri.arvo === arvo) throw new Error("Löytyi!");
     // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
     etsiAlipuu(juuri.vasenHaara, arvo);
@@ -131,6 +133,7 @@ function etsiArvoBinaaripuusta(puu, arvo) {
   var loytynyt = false;	
 
   function etsiAlipuu(juuri, arvo) {
+    if (!juuri) return;
     if (juuri.arvo === arvo) throw new ArvoLoytyi("Löytyi!");
     // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
     etsiAlipuu(juuri.vasenHaara, arvo);

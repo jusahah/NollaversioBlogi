@@ -7,13 +7,13 @@
 
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
   <title> Nollaversio IT &middot; Nollaversio IT </title>
 
   
-  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/poole.css">
-  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/syntax.css">
-  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
 
   
@@ -21,8 +21,8 @@
   <link rel="shortcut icon" href="/favicon.png">
 
   
-  <link href="http://nollaversio.fi/blog/public/index.xml" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
-  <link rel="stylesheet" href="http://nollaversio.fi/blog/public/css/hybrid.css">
+  <link href="http://www.nollaversio.fi/blog/public/index.xml" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
   <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
   <script>hljs.initHighlightingOnLoad();</script>
   
@@ -34,7 +34,7 @@
 <div class="sidebar">
   <div class="container sidebar-sticky">
     <div class="sidebar-about">
-      <a href="http://nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
       <p class="lead">
        Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
       </p>
@@ -46,13 +46,13 @@
       
       
 
-        <li><a href="http://nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
       
 
-        <li><a href="http://nollaversio.fi/blog/public/laravel">Laravel </a></li>
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
       
 
-        <li><a href="http://nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
       
 
     </ul>
@@ -68,7 +68,128 @@
       
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/laravel/slack-and-laravel/">
+      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/">
+        Ketjutettava rajapinta
+      </a>
+    </h1>
+
+    <span class="post-date">Mon, Aug 22, 2016</span>
+
+    <p>Ohjelmoinnin puolella on olemassa kätevä konsepti nimeltä &ldquo;Fluent interface&rdquo;. Paras suomennos tuolle lienee &ldquo;ketjutettava rajapinta&rdquo;, joten käytän sitä.</p>
+
+<p>Mikä tai millainen on ketjutettava rajapinta? Se on yksinkertaisesti rajapinta, joka mahdollistaa rajapintakutsujen ketjutuksen.</p>
+
+<p>Otetaan esimerkkinä rajapinnasta, joka <strong>ei</strong> ole ketjutettava:</p>
+
+<pre><code class="language-php">
+// Rajapintaluokan 'Valot' kautta voi hallita talon valokatkaisijoita
+class Valot {
+
+  // Kukin toggle-metodi sytyttää valot jos ovat pois päältä,
+  // ja sammuttaa valot jos ovat päällä.
+
+  public function toggleVessa() {//...}
+  public function toggleKeittio() {//...}
+  public function toggleOlohuone() {//...}
+  public function toggleMakuuhuone() {//...}
+  public function toggleParveke() {//...}
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+$valot = new valot();
+
+// Kutsutaan metodeja
+$valot-&gt;toggleKeittio();
+$valot-&gt;toggleVessa();
+$valot-&gt;toggleMakuuhuone();
+
+</code></pre>
+
+<p>Yllä meillä on tavallinen rajapinta. Kutsumme sitä metodi kerrallaan. Koska yksikään metodikutsu ei <em>palauta mitään palautusarvoa</em> - tai ainakaan emme mitään palautusarvoa ota vastaan - voimme olettaa, että kukin metodikutsu suorittaa jonkin ulkoisen muutoksen (engl. side effect). Jos metodikutsut eivät tuota ulkoisia muutoksia, koko rajapinnan käyttö on yksinkertaisesti turhaa.</p>
+
+<blockquote>
+<p>Mikäli metodikutsu ei palauta mitään eikä muokkaa yhdenkään ulkoisen tilamuuttujan arvoa, kyseessä on täysin tarpeeton metodikutsu. Sillä KAIKKI metodikutsut tehdään jomman kumman syyn takia; joko ne 1) <em>palauttavat jonkin arvon</em>, tai ne 2) <em>muokkaavat jotakin ulkoista tilamuuttujaa</em>.</p>
+
+<p>Mitään kolmatta vaihtoehtoa ei ole olemassa, esimerkiksi tulosteen kirjoittaminen käyttäjän nähtäville on versio vaihtoehdosta #2 - siinä tietokoneen näyttöpäätteen tilamuuttujaa (= RAM-keskusmuistin sitä muistialuetta, johon kunkin pikselin tila on tallennettu) muokataan siten, että ihmiskäyttäjä näkee lukea jotain.</p>
+</blockquote>
+
+<p>Nyt voimme muuntaa ylläolevan koodin <em>fluent interface</em>:ksi eli ketjutettavaksi rajapinnaksi hyvin yksinkertaisesti.</p>
+
+<pre><code class="language-php">
+class Valot {
+
+  public function toggleVessa() {
+    //...
+    // Palautusarvo on oleellista ketjutuksen kannalta. 
+    // Palauttamalla kutsuttavan objektin voimme samantien kutsua sen
+    // jotain metodia (vaikka tätä toggleVessa-metodia!) heti uudestaan.
+    return $this;
+  }
+  public function toggleKeittio() {
+    //...
+    return $this;
+  }
+  public function toggleOlohuone() {
+    //...
+    return $this;
+  }
+  public function toggleMakuuhuone() {
+    //...
+    return $this;
+  }
+  public function toggleParveke() {
+    //...
+    return $this;
+  }
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+
+$valot = new Valot();
+
+// Kutsutaan metodeja
+$valot-&gt;toggleKeittio()-&gt;toggleVessa()-&gt;toggleMakuuhuone();
+
+</code></pre>
+
+<p>Yltä näemme mitä ketjutus tismalleen tarkoittaa; voimme kunkin metodikutsun palautusarvon <em>kierrättää</em> ja kutsua sen metodia. Ja koska <strong>kunkin Valot-luokan metodikutsun palautusarvo on Valot-objekti itse</strong>, ketjutus johtaa identtiseen lopputulemaan alkuperäisen esimerkin kanssa.</p>
+
+<p>Itseasiassa seuraavat kolme koodipätkää johtavat kaikki identtiseen lopputulemaan:</p>
+
+<pre><code class="language-php">
+// Tapa 1
+$valot-&gt;toggleKeittio()-&gt;toggleParveke()-&gt;toggleKeittio();
+
+// Tapa 2
+$valot-&gt;toggleKeittio();
+$valot-&gt;toggleParveke();
+$valot-&gt;toggleKeittio();
+
+// Tapa 3
+// Tämä on huonoin tapa mitä tulee koodin selkeyteen, mutta toimii yhtäkaikki.
+$valotKopio1 = $valot-&gt;toggleKeittio();
+$valotKopio2 = $valotKopio1-&gt;toggleParveke();
+$valotKopio3 = $valotKopio2-&gt;toggleKeittio();
+
+</code></pre>
+
+<p>Mitä etua ketjutus sitten tuo? Niin. Ei oikein mitään. Siinä säästää muutaman hassun merkin kun ei tarvitse toistaa &lsquo;$valot&rsquo;-sanaa uudestaan ja uudestaan. Ei kovin merkittävä hyöty.</p>
+
+<p>Jonkun mielestä ketjutus tekee koodista nätimpää tai helpommin luettavaa. Olen samaa mieltä, mutta kyseessä on ihan puhdas mielipidekysymys.</p>
+
+<blockquote>
+<p>Huomio! Tässä ketjutettava rajapinta esiteltiin PHP-kielen kautta. Ketjutuksen konsepti ei ole sidonnainen PHP-kieleen, vaan pätee kutakuinkin kaikissa funktiokutsuja tukevissa ohjelmointikielissä.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/slack-and-laravel/">
         Slack and Laravel
       </a>
     </h1>
@@ -84,16 +205,19 @@
 <pre><code class="language-php">
 // BlogiController.php
 
-use App\Notifications\SlackViesti
+use App\Notifications\SlackViesti;
 
 class BlogiController extends Controller {
 
 	protected $blogs; // lista blogeja, täytetään jotenkin
 
-	// Tätä metodia kutsutaan jonkin ulkoisen skriptin toimesta 
+	// Tätä metodia kutsutaan jonkin ulkoisen skriptin toimesta
 	// esim. kerran minuutissa, tällä tavoin blogit tulee tarkistetuksi
 	// minuutin välein.
-	public function tarkistaBlogit() {
+
+	// Ulkoisen skriptin ei tarvitse olla PHP-skripti, vaan se voi hoitaa
+	// kutsun HTTP-endpointin kautta. Saapuva HTTP-kutsu sitten ohjautuu tähän metodiin.
+	public function tarkistaBlogit(Request $_request) {
 	  
 	  $maininnat = $this-&gt;blogs-&gt;map(function(blogi) {
 	    // Tsekkaa blogi-objektia käyttäen jos uusi maininta havaittu
@@ -197,7 +321,7 @@ class User extends Authenticatable {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/nodejs/console-log-coloring/">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/console-log-coloring/">
         Konsolitulosteen väritys
       </a>
     </h1>
@@ -285,7 +409,7 @@ setInterval(function() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/laravel/require-vs-include/">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/require-vs-include/">
         Require vs Include
       </a>
     </h1>
@@ -411,7 +535,7 @@ $tcpTimeout = 12000;
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/laravel/testing-with-db-transactions/">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/testing-with-db-transactions/">
         Yksikkötestaus ja tietokanta-transaktio
       </a>
     </h1>
@@ -545,7 +669,7 @@ class LentokenttaTesti extends TestCase {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/laravel/email-laravel/">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/email-laravel/">
         Emailin lähetys Laravellista
       </a>
     </h1>
@@ -719,7 +843,7 @@ public function valitseVoittaja(array $osallistujat) {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/">
+      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/">
         Poikkeuksen väärinkäyttö?
       </a>
     </h1>
@@ -765,6 +889,7 @@ function etsiArvoBinaaripuusta(puu, arvo) {
   var loytynyt = false;	
 
   function etsiAlipuu(juuri, arvo) {
+    if (!juuri) return;
     if (juuri.arvo === arvo) loytynyt = true;
     // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
     // mutta vain jos arvoa ei löytynyt!
@@ -806,6 +931,7 @@ function etsiArvoBinaaripuusta(puu, arvo) {
   var loytynyt = false;	
 
   function etsiAlipuu(juuri, arvo) {
+    if (!juuri) return;
     if (juuri.arvo === arvo) throw new Error(&quot;Löytyi!&quot;);
     // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
     etsiAlipuu(juuri.vasenHaara, arvo);
@@ -849,6 +975,7 @@ function etsiArvoBinaaripuusta(puu, arvo) {
   var loytynyt = false;	
 
   function etsiAlipuu(juuri, arvo) {
+    if (!juuri) return;
     if (juuri.arvo === arvo) throw new ArvoLoytyi(&quot;Löytyi!&quot;);
     // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
     etsiAlipuu(juuri.vasenHaara, arvo);
@@ -884,7 +1011,7 @@ function etsiArvoBinaaripuusta(puu, arvo) {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/nodejs/mocha-testing/">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/mocha-testing/">
         Asynkronoidun koodin testaus (Mocha)
       </a>
     </h1>
@@ -1004,7 +1131,7 @@ describe('Matikka', function() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/nodejs/promise-mapseries/">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/promise-mapseries/">
         Rekursiivinen lupausketju ajurina? (osa 2)
       </a>
     </h1>
@@ -1201,7 +1328,7 @@ laajennukset['aikaKuluiUmpeen'] = function() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/laravel/csrf/">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/csrf/">
         Kuinka CSRF toimii?
       </a>
     </h1>
@@ -1350,7 +1477,7 @@ Käytännössä web-applikaatio siis lähettää lomakesivun mukana CSRF-tunnist
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/">
         Kolme tapaa lukea tiedosto (Node.js)
       </a>
     </h1>
@@ -1455,7 +1582,7 @@ readStream.on('data', function(chunk) {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/nodejs/es7-async-await/">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/es7-async-await/">
         Async ja Await
       </a>
     </h1>
@@ -1665,7 +1792,7 @@ ostaVerkkokaupasta('Nollaversio IT', Nordea, OP, 'Poravasara')
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/laravel/view-model-bliss/">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/view-model-bliss/">
         Näkymämalli (view model) helpottaa elämää
       </a>
     </h1>
@@ -1880,7 +2007,7 @@ $pankkitili-&gt;present()-&gt;metodi();
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/laravel/view-composer/">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/view-composer/">
         Datan lähetys näkymään
       </a>
     </h1>
@@ -2093,7 +2220,7 @@ public function index() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/nodejs/zip-unzip/">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/zip-unzip/">
         Työkalupakin kätköistä - zip() ja unzip()
       </a>
     </h1>
@@ -2193,7 +2320,7 @@ var lampotilatPaivittain = _.unzip(mittaustulokset);
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/">
+      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/">
         Neljä lähestymistapaa toiminnallisuuksien abstraktointiin
       </a>
     </h1>
@@ -2484,7 +2611,7 @@ $.ajax({
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/nodejs/promise-workflow-manager/">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/promise-workflow-manager/">
         Rekursiivinen lupausketju ajurina? (osa 1)
       </a>
     </h1>
@@ -2646,7 +2773,7 @@ function p1Siirto() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/nodejs/lodash-chain/">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/lodash-chain/">
         Chain() -metodi ketjuttaa funktiokutsut
       </a>
     </h1>
@@ -2794,7 +2921,7 @@ console.log(tulo); // 8
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/laravel/testing-routes/">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/testing-routes/">
         Käyttöliittymän testaus (automatisointi)
       </a>
     </h1>
@@ -2959,7 +3086,7 @@ public function testaaArtikkelinLuonti() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/laravel/reservation-pattern/">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/reservation-pattern/">
         Varausten hallinta tietokannan tasolla
       </a>
     </h1>
@@ -3186,7 +3313,7 @@ public function vapaatKuonot() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/nodejs/promise-filter/">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/promise-filter/">
         Filteröi epäonnistujat pois (reflect &#43; filter)
       </a>
     </h1>
@@ -3387,7 +3514,7 @@ omat virheensä kiinni.</em></p>
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/laravel/start-checklist/">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/start-checklist/">
         Muistilista uutta Laravel-projektia aloittaessa
       </a>
     </h1>
@@ -3457,7 +3584,7 @@ omat virheensä kiinni.</em></p>
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/laravel/usecase-bliss/">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/usecase-bliss/">
         Usecase-arkkitehtuurin vahvuus
       </a>
     </h1>
@@ -3753,7 +3880,7 @@ protected function validateSiirtoRequest(Request $request)
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/laravel/protecting-routes/">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/protecting-routes/">
         Suojaa tuloväylät - mutta miten?
       </a>
     </h1>
@@ -3938,7 +4065,7 @@ toimii nimensä mukaisesti - se suojaa kaikki muut väylät paitsi erikseen <em>
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/nodejs/promise-tap/">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/promise-tap/">
         Lupausketju liukuhihnana - then vs. tap
       </a>
     </h1>
@@ -4090,7 +4217,7 @@ module.exports = function(sisaantulevaData) {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/">
         Raskas koodi erillisessä säikeessä? Lupaus auttaa.
       </a>
     </h1>
@@ -4266,7 +4393,7 @@ function tarkistaEpailyttavatNimiParit(nimet) {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/nodejs/promisechain/">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/promisechain/">
         Lupausten mahti - pätkä koodiani
       </a>
     </h1>
@@ -4412,7 +4539,7 @@ function separatePositionsForEachGame(...) {...}
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/">
         Nodejs - riippuvuuksien injektointi
       </a>
     </h1>
@@ -4642,7 +4769,7 @@ var eteisenTermostaatti = termostaattitehdas(new ElohopeaMittari(), new Tuuletus
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://nollaversio.fi/blog/public/laravel/vinkit1/">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/vinkit1/">
         Laravel vinkit #1
       </a>
     </h1>

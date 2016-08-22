@@ -2,19 +2,19 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Nodejs on Nollaversio IT</title>
-    <link>http://nollaversio.fi/blog/public/nodejs/</link>
+    <link>http://www.nollaversio.fi/blog/public/nodejs/</link>
     <description>Recent content in Nodejs on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
     <lastBuildDate>Thu, 18 Aug 2016 05:47:59 +0300</lastBuildDate>
-    <atom:link href="http://nollaversio.fi/blog/public/nodejs/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://www.nollaversio.fi/blog/public/nodejs/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Konsolitulosteen väritys</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/console-log-coloring/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/console-log-coloring/</link>
       <pubDate>Thu, 18 Aug 2016 05:47:59 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/console-log-coloring/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/console-log-coloring/</guid>
       <description>&lt;p&gt;Löysin muutama kuukausi sitten Node.js-lisäosan nimeltä &lt;a href=&#34;https://github.com/chalk/chalk&#34;&gt;chalk&lt;/a&gt;. Tämä chalk-kirjasto tarjoaa kivan rajapinnan &lt;em&gt;värittää&lt;/em&gt; komentorivillä näkyvät console.log-tekstit. Värityksestä on paljon hyötyä tapauksissa, joissa Node.js-skripti printtaa runsaasti tekstiä komentoriville.&lt;/p&gt;
 
 &lt;p&gt;Käyttö on helppoa - riittää, että työntää merkkijonon chalk-kirjaston metodikutsun sisälle:&lt;/p&gt;
@@ -26,11 +26,11 @@ console.log(chalk.cyan(&amp;quot;beforeMove cb&amp;quot;))
 
 &lt;p&gt;tuottaa seuraavanlaisen lopputuleman:&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://nollaversio.fi/blog/public/blog/public/img/console-log-cyan.png&#34; alt=&#34;Turkoosin värinen merkkijono&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://www.nollaversio.fi/blog/public/blog/public/img/console-log-cyan.png&#34; alt=&#34;Turkoosin värinen merkkijono&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;Käytän eri värejä &lt;em&gt;simuloimaan&lt;/em&gt; eri käyttäjien kommunikaatiota Node.js-serverin kanssa. Sanotaan esimerkiksi, että meillä on kolme käyttäjää A, B ja C. Nuo kaikki kolme saavat viestejä applikaatiolta. Tuotantokäytössä nuo viestit luonnollisesti menisivät kunkin käyttäjän www-selaimeen, mutta testivaiheessa on helpompaa vain printata kunkin käyttäjän saama viesti komentoriville. Ongelmaksi muodostuu, että &lt;em&gt;komentoriviltä on visuaalisesti vaikea hahmottaa mikä viesti kuuluu millekin käyttäjälle&lt;/em&gt;:&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://nollaversio.fi/blog/public/blog/public/img/console-log-users-white.png&#34; alt=&#34;Kaikkien käyttäjien kommunikaatio palvelimen kanssa printataan testiajossa komentoriville&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://www.nollaversio.fi/blog/public/blog/public/img/console-log-users-white.png&#34; alt=&#34;Kaikkien käyttäjien kommunikaatio palvelimen kanssa printataan testiajossa komentoriville&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;Chalk-kirjaston avulla voimme assignoida kullekin käyttäjälle oman värin, jolloin on visuaalisesti helppo erottaa eri käyttäjien viestit toisistaan:&lt;/p&gt;
 
@@ -88,7 +88,7 @@ setInterval(function() {
 
 &lt;p&gt;Ylläoleva tuottaa kauniin lopputuloksen komentoriville kun test.js-tiedosto suoritetaan:&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://nollaversio.fi/blog/public/blog/public/img/console-log-users-custom-colors.png&#34; alt=&#34;Kullakin käyttäjällä on oma värinsä komentoriville&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://www.nollaversio.fi/blog/public/blog/public/img/console-log-users-custom-colors.png&#34; alt=&#34;Kullakin käyttäjällä on oma värinsä komentoriville&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;Pohjimmiltaan värien käyttö on tietenkin makukysymys, mutta ainakin itselläni se helpottaa testitulosteen lukemista huomattavasti.&lt;/p&gt;
 </description>
@@ -96,10 +96,10 @@ setInterval(function() {
     
     <item>
       <title>Asynkronoidun koodin testaus (Mocha)</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/mocha-testing/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/mocha-testing/</link>
       <pubDate>Thu, 11 Aug 2016 06:38:25 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/mocha-testing/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/mocha-testing/</guid>
       <description>
 
 &lt;p&gt;Rakensin eilen &lt;em&gt;PromiseMonopoly&lt;/em&gt;-nimistä ohjelmistokehystäni jälleen hiukan eteenpäin. Kehys on siinä pisteessä, että on syytä kirjoittaa muutamia yksinkertaisia automatisoituja testejä sille.&lt;/p&gt;
@@ -213,10 +213,10 @@ describe(&#39;Matikka&#39;, function() {
     
     <item>
       <title>Rekursiivinen lupausketju ajurina? (osa 2)</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/promise-mapseries/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/promise-mapseries/</link>
       <pubDate>Wed, 10 Aug 2016 03:08:44 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/promise-mapseries/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/promise-mapseries/</guid>
       <description>&lt;p&gt;(Tämä on jatkoa postaukselle &lt;a href=&#34;http://nollaversio.fi/blog/public/nodejs/promise-workflow-manager&#34;&gt;Rekursiivinen lupausketju ajurina? (osa 1)&lt;/a&gt;)&lt;/p&gt;
 
 &lt;p&gt;Rakennan parhaillaan ohjelmakehystä (työ)nimeltään &lt;em&gt;PromiseMonopoly&lt;/em&gt;. Tuon kehyksen tarkoitus on valmistuessaan mahdollistaa keskuspalvelimen kautta toimivien vuoropohjaisten pelien helpompi toteuttaminen.&lt;/p&gt;
@@ -407,10 +407,10 @@ laajennukset[&#39;aikaKuluiUmpeen&#39;] = function() {
     
     <item>
       <title>Kolme tapaa lukea tiedosto (Node.js)</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</link>
       <pubDate>Mon, 08 Aug 2016 06:45:45 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</guid>
       <description>
 
 &lt;p&gt;Tiedoston lukeminen on varsin yleinen toimenpide Node.js-applikaatiossa. Alla esittelen lyhyesti kolme tapaa hoitaa luku-urakka.&lt;/p&gt;
@@ -509,10 +509,10 @@ readStream.on(&#39;data&#39;, function(chunk) {
     
     <item>
       <title>Async ja Await</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/es7-async-await/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/es7-async-await/</link>
       <pubDate>Fri, 05 Aug 2016 06:02:06 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/es7-async-await/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/es7-async-await/</guid>
       <description>
 
 &lt;p&gt;Kokeilin eilen ensimmäistä kertaa &lt;em&gt;async-await&lt;/em&gt; -funktion kirjoittamista Javascriptilla. Kyseessä on uusi ja mullistava tapa ohjelmoida asynkronoidusti toimivia funktioita.&lt;/p&gt;
@@ -716,10 +716,10 @@ ostaVerkkokaupasta(&#39;Nollaversio IT&#39;, Nordea, OP, &#39;Poravasara&#39;)
     
     <item>
       <title>Työkalupakin kätköistä - zip() ja unzip()</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/zip-unzip/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/zip-unzip/</link>
       <pubDate>Tue, 02 Aug 2016 11:10:16 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/zip-unzip/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/zip-unzip/</guid>
       <description>
 
 &lt;p&gt;Tällä kertaa esittelen lyhyesti maanmainion Lodash-kirjaston apufunktiot &lt;strong&gt;zip&lt;/strong&gt; ja &lt;strong&gt;unzip&lt;/strong&gt;.&lt;/p&gt;
@@ -813,10 +813,10 @@ var lampotilatPaivittain = _.unzip(mittaustulokset);
     
     <item>
       <title>Rekursiivinen lupausketju ajurina? (osa 1)</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/promise-workflow-manager/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/promise-workflow-manager/</link>
       <pubDate>Fri, 29 Jul 2016 21:33:50 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/promise-workflow-manager/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/promise-workflow-manager/</guid>
       <description>
 
 &lt;p&gt;Olen epäilemättä varsin ihastunut lupauksiin (&lt;a href=&#34;https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Promise&#34;&gt;Promise&lt;/a&gt;). Tässä blogissa on blogin ensimmäisen kuukauden aikana julkaistu neljä kirjoitusta, joiden keskiössä toimii lupausten käyttö. Ja tässä on viides.&lt;/p&gt;
@@ -972,10 +972,10 @@ function p1Siirto() {
     
     <item>
       <title>Chain() -metodi ketjuttaa funktiokutsut</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/lodash-chain/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/lodash-chain/</link>
       <pubDate>Thu, 28 Jul 2016 06:39:21 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/lodash-chain/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/lodash-chain/</guid>
       <description>
 
 &lt;p&gt;&lt;a href=&#34;http://www.lodash.com&#34;&gt;Lodash&lt;/a&gt; on varsin hieno apukirjasto Javascriptin ohjelmointiin. Tuo kirjasto sisältää sadoittain pieniä apufunktioita, joiden avulla yleisimmät algoritmit voi toteuttaa nopeasti ja kivuttomasti.&lt;/p&gt;
@@ -1117,10 +1117,10 @@ console.log(tulo); // 8
     
     <item>
       <title>Filteröi epäonnistujat pois (reflect &#43; filter)</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/promise-filter/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/promise-filter/</link>
       <pubDate>Mon, 25 Jul 2016 17:28:05 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/promise-filter/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/promise-filter/</guid>
       <description>
 
 &lt;p&gt;Lupauskirjasto &lt;em&gt;Bluebirdin&lt;/em&gt; yksi vähemmän tunnetuista apumetodeista on &lt;strong&gt;reflect()&lt;/strong&gt;. Ainakin allekirjoittaneelle tuo apufunktio pysyi tuntemattomana hyvää matkaa toista vuotta - ei vain tullut pakottavaa tarvetta, ja ongelmat sai aina ratkottua muutenkin.&lt;/p&gt;
@@ -1315,10 +1315,10 @@ omat virheensä kiinni.&lt;/em&gt;&lt;/p&gt;
     
     <item>
       <title>Lupausketju liukuhihnana - then vs. tap</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/promise-tap/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/promise-tap/</link>
       <pubDate>Mon, 18 Jul 2016 18:02:21 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/promise-tap/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/promise-tap/</guid>
       <description>
 
 &lt;p&gt;Lupausten maailma on kaunis paikka. Pitkä, hyvin abstraktoitu lupausjono on Scarlett Johanssonin vartaloon verrattavissa oleva jumalallisen kauneuden symboli.&lt;/p&gt;
@@ -1464,10 +1464,10 @@ module.exports = function(sisaantulevaData) {
     
     <item>
       <title>Raskas koodi erillisessä säikeessä? Lupaus auttaa.</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</link>
       <pubDate>Mon, 18 Jul 2016 17:11:43 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</guid>
       <description>
 
 &lt;p&gt;Javascriptin hauska puoli on, että se ajaa itseään mukavasti yhdessä säikeessä. Tämä tarkoittaa, että kaikki
@@ -1637,10 +1637,10 @@ function tarkistaEpailyttavatNimiParit(nimet) {
     
     <item>
       <title>Lupausten mahti - pätkä koodiani</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/promisechain/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/promisechain/</link>
       <pubDate>Wed, 13 Jul 2016 06:48:47 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/promisechain/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/promisechain/</guid>
       <description>&lt;p&gt;Lupaukset (engl. Promise) ovat varsin mahtavia. Siinä missä muuten asynkronoidun funktiokutsun matkapojaksi joutuisi lähettämään callback-funktion, lupaus mahdollistaa koodaustyylin, jossa callback liikkuu &lt;em&gt;varjoissa&lt;/em&gt; - siis pinnan alla. Lupaus on käytännössä pieni wrapperi, kuin lahjapaketti, joka kaitsee isällisellä otteella callbackia.&lt;/p&gt;
 
 &lt;p&gt;Ehkä suurin hyöty lupauksen käytöstä on kuitenkin se, että virhetilanteet tulevat asianmukaisesti hoidetuksi. Lisäksi ne virheet tulevat hoidetuksi oikeassa paikassa - &lt;em&gt;lupausketjun lopussa&lt;/em&gt;. Harva asia on hirveämpää kuin joutua kirjoittamaan &lt;em&gt;varsinaista bisnes-koodia&lt;/em&gt; ja &lt;em&gt;virhetilanteisiin reagoivaa hätäapukoodia&lt;/em&gt; sikin sokin. Lupausten avulla virhekoodi voi elää visuaalisesti kaukana varsinaisesta koodista. Tämä helpottaa koodinlukua.&lt;/p&gt;
@@ -1780,10 +1780,10 @@ function separatePositionsForEachGame(...) {...}
     
     <item>
       <title>Nodejs - riippuvuuksien injektointi</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</link>
       <pubDate>Mon, 11 Jul 2016 06:35:00 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</guid>
       <description>
 
 &lt;p&gt;Riippuvuuksien injektointi (engl. dependency injection) on varsin vahva tapa varmistaa modulaarinen koodipohja. Kun tietyn komponentin jokainen alikomponentti otetaan vastaan &amp;ldquo;ulkoa annettuna&amp;rdquo;, on komponenttia mahdollista muokata

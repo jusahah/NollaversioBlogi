@@ -2,19 +2,19 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Laravels on Nollaversio IT</title>
-    <link>http://nollaversio.fi/blog/public/laravel/</link>
+    <link>http://www.nollaversio.fi/blog/public/laravel/</link>
     <description>Recent content in Laravels on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
     <lastBuildDate>Fri, 19 Aug 2016 06:26:46 +0300</lastBuildDate>
-    <atom:link href="http://nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://www.nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Slack and Laravel</title>
-      <link>http://nollaversio.fi/blog/public/laravel/slack-and-laravel/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/slack-and-laravel/</link>
       <pubDate>Fri, 19 Aug 2016 06:26:46 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/slack-and-laravel/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/slack-and-laravel/</guid>
       <description>&lt;p&gt;Uuden Laravel 5.3 ohjelmistokehyksen avulla web-applikaation integrointi Slackin kanssa on naurettavan helppoa. Otetaan esimerkkinä tapaus, jossa haluamme lähettää tiedoksiantoja Slackin suuntaan.&lt;/p&gt;
 
 &lt;p&gt;Sanotaan vaikka, että meillä on Slack-käyttäjänä bisnespersoona Jari Sarasvuo. Applikaatiomme haravoi internettiä etsien blogimainintoja hänen firmastaan Trainer&amp;rsquo;s House. Aina kun joku bloggari kirjoittaa blogiinsa postauksen, jossa termi &amp;lsquo;Trainer&amp;rsquo;s House&amp;rsquo; mainitaan, applikaatiomme tuottaa Slack-viestin ja lähettää sen Sarasvuon Slack-tilille.&lt;/p&gt;
@@ -24,16 +24,19 @@
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
 // BlogiController.php
 
-use App\Notifications\SlackViesti
+use App\Notifications\SlackViesti;
 
 class BlogiController extends Controller {
 
 	protected $blogs; // lista blogeja, täytetään jotenkin
 
-	// Tätä metodia kutsutaan jonkin ulkoisen skriptin toimesta 
+	// Tätä metodia kutsutaan jonkin ulkoisen skriptin toimesta
 	// esim. kerran minuutissa, tällä tavoin blogit tulee tarkistetuksi
 	// minuutin välein.
-	public function tarkistaBlogit() {
+
+	// Ulkoisen skriptin ei tarvitse olla PHP-skripti, vaan se voi hoitaa
+	// kutsun HTTP-endpointin kautta. Saapuva HTTP-kutsu sitten ohjautuu tähän metodiin.
+	public function tarkistaBlogit(Request $_request) {
 	  
 	  $maininnat = $this-&amp;gt;blogs-&amp;gt;map(function(blogi) {
 	    // Tsekkaa blogi-objektia käyttäen jos uusi maininta havaittu
@@ -137,10 +140,10 @@ class User extends Authenticatable {
     
     <item>
       <title>Require vs Include</title>
-      <link>http://nollaversio.fi/blog/public/laravel/require-vs-include/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/require-vs-include/</link>
       <pubDate>Wed, 17 Aug 2016 03:40:31 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/require-vs-include/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/require-vs-include/</guid>
       <description>
 
 &lt;p&gt;PHP:ssa on mahdollisuus &lt;em&gt;sisällyttää&lt;/em&gt; yhden tiedoston koodipätkä toisen tiedoston sisälle skriptiä ajettaessa. Tämä sisällytys onnistuu joko &lt;em&gt;require&lt;/em&gt; tai &lt;em&gt;include&lt;/em&gt; komennoilla:&lt;/p&gt;
@@ -260,10 +263,10 @@ $tcpTimeout = 12000;
     
     <item>
       <title>Yksikkötestaus ja tietokanta-transaktio</title>
-      <link>http://nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</link>
       <pubDate>Tue, 16 Aug 2016 06:37:20 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</guid>
       <description>
 
 &lt;p&gt;Yksikkötestaus (engl. Unit Testing) on tehty Laravellissa helpoksi. Ei muuta kuin määrittää testiluokan, ja pinnan alla testiajuri hoitaa loput.&lt;/p&gt;
@@ -391,10 +394,10 @@ class LentokenttaTesti extends TestCase {
     
     <item>
       <title>Emailin lähetys Laravellista</title>
-      <link>http://nollaversio.fi/blog/public/laravel/email-laravel/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/email-laravel/</link>
       <pubDate>Mon, 15 Aug 2016 06:15:21 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/email-laravel/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/email-laravel/</guid>
       <description>
 
 &lt;p&gt;Moni web-applikaatio joutuu lähettämään sähköposteja. Tyypillinen tarve sähköpostin lähetykselle syntyy käyttäjän rekisteröityessä applikaatioon; jonkinlainen tervetuloviesti olisi mukava lähettää käyttäjän suuntaan, jotta hän tuntisi olonsa tervetulleeksi.&lt;/p&gt;
@@ -562,10 +565,10 @@ public function valitseVoittaja(array $osallistujat) {
     
     <item>
       <title>Kuinka CSRF toimii?</title>
-      <link>http://nollaversio.fi/blog/public/laravel/csrf/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/csrf/</link>
       <pubDate>Tue, 09 Aug 2016 06:07:23 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/csrf/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/csrf/</guid>
       <description>
 
 &lt;p&gt;Lomakkeiden lähetys ja vastaanotto ovat tyypillisen web-applikaation tärkeimpiä vastuutehtäviä.&lt;/p&gt;
@@ -708,10 +711,10 @@ Käytännössä web-applikaatio siis lähettää lomakesivun mukana CSRF-tunnist
     
     <item>
       <title>Näkymämalli (view model) helpottaa elämää</title>
-      <link>http://nollaversio.fi/blog/public/laravel/view-model-bliss/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/view-model-bliss/</link>
       <pubDate>Thu, 04 Aug 2016 04:12:30 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/view-model-bliss/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/view-model-bliss/</guid>
       <description>
 
 &lt;p&gt;Laravellin kaltainen laittoman hieno ohjelmistokehys hoitaa valtavan määrän abstraktioita koodarin puolesta. Sisääntulevan palvelunpyynnön hallinta, tietokantayhteyden hallinta, jne&amp;hellip; kaikki on valmiiksi pureskeltu, jotta ohjelmoijaparan ei tarvitse vaivata liiaksi päätään.&lt;/p&gt;
@@ -920,10 +923,10 @@ $pankkitili-&amp;gt;present()-&amp;gt;metodi();
     
     <item>
       <title>Datan lähetys näkymään</title>
-      <link>http://nollaversio.fi/blog/public/laravel/view-composer/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/view-composer/</link>
       <pubDate>Wed, 03 Aug 2016 03:49:47 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/view-composer/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/view-composer/</guid>
       <description>
 
 &lt;p&gt;Laravellin kaltaisten täysiveristen ohjelmistokehysten yksi hienoimmista ominaisuuksista on &lt;em&gt;datan käsittelyn&lt;/em&gt; ja &lt;em&gt;datan näytön&lt;/em&gt; erottaminen. Laravellissa konseptit erotetaan toisistaan tiedostotasolla; datan käsittely - ns. bisneslogiikka - elää yhdessä tiedostossa, ja näyttölogiikka elää toisessa tiedostossa.&lt;/p&gt;
@@ -1130,10 +1133,10 @@ public function index() {
     
     <item>
       <title>Käyttöliittymän testaus (automatisointi)</title>
-      <link>http://nollaversio.fi/blog/public/laravel/testing-routes/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/testing-routes/</link>
       <pubDate>Wed, 27 Jul 2016 06:11:10 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/testing-routes/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/testing-routes/</guid>
       <description>
 
 &lt;p&gt;Perinteisen web-applikaation peruspointti on tarjota käyttäjilleen mahdollisuus vuorovaikuttaa itsensä (&lt;em&gt;esim. kerätä tänään dataa talteen, ja hyödyntää kerättyä dataa huomenna&lt;/em&gt;) ja/tai toistensa kanssa web-applikaation kautta.&lt;/p&gt;
@@ -1292,10 +1295,10 @@ public function testaaArtikkelinLuonti() {
     
     <item>
       <title>Varausten hallinta tietokannan tasolla</title>
-      <link>http://nollaversio.fi/blog/public/laravel/reservation-pattern/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/reservation-pattern/</link>
       <pubDate>Tue, 26 Jul 2016 11:32:03 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/reservation-pattern/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/reservation-pattern/</guid>
       <description>
 
 &lt;p&gt;Otetaan esimerkki seuraavankaltaisesta applikaatiosta. Applikaatio mahdollistaa uhanalaisten sarvikuonojen ostamisen lemmikeiksi. Afrikan salametsästäjät (tai tässä tapauksessa &amp;lsquo;salakidnappaajat&amp;rsquo;) tuovat järjestelmään uusia sarvikuonoja, joita eurooppalaiset intoilijat ostavat.&lt;/p&gt;
@@ -1516,10 +1519,10 @@ public function vapaatKuonot() {
     
     <item>
       <title>Muistilista uutta Laravel-projektia aloittaessa</title>
-      <link>http://nollaversio.fi/blog/public/laravel/start-checklist/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/start-checklist/</link>
       <pubDate>Fri, 22 Jul 2016 16:14:13 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/start-checklist/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/start-checklist/</guid>
       <description>
 
 &lt;p&gt;Olen ihastanut suuresti &lt;a href=&#34;https://en.wikipedia.org/wiki/The_Checklist_Manifesto&#34; target=&#34;_blank&#34;&gt;checklist-manifestoon.&lt;/a&gt; Manifeston hengessä loin alkukesästä itselleni muistilistan asioista, joita uutta Laravel-projektia aloittaessa tulee ottaa huomioon.&lt;/p&gt;
@@ -1583,10 +1586,10 @@ public function vapaatKuonot() {
     
     <item>
       <title>Usecase-arkkitehtuurin vahvuus</title>
-      <link>http://nollaversio.fi/blog/public/laravel/usecase-bliss/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/usecase-bliss/</link>
       <pubDate>Fri, 22 Jul 2016 14:44:27 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/usecase-bliss/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/usecase-bliss/</guid>
       <description>
 
 &lt;p&gt;Usecase-arkkitehtuuri on eräs tapa järjestää Laravel-pohjaisen tietokoneohjelman control flow.&lt;/p&gt;
@@ -1876,10 +1879,10 @@ protected function validateSiirtoRequest(Request $request)
     
     <item>
       <title>Suojaa tuloväylät - mutta miten?</title>
-      <link>http://nollaversio.fi/blog/public/laravel/protecting-routes/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/protecting-routes/</link>
       <pubDate>Wed, 20 Jul 2016 20:42:23 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/protecting-routes/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/protecting-routes/</guid>
       <description>
 
 &lt;p&gt;Tyypillinen web-applikaatio ottaa vastaan monenlaista palvelupyyntöä. Osa pyynnöistä tulee rekisteröityneiltä käyttäjiltä, osa vierailta, osa hakkereilta, osa sisältää dataa, osa ei.&lt;/p&gt;
@@ -2058,10 +2061,10 @@ toimii nimensä mukaisesti - se suojaa kaikki muut väylät paitsi erikseen &lt;
     
     <item>
       <title>Laravel vinkit #1</title>
-      <link>http://nollaversio.fi/blog/public/laravel/vinkit1/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/vinkit1/</link>
       <pubDate>Wed, 06 Jul 2016 06:28:46 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/vinkit1/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/vinkit1/</guid>
       <description>&lt;p&gt;&lt;strong&gt;Kuinka lisätä uusi raportointitoiminnallisuus ilman muutoksia vanhaan koodipohjaan?&lt;/strong&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;em&gt;Lyhyt vastaus: luomalla palveluntarjoaja, joka määrittää tapahtumakuuntelijan.&lt;/em&gt;&lt;/p&gt;

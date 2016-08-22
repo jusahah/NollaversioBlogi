@@ -15,16 +15,19 @@ Ylimmällä tasolla applikaatiomme toimii esim. näin:
 
 // BlogiController.php
 
-use App\Notifications\SlackViesti
+use App\Notifications\SlackViesti;
 
 class BlogiController extends Controller {
 
 	protected $blogs; // lista blogeja, täytetään jotenkin
 
-	// Tätä metodia kutsutaan jonkin ulkoisen skriptin toimesta 
+	// Tätä metodia kutsutaan jonkin ulkoisen skriptin toimesta
 	// esim. kerran minuutissa, tällä tavoin blogit tulee tarkistetuksi
 	// minuutin välein.
-	public function tarkistaBlogit() {
+
+	// Ulkoisen skriptin ei tarvitse olla PHP-skripti, vaan se voi hoitaa
+	// kutsun HTTP-endpointin kautta. Saapuva HTTP-kutsu sitten ohjautuu tähän metodiin.
+	public function tarkistaBlogit(Request $_request) {
 	  
 	  $maininnat = $this->blogs->map(function(blogi) {
 	    // Tsekkaa blogi-objektia käyttäen jos uusi maininta havaittu

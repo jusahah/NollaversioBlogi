@@ -2,19 +2,137 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Nollaversio IT</title>
-    <link>http://nollaversio.fi/blog/public/</link>
+    <link>http://www.nollaversio.fi/blog/public/</link>
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Fri, 19 Aug 2016 06:26:46 +0300</lastBuildDate>
-    <atom:link href="http://nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Mon, 22 Aug 2016 03:08:34 +0300</lastBuildDate>
+    <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Ketjutettava rajapinta</title>
+      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/</link>
+      <pubDate>Mon, 22 Aug 2016 03:08:34 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/</guid>
+      <description>&lt;p&gt;Ohjelmoinnin puolella on olemassa kätevä konsepti nimeltä &amp;ldquo;Fluent interface&amp;rdquo;. Paras suomennos tuolle lienee &amp;ldquo;ketjutettava rajapinta&amp;rdquo;, joten käytän sitä.&lt;/p&gt;
+
+&lt;p&gt;Mikä tai millainen on ketjutettava rajapinta? Se on yksinkertaisesti rajapinta, joka mahdollistaa rajapintakutsujen ketjutuksen.&lt;/p&gt;
+
+&lt;p&gt;Otetaan esimerkkinä rajapinnasta, joka &lt;strong&gt;ei&lt;/strong&gt; ole ketjutettava:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Rajapintaluokan &#39;Valot&#39; kautta voi hallita talon valokatkaisijoita
+class Valot {
+
+  // Kukin toggle-metodi sytyttää valot jos ovat pois päältä,
+  // ja sammuttaa valot jos ovat päällä.
+
+  public function toggleVessa() {//...}
+  public function toggleKeittio() {//...}
+  public function toggleOlohuone() {//...}
+  public function toggleMakuuhuone() {//...}
+  public function toggleParveke() {//...}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+$valot = new valot();
+
+// Kutsutaan metodeja
+$valot-&amp;gt;toggleKeittio();
+$valot-&amp;gt;toggleVessa();
+$valot-&amp;gt;toggleMakuuhuone();
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yllä meillä on tavallinen rajapinta. Kutsumme sitä metodi kerrallaan. Koska yksikään metodikutsu ei &lt;em&gt;palauta mitään palautusarvoa&lt;/em&gt; - tai ainakaan emme mitään palautusarvoa ota vastaan - voimme olettaa, että kukin metodikutsu suorittaa jonkin ulkoisen muutoksen (engl. side effect). Jos metodikutsut eivät tuota ulkoisia muutoksia, koko rajapinnan käyttö on yksinkertaisesti turhaa.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Mikäli metodikutsu ei palauta mitään eikä muokkaa yhdenkään ulkoisen tilamuuttujan arvoa, kyseessä on täysin tarpeeton metodikutsu. Sillä KAIKKI metodikutsut tehdään jomman kumman syyn takia; joko ne 1) &lt;em&gt;palauttavat jonkin arvon&lt;/em&gt;, tai ne 2) &lt;em&gt;muokkaavat jotakin ulkoista tilamuuttujaa&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Mitään kolmatta vaihtoehtoa ei ole olemassa, esimerkiksi tulosteen kirjoittaminen käyttäjän nähtäville on versio vaihtoehdosta #2 - siinä tietokoneen näyttöpäätteen tilamuuttujaa (= RAM-keskusmuistin sitä muistialuetta, johon kunkin pikselin tila on tallennettu) muokataan siten, että ihmiskäyttäjä näkee lukea jotain.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Nyt voimme muuntaa ylläolevan koodin &lt;em&gt;fluent interface&lt;/em&gt;:ksi eli ketjutettavaksi rajapinnaksi hyvin yksinkertaisesti.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class Valot {
+
+  public function toggleVessa() {
+    //...
+    // Palautusarvo on oleellista ketjutuksen kannalta. 
+    // Palauttamalla kutsuttavan objektin voimme samantien kutsua sen
+    // jotain metodia (vaikka tätä toggleVessa-metodia!) heti uudestaan.
+    return $this;
+  }
+  public function toggleKeittio() {
+    //...
+    return $this;
+  }
+  public function toggleOlohuone() {
+    //...
+    return $this;
+  }
+  public function toggleMakuuhuone() {
+    //...
+    return $this;
+  }
+  public function toggleParveke() {
+    //...
+    return $this;
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+
+$valot = new Valot();
+
+// Kutsutaan metodeja
+$valot-&amp;gt;toggleKeittio()-&amp;gt;toggleVessa()-&amp;gt;toggleMakuuhuone();
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yltä näemme mitä ketjutus tismalleen tarkoittaa; voimme kunkin metodikutsun palautusarvon &lt;em&gt;kierrättää&lt;/em&gt; ja kutsua sen metodia. Ja koska &lt;strong&gt;kunkin Valot-luokan metodikutsun palautusarvo on Valot-objekti itse&lt;/strong&gt;, ketjutus johtaa identtiseen lopputulemaan alkuperäisen esimerkin kanssa.&lt;/p&gt;
+
+&lt;p&gt;Itseasiassa seuraavat kolme koodipätkää johtavat kaikki identtiseen lopputulemaan:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Tapa 1
+$valot-&amp;gt;toggleKeittio()-&amp;gt;toggleParveke()-&amp;gt;toggleKeittio();
+
+// Tapa 2
+$valot-&amp;gt;toggleKeittio();
+$valot-&amp;gt;toggleParveke();
+$valot-&amp;gt;toggleKeittio();
+
+// Tapa 3
+// Tämä on huonoin tapa mitä tulee koodin selkeyteen, mutta toimii yhtäkaikki.
+$valotKopio1 = $valot-&amp;gt;toggleKeittio();
+$valotKopio2 = $valotKopio1-&amp;gt;toggleParveke();
+$valotKopio3 = $valotKopio2-&amp;gt;toggleKeittio();
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Mitä etua ketjutus sitten tuo? Niin. Ei oikein mitään. Siinä säästää muutaman hassun merkin kun ei tarvitse toistaa &amp;lsquo;$valot&amp;rsquo;-sanaa uudestaan ja uudestaan. Ei kovin merkittävä hyöty.&lt;/p&gt;
+
+&lt;p&gt;Jonkun mielestä ketjutus tekee koodista nätimpää tai helpommin luettavaa. Olen samaa mieltä, mutta kyseessä on ihan puhdas mielipidekysymys.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Huomio! Tässä ketjutettava rajapinta esiteltiin PHP-kielen kautta. Ketjutuksen konsepti ei ole sidonnainen PHP-kieleen, vaan pätee kutakuinkin kaikissa funktiokutsuja tukevissa ohjelmointikielissä.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Slack and Laravel</title>
-      <link>http://nollaversio.fi/blog/public/laravel/slack-and-laravel/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/slack-and-laravel/</link>
       <pubDate>Fri, 19 Aug 2016 06:26:46 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/slack-and-laravel/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/slack-and-laravel/</guid>
       <description>&lt;p&gt;Uuden Laravel 5.3 ohjelmistokehyksen avulla web-applikaation integrointi Slackin kanssa on naurettavan helppoa. Otetaan esimerkkinä tapaus, jossa haluamme lähettää tiedoksiantoja Slackin suuntaan.&lt;/p&gt;
 
 &lt;p&gt;Sanotaan vaikka, että meillä on Slack-käyttäjänä bisnespersoona Jari Sarasvuo. Applikaatiomme haravoi internettiä etsien blogimainintoja hänen firmastaan Trainer&amp;rsquo;s House. Aina kun joku bloggari kirjoittaa blogiinsa postauksen, jossa termi &amp;lsquo;Trainer&amp;rsquo;s House&amp;rsquo; mainitaan, applikaatiomme tuottaa Slack-viestin ja lähettää sen Sarasvuon Slack-tilille.&lt;/p&gt;
@@ -24,16 +142,19 @@
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
 // BlogiController.php
 
-use App\Notifications\SlackViesti
+use App\Notifications\SlackViesti;
 
 class BlogiController extends Controller {
 
 	protected $blogs; // lista blogeja, täytetään jotenkin
 
-	// Tätä metodia kutsutaan jonkin ulkoisen skriptin toimesta 
+	// Tätä metodia kutsutaan jonkin ulkoisen skriptin toimesta
 	// esim. kerran minuutissa, tällä tavoin blogit tulee tarkistetuksi
 	// minuutin välein.
-	public function tarkistaBlogit() {
+
+	// Ulkoisen skriptin ei tarvitse olla PHP-skripti, vaan se voi hoitaa
+	// kutsun HTTP-endpointin kautta. Saapuva HTTP-kutsu sitten ohjautuu tähän metodiin.
+	public function tarkistaBlogit(Request $_request) {
 	  
 	  $maininnat = $this-&amp;gt;blogs-&amp;gt;map(function(blogi) {
 	    // Tsekkaa blogi-objektia käyttäen jos uusi maininta havaittu
@@ -137,10 +258,10 @@ class User extends Authenticatable {
     
     <item>
       <title>Konsolitulosteen väritys</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/console-log-coloring/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/console-log-coloring/</link>
       <pubDate>Thu, 18 Aug 2016 05:47:59 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/console-log-coloring/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/console-log-coloring/</guid>
       <description>&lt;p&gt;Löysin muutama kuukausi sitten Node.js-lisäosan nimeltä &lt;a href=&#34;https://github.com/chalk/chalk&#34;&gt;chalk&lt;/a&gt;. Tämä chalk-kirjasto tarjoaa kivan rajapinnan &lt;em&gt;värittää&lt;/em&gt; komentorivillä näkyvät console.log-tekstit. Värityksestä on paljon hyötyä tapauksissa, joissa Node.js-skripti printtaa runsaasti tekstiä komentoriville.&lt;/p&gt;
 
 &lt;p&gt;Käyttö on helppoa - riittää, että työntää merkkijonon chalk-kirjaston metodikutsun sisälle:&lt;/p&gt;
@@ -152,11 +273,11 @@ console.log(chalk.cyan(&amp;quot;beforeMove cb&amp;quot;))
 
 &lt;p&gt;tuottaa seuraavanlaisen lopputuleman:&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://nollaversio.fi/blog/public/blog/public/img/console-log-cyan.png&#34; alt=&#34;Turkoosin värinen merkkijono&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://www.nollaversio.fi/blog/public/blog/public/img/console-log-cyan.png&#34; alt=&#34;Turkoosin värinen merkkijono&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;Käytän eri värejä &lt;em&gt;simuloimaan&lt;/em&gt; eri käyttäjien kommunikaatiota Node.js-serverin kanssa. Sanotaan esimerkiksi, että meillä on kolme käyttäjää A, B ja C. Nuo kaikki kolme saavat viestejä applikaatiolta. Tuotantokäytössä nuo viestit luonnollisesti menisivät kunkin käyttäjän www-selaimeen, mutta testivaiheessa on helpompaa vain printata kunkin käyttäjän saama viesti komentoriville. Ongelmaksi muodostuu, että &lt;em&gt;komentoriviltä on visuaalisesti vaikea hahmottaa mikä viesti kuuluu millekin käyttäjälle&lt;/em&gt;:&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://nollaversio.fi/blog/public/blog/public/img/console-log-users-white.png&#34; alt=&#34;Kaikkien käyttäjien kommunikaatio palvelimen kanssa printataan testiajossa komentoriville&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://www.nollaversio.fi/blog/public/blog/public/img/console-log-users-white.png&#34; alt=&#34;Kaikkien käyttäjien kommunikaatio palvelimen kanssa printataan testiajossa komentoriville&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;Chalk-kirjaston avulla voimme assignoida kullekin käyttäjälle oman värin, jolloin on visuaalisesti helppo erottaa eri käyttäjien viestit toisistaan:&lt;/p&gt;
 
@@ -214,7 +335,7 @@ setInterval(function() {
 
 &lt;p&gt;Ylläoleva tuottaa kauniin lopputuloksen komentoriville kun test.js-tiedosto suoritetaan:&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&#34;http://nollaversio.fi/blog/public/blog/public/img/console-log-users-custom-colors.png&#34; alt=&#34;Kullakin käyttäjällä on oma värinsä komentoriville&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;http://www.nollaversio.fi/blog/public/blog/public/img/console-log-users-custom-colors.png&#34; alt=&#34;Kullakin käyttäjällä on oma värinsä komentoriville&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;Pohjimmiltaan värien käyttö on tietenkin makukysymys, mutta ainakin itselläni se helpottaa testitulosteen lukemista huomattavasti.&lt;/p&gt;
 </description>
@@ -222,10 +343,10 @@ setInterval(function() {
     
     <item>
       <title>Require vs Include</title>
-      <link>http://nollaversio.fi/blog/public/laravel/require-vs-include/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/require-vs-include/</link>
       <pubDate>Wed, 17 Aug 2016 03:40:31 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/require-vs-include/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/require-vs-include/</guid>
       <description>
 
 &lt;p&gt;PHP:ssa on mahdollisuus &lt;em&gt;sisällyttää&lt;/em&gt; yhden tiedoston koodipätkä toisen tiedoston sisälle skriptiä ajettaessa. Tämä sisällytys onnistuu joko &lt;em&gt;require&lt;/em&gt; tai &lt;em&gt;include&lt;/em&gt; komennoilla:&lt;/p&gt;
@@ -345,10 +466,10 @@ $tcpTimeout = 12000;
     
     <item>
       <title>Yksikkötestaus ja tietokanta-transaktio</title>
-      <link>http://nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</link>
       <pubDate>Tue, 16 Aug 2016 06:37:20 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</guid>
       <description>
 
 &lt;p&gt;Yksikkötestaus (engl. Unit Testing) on tehty Laravellissa helpoksi. Ei muuta kuin määrittää testiluokan, ja pinnan alla testiajuri hoitaa loput.&lt;/p&gt;
@@ -476,10 +597,10 @@ class LentokenttaTesti extends TestCase {
     
     <item>
       <title>Emailin lähetys Laravellista</title>
-      <link>http://nollaversio.fi/blog/public/laravel/email-laravel/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/email-laravel/</link>
       <pubDate>Mon, 15 Aug 2016 06:15:21 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/email-laravel/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/email-laravel/</guid>
       <description>
 
 &lt;p&gt;Moni web-applikaatio joutuu lähettämään sähköposteja. Tyypillinen tarve sähköpostin lähetykselle syntyy käyttäjän rekisteröityessä applikaatioon; jonkinlainen tervetuloviesti olisi mukava lähettää käyttäjän suuntaan, jotta hän tuntisi olonsa tervetulleeksi.&lt;/p&gt;
@@ -647,10 +768,10 @@ public function valitseVoittaja(array $osallistujat) {
     
     <item>
       <title>Poikkeuksen väärinkäyttö?</title>
-      <link>http://nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</link>
+      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</link>
       <pubDate>Fri, 12 Aug 2016 06:46:20 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</guid>
       <description>
 
 &lt;p&gt;Yksi suht usein tarvittava algoritmi on tietyn arvon etsiminen binaaripuusta. Etsinnän voi suorittaa esimerkiksi näin:&lt;/p&gt;
@@ -690,6 +811,7 @@ function etsiArvoBinaaripuusta(puu, arvo) {
   var loytynyt = false;	
 
   function etsiAlipuu(juuri, arvo) {
+    if (!juuri) return;
     if (juuri.arvo === arvo) loytynyt = true;
     // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
     // mutta vain jos arvoa ei löytynyt!
@@ -731,6 +853,7 @@ function etsiArvoBinaaripuusta(puu, arvo) {
   var loytynyt = false;	
 
   function etsiAlipuu(juuri, arvo) {
+    if (!juuri) return;
     if (juuri.arvo === arvo) throw new Error(&amp;quot;Löytyi!&amp;quot;);
     // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
     etsiAlipuu(juuri.vasenHaara, arvo);
@@ -774,6 +897,7 @@ function etsiArvoBinaaripuusta(puu, arvo) {
   var loytynyt = false;	
 
   function etsiAlipuu(juuri, arvo) {
+    if (!juuri) return;
     if (juuri.arvo === arvo) throw new ArvoLoytyi(&amp;quot;Löytyi!&amp;quot;);
     // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
     etsiAlipuu(juuri.vasenHaara, arvo);
@@ -809,10 +933,10 @@ function etsiArvoBinaaripuusta(puu, arvo) {
     
     <item>
       <title>Asynkronoidun koodin testaus (Mocha)</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/mocha-testing/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/mocha-testing/</link>
       <pubDate>Thu, 11 Aug 2016 06:38:25 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/mocha-testing/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/mocha-testing/</guid>
       <description>
 
 &lt;p&gt;Rakensin eilen &lt;em&gt;PromiseMonopoly&lt;/em&gt;-nimistä ohjelmistokehystäni jälleen hiukan eteenpäin. Kehys on siinä pisteessä, että on syytä kirjoittaa muutamia yksinkertaisia automatisoituja testejä sille.&lt;/p&gt;
@@ -926,10 +1050,10 @@ describe(&#39;Matikka&#39;, function() {
     
     <item>
       <title>Rekursiivinen lupausketju ajurina? (osa 2)</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/promise-mapseries/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/promise-mapseries/</link>
       <pubDate>Wed, 10 Aug 2016 03:08:44 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/promise-mapseries/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/promise-mapseries/</guid>
       <description>&lt;p&gt;(Tämä on jatkoa postaukselle &lt;a href=&#34;http://nollaversio.fi/blog/public/nodejs/promise-workflow-manager&#34;&gt;Rekursiivinen lupausketju ajurina? (osa 1)&lt;/a&gt;)&lt;/p&gt;
 
 &lt;p&gt;Rakennan parhaillaan ohjelmakehystä (työ)nimeltään &lt;em&gt;PromiseMonopoly&lt;/em&gt;. Tuon kehyksen tarkoitus on valmistuessaan mahdollistaa keskuspalvelimen kautta toimivien vuoropohjaisten pelien helpompi toteuttaminen.&lt;/p&gt;
@@ -1120,10 +1244,10 @@ laajennukset[&#39;aikaKuluiUmpeen&#39;] = function() {
     
     <item>
       <title>Kuinka CSRF toimii?</title>
-      <link>http://nollaversio.fi/blog/public/laravel/csrf/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/csrf/</link>
       <pubDate>Tue, 09 Aug 2016 06:07:23 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/csrf/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/csrf/</guid>
       <description>
 
 &lt;p&gt;Lomakkeiden lähetys ja vastaanotto ovat tyypillisen web-applikaation tärkeimpiä vastuutehtäviä.&lt;/p&gt;
@@ -1266,10 +1390,10 @@ Käytännössä web-applikaatio siis lähettää lomakesivun mukana CSRF-tunnist
     
     <item>
       <title>Kolme tapaa lukea tiedosto (Node.js)</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</link>
       <pubDate>Mon, 08 Aug 2016 06:45:45 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</guid>
       <description>
 
 &lt;p&gt;Tiedoston lukeminen on varsin yleinen toimenpide Node.js-applikaatiossa. Alla esittelen lyhyesti kolme tapaa hoitaa luku-urakka.&lt;/p&gt;
@@ -1368,10 +1492,10 @@ readStream.on(&#39;data&#39;, function(chunk) {
     
     <item>
       <title>Async ja Await</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/es7-async-await/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/es7-async-await/</link>
       <pubDate>Fri, 05 Aug 2016 06:02:06 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/es7-async-await/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/es7-async-await/</guid>
       <description>
 
 &lt;p&gt;Kokeilin eilen ensimmäistä kertaa &lt;em&gt;async-await&lt;/em&gt; -funktion kirjoittamista Javascriptilla. Kyseessä on uusi ja mullistava tapa ohjelmoida asynkronoidusti toimivia funktioita.&lt;/p&gt;
@@ -1575,10 +1699,10 @@ ostaVerkkokaupasta(&#39;Nollaversio IT&#39;, Nordea, OP, &#39;Poravasara&#39;)
     
     <item>
       <title>Näkymämalli (view model) helpottaa elämää</title>
-      <link>http://nollaversio.fi/blog/public/laravel/view-model-bliss/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/view-model-bliss/</link>
       <pubDate>Thu, 04 Aug 2016 04:12:30 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/view-model-bliss/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/view-model-bliss/</guid>
       <description>
 
 &lt;p&gt;Laravellin kaltainen laittoman hieno ohjelmistokehys hoitaa valtavan määrän abstraktioita koodarin puolesta. Sisääntulevan palvelunpyynnön hallinta, tietokantayhteyden hallinta, jne&amp;hellip; kaikki on valmiiksi pureskeltu, jotta ohjelmoijaparan ei tarvitse vaivata liiaksi päätään.&lt;/p&gt;
@@ -1787,10 +1911,10 @@ $pankkitili-&amp;gt;present()-&amp;gt;metodi();
     
     <item>
       <title>Datan lähetys näkymään</title>
-      <link>http://nollaversio.fi/blog/public/laravel/view-composer/</link>
+      <link>http://www.nollaversio.fi/blog/public/laravel/view-composer/</link>
       <pubDate>Wed, 03 Aug 2016 03:49:47 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/laravel/view-composer/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/laravel/view-composer/</guid>
       <description>
 
 &lt;p&gt;Laravellin kaltaisten täysiveristen ohjelmistokehysten yksi hienoimmista ominaisuuksista on &lt;em&gt;datan käsittelyn&lt;/em&gt; ja &lt;em&gt;datan näytön&lt;/em&gt; erottaminen. Laravellissa konseptit erotetaan toisistaan tiedostotasolla; datan käsittely - ns. bisneslogiikka - elää yhdessä tiedostossa, ja näyttölogiikka elää toisessa tiedostossa.&lt;/p&gt;
@@ -1997,10 +2121,10 @@ public function index() {
     
     <item>
       <title>Työkalupakin kätköistä - zip() ja unzip()</title>
-      <link>http://nollaversio.fi/blog/public/nodejs/zip-unzip/</link>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/zip-unzip/</link>
       <pubDate>Tue, 02 Aug 2016 11:10:16 +0300</pubDate>
       
-      <guid>http://nollaversio.fi/blog/public/nodejs/zip-unzip/</guid>
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/zip-unzip/</guid>
       <description>
 
 &lt;p&gt;Tällä kertaa esittelen lyhyesti maanmainion Lodash-kirjaston apufunktiot &lt;strong&gt;zip&lt;/strong&gt; ja &lt;strong&gt;unzip&lt;/strong&gt;.&lt;/p&gt;
@@ -2088,294 +2212,6 @@ var lampotilatPaivittain = _.unzip(mittaustulokset);
 
 &lt;blockquote&gt;
 &lt;p&gt;Unzip- ja zip-funktiot ovat mukava pieni lisä ohjelmoijan työkalupakkiin. Vastaavan algoritmin kirjoittaminen käsin ei houkuta.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Neljä lähestymistapaa toiminnallisuuksien abstraktointiin</title>
-      <link>http://nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/</link>
-      <pubDate>Mon, 01 Aug 2016 13:50:30 +0300</pubDate>
-      
-      <guid>http://nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/</guid>
-      <description>
-
-&lt;p&gt;Aloitetaan heti esimerkillä. Tehtävämme on luoda pieni skripti, joka käy hakemassa dataa (listan numeroita) palvelimelta, käsittelee tuon datan ja näyttää käsittelyn tulokset ihmiskäyttäjälle.&lt;/p&gt;
-
-&lt;p&gt;Verrataan neljää eri ratkaisua, jotka kaikki toteuttavat em. vaatimuksen, mutta käyttävät erilaisia lähestymistapoja mitä tulee koodin strukturointiin.&lt;/p&gt;
-
-&lt;p&gt;&lt;em&gt;(Käytän kielenä Javascriptiä, mutta artikkelin aihe ei ole Javascriptiin sidottu)&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;Ratkaisu #1:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-$.ajax({
-  url: &#39;serveri.php&#39;
-}).done(function(data) {
-  // Käsittele data
-  var summa = _.reduce(data, function(sum, datanum) {
-    return sum + datanum;
-  }, 0);
-
-  // Näytetään summa käyttäjälle
-  alert(&amp;quot;Summa on &amp;quot; + summa);
-});
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ratkaisu #2:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var vastaanotaData = function(data) {
-  // Käsittele data
-  var summa = _.reduce(data, function(sum, datanum) {
-    return sum + datanum;
-  }, 0);
-
-  // Näytetään summa käyttäjälle
-  alert(&amp;quot;Summa on &amp;quot; + summa);
-}
-
-$.ajax({
-  url: &#39;serveri.php&#39;
-}).done(vastaanotaData);
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ratkaisu #3:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var kasitteleData = function(data) {
-  // Käsittele data
-  return _.reduce(data, function(sum, datanum) {
-    return sum + datanum;
-  }, 0);
-}
-
-var naytaSumma = function(summa) {
-  // Näytetään summa käyttäjälle
-  alert(&amp;quot;Summa on &amp;quot; + summa);
-}
-
-$.ajax({
-  url: &#39;serveri.php&#39;
-}).done(function(data) {
-  var summa = kasitteleData(data);
-  naytaSumma(summa);
-});
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ratkaisu #4:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var vastaanotaData = function(data) {
-  var summa = kasitteleData(data);
-  naytaSumma(summa);
-}
-
-var kasitteleData = function(data) {
-  // Käsittele data
-  return _.reduce(data, function(sum, datanum) {
-    return sum + datanum;
-  }, 0);
-}
-
-var naytaSumma = function(summa) {
-  // Näytetään summa käyttäjälle
-  alert(&amp;quot;Summa on &amp;quot; + summa);
-}
-
-$.ajax({
-  url: &#39;serveri.php&#39;
-}).done(vastaanotaData);
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h4 id=&#34;neljä-eri-ratkaisua-samaan-ongelmaan-mikä-on-paras&#34;&gt;Neljä eri ratkaisua samaan ongelmaan - mikä on paras?&lt;/h4&gt;
-
-&lt;p&gt;Lähdetään analysoimaan eri ratkaisuja.&lt;/p&gt;
-
-&lt;h3 id=&#34;ratkaisu-1&#34;&gt;Ratkaisu #1&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-$.ajax({
-  url: &#39;serveri.php&#39;
-}).done(function(data) {
-  // Käsittele data
-  var summa = _.reduce(data, function(sum, datanum) {
-    return sum + datanum;
-  }, 0);
-
-  // Näytetään summa käyttäjälle
-  alert(&amp;quot;Summa on &amp;quot; + summa);
-});
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ensimmäisessä ratkaisussa kaikki koodi elää kivasti sisäkkäin &lt;em&gt;ajax&lt;/em&gt;-kutsun sisällä. Datan vastaanotto, käsittely ja näyttäminen käyttäjälle ovat eroteltuna &lt;strong&gt;riveittäin&lt;/strong&gt;, eivät &lt;strong&gt;funktioittain&lt;/strong&gt;. Ratkaisu #1 edustaa alhaisinta abstraktion tasoa - eri toiminnallisuudet on kytketty suoraan toistensa perään ilman mahdollisuutta erotella niitä toisistaan.&lt;/p&gt;
-
-&lt;p&gt;Mutta miksi kukaan haluaisi erotella niitä toisistaan? Tämä kysymys on erittäin keskeisessä roolissa kaikessa ohjelmoinnissa. Yleensä &lt;em&gt;eri loogiset toiminnot&lt;/em&gt; halutaan erotella toisistaan siksi, että yksittäisiä toimintoja voi uudelleenkäyttää muualla. Esimerkiksi datan käsittely on hyödyllinen konsepti ihan itsessään - se on siis hyödyllinen ilman, että käsiteltävä data tulee palvelimelta ja että käsitelty data näytetään käyttäjälle!&lt;/p&gt;
-
-&lt;p&gt;Tällä tavoin on loogista, että datan käsittelyä &lt;strong&gt;ei ole&lt;/strong&gt; liitetty betonivalulla yhteen niiden toimintojen kanssa, jotka vastaavat vuoropuhelusta palvelimen ja näyttöruudun kanssa.&lt;/p&gt;
-
-&lt;p&gt;Ykkösratkaisuissa tämä yhteenliittymä on juurikin betoniin valettu. Eri toimintoja sisältävät koodirivit seuraavat toisiaan kiltisti peräkanaa.&lt;/p&gt;
-
-&lt;p&gt;Ratkaisun hyvä puoli on vähäinen koodimäärä. Merkittävin huono puoli on, että &lt;em&gt;datan käsittely&lt;/em&gt; ja &lt;em&gt;datan näyttäminen käyttäjälle&lt;/em&gt; on sidottuna teräslangalla yhteen - et voi käsitellä dataa ilman, että myös näyttäisit sen käyttäjälle.&lt;/p&gt;
-
-&lt;h3 id=&#34;ratkaisu-2&#34;&gt;Ratkaisu #2&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var vastaanotaData = function(data) {
-  // Käsittele data
-  var summa = _.reduce(data, function(sum, datanum) {
-    return sum + datanum;
-  }, 0);
-
-  // Näytetään summa käyttäjälle
-  alert(&amp;quot;Summa on &amp;quot; + summa);
-}
-
-$.ajax({
-  url: &#39;serveri.php&#39;
-}).done(vastaanotaData);
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kakkosratkaisussa koodi selkenee hiukan. Erottelemme datan vastaanoton ja käsittelyn + näytön erilleen. Ajax-kutsulle tarjotaan palanpainikkeeksi &lt;em&gt;vastaanotaData&lt;/em&gt;-niminen funktio, joka sisältää &amp;ldquo;käsittelykoodin&amp;rdquo; ja &amp;ldquo;näyttökoodin&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;Ratkaisu on hyvä alku - olemme saaneet alkuperäisestä pyhästä kolminaisuudesta (vastaanotto, käsittely, näyttö) yhden osan lohkaistua irralleen. Siirrytään eteenpäin.&lt;/p&gt;
-
-&lt;h3 id=&#34;ratkaisu-3&#34;&gt;Ratkaisu #3&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var kasitteleData = function(data) {
-  // Käsittele data
-  return _.reduce(data, function(sum, datanum) {
-    return sum + datanum;
-  }, 0);
-}
-
-var naytaSumma = function(summa) {
-	// Näytetään summa käyttäjälle
-	alert(&amp;quot;Summa on &amp;quot; + summa);
-}
-
-$.ajax({
-  url: &#39;serveri.php&#39;
-}).done(function(data) {
-	var summa = kasitteleData(data);
-	naytaSumma(summa);
-});
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kolmosratkaisussa kaksi jäljellejäänyttä yhteenliitettyä toimenpidettä (käsittely ja näyttö) erotetaan omiksi funktioikseen. Tällä tavoin kaikki kolme toisiinsa kahlittua toimintoa on saatu eroteltua erilleen.&lt;/p&gt;
-
-&lt;p&gt;Tämä erilleen erottelu on ohjelmoinnin keskiössä oleva konsepti. Kun erottelu tehdään funktioita käyttäen, sitä kutsutaan nimellä &lt;em&gt;funktionaalinen abstraktio&lt;/em&gt;. Käytännössä se vain tarkoittaa, että tietty pala koodia &lt;em&gt;irrotetaan erilleen&lt;/em&gt; ja paketoidaan pakettiin nimeltä &amp;lsquo;funktio&amp;rsquo;. Tuota funktiota voi käyttää eri puolilta applikaatiota uudestaan ja uudestaan.&lt;/p&gt;
-
-&lt;p&gt;Funktionaalinen abstraktio toimii siis näin:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Ei abstraktoitu
-
-var a = 2;
-// Tehdään potenssiin korotus
-var potenssiluku = 3;
-var potenssilaskunTulos = 1;
-for (var i = 0, i &amp;lt; 3; i++) {
-  potenssilaskunTulos = potenssilaskunTulos * a;
-}
-// Potenssiin korotus valmis
-console.log(potenssilaskunTulos); // 8
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Funktionaalinen abstraktio suoritettu!
-
-// Luodaan funktio
-function nostaPotenssiin(luku, potenssi) {
-  var potenssilaskunTulos = 1;
-  for (var i = 0, i &amp;lt; potenssi; i++) {
-    potenssilaskunTulos = potenssilaskunTulos * luku;
-  }
-  return potenssilaskunTulos;
-}
-
-// Tehdään potenssiin korotus
-var tulos = nostaPotenssiin(2, 3);
-// Potenssiin korotus valmis
-console.log(tulos); // 8
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ei sen kummempaa. Siirrytään seuraavaan ratkaisuun.&lt;/p&gt;
-
-&lt;h3 id=&#34;ratkaisu-4&#34;&gt;Ratkaisu #4&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var vastaanotaData = function(data) {
-  var summa = kasitteleData(data);
-  naytaSumma(summa);
-}
-
-var kasitteleData = function(data) {
-  // Käsittele data
-  return _.reduce(data, function(sum, datanum) {
-    return sum + datanum;
-  }, 0);
-}
-
-var naytaSumma = function(summa) {
-  // Näytetään summa käyttäjälle
-  alert(&amp;quot;Summa on &amp;quot; + summa);
-}
-
-$.ajax({
-  url: &#39;serveri.php&#39;
-}).done(vastaanotaData);
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ratkaisussa numero 4 viemme funktionaalisen abstraktion vielä yhden askeleen pidemmälle. Saimme jo kolmosratkaisussa eroteltua erilleen alkuperäiset kolme toimintoa - vastaanoton, käsittelyn, ja näytön. Nelosratkaisun ero kolmoseen verrattuna on, että ajax-kutsun kyytipojaksi annettu done-metodin callback on erikseen nimetty ja määritelty funktio. Sen nimi on &lt;em&gt;vastaanotaData&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Vastaavan funktion käyttä toi lisäarvoa ratkaisussa #2, joten takuulla se auttaa myös nyt, vai mitä?&lt;/p&gt;
-
-&lt;p&gt;Ei välttämättä.&lt;/p&gt;
-
-&lt;p&gt;Tässä kohtaa on hyvä huomata, että ratkaisussa #3 ei ollut funktiota nimeltä &lt;em&gt;vastaanotaData&lt;/em&gt;. Se, että sen nimistä funktiota ei ole, ei tarkoita, etteikö toimintoa olisi olemassa. Toiminto oli olemassa jo ratkaisussa #3 - se vain sattui olemaan anonyyminä funktiona. Verrataan:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Ratkaisu 3 - vastaanotto anonyyminä funktiona
-
-.done(function(data) {
-  var summa = kasitteleData(data);
-  naytaSumma(summa);
-});
-
-// Ratkaisu 4 - vastaanotto erikseen nimettynä funktiona
-
-.done(vastaanotaData);
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Nyt kysymys kuuluukin, onko ratkaisu #3 &lt;strong&gt;automaattisesti&lt;/strong&gt; huonompi kuin ratkaisu #4?&lt;/p&gt;
-
-&lt;p&gt;Juuri aiemmin mainitsin, että funktionaalinen abstraktio on ohjelmoinnin keskiössä, ja erittäin tärkeä työkalu. Voiko tästä johtaa, että pienikin lisäpotku funktionaalista abstraktiota poikkeuksetta parantaa koodin laatua?&lt;/p&gt;
-
-&lt;p&gt;Ei.&lt;/p&gt;
-
-&lt;p&gt;Saimme jo ratkaisussa #3 abstraktoitua kaiken sen mitä halusimmekin - eli &lt;em&gt;vastaanoton&lt;/em&gt;, &lt;em&gt;käsittelyn&lt;/em&gt; ja &lt;em&gt;lopputuloksen näyttämisen ihmiskäyttäjälle&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Ylimääräinen abstraktio tuon kolmosratkaisun päälle ei enää paranna koodia - se saattaa jopa huonontaa sitä. Tässä tapauksessa muutos on lähinnä neutraali.&lt;/p&gt;
-
-&lt;p&gt;Huomioitavaa on, että tarjoamme Ajax-kutsun done-metodille kyytipojaksi funktion, joka &lt;em&gt;vastaanottaa&lt;/em&gt; palvelimelta tuodun datan. Tuo funktio siis vastaanottaa datan riippumatta sen nimestä tai siitä onko sillä nimeä lainkaan.&lt;/p&gt;
-
-&lt;p&gt;Toinen huomiotava asia on, että tuo vastaanotaData-funktio &lt;em&gt;ei tee mitään varsinaista työtä&lt;/em&gt;. Se ainoastaan koordinoi kahta kutsua muihin funktioihin. Nuo muut funktiot tekevät ns. oikeaa työtä. Koska vastaanotaData-funktio on ikäänkuin &lt;em&gt;esimies&lt;/em&gt;, ei sen abstraktoinnista saa yhtä suurta hyötyä kuin &lt;em&gt;työmiehen&lt;/em&gt; toiminnan abstraktoinnista.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Funktionaalinen abstraktio - eli &amp;ldquo;koodirivien paketointi funktion sisälle&amp;rdquo; - on äärimmäisen tärkeä työkalu ohjelmoijan arsenaalissa.&lt;/p&gt;
-
-&lt;p&gt;Mutta abstraktionkin voi viedä liian pitkälle. Abstraktio toimii vain siihen pisteeseen saakka, jossa viimeinenkin looginen toiminto on eroteltuna omaksi paketikseen. Tämän jälkeen abstraktion lisääminen tuppaa vain sotkemaan koodia.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>
