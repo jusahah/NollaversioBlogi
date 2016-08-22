@@ -19,18 +19,18 @@ class Valot {
   // Kukin toggle-metodi sytyttää valot jos ovat pois päältä,
   // ja sammuttaa valot jos ovat päällä.
 
-  public function toggleVessa() {//...}
-  public function toggleKeittio() {//...}
-  public function toggleOlohuone() {//...}
-  public function toggleMakuuhuone() {//...}
-  public function toggleParveke() {//...}
+  public function toggleVessa() {/*...*/}
+  public function toggleKeittio() {/*...*/}
+  public function toggleOlohuone() {/*...*/}
+  public function toggleMakuuhuone() {/*...*/}
+  public function toggleParveke() {/*...*/}
 }
 
 ```
 
 ```php
 
-$valot = new valot();
+$valot = new Valot();
 
 // Kutsutaan metodeja
 $valot->toggleKeittio();
