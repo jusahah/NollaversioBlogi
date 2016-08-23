@@ -38,7 +38,7 @@ class Valot {
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-$valot = new valot();
+$valot = new Valot();
 
 // Kutsutaan metodeja
 $valot-&amp;gt;toggleKeittio();

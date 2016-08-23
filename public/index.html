@@ -68,6 +68,137 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/catch-and-translate/">
+        Catch &#43; Translate
+      </a>
+    </h1>
+
+    <span class="post-date">Tue, Aug 23, 2016</span>
+
+    
+
+<p>Lupausketjuihin perustuvissa arkkitehtuureissa virhetilanteiden hallinta on helppoa. Useimmiten riittää, että asettaa sopivaan kohtaan lupausketjua <em>catch</em>-handlerin. Tuo handleri nappaa kiinni ketjun aiempien suoritusvaiheiden tuottamat virheet.</p>
+
+<p>Bluebird tekee catch-handlerin käytöstä vieläkin kätevämpää tarjoamalla ikäänkuin automaattisen <em>virheiden ohjauksen</em> juuri oikeaan handleriin. Esim. seuraavasti:</p>
+
+<pre><code class="language-javascript">
+var jaateloKioski = /* luo */
+var asiakas = /* luo */;
+
+Promise.try(function() {
+  return asiakas.valitseMaku();
+})
+.then(function(maku) {
+  // Saattaa heittää virheen 'JaateloMakuLoppunut'
+  return jaateloKioski.rakennaAnnos(maku)
+})
+.tap(function() {
+	// Pyydä maksu
+	// Saattaa heittää virheen 'EiRahaa'
+	jaateloKioski.pyydaMaksu(asiakas);
+})
+.then(function(annos) {
+	return asiakas.vastaanotaJaatelo(annos);
+})
+// Käsitellään virheet
+.catch(JaateloMakuLoppunut, function() {})
+.catch(EiRahaa, function() {})
+
+</code></pre>
+
+<p>Ylläolevassa koodissa on mahdollista syntyä kaksi eri virhetyyppiä. Joko jäätelömaku on kiskalta toistaiseksi loppunut, tai asiakas havaitsee yllättäen, että hän on persaukinen.</p>
+
+<p>Nämä kaksi eri virhettä käsitellään erikseen omissaan catch-handlereissa.</p>
+
+<p>Mutta aina tilanne ei ole yhtä valoisa. Joskus tulee vastaan skenaario, jossa <em>kaksi eri loogista virhetyyppiä käyttävät saman tyypin virheobjektia.</em></p>
+
+<p>Esimerkki:</p>
+
+<pre><code class="language-javascript">// Yksittäisen siirron maksimiaika
+var maksimiSiirtoaika = 2000; // 2 sek
+// Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
+var peliAikaaJaljella = 180000; // 3 min
+
+Promise.try(function() {
+	return pelaaja.teeSiirtosi()
+	.timeout(maksimiSiirtoaika)
+	.timeout(peliAikaaJaljella)
+})
+.then(/* käsittele siirto ja vähennä peliaikaa */)
+.catch(Promise.TimeoutError, function() {
+	// Pelaaja ei tehnyt siirtoaan ajoissa.
+	// Mutta kumpi timeout laukesi?
+	
+})
+
+</code></pre>
+
+<p>Ylläoleva esimerkki on melko suoraan koodistani. Osana peliserveriäni lupausketjun tulee tietää onko pelaaja ylittänyt <em>siirtokohtaisen aikansa</em> vai <em>pelikohtaisen aikansa</em>.</p>
+
+<p>Ongelmana on, että molemmat ylityksen heittävät identtisen virheobjektin. Itse asiassa Bluebird-kirjasto tekee tuon heiton, joten sitä ei ole helppo edes kontrolloida.</p>
+
+<h3 id="ratkaisu">Ratkaisu</h3>
+
+<p>Mutta voimme aina napata toisen heiton ja muuntaa (<strong>translate</strong>) sen toiseksi virhetyypiksi. Riittää, että asetamme ylimääräisen catch-handlerin sopivaan kohtaan.</p>
+
+<pre><code class="language-javascript">// Yksittäisen siirron maksimiaika
+var maksimiSiirtoaika = 2000; // 2 sek
+// Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
+var peliAikaaJaljella = 180000; // 3 min
+
+Promise.try(function() {
+	return pelaaja.teeSiirtosi()
+	.timeout(maksimiSiirtoaika)
+	.catch(Promise.TimeoutError, function() {
+	  throw new MaksimiSiirtoAikaYlitetty();
+	})
+	.timeout(peliAikaaJaljella)
+})
+.then(/* käsittele siirto ja vähennä peliaikaa */)
+.catch(Promise.TimeoutError, function() {
+	// Pelaajan kokonaispeliaika umpeutui!	
+})
+.catch(MaksimiSiirtoAikaYlitetty, function() {
+	// Pelaajan siirtokohtainen aika umpeutui!	
+})
+
+</code></pre>
+
+<p>Yltä huomaamme, että nappaamme ensimmäisen mahdollisen TimeoutErrorin kiinni <em>juuri sopivasti</em> ennen toista kutsua, joka tuottaa myös TimeoutErrorin. Nappaamalla ensimmäisen virheen kiinni ja muuntamalla sen toiseen muotoon - eli toiseen virhetyyppiin - meidän ei tarvitse myöhemmin vaivata päätämme sen suhteen, mistä virhe lähti alunperin liikkeelle!</p>
+
+<p>Tämä on siis <strong>catch + translate</strong> -patterni. Virhe napataan ja muunnetaan eri muotoon, ja muunnoksen jälkeen palautetaan takaisin &ldquo;putkeen&rdquo;.</p>
+
+<p>Bluebird tarjoaa peräti juuri tätä catch+translate -tarkoitusta varten erillisen apumetodin: <strong>catchThrow()</strong>. Ylläoleva koodi menee muotoon:</p>
+
+<pre><code class="language-javascript">// Yksittäisen siirron maksimiaika
+var maksimiSiirtoaika = 2000; // 2 sek
+// Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
+var peliAikaaJaljella = 180000; // 3 min
+
+Promise.try(function() {
+	return pelaaja.teeSiirtosi()
+	.timeout(maksimiSiirtoaika)
+	.catchThrow(Promise.TimeoutError, new MaksimiSiirtoAikaYlitetty())
+	.timeout(peliAikaaJaljella)
+})
+.then(/* käsittele siirto ja vähennä peliaikaa */)
+.catch(Promise.TimeoutError, function() {
+	// Pelaajan kokonaispeliaika umpeutui!	
+})
+.catch(MaksimiSiirtoAikaYlitetty, function() {
+	// Pelaajan siirtokohtainen aika umpeutui!	
+})
+
+</code></pre>
+
+<blockquote>
+<p>Loppukaneetti: Ihannearkkitehtuuri myös siirtokohtaisen ajan ylitys muunnettaisiin domain-spesifiin virhetyyppiin. Tällöin emme lupausketjun lopussa nappaisi kiinni geneeristä TimeoutErroria lainkaan, vaan esim. PeliAikaYlitetty-virheen.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/">
         Ketjutettava rajapinta
       </a>
@@ -98,7 +229,7 @@ class Valot {
 </code></pre>
 
 <pre><code class="language-php">
-$valot = new valot();
+$valot = new Valot();
 
 // Kutsutaan metodeja
 $valot-&gt;toggleKeittio();

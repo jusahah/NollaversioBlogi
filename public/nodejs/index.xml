@@ -6,8 +6,136 @@
     <description>Recent content in Nodejs on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Thu, 18 Aug 2016 05:47:59 +0300</lastBuildDate>
+    <lastBuildDate>Tue, 23 Aug 2016 06:53:16 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/nodejs/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Catch &#43; Translate</title>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/catch-and-translate/</link>
+      <pubDate>Tue, 23 Aug 2016 06:53:16 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/catch-and-translate/</guid>
+      <description>
+
+&lt;p&gt;Lupausketjuihin perustuvissa arkkitehtuureissa virhetilanteiden hallinta on helppoa. Useimmiten riittää, että asettaa sopivaan kohtaan lupausketjua &lt;em&gt;catch&lt;/em&gt;-handlerin. Tuo handleri nappaa kiinni ketjun aiempien suoritusvaiheiden tuottamat virheet.&lt;/p&gt;
+
+&lt;p&gt;Bluebird tekee catch-handlerin käytöstä vieläkin kätevämpää tarjoamalla ikäänkuin automaattisen &lt;em&gt;virheiden ohjauksen&lt;/em&gt; juuri oikeaan handleriin. Esim. seuraavasti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var jaateloKioski = /* luo */
+var asiakas = /* luo */;
+
+Promise.try(function() {
+  return asiakas.valitseMaku();
+})
+.then(function(maku) {
+  // Saattaa heittää virheen &#39;JaateloMakuLoppunut&#39;
+  return jaateloKioski.rakennaAnnos(maku)
+})
+.tap(function() {
+	// Pyydä maksu
+	// Saattaa heittää virheen &#39;EiRahaa&#39;
+	jaateloKioski.pyydaMaksu(asiakas);
+})
+.then(function(annos) {
+	return asiakas.vastaanotaJaatelo(annos);
+})
+// Käsitellään virheet
+.catch(JaateloMakuLoppunut, function() {})
+.catch(EiRahaa, function() {})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa koodissa on mahdollista syntyä kaksi eri virhetyyppiä. Joko jäätelömaku on kiskalta toistaiseksi loppunut, tai asiakas havaitsee yllättäen, että hän on persaukinen.&lt;/p&gt;
+
+&lt;p&gt;Nämä kaksi eri virhettä käsitellään erikseen omissaan catch-handlereissa.&lt;/p&gt;
+
+&lt;p&gt;Mutta aina tilanne ei ole yhtä valoisa. Joskus tulee vastaan skenaario, jossa &lt;em&gt;kaksi eri loogista virhetyyppiä käyttävät saman tyypin virheobjektia.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Esimerkki:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Yksittäisen siirron maksimiaika
+var maksimiSiirtoaika = 2000; // 2 sek
+// Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
+var peliAikaaJaljella = 180000; // 3 min
+
+Promise.try(function() {
+	return pelaaja.teeSiirtosi()
+	.timeout(maksimiSiirtoaika)
+	.timeout(peliAikaaJaljella)
+})
+.then(/* käsittele siirto ja vähennä peliaikaa */)
+.catch(Promise.TimeoutError, function() {
+	// Pelaaja ei tehnyt siirtoaan ajoissa.
+	// Mutta kumpi timeout laukesi?
+	
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva esimerkki on melko suoraan koodistani. Osana peliserveriäni lupausketjun tulee tietää onko pelaaja ylittänyt &lt;em&gt;siirtokohtaisen aikansa&lt;/em&gt; vai &lt;em&gt;pelikohtaisen aikansa&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Ongelmana on, että molemmat ylityksen heittävät identtisen virheobjektin. Itse asiassa Bluebird-kirjasto tekee tuon heiton, joten sitä ei ole helppo edes kontrolloida.&lt;/p&gt;
+
+&lt;h3 id=&#34;ratkaisu&#34;&gt;Ratkaisu&lt;/h3&gt;
+
+&lt;p&gt;Mutta voimme aina napata toisen heiton ja muuntaa (&lt;strong&gt;translate&lt;/strong&gt;) sen toiseksi virhetyypiksi. Riittää, että asetamme ylimääräisen catch-handlerin sopivaan kohtaan.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Yksittäisen siirron maksimiaika
+var maksimiSiirtoaika = 2000; // 2 sek
+// Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
+var peliAikaaJaljella = 180000; // 3 min
+
+Promise.try(function() {
+	return pelaaja.teeSiirtosi()
+	.timeout(maksimiSiirtoaika)
+	.catch(Promise.TimeoutError, function() {
+	  throw new MaksimiSiirtoAikaYlitetty();
+	})
+	.timeout(peliAikaaJaljella)
+})
+.then(/* käsittele siirto ja vähennä peliaikaa */)
+.catch(Promise.TimeoutError, function() {
+	// Pelaajan kokonaispeliaika umpeutui!	
+})
+.catch(MaksimiSiirtoAikaYlitetty, function() {
+	// Pelaajan siirtokohtainen aika umpeutui!	
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yltä huomaamme, että nappaamme ensimmäisen mahdollisen TimeoutErrorin kiinni &lt;em&gt;juuri sopivasti&lt;/em&gt; ennen toista kutsua, joka tuottaa myös TimeoutErrorin. Nappaamalla ensimmäisen virheen kiinni ja muuntamalla sen toiseen muotoon - eli toiseen virhetyyppiin - meidän ei tarvitse myöhemmin vaivata päätämme sen suhteen, mistä virhe lähti alunperin liikkeelle!&lt;/p&gt;
+
+&lt;p&gt;Tämä on siis &lt;strong&gt;catch + translate&lt;/strong&gt; -patterni. Virhe napataan ja muunnetaan eri muotoon, ja muunnoksen jälkeen palautetaan takaisin &amp;ldquo;putkeen&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Bluebird tarjoaa peräti juuri tätä catch+translate -tarkoitusta varten erillisen apumetodin: &lt;strong&gt;catchThrow()&lt;/strong&gt;. Ylläoleva koodi menee muotoon:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Yksittäisen siirron maksimiaika
+var maksimiSiirtoaika = 2000; // 2 sek
+// Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
+var peliAikaaJaljella = 180000; // 3 min
+
+Promise.try(function() {
+	return pelaaja.teeSiirtosi()
+	.timeout(maksimiSiirtoaika)
+	.catchThrow(Promise.TimeoutError, new MaksimiSiirtoAikaYlitetty())
+	.timeout(peliAikaaJaljella)
+})
+.then(/* käsittele siirto ja vähennä peliaikaa */)
+.catch(Promise.TimeoutError, function() {
+	// Pelaajan kokonaispeliaika umpeutui!	
+})
+.catch(MaksimiSiirtoAikaYlitetty, function() {
+	// Pelaajan siirtokohtainen aika umpeutui!	
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: Ihannearkkitehtuuri myös siirtokohtaisen ajan ylitys muunnettaisiin domain-spesifiin virhetyyppiin. Tällöin emme lupausketjun lopussa nappaisi kiinni geneeristä TimeoutErroria lainkaan, vaan esim. PeliAikaYlitetty-virheen.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Konsolitulosteen väritys</title>
