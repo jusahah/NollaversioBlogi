@@ -6,11 +6,136 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Tue, 23 Aug 2016 06:53:16 +0300</lastBuildDate>
+    <lastBuildDate>Wed, 24 Aug 2016 06:36:45 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
-      <title>Catch &#43; Translate</title>
+      <title>Laravel injektoi mallin puolestasi</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/implicit-binding/</link>
+      <pubDate>Wed, 24 Aug 2016 06:36:45 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/implicit-binding/</guid>
+      <description>
+
+&lt;p&gt;Laravel 5.2 -kehys toi mukanaan uuden ominaisuuden nimeltä &lt;em&gt;implicit model binding&lt;/em&gt;. Suomennos on vaikea; &amp;ldquo;automaattinen mallin injektointi&amp;rdquo; kuvaa mielestäni parhaiten tuota konseptia.&lt;/p&gt;
+
+&lt;p&gt;Sillä konseptin avulla voi pistää Laravellin tekemän raskas työ ja etsimään sopiva malliluokka, luomaan sen pohjalta uusi objekti, ja tarjoamaan objekti ohjelmoijan käyttöön.&lt;/p&gt;
+
+&lt;p&gt;Ero implisiittisen mallin injektoinnin ja ns. tavanomaisen koodiratkaisun välillä on seuraava:&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Vanha tapa (ei injektointia)&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+//routes.php
+
+Route::get(&#39;sanomalehdet/{id}&#39;, function($id) {
+  // Luodaan *eksplisiittisesti* Sanomalehti-objekti käyttäen id-parametriä.
+  $lehti = Sanomalehti::findOrFail($id);
+
+  return $lehti-&amp;gt;sarjakuvat();
+
+});
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Uusi tapa (injektointi käytössä)&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+//routes.php
+
+Route::get(&#39;sanomalehdet/{id}&#39;, function(Sanomalehti $lehti) {
+  // Meillä on käytössämme Sanomalehti-luokasta luotu $lehti-objekti.
+  // $lehti luotiin automaattisesti id-parametrin perusteella.	
+
+  return $lehti-&amp;gt;sarjakuvat();
+
+});
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Huomaamme eron: vanhassa ratkaisussa &lt;em&gt;erikseen&lt;/em&gt; haemme objektin tietokannasta &lt;code&gt;Sanomalehti::find($id)&lt;/code&gt;-kutsulla. Uudessa ratkaisussa Laravel-kehys hakee objektin tietokannasta meidän puolestamme.&lt;/p&gt;
+
+&lt;p&gt;Kumpikin ratkaisu toimii loppukäyttäjälle samalla tavalla - kutsumme URL-endpointia tyyliin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+http://www.lehtiapp.fi/sanomalehdet/1
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Objekti siis molemmissa tapauksissa haetaan tietokannasta - ero on vain siinä kuka hakee.&lt;/p&gt;
+
+&lt;p&gt;Tarkastalleen vaihe vaiheelta mitä oikeasti pinnan alla tapahtuu tuon URL-endpointin kutsun aikana:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Käyttäjä kirjoittaa URL:n osoiterivilleen.&lt;/li&gt;
+&lt;li&gt;Kutsu saapuu Laravel-applikaation HTTP-rajapintaan.&lt;/li&gt;
+&lt;li&gt;Laravel ohjaa kutsun määrittämäämme &lt;em&gt;Route::get(&amp;lsquo;sanomalehdet/{id}&amp;rsquo;)&lt;/em&gt; callbackiin.&lt;/li&gt;
+&lt;li&gt;Pinnan alla Laravel tutkii tuon callbackin parametrilistan ja havaitsee tutkinnan seurauksena, että callback ottaa parametrikseen $lehti-objektin luokkatyyppiä Sanomalehti.&lt;/li&gt;
+&lt;li&gt;Laravel laskee yksi yhteen ja hoksaa, että URL:n sisällä tullut id-parametri on sama kuin callbackin parametriksi tulevan Sanomalehti-objektin id-attribuutti.&lt;/li&gt;
+&lt;li&gt;Laravel käy hakemassa sopivan Sanomalehti-objektin tietokannasta edelliseen päättelyyn pohjaten. Laravel siis tekee haun tyyliin:&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+Sanomalehti::where(&#39;id&#39;, $id)-&amp;gt;first()
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kaiken tuon Laravel päättelee sen muutaman millisekunnin aikana, joka HTTP-kutsun vastaanottoon kuluu. Laravellilla on aika nopsat hoksottimet.&lt;/p&gt;
+
+&lt;h3 id=&#34;id-parametrin-korvaaminen-toisella-attribuutilla&#34;&gt;ID-parametrin korvaaminen toisella attribuutilla&lt;/h3&gt;
+
+&lt;p&gt;Entä jos haluamme, että voimme osoiteriville kirjoittaa seuraavanlaisen URL-lausekkeen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+http://www.lehtiapp.fi/sanomalehdet/ristiinalainen
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Koska termi &amp;lsquo;ristiinalainen&amp;rsquo; ei ole id-attribuutti, Laravel-kehys ei löydä oikeaa lehteä sen avulla. Ellemme sitten &lt;em&gt;kerro Laravellille&lt;/em&gt;, että haluamme lehden nimen (esim. &amp;lsquo;ristiinalainen&amp;rsquo;) toimivan hakuattribuuttina.&lt;/p&gt;
+
+&lt;p&gt;Tämä on mahdollista määrittämällä uusi metodi Sanomalehti-malliin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Sanomalehti.php
+
+class Sanomalehti extends Eloquent {
+	
+	// Määritetään injektointiattribuutti, jota Laravel käyttää 
+	// etsiäkseen oikean objektin tietokannasta.
+	public function getRouteKeyName() {
+		return &#39;nimi&#39;;
+	}
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+//routes.php
+
+Route::get(&#39;sanomalehdet/{nimi}&#39;, function(Sanomalehti $lehti) {
+  // Meillä on käytössämme Sanomalehti-luokasta luotu $lehti-objekti.
+  // $lehti luotiin automaattisesti nimi-parametrin perusteella.	
+
+  return $lehti-&amp;gt;sarjakuvat();
+
+});
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva mahdollistaa meidän kutsuvan HTTP-endpointia tyyliin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+http://www.lehtiapp.fi/sanomalehdet/ristiinalainen
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tämä on selkeä loppukäyttäjää helpottava parannus verrattuna aiempaan kutsuumme, jossa tietty lehti eriteltiin id-attribuutin avulla. Nyt lehdet eritellään niiden nimen avulla. Loppukäyttäjä ei osaa yhdistää id-numeroa tiettyyn lehteen. Lehden nimi taas heti kertoo mistä lehdestä on kyse.&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Bluebird: Catch &#43; Translate</title>
       <link>http://www.nollaversio.fi/blog/public/nodejs/catch-and-translate/</link>
       <pubDate>Tue, 23 Aug 2016 06:53:16 +0300</pubDate>
       
@@ -33,16 +158,16 @@ Promise.try(function() {
   return jaateloKioski.rakennaAnnos(maku)
 })
 .tap(function() {
-	// Pyydä maksu
-	// Saattaa heittää virheen &#39;EiRahaa&#39;
-	jaateloKioski.pyydaMaksu(asiakas);
+  // Pyydä maksu
+  // Saattaa heittää virheen &#39;EiRahaa&#39;
+  jaateloKioski.pyydaMaksu(asiakas);
 })
 .then(function(annos) {
-	return asiakas.vastaanotaJaatelo(annos);
+  return asiakas.vastaanotaJaatelo(annos);
 })
-// Käsitellään virheet
-.catch(JaateloMakuLoppunut, function() {})
-.catch(EiRahaa, function() {})
+// Käsitellään virheet, kukin virhe yksitellen.
+.catch(JaateloMakuLoppunut, function() {/* ...*/})
+.catch(EiRahaa, function() {/* ...*/})
 
 &lt;/code&gt;&lt;/pre&gt;
 
@@ -54,20 +179,21 @@ Promise.try(function() {
 
 &lt;p&gt;Esimerkki:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Yksittäisen siirron maksimiaika
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Yksittäisen siirron maksimiaika
 var maksimiSiirtoaika = 2000; // 2 sek
 // Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
 var peliAikaaJaljella = 180000; // 3 min
 
 Promise.try(function() {
-	return pelaaja.teeSiirtosi()
-	.timeout(maksimiSiirtoaika)
-	.timeout(peliAikaaJaljella)
+  return pelaaja.teeSiirtosi()
+  .timeout(maksimiSiirtoaika)
+  .timeout(peliAikaaJaljella)
 })
 .then(/* käsittele siirto ja vähennä peliaikaa */)
 .catch(Promise.TimeoutError, function() {
-	// Pelaaja ei tehnyt siirtoaan ajoissa.
-	// Mutta kumpi timeout laukesi?
+  // Pelaaja ei tehnyt siirtoaan ajoissa.
+  // Mutta kumpi timeout laukesi?
 	
 })
 
@@ -77,29 +203,30 @@ Promise.try(function() {
 
 &lt;p&gt;Ongelmana on, että molemmat ylityksen heittävät identtisen virheobjektin. Itse asiassa Bluebird-kirjasto tekee tuon heiton, joten sitä ei ole helppo edes kontrolloida.&lt;/p&gt;
 
-&lt;h3 id=&#34;ratkaisu&#34;&gt;Ratkaisu&lt;/h3&gt;
+&lt;h3 id=&#34;ratkaisu-muunna-geneerinen-virhetyyppi-domain-spesifiksi-virhetyypiksi&#34;&gt;Ratkaisu: Muunna geneerinen virhetyyppi domain-spesifiksi virhetyypiksi&lt;/h3&gt;
 
 &lt;p&gt;Mutta voimme aina napata toisen heiton ja muuntaa (&lt;strong&gt;translate&lt;/strong&gt;) sen toiseksi virhetyypiksi. Riittää, että asetamme ylimääräisen catch-handlerin sopivaan kohtaan.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Yksittäisen siirron maksimiaika
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Yksittäisen siirron maksimiaika
 var maksimiSiirtoaika = 2000; // 2 sek
 // Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
 var peliAikaaJaljella = 180000; // 3 min
 
 Promise.try(function() {
-	return pelaaja.teeSiirtosi()
-	.timeout(maksimiSiirtoaika)
-	.catch(Promise.TimeoutError, function() {
-	  throw new MaksimiSiirtoAikaYlitetty();
-	})
-	.timeout(peliAikaaJaljella)
+  return pelaaja.teeSiirtosi()
+  .timeout(maksimiSiirtoaika)
+  .catch(Promise.TimeoutError, function() {
+    throw new MaksimiSiirtoAikaYlitetty();
+  })
+  .timeout(peliAikaaJaljella)
 })
 .then(/* käsittele siirto ja vähennä peliaikaa */)
 .catch(Promise.TimeoutError, function() {
-	// Pelaajan kokonaispeliaika umpeutui!	
+  // Pelaajan kokonaispeliaika umpeutui!	
 })
 .catch(MaksimiSiirtoAikaYlitetty, function() {
-	// Pelaajan siirtokohtainen aika umpeutui!	
+  // Pelaajan siirtokohtainen aika umpeutui!	
 })
 
 &lt;/code&gt;&lt;/pre&gt;
@@ -110,29 +237,30 @@ Promise.try(function() {
 
 &lt;p&gt;Bluebird tarjoaa peräti juuri tätä catch+translate -tarkoitusta varten erillisen apumetodin: &lt;strong&gt;catchThrow()&lt;/strong&gt;. Ylläoleva koodi menee muotoon:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Yksittäisen siirron maksimiaika
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Yksittäisen siirron maksimiaika
 var maksimiSiirtoaika = 2000; // 2 sek
 // Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
 var peliAikaaJaljella = 180000; // 3 min
 
 Promise.try(function() {
-	return pelaaja.teeSiirtosi()
-	.timeout(maksimiSiirtoaika)
-	.catchThrow(Promise.TimeoutError, new MaksimiSiirtoAikaYlitetty())
-	.timeout(peliAikaaJaljella)
+  return pelaaja.teeSiirtosi()
+  .timeout(maksimiSiirtoaika)
+  .catchThrow(Promise.TimeoutError, new MaksimiSiirtoAikaYlitetty())
+  .timeout(peliAikaaJaljella)
 })
 .then(/* käsittele siirto ja vähennä peliaikaa */)
 .catch(Promise.TimeoutError, function() {
-	// Pelaajan kokonaispeliaika umpeutui!	
+  // Pelaajan kokonaispeliaika umpeutui!	
 })
 .catch(MaksimiSiirtoAikaYlitetty, function() {
-	// Pelaajan siirtokohtainen aika umpeutui!	
+  // Pelaajan siirtokohtainen aika umpeutui!	
 })
 
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: Ihannearkkitehtuuri myös siirtokohtaisen ajan ylitys muunnettaisiin domain-spesifiin virhetyyppiin. Tällöin emme lupausketjun lopussa nappaisi kiinni geneeristä TimeoutErroria lainkaan, vaan esim. PeliAikaYlitetty-virheen.&lt;/p&gt;
+&lt;p&gt;Loppukaneetti: Ihannearkkitehtuurissa myös siirtokohtaisen ajan ylitys muunnettaisiin domain-spesifiin virhetyyppiin. Tällöin emme lupausketjun lopussa nappaisi kiinni geneeristä TimeoutErroria lainkaan, vaan esim. KokonaisPeliAikaYlitetty-virheen.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>
@@ -2033,216 +2161,6 @@ $pankkitili-&amp;gt;present()-&amp;gt;metodi();
 
 &lt;blockquote&gt;
 &lt;p&gt;Loppukaneetti: näkymämallin käytön koko ydinajatus on, että applikaation kannalta oleelliset toiminnot ja käyttöliittymän kannalta oleelliset toiminnot erotetaan toisistaan. Applikaatiota ei kiinnosta se, millä värisävylle negatiivinen saldo näytetään ihmissilmälle. Ihmissilmää tuo asia kiinnostaa.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Datan lähetys näkymään</title>
-      <link>http://www.nollaversio.fi/blog/public/laravel/view-composer/</link>
-      <pubDate>Wed, 03 Aug 2016 03:49:47 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/laravel/view-composer/</guid>
-      <description>
-
-&lt;p&gt;Laravellin kaltaisten täysiveristen ohjelmistokehysten yksi hienoimmista ominaisuuksista on &lt;em&gt;datan käsittelyn&lt;/em&gt; ja &lt;em&gt;datan näytön&lt;/em&gt; erottaminen. Laravellissa konseptit erotetaan toisistaan tiedostotasolla; datan käsittely - ns. bisneslogiikka - elää yhdessä tiedostossa, ja näyttölogiikka elää toisessa tiedostossa.&lt;/p&gt;
-
-&lt;p&gt;Bisneslogiikasta vastaava tiedosto olkoot kutsumanimeltään &lt;em&gt;model&lt;/em&gt;, näyttölogiikasta vastaavaa tiedostoa kutsukaamme nimellä &lt;em&gt;view&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Yleensä näiden kahden välissä istuu vielä kolmas konseptuaalinen palikka - tiedosto kutsumanimeltään &lt;em&gt;controller&lt;/em&gt;. Laravel-kehys perustaakin vahvasti toimintansa nk. MVC-periaatteeseen.&lt;/p&gt;
-
-&lt;p&gt;MVC:ssä osa-alueet &lt;strong&gt;model&lt;/strong&gt;, &lt;strong&gt;view&lt;/strong&gt; ja &lt;strong&gt;controller&lt;/strong&gt; erotetaan toisistaan. Erottelun ansiosta applikaation koodipohja on selkeämmin luettavissa ja muokattavissa.&lt;/p&gt;
-
-&lt;p&gt;Me yksinkertaistamme kolmijakoa hiukan ja muunnamme sen &lt;em&gt;kaksijaoksi&lt;/em&gt;; datan käsittely sisältää MC-kirjaimet, ja datan näyttö sisältää V-kirjaimen.&lt;/p&gt;
-
-&lt;p&gt;Tutkitaan kahta eri tapaa siirtää vastikään käsiteltyä dataa näkymän käytettäväksi:&lt;/p&gt;
-
-&lt;h3 id=&#34;tapa-1&#34;&gt;Tapa #1:&lt;/h3&gt;
-
-&lt;p&gt;Tapa 1 - siirretään data suoraan view-tiedoston käyttöön.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Controller.php
-
-public function index() {
-  // Hankitaan dataa jotenkin
-  $dataset = getDatasetSomehow();
-  // Siirretään data eksplisiittisesti view-tiedoston käyttöön.
-  return view(&#39;View&#39;)-&amp;gt;with(&#39;dataset&#39;, $dataset);
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// View.php
-
-// Renderöidään data ihmiskäyttäjäm nähtäville.
-&amp;lt;?php echo $dataset; ?&amp;gt;
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tapa 1 on suositelluin tapa. Kutakin näkymätiedostoa (view) otettaessa käyttöön määritämme samalla datan, jonka avulla näkymätiedosto renderöidään lopulliseksi HTML-koodiksi. Voimme vapaasti määrittää mitä dataa siirrämme näkymän käyttöön. Voimme myös käyttää samaa tiedostoa usean eri datapaketin renderöimiseen:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Controller1.php
-
-public function index() {.
-  return view(&#39;View&#39;)-&amp;gt;with(&#39;dataset&#39;, 1);
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Controller2.php
-
-public function index() {.
-  return view(&#39;View&#39;)-&amp;gt;with(&#39;dataset&#39;, 2);
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Controller3.php
-
-public function index() {.
-  return view(&#39;View&#39;)-&amp;gt;with(&#39;dataset&#39;, 3);
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Eri datapaketilla renderöidyt näkymät tuottavat eri HTML-koodit.&lt;/p&gt;
-
-&lt;h3 id=&#34;tapa-2-määritetään-globaalisti-näkymälle-tarjottava-data&#34;&gt;Tapa 2 - määritetään &lt;em&gt;globaalisti&lt;/em&gt; näkymälle tarjottava data&lt;/h3&gt;
-
-&lt;p&gt;Tapa nro. 1 on yleisin keino siirtää dataa näkymän käyttöön/näytettäväksi.&lt;/p&gt;
-
-&lt;p&gt;Mutta entä jos meillä on seuraavanlainen tilanne&amp;hellip; tietty näkymätiedosto renderöidään aina tietyn &lt;em&gt;vakiodatan&lt;/em&gt; turvin. Tämän vakiodatan lisäksi tuo näkymä ottaa vastaan myös &lt;em&gt;muuttuvaa dataa&lt;/em&gt;. Esimerkki tälläisestä on web-portaali; vakiodata on esimerkiksi paikalliset säätiedot, jotka ovat kaikille käyttäjille samat ja aina nähtävillä (esim. yläreunan widgetin kautta).&lt;/p&gt;
-
-&lt;p&gt;Eli kaikki käyttäjät näkevät saman säätilatiedotteen portaalin yläreunassa. Nämä säätiedot ovat näkyvillä kaikilla portaalin alasivuilla.&lt;/p&gt;
-
-&lt;p&gt;Muuttuva data on puolestaan kullekin käyttäjälle yksilöllinen, esim. kunkin käyttäjän viimeisin sisäänkirjautuminen. Lisäksi kullakin alasivulla on oma muuttuva datansa.&lt;/p&gt;
-
-&lt;p&gt;Voisimme vallan mainiosti määrittää molemmat datapaketit aina näkymätiedostoa renderöidessämme:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// KirjautumisTiedotController.php
-
-public function index() {
-  $saa = $this-&amp;gt;getSaaTiedot();
-  $viimeisinKirjautuminen = $this-&amp;gt;getLoginInfo();
-  return view(&#39;kirjautumistiedot&#39;)
-    -&amp;gt;with(&#39;saatiedot&#39;, $saa)
-    -&amp;gt;with(&#39;viimeisinKirjautuminen&#39;, $viimeisinKirjautuminen);
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// VastaanotetutViestitController.php
-
-public function index() {
-  $saa = $this-&amp;gt;getSaaTiedot();
-  $viestit = $this-&amp;gt;getMessagesReceived();
-  return view(&#39;viestit_vastaanotettu&#39;)
-    -&amp;gt;with(&#39;saatiedot&#39;, $saa)
-    -&amp;gt;with(&#39;viestit&#39;, $viestit);
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// LahetetytViestitController.php
-
-public function index() {
-  $saa = $this-&amp;gt;getSaaTiedot();
-  $viestit = $this-&amp;gt;getMessagesSent();
-  return view(&#39;viestit_lahetetty&#39;)
-    -&amp;gt;with(&#39;saatiedot&#39;, $saa)
-    -&amp;gt;with(&#39;viestit&#39;, $viestit);
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevassa esimerkissä meillä on kolme eri näkymätiedostoa - &lt;em&gt;kirjautumistiedot&lt;/em&gt;, &lt;em&gt;viestit_vastaanotettu&lt;/em&gt; ja &lt;em&gt;viestit_lahetetty&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Kukin niistä hoitaa oman leiviskänsä applikaation käyttöliittymän renderöimisestä ihmiskäyttäjän silmille sopivaksi.&lt;/p&gt;
-
-&lt;p&gt;Mutta kullakin näkymällä on &lt;em&gt;ydintehtävän&lt;/em&gt; lisäksi myös oheistehtävä, joka on säätietojen renderöinti. Säätiedot ovat näkyvillä kaikilla applikaation alasivuilla, eli kaikki applikaation näkymät joutuvat ne renderöimään. Huomaamme tämän ylläolevissa kolmessa näkymäesimerkissä - kukin näkymä sisältää rivin:&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;-&amp;gt;with(&#39;saatiedot&#39;, $saa)&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;On myös parempi tapa. Koska säätiedot on sisällytettynä jokaiseen applikaation alasivuun, voimme abstraktoida säätietojen hakeminen ns. &lt;strong&gt;näkymälaatijaan&lt;/strong&gt; (engl. view composer).&lt;/p&gt;
-
-&lt;p&gt;Näkymälaatija on oma komponenttinsa, joka huolehtii tietyn datapaketin viemisestä eri näkymien saataville &lt;em&gt;automatisoidusti ja keskitetysti&lt;/em&gt;. Toisin sanoen, datapakettia ei tarvitse enää määritellä näkymän saataville Controller-tiedoston sisällä, vaan tuo määrittely voidaan tehdä globaalisti näkymälaatijan sisällä.&lt;/p&gt;
-
-&lt;p&gt;Näkymälaatijasta tarkempi kuvaus (englanniksi): &lt;a href=&#34;https://laravel.com/docs/5.1/views#view-composers&#34;&gt;https://laravel.com/docs/5.1/views#view-composers&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Säätietojen hakeminen ja antaminen applikaation &lt;em&gt;kaikkien&lt;/em&gt; näkymien saataville onnistuu näin:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// SaatiedotLaatijaProvider.php
-
-class SaatiedotLaatijaProvider
-{
-  public function boot()
-  {
-    view()-&amp;gt;composer(&#39;*&#39;, function($view) {
-      $saatiedot = $this-&amp;gt;getSaaTiedot();
-      $view-&amp;gt;with(&#39;saatiedot&#39;, $saatiedot);
-    });
-  }
-
-  protected function getSaaTiedot() {
-    /* Hanki säätiedot jotenkin */
-  }
-}
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Määriteltyämme ylläolevan &lt;em&gt;näkymälaatijan&lt;/em&gt; - tässä tapauksessa anonyymi funktio - huolehtimaan säätiedoista, voimme poistaa säätietojen hallinnasta vastaavan koodin kustakin Controllerista.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// KirjautumisTiedotController.php
-
-public function index() {
-  $viimeisinKirjautuminen = $this-&amp;gt;getLoginInfo();
-  return view(&#39;kirjautumistiedot&#39;)
-    -&amp;gt;with(&#39;viimeisinKirjautuminen&#39;, $viimeisinKirjautuminen);
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// VastaanotetutViestitController.php
-
-public function index() {
-  $viestit = $this-&amp;gt;getMessagesReceived();
-  return view(&#39;viestit_vastaanotettu&#39;)
-    -&amp;gt;with(&#39;viestit&#39;, $viestit);
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// LahetetytViestitController.php
-
-public function index() {
-  $viestit = $this-&amp;gt;getMessagesSent();
-  return view(&#39;viestit_lahetetty&#39;)
-    -&amp;gt;with(&#39;viestit&#39;, $viestit);
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Applikaation koodipohja selventyi huomattavasti - enää ei sama säätietojen hakeminen + tarjoaminen näkymän käyttöön elä &lt;em&gt;kolmessa&lt;/em&gt; eri sijainnissa, vaan koko säätietoja hallinnoiva koodi elää yhdessä paikassa (laatijatiedoston sisällä).&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Laravellin &lt;em&gt;näkymälaatija&lt;/em&gt; on tehokas konsepti poistamaan tarpeetonta duplikaatiota. Mikäli tietty datapaketti on renderöitävä usealle applikaation alasivulle, on syytä harkita näkymälaatijan käyttöä.&lt;/p&gt;
-
-&lt;p&gt;Kuten aina, kyseessä on tradeoff. Näkymälaatijalla saadaan vähennettyä koodin duplikaatiota. Mutta huonona puolena on, että tietyn näkymätiedoston käytettävissä oleva data ei enää ole nähtävillä yhdessä koodilokaatiossa.&lt;/p&gt;
-
-&lt;p&gt;Ratkaisussa #1 kaikki näkymälle tarjottava data tuli Controller-tiedostosta. Ratkaisussa #2 osa datasta tulee Controllerista, toinen osa näkymälaatijalta.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>

@@ -10,7 +10,7 @@
     <atom:link href="http://www.nollaversio.fi/blog/public/nodejs/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
-      <title>Catch &#43; Translate</title>
+      <title>Bluebird: Catch &#43; Translate</title>
       <link>http://www.nollaversio.fi/blog/public/nodejs/catch-and-translate/</link>
       <pubDate>Tue, 23 Aug 2016 06:53:16 +0300</pubDate>
       
@@ -33,16 +33,16 @@ Promise.try(function() {
   return jaateloKioski.rakennaAnnos(maku)
 })
 .tap(function() {
-	// Pyydä maksu
-	// Saattaa heittää virheen &#39;EiRahaa&#39;
-	jaateloKioski.pyydaMaksu(asiakas);
+  // Pyydä maksu
+  // Saattaa heittää virheen &#39;EiRahaa&#39;
+  jaateloKioski.pyydaMaksu(asiakas);
 })
 .then(function(annos) {
-	return asiakas.vastaanotaJaatelo(annos);
+  return asiakas.vastaanotaJaatelo(annos);
 })
-// Käsitellään virheet
-.catch(JaateloMakuLoppunut, function() {})
-.catch(EiRahaa, function() {})
+// Käsitellään virheet, kukin virhe yksitellen.
+.catch(JaateloMakuLoppunut, function() {/* ...*/})
+.catch(EiRahaa, function() {/* ...*/})
 
 &lt;/code&gt;&lt;/pre&gt;
 
@@ -54,20 +54,21 @@ Promise.try(function() {
 
 &lt;p&gt;Esimerkki:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Yksittäisen siirron maksimiaika
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Yksittäisen siirron maksimiaika
 var maksimiSiirtoaika = 2000; // 2 sek
 // Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
 var peliAikaaJaljella = 180000; // 3 min
 
 Promise.try(function() {
-	return pelaaja.teeSiirtosi()
-	.timeout(maksimiSiirtoaika)
-	.timeout(peliAikaaJaljella)
+  return pelaaja.teeSiirtosi()
+  .timeout(maksimiSiirtoaika)
+  .timeout(peliAikaaJaljella)
 })
 .then(/* käsittele siirto ja vähennä peliaikaa */)
 .catch(Promise.TimeoutError, function() {
-	// Pelaaja ei tehnyt siirtoaan ajoissa.
-	// Mutta kumpi timeout laukesi?
+  // Pelaaja ei tehnyt siirtoaan ajoissa.
+  // Mutta kumpi timeout laukesi?
 	
 })
 
@@ -77,29 +78,30 @@ Promise.try(function() {
 
 &lt;p&gt;Ongelmana on, että molemmat ylityksen heittävät identtisen virheobjektin. Itse asiassa Bluebird-kirjasto tekee tuon heiton, joten sitä ei ole helppo edes kontrolloida.&lt;/p&gt;
 
-&lt;h3 id=&#34;ratkaisu&#34;&gt;Ratkaisu&lt;/h3&gt;
+&lt;h3 id=&#34;ratkaisu-muunna-geneerinen-virhetyyppi-domain-spesifiksi-virhetyypiksi&#34;&gt;Ratkaisu: Muunna geneerinen virhetyyppi domain-spesifiksi virhetyypiksi&lt;/h3&gt;
 
 &lt;p&gt;Mutta voimme aina napata toisen heiton ja muuntaa (&lt;strong&gt;translate&lt;/strong&gt;) sen toiseksi virhetyypiksi. Riittää, että asetamme ylimääräisen catch-handlerin sopivaan kohtaan.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Yksittäisen siirron maksimiaika
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Yksittäisen siirron maksimiaika
 var maksimiSiirtoaika = 2000; // 2 sek
 // Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
 var peliAikaaJaljella = 180000; // 3 min
 
 Promise.try(function() {
-	return pelaaja.teeSiirtosi()
-	.timeout(maksimiSiirtoaika)
-	.catch(Promise.TimeoutError, function() {
-	  throw new MaksimiSiirtoAikaYlitetty();
-	})
-	.timeout(peliAikaaJaljella)
+  return pelaaja.teeSiirtosi()
+  .timeout(maksimiSiirtoaika)
+  .catch(Promise.TimeoutError, function() {
+    throw new MaksimiSiirtoAikaYlitetty();
+  })
+  .timeout(peliAikaaJaljella)
 })
 .then(/* käsittele siirto ja vähennä peliaikaa */)
 .catch(Promise.TimeoutError, function() {
-	// Pelaajan kokonaispeliaika umpeutui!	
+  // Pelaajan kokonaispeliaika umpeutui!	
 })
 .catch(MaksimiSiirtoAikaYlitetty, function() {
-	// Pelaajan siirtokohtainen aika umpeutui!	
+  // Pelaajan siirtokohtainen aika umpeutui!	
 })
 
 &lt;/code&gt;&lt;/pre&gt;
@@ -110,29 +112,30 @@ Promise.try(function() {
 
 &lt;p&gt;Bluebird tarjoaa peräti juuri tätä catch+translate -tarkoitusta varten erillisen apumetodin: &lt;strong&gt;catchThrow()&lt;/strong&gt;. Ylläoleva koodi menee muotoon:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Yksittäisen siirron maksimiaika
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Yksittäisen siirron maksimiaika
 var maksimiSiirtoaika = 2000; // 2 sek
 // Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
 var peliAikaaJaljella = 180000; // 3 min
 
 Promise.try(function() {
-	return pelaaja.teeSiirtosi()
-	.timeout(maksimiSiirtoaika)
-	.catchThrow(Promise.TimeoutError, new MaksimiSiirtoAikaYlitetty())
-	.timeout(peliAikaaJaljella)
+  return pelaaja.teeSiirtosi()
+  .timeout(maksimiSiirtoaika)
+  .catchThrow(Promise.TimeoutError, new MaksimiSiirtoAikaYlitetty())
+  .timeout(peliAikaaJaljella)
 })
 .then(/* käsittele siirto ja vähennä peliaikaa */)
 .catch(Promise.TimeoutError, function() {
-	// Pelaajan kokonaispeliaika umpeutui!	
+  // Pelaajan kokonaispeliaika umpeutui!	
 })
 .catch(MaksimiSiirtoAikaYlitetty, function() {
-	// Pelaajan siirtokohtainen aika umpeutui!	
+  // Pelaajan siirtokohtainen aika umpeutui!	
 })
 
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: Ihannearkkitehtuuri myös siirtokohtaisen ajan ylitys muunnettaisiin domain-spesifiin virhetyyppiin. Tällöin emme lupausketjun lopussa nappaisi kiinni geneeristä TimeoutErroria lainkaan, vaan esim. PeliAikaYlitetty-virheen.&lt;/p&gt;
+&lt;p&gt;Loppukaneetti: Ihannearkkitehtuurissa myös siirtokohtaisen ajan ylitys muunnettaisiin domain-spesifiin virhetyyppiin. Tällöin emme lupausketjun lopussa nappaisi kiinni geneeristä TimeoutErroria lainkaan, vaan esim. KokonaisPeliAikaYlitetty-virheen.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>

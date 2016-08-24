@@ -68,8 +68,136 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/implicit-binding/">
+        Laravel injektoi mallin puolestasi
+      </a>
+    </h1>
+
+    <span class="post-date">Wed, Aug 24, 2016</span>
+
+    
+
+<p>Laravel 5.2 -kehys toi mukanaan uuden ominaisuuden nimeltä <em>implicit model binding</em>. Suomennos on vaikea; &ldquo;automaattinen mallin injektointi&rdquo; kuvaa mielestäni parhaiten tuota konseptia.</p>
+
+<p>Sillä konseptin avulla voi pistää Laravellin tekemän raskas työ ja etsimään sopiva malliluokka, luomaan sen pohjalta uusi objekti, ja tarjoamaan objekti ohjelmoijan käyttöön.</p>
+
+<p>Ero implisiittisen mallin injektoinnin ja ns. tavanomaisen koodiratkaisun välillä on seuraava:</p>
+
+<p><strong>Vanha tapa (ei injektointia)</strong></p>
+
+<pre><code class="language-php">
+//routes.php
+
+Route::get('sanomalehdet/{id}', function($id) {
+  // Luodaan *eksplisiittisesti* Sanomalehti-objekti käyttäen id-parametriä.
+  $lehti = Sanomalehti::findOrFail($id);
+
+  return $lehti-&gt;sarjakuvat();
+
+});
+
+</code></pre>
+
+<p><strong>Uusi tapa (injektointi käytössä)</strong></p>
+
+<pre><code class="language-php">
+//routes.php
+
+Route::get('sanomalehdet/{id}', function(Sanomalehti $lehti) {
+  // Meillä on käytössämme Sanomalehti-luokasta luotu $lehti-objekti.
+  // $lehti luotiin automaattisesti id-parametrin perusteella.	
+
+  return $lehti-&gt;sarjakuvat();
+
+});
+
+</code></pre>
+
+<p>Huomaamme eron: vanhassa ratkaisussa <em>erikseen</em> haemme objektin tietokannasta <code>Sanomalehti::find($id)</code>-kutsulla. Uudessa ratkaisussa Laravel-kehys hakee objektin tietokannasta meidän puolestamme.</p>
+
+<p>Kumpikin ratkaisu toimii loppukäyttäjälle samalla tavalla - kutsumme URL-endpointia tyyliin:</p>
+
+<pre><code class="language-php">
+http://www.lehtiapp.fi/sanomalehdet/1
+
+</code></pre>
+
+<p>Objekti siis molemmissa tapauksissa haetaan tietokannasta - ero on vain siinä kuka hakee.</p>
+
+<p>Tarkastalleen vaihe vaiheelta mitä oikeasti pinnan alla tapahtuu tuon URL-endpointin kutsun aikana:</p>
+
+<ol>
+<li>Käyttäjä kirjoittaa URL:n osoiterivilleen.</li>
+<li>Kutsu saapuu Laravel-applikaation HTTP-rajapintaan.</li>
+<li>Laravel ohjaa kutsun määrittämäämme <em>Route::get(&lsquo;sanomalehdet/{id}&rsquo;)</em> callbackiin.</li>
+<li>Pinnan alla Laravel tutkii tuon callbackin parametrilistan ja havaitsee tutkinnan seurauksena, että callback ottaa parametrikseen $lehti-objektin luokkatyyppiä Sanomalehti.</li>
+<li>Laravel laskee yksi yhteen ja hoksaa, että URL:n sisällä tullut id-parametri on sama kuin callbackin parametriksi tulevan Sanomalehti-objektin id-attribuutti.</li>
+<li>Laravel käy hakemassa sopivan Sanomalehti-objektin tietokannasta edelliseen päättelyyn pohjaten. Laravel siis tekee haun tyyliin:</li>
+</ol>
+
+<pre><code class="language-php">
+Sanomalehti::where('id', $id)-&gt;first()
+
+</code></pre>
+
+<p>Kaiken tuon Laravel päättelee sen muutaman millisekunnin aikana, joka HTTP-kutsun vastaanottoon kuluu. Laravellilla on aika nopsat hoksottimet.</p>
+
+<h3 id="id-parametrin-korvaaminen-toisella-attribuutilla">ID-parametrin korvaaminen toisella attribuutilla</h3>
+
+<p>Entä jos haluamme, että voimme osoiteriville kirjoittaa seuraavanlaisen URL-lausekkeen:</p>
+
+<pre><code class="language-php">
+http://www.lehtiapp.fi/sanomalehdet/ristiinalainen
+
+</code></pre>
+
+<p>Koska termi &lsquo;ristiinalainen&rsquo; ei ole id-attribuutti, Laravel-kehys ei löydä oikeaa lehteä sen avulla. Ellemme sitten <em>kerro Laravellille</em>, että haluamme lehden nimen (esim. &lsquo;ristiinalainen&rsquo;) toimivan hakuattribuuttina.</p>
+
+<p>Tämä on mahdollista määrittämällä uusi metodi Sanomalehti-malliin:</p>
+
+<pre><code class="language-php">
+// Sanomalehti.php
+
+class Sanomalehti extends Eloquent {
+	
+	// Määritetään injektointiattribuutti, jota Laravel käyttää 
+	// etsiäkseen oikean objektin tietokannasta.
+	public function getRouteKeyName() {
+		return 'nimi';
+	}
+
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+//routes.php
+
+Route::get('sanomalehdet/{nimi}', function(Sanomalehti $lehti) {
+  // Meillä on käytössämme Sanomalehti-luokasta luotu $lehti-objekti.
+  // $lehti luotiin automaattisesti nimi-parametrin perusteella.	
+
+  return $lehti-&gt;sarjakuvat();
+
+});
+
+</code></pre>
+
+<p>Ylläoleva mahdollistaa meidän kutsuvan HTTP-endpointia tyyliin:</p>
+
+<pre><code class="language-php">
+http://www.lehtiapp.fi/sanomalehdet/ristiinalainen
+
+</code></pre>
+
+<p>Tämä on selkeä loppukäyttäjää helpottava parannus verrattuna aiempaan kutsuumme, jossa tietty lehti eriteltiin id-attribuutin avulla. Nyt lehdet eritellään niiden nimen avulla. Loppukäyttäjä ei osaa yhdistää id-numeroa tiettyyn lehteen. Lehden nimi taas heti kertoo mistä lehdestä on kyse.</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://www.nollaversio.fi/blog/public/nodejs/catch-and-translate/">
-        Catch &#43; Translate
+        Bluebird: Catch &#43; Translate
       </a>
     </h1>
 
@@ -93,16 +221,16 @@ Promise.try(function() {
   return jaateloKioski.rakennaAnnos(maku)
 })
 .tap(function() {
-	// Pyydä maksu
-	// Saattaa heittää virheen 'EiRahaa'
-	jaateloKioski.pyydaMaksu(asiakas);
+  // Pyydä maksu
+  // Saattaa heittää virheen 'EiRahaa'
+  jaateloKioski.pyydaMaksu(asiakas);
 })
 .then(function(annos) {
-	return asiakas.vastaanotaJaatelo(annos);
+  return asiakas.vastaanotaJaatelo(annos);
 })
-// Käsitellään virheet
-.catch(JaateloMakuLoppunut, function() {})
-.catch(EiRahaa, function() {})
+// Käsitellään virheet, kukin virhe yksitellen.
+.catch(JaateloMakuLoppunut, function() {/* ...*/})
+.catch(EiRahaa, function() {/* ...*/})
 
 </code></pre>
 
@@ -114,20 +242,21 @@ Promise.try(function() {
 
 <p>Esimerkki:</p>
 
-<pre><code class="language-javascript">// Yksittäisen siirron maksimiaika
+<pre><code class="language-javascript">
+// Yksittäisen siirron maksimiaika
 var maksimiSiirtoaika = 2000; // 2 sek
 // Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
 var peliAikaaJaljella = 180000; // 3 min
 
 Promise.try(function() {
-	return pelaaja.teeSiirtosi()
-	.timeout(maksimiSiirtoaika)
-	.timeout(peliAikaaJaljella)
+  return pelaaja.teeSiirtosi()
+  .timeout(maksimiSiirtoaika)
+  .timeout(peliAikaaJaljella)
 })
 .then(/* käsittele siirto ja vähennä peliaikaa */)
 .catch(Promise.TimeoutError, function() {
-	// Pelaaja ei tehnyt siirtoaan ajoissa.
-	// Mutta kumpi timeout laukesi?
+  // Pelaaja ei tehnyt siirtoaan ajoissa.
+  // Mutta kumpi timeout laukesi?
 	
 })
 
@@ -137,29 +266,30 @@ Promise.try(function() {
 
 <p>Ongelmana on, että molemmat ylityksen heittävät identtisen virheobjektin. Itse asiassa Bluebird-kirjasto tekee tuon heiton, joten sitä ei ole helppo edes kontrolloida.</p>
 
-<h3 id="ratkaisu">Ratkaisu</h3>
+<h3 id="ratkaisu-muunna-geneerinen-virhetyyppi-domain-spesifiksi-virhetyypiksi">Ratkaisu: Muunna geneerinen virhetyyppi domain-spesifiksi virhetyypiksi</h3>
 
 <p>Mutta voimme aina napata toisen heiton ja muuntaa (<strong>translate</strong>) sen toiseksi virhetyypiksi. Riittää, että asetamme ylimääräisen catch-handlerin sopivaan kohtaan.</p>
 
-<pre><code class="language-javascript">// Yksittäisen siirron maksimiaika
+<pre><code class="language-javascript">
+// Yksittäisen siirron maksimiaika
 var maksimiSiirtoaika = 2000; // 2 sek
 // Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
 var peliAikaaJaljella = 180000; // 3 min
 
 Promise.try(function() {
-	return pelaaja.teeSiirtosi()
-	.timeout(maksimiSiirtoaika)
-	.catch(Promise.TimeoutError, function() {
-	  throw new MaksimiSiirtoAikaYlitetty();
-	})
-	.timeout(peliAikaaJaljella)
+  return pelaaja.teeSiirtosi()
+  .timeout(maksimiSiirtoaika)
+  .catch(Promise.TimeoutError, function() {
+    throw new MaksimiSiirtoAikaYlitetty();
+  })
+  .timeout(peliAikaaJaljella)
 })
 .then(/* käsittele siirto ja vähennä peliaikaa */)
 .catch(Promise.TimeoutError, function() {
-	// Pelaajan kokonaispeliaika umpeutui!	
+  // Pelaajan kokonaispeliaika umpeutui!	
 })
 .catch(MaksimiSiirtoAikaYlitetty, function() {
-	// Pelaajan siirtokohtainen aika umpeutui!	
+  // Pelaajan siirtokohtainen aika umpeutui!	
 })
 
 </code></pre>
@@ -170,29 +300,30 @@ Promise.try(function() {
 
 <p>Bluebird tarjoaa peräti juuri tätä catch+translate -tarkoitusta varten erillisen apumetodin: <strong>catchThrow()</strong>. Ylläoleva koodi menee muotoon:</p>
 
-<pre><code class="language-javascript">// Yksittäisen siirron maksimiaika
+<pre><code class="language-javascript">
+// Yksittäisen siirron maksimiaika
 var maksimiSiirtoaika = 2000; // 2 sek
 // Koko peliin (=pelaajaan kaikkiin siirtoihin) varattu maksimiaika
 var peliAikaaJaljella = 180000; // 3 min
 
 Promise.try(function() {
-	return pelaaja.teeSiirtosi()
-	.timeout(maksimiSiirtoaika)
-	.catchThrow(Promise.TimeoutError, new MaksimiSiirtoAikaYlitetty())
-	.timeout(peliAikaaJaljella)
+  return pelaaja.teeSiirtosi()
+  .timeout(maksimiSiirtoaika)
+  .catchThrow(Promise.TimeoutError, new MaksimiSiirtoAikaYlitetty())
+  .timeout(peliAikaaJaljella)
 })
 .then(/* käsittele siirto ja vähennä peliaikaa */)
 .catch(Promise.TimeoutError, function() {
-	// Pelaajan kokonaispeliaika umpeutui!	
+  // Pelaajan kokonaispeliaika umpeutui!	
 })
 .catch(MaksimiSiirtoAikaYlitetty, function() {
-	// Pelaajan siirtokohtainen aika umpeutui!	
+  // Pelaajan siirtokohtainen aika umpeutui!	
 })
 
 </code></pre>
 
 <blockquote>
-<p>Loppukaneetti: Ihannearkkitehtuuri myös siirtokohtaisen ajan ylitys muunnettaisiin domain-spesifiin virhetyyppiin. Tällöin emme lupausketjun lopussa nappaisi kiinni geneeristä TimeoutErroria lainkaan, vaan esim. PeliAikaYlitetty-virheen.</p>
+<p>Loppukaneetti: Ihannearkkitehtuurissa myös siirtokohtaisen ajan ylitys muunnettaisiin domain-spesifiin virhetyyppiin. Tällöin emme lupausketjun lopussa nappaisi kiinni geneeristä TimeoutErroria lainkaan, vaan esim. KokonaisPeliAikaYlitetty-virheen.</p>
 </blockquote>
 
   </div>

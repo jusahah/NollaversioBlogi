@@ -27,7 +27,7 @@ Promise.try(function() {
   jaateloKioski.pyydaMaksu(asiakas);
 })
 .then(function(annos) {
-	return asiakas.vastaanotaJaatelo(annos);
+  return asiakas.vastaanotaJaatelo(annos);
 })
 // Käsitellään virheet, kukin virhe yksitellen.
 .catch(JaateloMakuLoppunut, function() {/* ...*/})
@@ -127,4 +127,4 @@ Promise.try(function() {
 
 ```
 
-> Loppukaneetti: Ihannearkkitehtuuri myös siirtokohtaisen ajan ylitys muunnettaisiin domain-spesifiin virhetyyppiin. Tällöin emme lupausketjun lopussa nappaisi kiinni geneeristä TimeoutErroria lainkaan, vaan esim. KokonaisPeliAikaYlitetty-virheen.
+> Loppukaneetti: Ihannearkkitehtuurissa myös siirtokohtaisen ajan ylitys muunnettaisiin domain-spesifiin virhetyyppiin. Tällöin emme lupausketjun lopussa nappaisi kiinni geneeristä TimeoutErroria lainkaan, vaan esim. KokonaisPeliAikaYlitetty-virheen.

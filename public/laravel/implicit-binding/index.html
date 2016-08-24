@@ -1,0 +1,198 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Laravel injektoi mallin puolestasi &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Laravel injektoi mallin puolestasi</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Wed, Aug 24, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Laravel 5.2 -kehys toi mukanaan uuden ominaisuuden nimeltä <em>implicit model binding</em>. Suomennos on vaikea; &ldquo;automaattinen mallin injektointi&rdquo; kuvaa mielestäni parhaiten tuota konseptia.</p>
+
+<p>Sillä konseptin avulla voi pistää Laravellin tekemän raskas työ ja etsimään sopiva malliluokka, luomaan sen pohjalta uusi objekti, ja tarjoamaan objekti ohjelmoijan käyttöön.</p>
+
+<p>Ero implisiittisen mallin injektoinnin ja ns. tavanomaisen koodiratkaisun välillä on seuraava:</p>
+
+<p><strong>Vanha tapa (ei injektointia)</strong></p>
+
+<pre><code class="language-php">
+//routes.php
+
+Route::get('sanomalehdet/{id}', function($id) {
+  // Luodaan *eksplisiittisesti* Sanomalehti-objekti käyttäen id-parametriä.
+  $lehti = Sanomalehti::findOrFail($id);
+
+  return $lehti-&gt;sarjakuvat();
+
+});
+
+</code></pre>
+
+<p><strong>Uusi tapa (injektointi käytössä)</strong></p>
+
+<pre><code class="language-php">
+//routes.php
+
+Route::get('sanomalehdet/{id}', function(Sanomalehti $lehti) {
+  // Meillä on käytössämme Sanomalehti-luokasta luotu $lehti-objekti.
+  // $lehti luotiin automaattisesti id-parametrin perusteella.	
+
+  return $lehti-&gt;sarjakuvat();
+
+});
+
+</code></pre>
+
+<p>Huomaamme eron: vanhassa ratkaisussa <em>erikseen</em> haemme objektin tietokannasta <code>Sanomalehti::find($id)</code>-kutsulla. Uudessa ratkaisussa Laravel-kehys hakee objektin tietokannasta meidän puolestamme.</p>
+
+<p>Kumpikin ratkaisu toimii loppukäyttäjälle samalla tavalla - kutsumme URL-endpointia tyyliin:</p>
+
+<pre><code class="language-php">
+http://www.lehtiapp.fi/sanomalehdet/1
+
+</code></pre>
+
+<p>Objekti siis molemmissa tapauksissa haetaan tietokannasta - ero on vain siinä kuka hakee.</p>
+
+<p>Tarkastalleen vaihe vaiheelta mitä oikeasti pinnan alla tapahtuu tuon URL-endpointin kutsun aikana:</p>
+
+<ol>
+<li>Käyttäjä kirjoittaa URL:n osoiterivilleen.</li>
+<li>Kutsu saapuu Laravel-applikaation HTTP-rajapintaan.</li>
+<li>Laravel ohjaa kutsun määrittämäämme <em>Route::get(&lsquo;sanomalehdet/{id}&rsquo;)</em> callbackiin.</li>
+<li>Pinnan alla Laravel tutkii tuon callbackin parametrilistan ja havaitsee tutkinnan seurauksena, että callback ottaa parametrikseen $lehti-objektin luokkatyyppiä Sanomalehti.</li>
+<li>Laravel laskee yksi yhteen ja hoksaa, että URL:n sisällä tullut id-parametri on sama kuin callbackin parametriksi tulevan Sanomalehti-objektin id-attribuutti.</li>
+<li>Laravel käy hakemassa sopivan Sanomalehti-objektin tietokannasta edelliseen päättelyyn pohjaten. Laravel siis tekee haun tyyliin:</li>
+</ol>
+
+<pre><code class="language-php">
+Sanomalehti::where('id', $id)-&gt;first()
+
+</code></pre>
+
+<p>Kaiken tuon Laravel päättelee sen muutaman millisekunnin aikana, joka HTTP-kutsun vastaanottoon kuluu. Laravellilla on aika nopsat hoksottimet.</p>
+
+<h3 id="id-parametrin-korvaaminen-toisella-attribuutilla">ID-parametrin korvaaminen toisella attribuutilla</h3>
+
+<p>Entä jos haluamme, että voimme osoiteriville kirjoittaa seuraavanlaisen URL-lausekkeen:</p>
+
+<pre><code class="language-php">
+http://www.lehtiapp.fi/sanomalehdet/ristiinalainen
+
+</code></pre>
+
+<p>Koska termi &lsquo;ristiinalainen&rsquo; ei ole id-attribuutti, Laravel-kehys ei löydä oikeaa lehteä sen avulla. Ellemme sitten <em>kerro Laravellille</em>, että haluamme lehden nimen (esim. &lsquo;ristiinalainen&rsquo;) toimivan hakuattribuuttina.</p>
+
+<p>Tämä on mahdollista määrittämällä uusi metodi Sanomalehti-malliin:</p>
+
+<pre><code class="language-php">
+// Sanomalehti.php
+
+class Sanomalehti extends Eloquent {
+	
+	// Määritetään injektointiattribuutti, jota Laravel käyttää 
+	// etsiäkseen oikean objektin tietokannasta.
+	public function getRouteKeyName() {
+		return 'nimi';
+	}
+
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+//routes.php
+
+Route::get('sanomalehdet/{nimi}', function(Sanomalehti $lehti) {
+  // Meillä on käytössämme Sanomalehti-luokasta luotu $lehti-objekti.
+  // $lehti luotiin automaattisesti nimi-parametrin perusteella.	
+
+  return $lehti-&gt;sarjakuvat();
+
+});
+
+</code></pre>
+
+<p>Ylläoleva mahdollistaa meidän kutsuvan HTTP-endpointia tyyliin:</p>
+
+<pre><code class="language-php">
+http://www.lehtiapp.fi/sanomalehdet/ristiinalainen
+
+</code></pre>
+
+<p>Tämä on selkeä loppukäyttäjää helpottava parannus verrattuna aiempaan kutsuumme, jossa tietty lehti eriteltiin id-attribuutin avulla. Nyt lehdet eritellään niiden nimen avulla. Loppukäyttäjä ei osaa yhdistää id-numeroa tiettyyn lehteen. Lehden nimi taas heti kertoo mistä lehdestä on kyse.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

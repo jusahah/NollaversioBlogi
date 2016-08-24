@@ -6,8 +6,133 @@
     <description>Recent content in Laravels on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Fri, 19 Aug 2016 06:26:46 +0300</lastBuildDate>
+    <lastBuildDate>Wed, 24 Aug 2016 06:36:45 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Laravel injektoi mallin puolestasi</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/implicit-binding/</link>
+      <pubDate>Wed, 24 Aug 2016 06:36:45 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/implicit-binding/</guid>
+      <description>
+
+&lt;p&gt;Laravel 5.2 -kehys toi mukanaan uuden ominaisuuden nimeltä &lt;em&gt;implicit model binding&lt;/em&gt;. Suomennos on vaikea; &amp;ldquo;automaattinen mallin injektointi&amp;rdquo; kuvaa mielestäni parhaiten tuota konseptia.&lt;/p&gt;
+
+&lt;p&gt;Sillä konseptin avulla voi pistää Laravellin tekemän raskas työ ja etsimään sopiva malliluokka, luomaan sen pohjalta uusi objekti, ja tarjoamaan objekti ohjelmoijan käyttöön.&lt;/p&gt;
+
+&lt;p&gt;Ero implisiittisen mallin injektoinnin ja ns. tavanomaisen koodiratkaisun välillä on seuraava:&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Vanha tapa (ei injektointia)&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+//routes.php
+
+Route::get(&#39;sanomalehdet/{id}&#39;, function($id) {
+  // Luodaan *eksplisiittisesti* Sanomalehti-objekti käyttäen id-parametriä.
+  $lehti = Sanomalehti::findOrFail($id);
+
+  return $lehti-&amp;gt;sarjakuvat();
+
+});
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Uusi tapa (injektointi käytössä)&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+//routes.php
+
+Route::get(&#39;sanomalehdet/{id}&#39;, function(Sanomalehti $lehti) {
+  // Meillä on käytössämme Sanomalehti-luokasta luotu $lehti-objekti.
+  // $lehti luotiin automaattisesti id-parametrin perusteella.	
+
+  return $lehti-&amp;gt;sarjakuvat();
+
+});
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Huomaamme eron: vanhassa ratkaisussa &lt;em&gt;erikseen&lt;/em&gt; haemme objektin tietokannasta &lt;code&gt;Sanomalehti::find($id)&lt;/code&gt;-kutsulla. Uudessa ratkaisussa Laravel-kehys hakee objektin tietokannasta meidän puolestamme.&lt;/p&gt;
+
+&lt;p&gt;Kumpikin ratkaisu toimii loppukäyttäjälle samalla tavalla - kutsumme URL-endpointia tyyliin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+http://www.lehtiapp.fi/sanomalehdet/1
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Objekti siis molemmissa tapauksissa haetaan tietokannasta - ero on vain siinä kuka hakee.&lt;/p&gt;
+
+&lt;p&gt;Tarkastalleen vaihe vaiheelta mitä oikeasti pinnan alla tapahtuu tuon URL-endpointin kutsun aikana:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Käyttäjä kirjoittaa URL:n osoiterivilleen.&lt;/li&gt;
+&lt;li&gt;Kutsu saapuu Laravel-applikaation HTTP-rajapintaan.&lt;/li&gt;
+&lt;li&gt;Laravel ohjaa kutsun määrittämäämme &lt;em&gt;Route::get(&amp;lsquo;sanomalehdet/{id}&amp;rsquo;)&lt;/em&gt; callbackiin.&lt;/li&gt;
+&lt;li&gt;Pinnan alla Laravel tutkii tuon callbackin parametrilistan ja havaitsee tutkinnan seurauksena, että callback ottaa parametrikseen $lehti-objektin luokkatyyppiä Sanomalehti.&lt;/li&gt;
+&lt;li&gt;Laravel laskee yksi yhteen ja hoksaa, että URL:n sisällä tullut id-parametri on sama kuin callbackin parametriksi tulevan Sanomalehti-objektin id-attribuutti.&lt;/li&gt;
+&lt;li&gt;Laravel käy hakemassa sopivan Sanomalehti-objektin tietokannasta edelliseen päättelyyn pohjaten. Laravel siis tekee haun tyyliin:&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+Sanomalehti::where(&#39;id&#39;, $id)-&amp;gt;first()
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kaiken tuon Laravel päättelee sen muutaman millisekunnin aikana, joka HTTP-kutsun vastaanottoon kuluu. Laravellilla on aika nopsat hoksottimet.&lt;/p&gt;
+
+&lt;h3 id=&#34;id-parametrin-korvaaminen-toisella-attribuutilla&#34;&gt;ID-parametrin korvaaminen toisella attribuutilla&lt;/h3&gt;
+
+&lt;p&gt;Entä jos haluamme, että voimme osoiteriville kirjoittaa seuraavanlaisen URL-lausekkeen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+http://www.lehtiapp.fi/sanomalehdet/ristiinalainen
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Koska termi &amp;lsquo;ristiinalainen&amp;rsquo; ei ole id-attribuutti, Laravel-kehys ei löydä oikeaa lehteä sen avulla. Ellemme sitten &lt;em&gt;kerro Laravellille&lt;/em&gt;, että haluamme lehden nimen (esim. &amp;lsquo;ristiinalainen&amp;rsquo;) toimivan hakuattribuuttina.&lt;/p&gt;
+
+&lt;p&gt;Tämä on mahdollista määrittämällä uusi metodi Sanomalehti-malliin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Sanomalehti.php
+
+class Sanomalehti extends Eloquent {
+	
+	// Määritetään injektointiattribuutti, jota Laravel käyttää 
+	// etsiäkseen oikean objektin tietokannasta.
+	public function getRouteKeyName() {
+		return &#39;nimi&#39;;
+	}
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+//routes.php
+
+Route::get(&#39;sanomalehdet/{nimi}&#39;, function(Sanomalehti $lehti) {
+  // Meillä on käytössämme Sanomalehti-luokasta luotu $lehti-objekti.
+  // $lehti luotiin automaattisesti nimi-parametrin perusteella.	
+
+  return $lehti-&amp;gt;sarjakuvat();
+
+});
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva mahdollistaa meidän kutsuvan HTTP-endpointia tyyliin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+http://www.lehtiapp.fi/sanomalehdet/ristiinalainen
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tämä on selkeä loppukäyttäjää helpottava parannus verrattuna aiempaan kutsuumme, jossa tietty lehti eriteltiin id-attribuutin avulla. Nyt lehdet eritellään niiden nimen avulla. Loppukäyttäjä ei osaa yhdistää id-numeroa tiettyyn lehteen. Lehden nimi taas heti kertoo mistä lehdestä on kyse.&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Slack and Laravel</title>
