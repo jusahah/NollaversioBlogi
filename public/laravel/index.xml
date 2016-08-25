@@ -6,8 +6,141 @@
     <description>Recent content in Laravels on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Wed, 24 Aug 2016 06:36:45 +0300</lastBuildDate>
+    <lastBuildDate>Thu, 25 Aug 2016 06:22:35 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Monikielisyys Laravel-kehyksen turvin</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/language-selection/</link>
+      <pubDate>Thu, 25 Aug 2016 06:22:35 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/language-selection/</guid>
+      <description>
+
+&lt;p&gt;Tyypillinen web-applikaatio tarjoaa käyttäjilleen HTML-sivuista koostuvan käyttöliittymän. Tuo käyttöliittymä sisältää luonnollisesti tekstiä. Monet pienemmät ohjelmistot sisältävät tekstin ainoastaan ensisijaisen käyttäjäryhmän äidinkielellä, mutta suuremmat ohjelmistot ovat lähes poikkeuksetta &lt;em&gt;monikielisiä&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Monikielisyys toteutetaan loppukäyttäjän kannalta usein niin, että käyttöliittymän yläpalkissa (tai vastaavassa) on valikko, josta kielivalinnan voi määrittää.&lt;/p&gt;
+
+&lt;p&gt;Laravel tekee kielivalintojen käytöstä helppoa. Monikielisyys pohjaa kahteen toimenpiteeseen:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;Määritä kullekin kielivalinnalle oma &lt;em&gt;kielihakemisto&lt;/em&gt;, joka sisältää käännökset (joko yhdessä tai useammassa tiedostossa) kaikkiin käyttöliittymässä esiintyviin tekstipätkiin. Oleellista on, että kunkin kielihakemiston sisäinen tiedostorakenne on samankaltainen muiden kielihakemistojen kanssa.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Koodaa käyttöliittymä siten, että kaikkialla viitataan tiettyyn käännöstiedoston nimeen. Ei siis tiettyyn käännöstiedostoon (eli &lt;em&gt;tiedoston täydelliseen tiedostopolkuun&lt;/em&gt;), vaan ainoastaan tiedostonimeen. Missään &lt;strong&gt;ei&lt;/strong&gt; aktiivisesti viitata tiettyyn kielihakemistoon. Kielihakemiston valinnan hoitaa Laravel pinnan alla.&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Käytännössä siis kullekin kielelle luodaan ensin oma hakemisto. Tuonne hakemistoon luodaan kielitiedostot.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// resources/lang/en/tervehdykset.php
+
+return [
+  &#39;tervetuloviesti&#39; =&amp;gt; &#39;Hi and Welcome!&#39;
+];
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// resources/lang/fi/tervehdykset.php
+
+return [
+  &#39;tervetuloviesti&#39; =&amp;gt; &#39;Tervetuloa!&#39;
+];
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Nyt kaikkialla applikaation käyttöliittymän koodipohjassa viittamme tuohon lista-indeksiin &lt;em&gt;tervetuloviesti&lt;/em&gt;. Pinnan alla Laravel osaa tällä tavoin hakea oikean tekstin riippuen siitä, mikä kieli on kulloinkin valittuna.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// resources/views/etusivu.blade.php
+
+&amp;lt;h1&amp;gt;{{trans(&#39;tervehdykset.tervetuloviesti&#39;)}}&amp;lt;/h1&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva tuottaa loppukäyttäjän näkyville joko h1-tagilla ympäröidyn tekstin &lt;em&gt;Hi and Welcome!&lt;/em&gt; (mikäli englanti on valittuna), tai &lt;em&gt;Tervetuloa!&lt;/em&gt; (mikäli suomi valittuna).&lt;/p&gt;
+
+&lt;p&gt;Huomaa funktiokutsu &lt;em&gt;trans()&lt;/em&gt;, joka suorittaa käännöksen.&lt;/p&gt;
+
+&lt;h3 id=&#34;miten-laravel-päättää-mikä-kieli-on-kulloinkin-valittuna&#34;&gt;Miten Laravel päättää mikä kieli on kulloinkin valittuna?&lt;/h3&gt;
+
+&lt;p&gt;Yllä oletimme, että Laravel on valinnut tietyn kielen käyttöönsä, ja sen valinnan perusteella käy hakemassa &lt;em&gt;oikeasta hakemistosta&lt;/em&gt; tarvittavan käännöstekstin.&lt;/p&gt;
+
+&lt;p&gt;Vakiokielivalinnan voi kertoa Laravellille helposti suoraan config-tiedostossa:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// config/app.php
+
+// Muut asetukset...
+
+// Applikaation vakiokieli
+&#39;fallback_locale&#39; =&amp;gt; &#39;en&#39;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Asettamalla config-tiedoston vakiokieleksi englannin (en), Laravel osaa käyttää englannin käännöksiä &lt;em&gt;ellei sitä toisin ohjeisteta&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Nyt sitten kysymys kuuluukin, kuinka ohjeistaa Laravellia toisin? Entä jos haluamme suomen käännökset käyttöön?&lt;/p&gt;
+
+&lt;p&gt;Kätevin tapa lienee koodata tieto käyttäjän kielitoiveesta suoraan osaksi URL-osoitetta:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// routes.php
+
+Route::group([
+  &#39;prefix&#39; =&amp;gt; &#39;app/{kielivalinta}&#39;, 
+  &#39;middleware&#39; =&amp;gt; &#39;asetaKieli&#39;], 
+  function() {
+    Route::get(&#39;front&#39;, function() {/* ... */});
+    // jne.
+  }
+)
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// app/Http/Middleware/Asetakieli.php
+
+// Tämä middleware pitää muistaa rekisteröidä Laravellin käyttöön.
+
+namespace App\Http\Middleware;
+
+use Closure;
+
+class AsetaKieli {
+
+  public function handle($request, Closure $next) {
+    // Aseta kielivalinta
+    \App::setLocale($request-&amp;gt;route(&#39;kielivalinta&#39;));
+    return next($request);
+  }
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevan ansiosta voimme helposti määrittää haluamamme kielen osana URL-osoitetta:&lt;/p&gt;
+
+&lt;p&gt;Suomi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;http://www.testiohjelma.fi/app/fi/front
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Englanti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;http://www.testiohjelma.fi/app/en/front
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: koodissa viittasimme muuttujaan/lista-indeksiin nimeltä &amp;ldquo;tervetuloviesti&amp;rdquo;. Tämä muuttujan nimi on siis koodissa suomeksi. Pitäisikö myös tälle olla käännös? Ei, sillä loppukäyttäjä ei koskaan näe koodin sisällä käytettäviä muuttujien nimiä.&lt;/p&gt;
+
+&lt;p&gt;Nyrkkisääntönä on, että koodin muuttujien nimet määritetään englanniksi, koska valtaosa ohjelmoijista käyttää englantia työkielenään. Mikään pakko näin ei ole toimia tietenkään.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Laravel injektoi mallin puolestasi</title>

@@ -1,0 +1,206 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Monikielisyys Laravel-kehyksen turvin &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Monikielisyys Laravel-kehyksen turvin</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Thu, Aug 25, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Tyypillinen web-applikaatio tarjoaa käyttäjilleen HTML-sivuista koostuvan käyttöliittymän. Tuo käyttöliittymä sisältää luonnollisesti tekstiä. Monet pienemmät ohjelmistot sisältävät tekstin ainoastaan ensisijaisen käyttäjäryhmän äidinkielellä, mutta suuremmat ohjelmistot ovat lähes poikkeuksetta <em>monikielisiä</em>.</p>
+
+<p>Monikielisyys toteutetaan loppukäyttäjän kannalta usein niin, että käyttöliittymän yläpalkissa (tai vastaavassa) on valikko, josta kielivalinnan voi määrittää.</p>
+
+<p>Laravel tekee kielivalintojen käytöstä helppoa. Monikielisyys pohjaa kahteen toimenpiteeseen:</p>
+
+<ol>
+<li><p>Määritä kullekin kielivalinnalle oma <em>kielihakemisto</em>, joka sisältää käännökset (joko yhdessä tai useammassa tiedostossa) kaikkiin käyttöliittymässä esiintyviin tekstipätkiin. Oleellista on, että kunkin kielihakemiston sisäinen tiedostorakenne on samankaltainen muiden kielihakemistojen kanssa.</p></li>
+
+<li><p>Koodaa käyttöliittymä siten, että kaikkialla viitataan tiettyyn käännöstiedoston nimeen. Ei siis tiettyyn käännöstiedostoon (eli <em>tiedoston täydelliseen tiedostopolkuun</em>), vaan ainoastaan tiedostonimeen. Missään <strong>ei</strong> aktiivisesti viitata tiettyyn kielihakemistoon. Kielihakemiston valinnan hoitaa Laravel pinnan alla.</p></li>
+</ol>
+
+<p>Käytännössä siis kullekin kielelle luodaan ensin oma hakemisto. Tuonne hakemistoon luodaan kielitiedostot.</p>
+
+<pre><code class="language-php">
+// resources/lang/en/tervehdykset.php
+
+return [
+  'tervetuloviesti' =&gt; 'Hi and Welcome!'
+];
+
+</code></pre>
+
+<pre><code class="language-php">
+// resources/lang/fi/tervehdykset.php
+
+return [
+  'tervetuloviesti' =&gt; 'Tervetuloa!'
+];
+
+
+</code></pre>
+
+<p>Nyt kaikkialla applikaation käyttöliittymän koodipohjassa viittamme tuohon lista-indeksiin <em>tervetuloviesti</em>. Pinnan alla Laravel osaa tällä tavoin hakea oikean tekstin riippuen siitä, mikä kieli on kulloinkin valittuna.</p>
+
+<pre><code class="language-php">
+// resources/views/etusivu.blade.php
+
+&lt;h1&gt;{{trans('tervehdykset.tervetuloviesti')}}&lt;/h1&gt;
+
+</code></pre>
+
+<p>Ylläoleva tuottaa loppukäyttäjän näkyville joko h1-tagilla ympäröidyn tekstin <em>Hi and Welcome!</em> (mikäli englanti on valittuna), tai <em>Tervetuloa!</em> (mikäli suomi valittuna).</p>
+
+<p>Huomaa funktiokutsu <em>trans()</em>, joka suorittaa käännöksen.</p>
+
+<h3 id="miten-laravel-päättää-mikä-kieli-on-kulloinkin-valittuna">Miten Laravel päättää mikä kieli on kulloinkin valittuna?</h3>
+
+<p>Yllä oletimme, että Laravel on valinnut tietyn kielen käyttöönsä, ja sen valinnan perusteella käy hakemassa <em>oikeasta hakemistosta</em> tarvittavan käännöstekstin.</p>
+
+<p>Vakiokielivalinnan voi kertoa Laravellille helposti suoraan config-tiedostossa:</p>
+
+<pre><code class="language-php">
+// config/app.php
+
+// Muut asetukset...
+
+// Applikaation vakiokieli
+'fallback_locale' =&gt; 'en'
+
+</code></pre>
+
+<p>Asettamalla config-tiedoston vakiokieleksi englannin (en), Laravel osaa käyttää englannin käännöksiä <em>ellei sitä toisin ohjeisteta</em>.</p>
+
+<p>Nyt sitten kysymys kuuluukin, kuinka ohjeistaa Laravellia toisin? Entä jos haluamme suomen käännökset käyttöön?</p>
+
+<p>Kätevin tapa lienee koodata tieto käyttäjän kielitoiveesta suoraan osaksi URL-osoitetta:</p>
+
+<pre><code class="language-php">
+// routes.php
+
+Route::group([
+  'prefix' =&gt; 'app/{kielivalinta}', 
+  'middleware' =&gt; 'asetaKieli'], 
+  function() {
+    Route::get('front', function() {/* ... */});
+    // jne.
+  }
+)
+
+</code></pre>
+
+<pre><code class="language-php">
+// app/Http/Middleware/Asetakieli.php
+
+// Tämä middleware pitää muistaa rekisteröidä Laravellin käyttöön.
+
+namespace App\Http\Middleware;
+
+use Closure;
+
+class AsetaKieli {
+
+  public function handle($request, Closure $next) {
+    // Aseta kielivalinta
+    \App::setLocale($request-&gt;route('kielivalinta'));
+    return next($request);
+  }
+
+}
+
+</code></pre>
+
+<p>Ylläolevan ansiosta voimme helposti määrittää haluamamme kielen osana URL-osoitetta:</p>
+
+<p>Suomi:</p>
+
+<pre><code>http://www.testiohjelma.fi/app/fi/front
+
+</code></pre>
+
+<p>Englanti:</p>
+
+<pre><code>http://www.testiohjelma.fi/app/en/front
+
+</code></pre>
+
+<blockquote>
+<p>Loppukaneetti: koodissa viittasimme muuttujaan/lista-indeksiin nimeltä &ldquo;tervetuloviesti&rdquo;. Tämä muuttujan nimi on siis koodissa suomeksi. Pitäisikö myös tälle olla käännös? Ei, sillä loppukäyttäjä ei koskaan näe koodin sisällä käytettäviä muuttujien nimiä.</p>
+
+<p>Nyrkkisääntönä on, että koodin muuttujien nimet määritetään englanniksi, koska valtaosa ohjelmoijista käyttää englantia työkielenään. Mikään pakko näin ei ole toimia tietenkään.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

@@ -68,6 +68,142 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/language-selection/">
+        Monikielisyys Laravel-kehyksen turvin
+      </a>
+    </h1>
+
+    <span class="post-date">Thu, Aug 25, 2016</span>
+
+    
+
+<p>Tyypillinen web-applikaatio tarjoaa käyttäjilleen HTML-sivuista koostuvan käyttöliittymän. Tuo käyttöliittymä sisältää luonnollisesti tekstiä. Monet pienemmät ohjelmistot sisältävät tekstin ainoastaan ensisijaisen käyttäjäryhmän äidinkielellä, mutta suuremmat ohjelmistot ovat lähes poikkeuksetta <em>monikielisiä</em>.</p>
+
+<p>Monikielisyys toteutetaan loppukäyttäjän kannalta usein niin, että käyttöliittymän yläpalkissa (tai vastaavassa) on valikko, josta kielivalinnan voi määrittää.</p>
+
+<p>Laravel tekee kielivalintojen käytöstä helppoa. Monikielisyys pohjaa kahteen toimenpiteeseen:</p>
+
+<ol>
+<li><p>Määritä kullekin kielivalinnalle oma <em>kielihakemisto</em>, joka sisältää käännökset (joko yhdessä tai useammassa tiedostossa) kaikkiin käyttöliittymässä esiintyviin tekstipätkiin. Oleellista on, että kunkin kielihakemiston sisäinen tiedostorakenne on samankaltainen muiden kielihakemistojen kanssa.</p></li>
+
+<li><p>Koodaa käyttöliittymä siten, että kaikkialla viitataan tiettyyn käännöstiedoston nimeen. Ei siis tiettyyn käännöstiedostoon (eli <em>tiedoston täydelliseen tiedostopolkuun</em>), vaan ainoastaan tiedostonimeen. Missään <strong>ei</strong> aktiivisesti viitata tiettyyn kielihakemistoon. Kielihakemiston valinnan hoitaa Laravel pinnan alla.</p></li>
+</ol>
+
+<p>Käytännössä siis kullekin kielelle luodaan ensin oma hakemisto. Tuonne hakemistoon luodaan kielitiedostot.</p>
+
+<pre><code class="language-php">
+// resources/lang/en/tervehdykset.php
+
+return [
+  'tervetuloviesti' =&gt; 'Hi and Welcome!'
+];
+
+</code></pre>
+
+<pre><code class="language-php">
+// resources/lang/fi/tervehdykset.php
+
+return [
+  'tervetuloviesti' =&gt; 'Tervetuloa!'
+];
+
+
+</code></pre>
+
+<p>Nyt kaikkialla applikaation käyttöliittymän koodipohjassa viittamme tuohon lista-indeksiin <em>tervetuloviesti</em>. Pinnan alla Laravel osaa tällä tavoin hakea oikean tekstin riippuen siitä, mikä kieli on kulloinkin valittuna.</p>
+
+<pre><code class="language-php">
+// resources/views/etusivu.blade.php
+
+&lt;h1&gt;{{trans('tervehdykset.tervetuloviesti')}}&lt;/h1&gt;
+
+</code></pre>
+
+<p>Ylläoleva tuottaa loppukäyttäjän näkyville joko h1-tagilla ympäröidyn tekstin <em>Hi and Welcome!</em> (mikäli englanti on valittuna), tai <em>Tervetuloa!</em> (mikäli suomi valittuna).</p>
+
+<p>Huomaa funktiokutsu <em>trans()</em>, joka suorittaa käännöksen.</p>
+
+<h3 id="miten-laravel-päättää-mikä-kieli-on-kulloinkin-valittuna">Miten Laravel päättää mikä kieli on kulloinkin valittuna?</h3>
+
+<p>Yllä oletimme, että Laravel on valinnut tietyn kielen käyttöönsä, ja sen valinnan perusteella käy hakemassa <em>oikeasta hakemistosta</em> tarvittavan käännöstekstin.</p>
+
+<p>Vakiokielivalinnan voi kertoa Laravellille helposti suoraan config-tiedostossa:</p>
+
+<pre><code class="language-php">
+// config/app.php
+
+// Muut asetukset...
+
+// Applikaation vakiokieli
+'fallback_locale' =&gt; 'en'
+
+</code></pre>
+
+<p>Asettamalla config-tiedoston vakiokieleksi englannin (en), Laravel osaa käyttää englannin käännöksiä <em>ellei sitä toisin ohjeisteta</em>.</p>
+
+<p>Nyt sitten kysymys kuuluukin, kuinka ohjeistaa Laravellia toisin? Entä jos haluamme suomen käännökset käyttöön?</p>
+
+<p>Kätevin tapa lienee koodata tieto käyttäjän kielitoiveesta suoraan osaksi URL-osoitetta:</p>
+
+<pre><code class="language-php">
+// routes.php
+
+Route::group([
+  'prefix' =&gt; 'app/{kielivalinta}', 
+  'middleware' =&gt; 'asetaKieli'], 
+  function() {
+    Route::get('front', function() {/* ... */});
+    // jne.
+  }
+)
+
+</code></pre>
+
+<pre><code class="language-php">
+// app/Http/Middleware/Asetakieli.php
+
+// Tämä middleware pitää muistaa rekisteröidä Laravellin käyttöön.
+
+namespace App\Http\Middleware;
+
+use Closure;
+
+class AsetaKieli {
+
+  public function handle($request, Closure $next) {
+    // Aseta kielivalinta
+    \App::setLocale($request-&gt;route('kielivalinta'));
+    return next($request);
+  }
+
+}
+
+</code></pre>
+
+<p>Ylläolevan ansiosta voimme helposti määrittää haluamamme kielen osana URL-osoitetta:</p>
+
+<p>Suomi:</p>
+
+<pre><code>http://www.testiohjelma.fi/app/fi/front
+
+</code></pre>
+
+<p>Englanti:</p>
+
+<pre><code>http://www.testiohjelma.fi/app/en/front
+
+</code></pre>
+
+<blockquote>
+<p>Loppukaneetti: koodissa viittasimme muuttujaan/lista-indeksiin nimeltä &ldquo;tervetuloviesti&rdquo;. Tämä muuttujan nimi on siis koodissa suomeksi. Pitäisikö myös tälle olla käännös? Ei, sillä loppukäyttäjä ei koskaan näe koodin sisällä käytettäviä muuttujien nimiä.</p>
+
+<p>Nyrkkisääntönä on, että koodin muuttujien nimet määritetään englanniksi, koska valtaosa ohjelmoijista käyttää englantia työkielenään. Mikään pakko näin ei ole toimia tietenkään.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://www.nollaversio.fi/blog/public/laravel/implicit-binding/">
         Laravel injektoi mallin puolestasi
       </a>
