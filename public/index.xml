@@ -6,8 +6,81 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Thu, 25 Aug 2016 06:22:35 +0300</lastBuildDate>
+    <lastBuildDate>Fri, 26 Aug 2016 04:30:43 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Arkkitehtuuri: ohjaa pelaajat eteenpäin</title>
+      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/</link>
+      <pubDate>Fri, 26 Aug 2016 04:30:43 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/</guid>
+      <description>
+
+&lt;p&gt;Esittelen lyhyesti arkkitehtuurin, joka sopii mainiosti Laravel + Node.js -yhteisarkkitehtuureihin.&lt;/p&gt;
+
+&lt;p&gt;Tälläinen yhteisarkkitehtuuri  tyypillisesti jakautuu vastuualueisiin siten, että Node.js hoitaa reaaliaikapuolen ja Laravel hoitaa admin-toiminnot ja pitkäaikaisvarastoinnin. Node.js on erinomainen ratkaisu reaaliaikaisesta tiedonvaihdosta huolehtimiseen. PHP ja Laravel taas loistavat perinteisten ei-reaaliaikaisten web-käyttöliittymien kohdalla. Yhdessä Node.js ja Laravel tekevät ihmeitä.&lt;/p&gt;
+
+&lt;p&gt;Rakensin viime syksynä kokonaisarkkitehtuurin reaaliaikaisten tietovisojen luomiseen ja pelaamiseen. Palvelun kautta pelaajat voivat pelata reaaliajassa toisiaan vastaan tietovisoja. Tuon järjestelmän kokonaisarkkitehtuuri on seuraavalainen:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;Laravel-applikaatio tarjoaa admin-käyttöliittymän, jonka kautta luoda/muokata/hallita tietovisoja.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Node.js-applikaatio hakee tasaisin väliajoin &lt;em&gt;pian alkavat&lt;/em&gt; tietovisat Laravellista ja hoitaa niiden pyörityksen, mm. socket-yhteydet pelaajiin ja pelilogiikan etenemisen.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Tietovisan päätyttyä Node.js-puoli kutsuu Laravellin &amp;ldquo;tulospalvelurajapintaa&amp;rdquo;, jonne syöttää tietovisan tulokset pitkäaikaistallennukseen. Tässä jälleen Laravel ja Laravellin erinomainen ORM loistavat. Pelaajat voivat jälkikäteen tarkastella tuloksia Laravellin puolella.&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Kokonaisarkkitehtuuri perustuu lisäksi vielä ajatukseen, että järjestelmän pyörittämisestä vastaa &lt;em&gt;yksi Laravel-applikaatio&lt;/em&gt; ja &lt;em&gt;useampi Node.js-palvelin&lt;/em&gt;. Miksi näin? Node.js-palvelimen tehtävänä - kuten yllä kuvattiin - on hoitaa kaikki reaaliaikainen tiedonvaihto tietovisan pelaajien suuntaan. Tämä vastuualue vaatii poweria palvelinraudalta - kutakin pelaajaa varten täytyy varata samanaikainen Websocket-yhteys ja viestiliikenne pelaajamäärältään suuressa tietovisassa on suuri.&lt;/p&gt;
+
+&lt;p&gt;Laravel-puoli taas on lähinnä tietovisojen luontia ja tulospalvelun ylläpitoa varten. Kumpikaan näistä ei vaadi millisekuntien latenssia. Lisäksi tietovisoja luo huomattavasti pienempi määrä käyttäjiä kuin niitä pelaa.&lt;/p&gt;
+
+&lt;h3 id=&#34;usea-peliserveri-kuinka-pelaaja-löytää-oikean&#34;&gt;Usea peliserveri - kuinka pelaaja löytää oikean?&lt;/h3&gt;
+
+&lt;p&gt;Kuvitellaan, että meillä on yksi Laravel-palvelin ja viisi Node.js-palvelinta. Kukin tietovisa pyörii yhdellä palvelimella. Tietovisat pyritään jakamaan tasaisesti palvelinten kesken, jotta kuormitus jakautuu mahdollisimman tasaisesti.&lt;/p&gt;
+
+&lt;p&gt;Loppukäyttäjän eli tietovisan osallistujan kannalta viisi palvelinta on hiukka ongelmallista - kuinka loppukäyttäjä mihin palvelimeen ottaa yhteys tietovisan pelaamista varten?&lt;/p&gt;
+
+&lt;p&gt;Ratkaisu on, että pelaaja ottaa &lt;strong&gt;ensin yhteyden Laravel-palvelimeen&lt;/strong&gt;, joka &lt;strong&gt;kertoo pelaajalle hänen valitsemansa tietovisan Node.js-palvelimen IP-osoitteen&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Koska Laravel-palvelimia on kokonaisjärjestelmässä vain yksi kappale, sen osoite on aina tiedossa. Tai paremminkin - tietty domain johtaa suoraan Laravel-applikaatioon.&lt;/p&gt;
+
+&lt;p&gt;Homma toimii siis kutakuinkin näin:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Ihmiskäyttäjä haluaa pelata tietovisan.&lt;/li&gt;
+&lt;li&gt;Hän menee osoitteeseen &lt;em&gt;www.visamestari.fi&lt;/em&gt;. Tämä osoite ohjaa hänet järjestelmän Laravel-osioon.&lt;/li&gt;
+&lt;li&gt;Laravel-osiosta hän valitsee haluamansa &lt;em&gt;piakkoin alkavan&lt;/em&gt; tietovisan, ja klikkaa &amp;ldquo;Osallistu&amp;rdquo;.&lt;/li&gt;
+&lt;li&gt;Laravel tarkistaa tietokannasta, mille Node.js-palvelimelle tuo tietovisa on &lt;em&gt;allokoitu&lt;/em&gt;, ja palauttaa tuon palvelimen IP-osoitteen.&lt;/li&gt;
+&lt;li&gt;Käyttäjän selain ottaa yhteyden saatuun IP-osoitteeseen, täten ilmoittaen olemassaolostaan Node.js-palvelimelle.&lt;/li&gt;
+&lt;li&gt;Node.js-palvelimen ja käyttäjän välille luodaan Websocket-yhteys reaaliaikaista tiedonvaihtoa varten.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Yllä vaihe #4 edellyttää, että Laravel on etukäteen tallentanut tietokantaansa tietovisan pyörityksestä huolehtivan palvelimen IP-osoitteen. Miten ja missä vaiheessa tämä tallennus tapahtuu?&lt;/p&gt;
+
+&lt;p&gt;Homma menee kutakuinkin näin.&lt;/p&gt;
+
+&lt;p&gt;Jokainen viidestä Node.js-palvelimesta &lt;em&gt;pyytää&lt;/em&gt; tasaisin väliajoin pian alkavia tietovisoja Laravel-palvelimelta. Yksittäisen Node.js-palvelimen kannalta pyyntö etenee seuraavasti:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;Palvelin kysyy Laravellilta &amp;lsquo;onko uusia tietovisoja, joita voisin pyörittää?&amp;rsquo;.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Palvelin tarkistaa tietokannasta ja vastaa joko: &amp;lsquo;ei&amp;rsquo; tai &amp;lsquo;kyllä on, tässä tietovisan pyöritykseen vaatittavat tiedot&amp;rsquo;&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Mitä tapahtuu Laravellin päässä kun Laravel &lt;em&gt;antaa&lt;/em&gt; tietovisan pyörityksen tietyn Node.js-palvelimen kontolle? Laravel tietää IP-osoitteen, josta Node.js-palvelin otti yhteyttä. Joten pyöritysvastuun antamisen yhteydessä Laravel voi tallettaa tuon IP-osoitteen tietokantaan.&lt;/p&gt;
+
+&lt;p&gt;Kun myöhemmin loppukäyttäjä saapuu Laravel-puolella ja valitsee sieltä osallistumisen tuohon tietovisaan, Laravellilla on tietokannassaan tallessa Node.js-palvelimen IP-osoite. Se voi vain palauttaa tuon IP-osoitteen loppukäyttäjälle.&lt;/p&gt;
+
+&lt;p&gt;Node.js:n puolella ohjelmisto vastaanottaa &lt;em&gt;piakkoin alkavat tietovisan&lt;/em&gt; tiedot. Näiden pohjalta se luo Tietovisa-objektin, joka jää odottamaan rekisteröitymisiä. Tietyllä kellonlyömällä Node.js sitten käynnistää tietovisan, lähettäen jokaiselle siihen mennessä rekisteröityneelle käyttäjälle &amp;ldquo;tietovisa alkaa&amp;rdquo;-viestin Websocketin kautta.&lt;/p&gt;
+
+&lt;p&gt;Tietovisan päätyttyä Node.js lähettää tulokset Laravellille. Koska Laravel-palvelimia on kokonaisarkkitehtuurissa vain yksi kappale, ei Node.js-palvelimen tarvitse huolehtia Laravel-palvelimen IP-osoitteen selvittämisestä. Tuo IP-osoite on yksinkertaisesti tallennettu Node.js:n konfiguraatiotiedostoon.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: ylläoleva arkkitehtuuri perustuu pohjimmiltaan ajatukseen, että X määrä työläisiä kysyy tasaisin väliajoin lisätyötä. Työnantajana toimii Laravel-keskuspalvelin. Oleellista on, että &lt;strong&gt;Laravel on täysin passiivinen&lt;/strong&gt;; se ei ikinä ota yhteyttä Node.js-palvelimiin, vaan odottaa sinnikkäästi Node.js-palvelinten yhteydenottoja, ja jakaa työtehtäviä noiden yhteydenottojen pohjalta.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Monikielisyys Laravel-kehyksen turvin</title>
@@ -1875,213 +1948,6 @@ readStream.on(&#39;data&#39;, function(chunk) {
 
 &lt;li&gt;&lt;p&gt;Asynkronoitu ja striimattu sopii suurten tiedostojen lukemiseen. Se sopii myös tapauksissa, joissa tiedoston sisältö voidaan pala palalta lähettää eteenpäin, esim. loppukäyttäjän HTTP-yhteyteen.&lt;/p&gt;&lt;/li&gt;
 &lt;/ol&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Async ja Await</title>
-      <link>http://www.nollaversio.fi/blog/public/nodejs/es7-async-await/</link>
-      <pubDate>Fri, 05 Aug 2016 06:02:06 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/nodejs/es7-async-await/</guid>
-      <description>
-
-&lt;p&gt;Kokeilin eilen ensimmäistä kertaa &lt;em&gt;async-await&lt;/em&gt; -funktion kirjoittamista Javascriptilla. Kyseessä on uusi ja mullistava tapa ohjelmoida asynkronoidusti toimivia funktioita.&lt;/p&gt;
-
-&lt;p&gt;Vastaava tapa on ollut esim. C#-kielessä jo kauan, mutta Javascriptiin ominaisuus on vasta tuloillaan. Se ei ole vielä virallisesti osana Javascript-kieltä. Mutta &lt;a href=&#34;https://babeljs.io/&#34;&gt;Babelin&lt;/a&gt; kaltaisten koodimuuntajien avulla tuota ominaisuutta pääsee testaamaan jo tänään.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Async-await ei ole virallisesti tuettu ominaisuus. Tuota ominaisuutta voidaan kuitenkin &lt;em&gt;simuloida&lt;/em&gt;. Simulointi onnistuu yksinkertaisesti siten, että async ja await-avainsanoja sisältävä Javascript-koodi käännetään koodiksi, joka ei sisällä async ja await-avainsanoja, mutta toteuttaa vastaavat toiminnot muulla tavoin.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;h3 id=&#34;minkä-ongelman-async-await-ratkoo&#34;&gt;Minkä ongelman async-await ratkoo?&lt;/h3&gt;
-
-&lt;p&gt;Kerrataanpa tuikitavallisen funktion määritys ja kutsuminen:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-function hae(hetu) {
-  // Meillä on jossain muualla määritelty &#39;henkiloTietokanta&#39;
-  // niminen Javascript-objekti.
-  return henkiloTietokanta[hetu];
-}
-
-var henkilo = hae(&#39;010787-111A&#39;);
-console.log(henkilo.nimi); // Jaakko Jantunen
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva on perinteinen, synkronoitu Javascript-funktio. Koodi määrittää funktion, ja tämän jälkeen kutsuu tuota funktiota. Funktiokutsun seurauksena saadaan takaisin &lt;em&gt;Henkilö-objekti&lt;/em&gt;, jonka attribuutti &lt;em&gt;nimi&lt;/em&gt; printataan käyttäjälle.&lt;/p&gt;
-
-&lt;p&gt;Vastaavat funktiot ovat arkipäivää kaikissa yleisimmissä ohjelmointikielissä.&lt;/p&gt;
-
-&lt;p&gt;Nyt kysymys kuuluu: entä jos &lt;em&gt;hae&lt;/em&gt;-funktio joutuisikin hakemaan henkilön tiedot tietokoneen kovalevyltä?&lt;/p&gt;
-
-&lt;p&gt;Vaatimus ei ole poikkeuksellinen, päinvastoin. Henkilötietokanta sisältää miljoonia rivejä tietoa. Tuollaisen tietomäärän pitäminen yksinomaan keskusmuistissa (=Javascript-objektin sisällä) on kutakuinkin mahdotonta. Entä jos palvelin joku kaunis päivä kaatuu? Kaikkien henkilöiden tiedot katoaisivat savuna ilmaan!&lt;/p&gt;
-
-&lt;p&gt;Meidän on siis pakko tallettaa henkilötiedot kovalevylle.&lt;/p&gt;
-
-&lt;p&gt;Nyt naivisti voisimme yrittää seuraavaa:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// HUOM! Tämä yritelmä ei toimi halutusti!
-
-function hae(hetu) {
-  // Meillä on nyt kovalevyllä &#39;henkiloTietokanta&#39; tiedosto!
-  // Ladataan ensin tietokanta keskusmuistiin.
-  var tietokanta = kovalevy.lue(&#39;henkiloTietokanta&#39;);
-  // Haetaan haluttu henkilö. Ei toimi kuten haluamme!
-  return tietokanta[hetu];
-}
-
-var henkilo = hae(&#39;010787-111A&#39;); //Error! Cannot read property of undefined!
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva koodi ei toimi. Miksi? &lt;strong&gt;Koska tiedoston lukeminen kovalevyltä keskusmuistiin on asynkronoitu operaatio.&lt;/strong&gt; Tämä tarkoittaa, että tiedoston lukeminen keskusmuistiin vie sen verran kauan aikaa, että Javascript-koodiajo siirtyy eteenpäin.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Vastaava tilanne syntyy meidän ihmisten elämässä usein. Esimerkkinä pankissa asiointi. Astut sisälle pankkiin ja otat vuoronumeron. Edelläsi jonossa on viisitoista henkilöä. Jäätkö kiltisti odottamaan pankin odotustilaan vai käytkö välillä vaikka lounaalla? Jos odotat varvastakaan liikuttamatta, &lt;strong&gt;toimit synkronoidusti&lt;/strong&gt;. Jos käyt muilla asioilla ja palaat paikalle omaa vuoroasi varten myöhemmin, &lt;strong&gt;toimit asynkronoidusti&lt;/strong&gt;.&lt;/p&gt;
-
-&lt;p&gt;Jotta ylläoleva analogia toimisi vielä täsmällisemmin, pankin tulisi &lt;em&gt;ilmoittaa&lt;/em&gt; sinulle kun jono etenee vuoronumerosi kohdalle. Tälläinen järjestelmä on käytössä Helsingin Grand Casinolla - aloittaessasi jonotuksen pokeripöytään, saat taskuusi mukaan piipparin, joka ilmoittaa heti kun pöydässä on tilaa. Jonotuksen ajan voit huoletta törsätä pikkurahat kolikkopeleihin.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Koska Javascript-koodiajo siirtyy eteenpäin, tarkoittaa tämä, että seuraava rivi&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;return tietokanta[hetu];&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;on ongelmallinen. Yritämme etsiä tietokanta-objektista henkilöä hetun perusteella. Mutta juuri yllä totesimme, että tiedoston luku kovalevyltä vie muutaman tovin aikaa, ja koodinajo ei jää odottamaan. Toisin sanoen, tietokanta-objekti ei voi sisältää haluttua henkilötietokantaa.&lt;/p&gt;
-
-&lt;p&gt;Tilanne on sama kuin jos yrittäisit asua talossa, jonka rakentaminen on aloitettu viisi minuuttia sitten. Taloa ei yksinkertaisesti ole olemassa, joten etpä siinä voi asustellakaan.&lt;/p&gt;
-
-&lt;h3 id=&#34;mikä-on-ratkaisu&#34;&gt;Mikä on ratkaisu?&lt;/h3&gt;
-
-&lt;p&gt;Ongelman ydin on siis siinä, että kovalevyltä tiedoston lukeminen on asynkronoitu operaatio, ts. se suoritetaan &lt;em&gt;sitten joskus&lt;/em&gt;. Koodiajo ei jää odottamaan tuota operaatiota, vaan pyyhältää surutta eteenpäin.&lt;/p&gt;
-
-&lt;p&gt;Tästä syystä tarvitsemme konseptin &lt;em&gt;lupaus&lt;/em&gt;, joka palauttaa kovalevy.lue-kutsusta &lt;em&gt;lupausobjektin&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Tuo lupausobjekti sisältää tarvittavat mekanismit henkilötietokannan käyttöä varten &lt;em&gt;sitten joskus&lt;/em&gt;.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-function hae(hetu) {
-  // Meillä on nyt kovalevyllä &#39;henkiloTietokanta&#39; tiedosto!
-  // Ladataan tietokanta keskusmuistiin.
-  // Koska kyseessä on asynkronoitu operaatio, palautamme lupausobjektin.
-  var lupaus = kovalevy.lue(&#39;henkiloTietokanta&#39;);
-
-  // lupaus-objekti saa tulevaisuudessa käyttöönsä henkilötietokannan
-  // Kun näin vihdoin tapahtuu, haluamme etsiä henkilön hetun perusteella!
-  return lupaus.then(function(tietokanta) {
-    return tietokanta[hetu];
-  });
-	
-}
-
-hae(&#39;010787-111A&#39;).then(function(henkilo) {
-  console.log(henkilo.nimi); // Jaakko Jantunen
-})
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Nyt kaikki toimii jälleen. Olemme turvautuneet lupausobjektin käyttöön. Lupausobjekti tarjoaa kutsuttavaksemme &lt;em&gt;then()&lt;/em&gt;-metodin, johon voimme tarjota parametriksi funktion. Tuo funktio saa &lt;em&gt;sitten joskus&lt;/em&gt; funktiokutsun yhteydessä sisäänsä tietokannan. Myöhemmin teemme toisen &lt;em&gt;then()&lt;/em&gt;-kutsun, jonne työnnämme sisään henkilön nimen printtaavan funktion.&lt;/p&gt;
-
-&lt;p&gt;Tässä on koko lupauskonseptin viehätysvoima - voimme ketjuttaa asynkronoituja funktiokutsuja lähes samaan tapaan kuin synkronoituja funktiokutsuja:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Synkronoidut funktiokutsut
-a(b(c(d(e()))));
-
-// Asynkronoidut funktiokutsut
-
-Promise.resolve(e())
-.then(d)
-.then(c)
-.then(b)
-.then(a)
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Vieläkään emme ole aivan päässet itse postauksen aiheeseen, async-await-kuvioon.&lt;/p&gt;
-
-&lt;h3 id=&#34;async-await&#34;&gt;Async-await&lt;/h3&gt;
-
-&lt;p&gt;Ylläoleva henkilön haku toimii mainiosti lupausobjekteja ketjuttamalla. Mutta konsepti silti vaatii &lt;em&gt;lupaus.then()&lt;/em&gt;-ketjuihin perustuvan koodaustyyliin. Tälläinen koodityyli ei välttämättä ole yhtä intuitiivinen kuin perinteinen synkronoitu koodaus.&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Async-await tarjoaa tavan toteuttaa lupauksiin perustuva koodinajo tavalla, joka visuaalisesti muistuttaa tavanomaista synkronoitua koodaustapaa.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Tämä on (ymmärtääkseni) async-awaitin ainoa etu. Se ei tuo mitään uusia maagisia ominaisuuksia - se vain helpottaa koodinkirjoitusta silloin, kun käytämme asynkronoituja funktiokutsuja.&lt;/p&gt;
-
-&lt;p&gt;Katsotaan miten henkilötietojen haku onnistuu async-await-kuvion avulla:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-async function hae(hetu) {
-  // Meillä on nyt kovalevyllä &#39;henkiloTietokanta&#39; tiedosto!
-  // Ladataan tietokanta keskusmuistiin.
-  var tietokanta = await kovalevy.lue(&#39;henkiloTietokanta&#39;);
-  // Haetaan henkilö
-  return tietokanta[hetu];
-	
-}
-
-hae(&#39;010787-111A&#39;).then(function(henkilo) {
-  console.log(henkilo.nimi); // Jaakko Jantunen
-})
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kuten yltä huomaamme, &lt;em&gt;hae&lt;/em&gt;-funktio muistuttaa &lt;em&gt;synkronoitua&lt;/em&gt; funktiota. Ainoa ero on &lt;strong&gt;async&lt;/strong&gt; ja &lt;strong&gt;await&lt;/strong&gt; avainsanojen käyttö.&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;async function hae(hetu)&lt;/code&gt;
-&lt;code&gt;await kovalevy.lue(&#39;henkiloTietokanta&#39;)&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Async merkitsee, että kyseinen funktio palauttaa lupausobjektin. Await puolestaan merkkaa paikan, jossa &lt;em&gt;koodi stoppaa&lt;/em&gt; - eli koodinajo jämähtää kuin seinään siksi aikaa, kunnes await-avainsanan perässä oleva lauseke on valmis.&lt;/p&gt;
-
-&lt;p&gt;Tässä esimerkissä &lt;em&gt;await&lt;/em&gt;-termin perässä oleva lauseke on juurikin tiedoston lukeminen kovalevyltä. Toisin sanoen, &lt;em&gt;await&lt;/em&gt; kiltisti odottaa, että kovalevyltä lukeminen on valmis. Vasta lukemisen onnistuttua koodinajo siirtyy eteenpäin kohti riviä &lt;em&gt;return tietokanta[hetu]&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Async-await-kuvion todellinen upeus piilee tilanteessa, jossa saman funktiokutsun sisällä on useita &lt;em&gt;await-stoppauksia&lt;/em&gt;:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-async function ostaVerkkokaupasta(ostaja, ostajanVerkkopankki, myyjanVerkkopankki, tuote) {
-  // Varmistetaan ostajan tiedot ottamalla yhteys YTJ:n yritystietopalveluun
-  var vahvistettu = await ytj.vahvistaYritys(ostaja);
-  // Varmistetaan tuotteen saatavuus (joku varastolla kipaisee katsomaan).
-  var tuoteSaatavilla = await varasto.tarkistaVarastaSaldo(tuote);
-
-  if (vahvistettu &amp;amp;&amp;amp; tuoteSaatavilla) {
-    // Ostajan tiedot kunnossa ja tuote saatavilla!
-
-    // Nostetaan rahat ostajan verkkopankista.
-    var rahat = await ostajanVerkkopankki.nosta(hinta);
-    // Annetaan rahat myyjälle
-    var maksunTila = await myyjanVerkkopankki.talleta(rahat);
-
-    if (maksunTila === true) {
-      // Tilisiirto onnistui.
-      // Haetaan tuote ja annetaan s asiakkaalle
-      // (Haku tarkoittaa, että joku taas kipaisee varastolle.)
-      return await varasto.haeTuote(tuote);
-    } 
-
-  }
-
-}
-var Nordea = /* rajapinta Nordean verkkopankkiin */
-var OP = /* rajapinta OP:n verkkopankkiin */
-
-ostaVerkkokaupasta(&#39;Nollaversio IT&#39;, Nordea, OP, &#39;Poravasara&#39;)
-.then(function(poravasara) {
-  if (!poravasara) {
-    return console.log(&amp;quot;Jäi saamatta.&amp;quot;)
-  }
-  console.log(&amp;quot;Poravasara saapunut ja käytettävissä&amp;quot;);
-})
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Yllä funktion &lt;em&gt;ostaVerkkokaupasta&lt;/em&gt; sisällä käytämme &lt;strong&gt;await&lt;/strong&gt;-termiä viidesti. Jokaisen awaitin kohdalla koodinajo stoppaa ja jää odottamaan asynkronoidun operaation valmistumista. Funktio etenee askel kerrallaan, kunnes lopulta &lt;em&gt;sitten joskus&lt;/em&gt; saamme (jos saamme) käyttöömme poravasaran.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: async-await-kuvio on varsin vahva lisäys Javascriptiin. Tällä hetkellä async- ja await-avainsanoja ei voi vielä käyttää ilman Babelin kaltaista koodimuuntajaa. Noheva Javascript-koodari kuitenkin jo etukäteen tutustuttaa itsensä noiden termien käyttöön, sillä mitä todennäköisimmin tulevaisuuden Javascript perustuu paljolti niiden pohjalle.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>

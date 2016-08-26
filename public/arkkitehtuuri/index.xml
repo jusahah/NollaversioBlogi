@@ -6,8 +6,81 @@
     <description>Recent content in Arkkitehtuuris on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Mon, 22 Aug 2016 03:08:34 +0300</lastBuildDate>
+    <lastBuildDate>Fri, 26 Aug 2016 04:30:43 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Arkkitehtuuri: ohjaa pelaajat eteenpäin</title>
+      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/</link>
+      <pubDate>Fri, 26 Aug 2016 04:30:43 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/</guid>
+      <description>
+
+&lt;p&gt;Esittelen lyhyesti arkkitehtuurin, joka sopii mainiosti Laravel + Node.js -yhteisarkkitehtuureihin.&lt;/p&gt;
+
+&lt;p&gt;Tälläinen yhteisarkkitehtuuri  tyypillisesti jakautuu vastuualueisiin siten, että Node.js hoitaa reaaliaikapuolen ja Laravel hoitaa admin-toiminnot ja pitkäaikaisvarastoinnin. Node.js on erinomainen ratkaisu reaaliaikaisesta tiedonvaihdosta huolehtimiseen. PHP ja Laravel taas loistavat perinteisten ei-reaaliaikaisten web-käyttöliittymien kohdalla. Yhdessä Node.js ja Laravel tekevät ihmeitä.&lt;/p&gt;
+
+&lt;p&gt;Rakensin viime syksynä kokonaisarkkitehtuurin reaaliaikaisten tietovisojen luomiseen ja pelaamiseen. Palvelun kautta pelaajat voivat pelata reaaliajassa toisiaan vastaan tietovisoja. Tuon järjestelmän kokonaisarkkitehtuuri on seuraavalainen:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;Laravel-applikaatio tarjoaa admin-käyttöliittymän, jonka kautta luoda/muokata/hallita tietovisoja.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Node.js-applikaatio hakee tasaisin väliajoin &lt;em&gt;pian alkavat&lt;/em&gt; tietovisat Laravellista ja hoitaa niiden pyörityksen, mm. socket-yhteydet pelaajiin ja pelilogiikan etenemisen.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Tietovisan päätyttyä Node.js-puoli kutsuu Laravellin &amp;ldquo;tulospalvelurajapintaa&amp;rdquo;, jonne syöttää tietovisan tulokset pitkäaikaistallennukseen. Tässä jälleen Laravel ja Laravellin erinomainen ORM loistavat. Pelaajat voivat jälkikäteen tarkastella tuloksia Laravellin puolella.&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Kokonaisarkkitehtuuri perustuu lisäksi vielä ajatukseen, että järjestelmän pyörittämisestä vastaa &lt;em&gt;yksi Laravel-applikaatio&lt;/em&gt; ja &lt;em&gt;useampi Node.js-palvelin&lt;/em&gt;. Miksi näin? Node.js-palvelimen tehtävänä - kuten yllä kuvattiin - on hoitaa kaikki reaaliaikainen tiedonvaihto tietovisan pelaajien suuntaan. Tämä vastuualue vaatii poweria palvelinraudalta - kutakin pelaajaa varten täytyy varata samanaikainen Websocket-yhteys ja viestiliikenne pelaajamäärältään suuressa tietovisassa on suuri.&lt;/p&gt;
+
+&lt;p&gt;Laravel-puoli taas on lähinnä tietovisojen luontia ja tulospalvelun ylläpitoa varten. Kumpikaan näistä ei vaadi millisekuntien latenssia. Lisäksi tietovisoja luo huomattavasti pienempi määrä käyttäjiä kuin niitä pelaa.&lt;/p&gt;
+
+&lt;h3 id=&#34;usea-peliserveri-kuinka-pelaaja-löytää-oikean&#34;&gt;Usea peliserveri - kuinka pelaaja löytää oikean?&lt;/h3&gt;
+
+&lt;p&gt;Kuvitellaan, että meillä on yksi Laravel-palvelin ja viisi Node.js-palvelinta. Kukin tietovisa pyörii yhdellä palvelimella. Tietovisat pyritään jakamaan tasaisesti palvelinten kesken, jotta kuormitus jakautuu mahdollisimman tasaisesti.&lt;/p&gt;
+
+&lt;p&gt;Loppukäyttäjän eli tietovisan osallistujan kannalta viisi palvelinta on hiukka ongelmallista - kuinka loppukäyttäjä mihin palvelimeen ottaa yhteys tietovisan pelaamista varten?&lt;/p&gt;
+
+&lt;p&gt;Ratkaisu on, että pelaaja ottaa &lt;strong&gt;ensin yhteyden Laravel-palvelimeen&lt;/strong&gt;, joka &lt;strong&gt;kertoo pelaajalle hänen valitsemansa tietovisan Node.js-palvelimen IP-osoitteen&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Koska Laravel-palvelimia on kokonaisjärjestelmässä vain yksi kappale, sen osoite on aina tiedossa. Tai paremminkin - tietty domain johtaa suoraan Laravel-applikaatioon.&lt;/p&gt;
+
+&lt;p&gt;Homma toimii siis kutakuinkin näin:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Ihmiskäyttäjä haluaa pelata tietovisan.&lt;/li&gt;
+&lt;li&gt;Hän menee osoitteeseen &lt;em&gt;www.visamestari.fi&lt;/em&gt;. Tämä osoite ohjaa hänet järjestelmän Laravel-osioon.&lt;/li&gt;
+&lt;li&gt;Laravel-osiosta hän valitsee haluamansa &lt;em&gt;piakkoin alkavan&lt;/em&gt; tietovisan, ja klikkaa &amp;ldquo;Osallistu&amp;rdquo;.&lt;/li&gt;
+&lt;li&gt;Laravel tarkistaa tietokannasta, mille Node.js-palvelimelle tuo tietovisa on &lt;em&gt;allokoitu&lt;/em&gt;, ja palauttaa tuon palvelimen IP-osoitteen.&lt;/li&gt;
+&lt;li&gt;Käyttäjän selain ottaa yhteyden saatuun IP-osoitteeseen, täten ilmoittaen olemassaolostaan Node.js-palvelimelle.&lt;/li&gt;
+&lt;li&gt;Node.js-palvelimen ja käyttäjän välille luodaan Websocket-yhteys reaaliaikaista tiedonvaihtoa varten.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Yllä vaihe #4 edellyttää, että Laravel on etukäteen tallentanut tietokantaansa tietovisan pyörityksestä huolehtivan palvelimen IP-osoitteen. Miten ja missä vaiheessa tämä tallennus tapahtuu?&lt;/p&gt;
+
+&lt;p&gt;Homma menee kutakuinkin näin.&lt;/p&gt;
+
+&lt;p&gt;Jokainen viidestä Node.js-palvelimesta &lt;em&gt;pyytää&lt;/em&gt; tasaisin väliajoin pian alkavia tietovisoja Laravel-palvelimelta. Yksittäisen Node.js-palvelimen kannalta pyyntö etenee seuraavasti:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;Palvelin kysyy Laravellilta &amp;lsquo;onko uusia tietovisoja, joita voisin pyörittää?&amp;rsquo;.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Palvelin tarkistaa tietokannasta ja vastaa joko: &amp;lsquo;ei&amp;rsquo; tai &amp;lsquo;kyllä on, tässä tietovisan pyöritykseen vaatittavat tiedot&amp;rsquo;&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Mitä tapahtuu Laravellin päässä kun Laravel &lt;em&gt;antaa&lt;/em&gt; tietovisan pyörityksen tietyn Node.js-palvelimen kontolle? Laravel tietää IP-osoitteen, josta Node.js-palvelin otti yhteyttä. Joten pyöritysvastuun antamisen yhteydessä Laravel voi tallettaa tuon IP-osoitteen tietokantaan.&lt;/p&gt;
+
+&lt;p&gt;Kun myöhemmin loppukäyttäjä saapuu Laravel-puolella ja valitsee sieltä osallistumisen tuohon tietovisaan, Laravellilla on tietokannassaan tallessa Node.js-palvelimen IP-osoite. Se voi vain palauttaa tuon IP-osoitteen loppukäyttäjälle.&lt;/p&gt;
+
+&lt;p&gt;Node.js:n puolella ohjelmisto vastaanottaa &lt;em&gt;piakkoin alkavat tietovisan&lt;/em&gt; tiedot. Näiden pohjalta se luo Tietovisa-objektin, joka jää odottamaan rekisteröitymisiä. Tietyllä kellonlyömällä Node.js sitten käynnistää tietovisan, lähettäen jokaiselle siihen mennessä rekisteröityneelle käyttäjälle &amp;ldquo;tietovisa alkaa&amp;rdquo;-viestin Websocketin kautta.&lt;/p&gt;
+
+&lt;p&gt;Tietovisan päätyttyä Node.js lähettää tulokset Laravellille. Koska Laravel-palvelimia on kokonaisarkkitehtuurissa vain yksi kappale, ei Node.js-palvelimen tarvitse huolehtia Laravel-palvelimen IP-osoitteen selvittämisestä. Tuo IP-osoite on yksinkertaisesti tallennettu Node.js:n konfiguraatiotiedostoon.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: ylläoleva arkkitehtuuri perustuu pohjimmiltaan ajatukseen, että X määrä työläisiä kysyy tasaisin väliajoin lisätyötä. Työnantajana toimii Laravel-keskuspalvelin. Oleellista on, että &lt;strong&gt;Laravel on täysin passiivinen&lt;/strong&gt;; se ei ikinä ota yhteyttä Node.js-palvelimiin, vaan odottaa sinnikkäästi Node.js-palvelinten yhteydenottoja, ja jakaa työtehtäviä noiden yhteydenottojen pohjalta.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Ketjutettava rajapinta</title>
