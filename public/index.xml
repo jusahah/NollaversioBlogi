@@ -6,8 +6,72 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Fri, 26 Aug 2016 04:30:43 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 29 Aug 2016 13:39:19 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Lodash: toPairs &#43; sortBy</title>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/lodash-object-transform-sort/</link>
+      <pubDate>Mon, 29 Aug 2016 13:39:19 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/lodash-object-transform-sort/</guid>
+      <description>&lt;p&gt;Löysin kivan patternin tallentaa objektin attribuuttien keskinäinen järjestys osaksi objektia.&lt;/p&gt;
+
+&lt;p&gt;Sanotaan esimerkkinä, että meillä on &lt;em&gt;asukasluettelo&lt;/em&gt;. Tuo luettelo on objekti, jossa &lt;em&gt;avaimena&lt;/em&gt; toimii asukkaan nimi, ja &lt;em&gt;arvona&lt;/em&gt; asukkaan ikä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var asukasLuettelo = {
+  &#39;Matti&#39; : {ika: 16},
+  &#39;Pekka&#39; : {ika: 28},
+  &#39;Pirjo&#39; : {ika: 35},
+  &#39;Lauri&#39; : {ika: 21},
+  // jne.	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Haluamme muuntaa asukasluettelon muotoon, jossa jokaisen iän yhteydeen on kirjattu &lt;em&gt;kuinka mones nousevassa ikäjärjestyksessä tuo asukas on&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Eli haluamme lopputuloksen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var asukasLuettelo = {
+  &#39;Matti&#39; : {ika: 16, jarj: 1},
+  &#39;Pekka&#39; : {ika: 28, jarj: 3},
+  &#39;Pirjo&#39; : {ika: 35, jarj: 4},
+  &#39;Lauri&#39; : {ika: 21, jarj: 2},
+  // jne.	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kuinka tehdä tuo muutos helposti? Yksinkertainen pätkä ketjutettuja Lodash-funktiokutsuja riittää:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+_.chain(asukasLuettelo)
+// Muunna objekti listaksi.
+.toPairs()
+// Lajittele asukkaat ikäjärjestykseen.
+.sortBy(function(asukasL) { return asukasL[1].ika})
+// Asukkaat nyt ikäjärjestyksessä.
+// Talletetaan kunkin asukkaan kohdalle tieto hänen järj.numerostaan.
+.each(function(asukasL, idx) { asukasL[1].jarj = idx+1})
+// Pakotetaan Lodash evaluoimaan kutsuketju
+.value()
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Koska teemme muutoksen suoraan asukas-objektiin, meidän ei tarvitse tallentaa funktioketjun paluuarvoa mihinkään.&lt;/p&gt;
+
+&lt;p&gt;Nyt jokaisen asukkaan yhteyteen on tallennettu hänen ikäjärjestysnumeronsa.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: ylläolevan kutsuketjun lopussa kutsumme apufunktiota &lt;em&gt;value()&lt;/em&gt;. Tämä kutsu on syytä suorittaa vaikka emme tarvitsekaan palautusarvoa mihinkään! Tämä siksi, että Lodash käyttää konseptia nimeltä &lt;em&gt;lazy evaluation&lt;/em&gt; kun se kohtaa tuollaisen kutsuketjun.&lt;/p&gt;
+
+&lt;p&gt;Laiskana miehenä Lodash ei lähde tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Arkkitehtuuri: ohjaa pelaajat eteenpäin</title>
@@ -39,7 +103,7 @@
 
 &lt;p&gt;Kuvitellaan, että meillä on yksi Laravel-palvelin ja viisi Node.js-palvelinta. Kukin tietovisa pyörii yhdellä palvelimella. Tietovisat pyritään jakamaan tasaisesti palvelinten kesken, jotta kuormitus jakautuu mahdollisimman tasaisesti.&lt;/p&gt;
 
-&lt;p&gt;Loppukäyttäjän eli tietovisan osallistujan kannalta viisi palvelinta on hiukka ongelmallista - kuinka loppukäyttäjä mihin palvelimeen ottaa yhteys tietovisan pelaamista varten?&lt;/p&gt;
+&lt;p&gt;Loppukäyttäjän eli tietovisan osallistujan kannalta viisi palvelinta on hiukka ongelmallista - kuinka loppukäyttäjä tietää mihin palvelimeen ottaa yhteys tietovisan pelaamista varten?&lt;/p&gt;
 
 &lt;p&gt;Ratkaisu on, että pelaaja ottaa &lt;strong&gt;ensin yhteyden Laravel-palvelimeen&lt;/strong&gt;, joka &lt;strong&gt;kertoo pelaajalle hänen valitsemansa tietovisan Node.js-palvelimen IP-osoitteen&lt;/strong&gt;.&lt;/p&gt;
 
@@ -65,7 +129,7 @@
 &lt;ol&gt;
 &lt;li&gt;&lt;p&gt;Palvelin kysyy Laravellilta &amp;lsquo;onko uusia tietovisoja, joita voisin pyörittää?&amp;rsquo;.&lt;/p&gt;&lt;/li&gt;
 
-&lt;li&gt;&lt;p&gt;Palvelin tarkistaa tietokannasta ja vastaa joko: &amp;lsquo;ei&amp;rsquo; tai &amp;lsquo;kyllä on, tässä tietovisan pyöritykseen vaatittavat tiedot&amp;rsquo;&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Palvelin tarkistaa tietokannasta ja vastaa joko: &amp;lsquo;ei&amp;rsquo; tai &amp;lsquo;kyllä on, tässä tietovisan pyöritykseen vaadittavat tiedot&amp;rsquo;&lt;/p&gt;&lt;/li&gt;
 &lt;/ol&gt;
 
 &lt;p&gt;Mitä tapahtuu Laravellin päässä kun Laravel &lt;em&gt;antaa&lt;/em&gt; tietovisan pyörityksen tietyn Node.js-palvelimen kontolle? Laravel tietää IP-osoitteen, josta Node.js-palvelin otti yhteyttä. Joten pyöritysvastuun antamisen yhteydessä Laravel voi tallettaa tuon IP-osoitteen tietokantaan.&lt;/p&gt;
@@ -1846,108 +1910,6 @@ Käytännössä web-applikaatio siis lähettää lomakesivun mukana CSRF-tunnist
 &lt;p&gt;Loppukaneetti: XSS:n avulla saattaa teoriassa olla mahdollista &lt;em&gt;selvittää&lt;/em&gt; CRSF-tunniste kesken hyökkäyksen. Tällöin CSRF-suojaus menettää tehonsa. Tämä vaatii, että XSS-hyökkääjällä on mahdollisuus ajaa mielivaltaista Javascript-koodia uhrinsa www-selaimessa.&lt;/p&gt;
 
 &lt;p&gt;Jos tätä mahdollisuutta ei ole, CSRF-suojaus toimii ja estää useimmat muunlaiset hyökkäysyritykset; esim. linkki-injektion, jossa rikollinen on &lt;em&gt;jotenkin&lt;/em&gt; saanut nettipankin käyttöliittymään lisättyä linkin, jota klikkaamalla etukäteen suunniteltu lomakedata lähtee salaa liikkeelle. Koska tuo etukäteen suunniteltu lomakedata ei voi mitenkään tietää ETUKÄTEEN sen hetkisen CSRF-tunnisteen merkkijonoa, CSRF-suojaus toimii ja rikollinen jää nuolemaan näppejään.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Kolme tapaa lukea tiedosto (Node.js)</title>
-      <link>http://www.nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</link>
-      <pubDate>Mon, 08 Aug 2016 06:45:45 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</guid>
-      <description>
-
-&lt;p&gt;Tiedoston lukeminen on varsin yleinen toimenpide Node.js-applikaatiossa. Alla esittelen lyhyesti kolme tapaa hoitaa luku-urakka.&lt;/p&gt;
-
-&lt;h3 id=&#34;synkronoitu-bufferoitu&#34;&gt;Synkronoitu, bufferoitu&lt;/h3&gt;
-
-&lt;p&gt;Synkronoitu ja bufferoitu tiedostoluku tapahtuu seuraavanlaisesti:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var fs = require(&#39;fs&#39;)
-
-var tiedostonSisalto = fs.readFileSync(&#39;tiedosto.txt&#39;, &#39;utf8&#39;);
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva koodi on äärimmäisen yksinkertainen. Luemme tiedoston nimeltä &lt;em&gt;tiedosto.txt&lt;/em&gt; ja tallennamme sen sisällön &lt;em&gt;tiedostonSisalto&lt;/em&gt;-muuttujaan. Määritämme erikseen vielä, että tiedoston on enkoodattu utf8-merkistöllä, jotta voimme käsitellä sisältöä oikein.&lt;/p&gt;
-
-&lt;p&gt;Ongelmaksi ylläolevassa muodostuu se, että lukeminen on &lt;strong&gt;synkronoitu&lt;/strong&gt; toimenpide. Toisin sanoen, koko Nodejs:n runtime seisoo tyhjän panttina sen aikaa, kun tiedoston lukeminen kovalevyltä on käynnissä. Näin ei tarvitsisi olla, mutta ylläolevassa näin on.&lt;/p&gt;
-
-&lt;p&gt;Toimintojen suoritusjärjestys on kutakuinkin seuraava:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;Node.js-prosessi pyytää käyttöjärjestelmää avaamaan tiedoston.&lt;/li&gt;
-&lt;li&gt;Käyttöjärjestelmä pyytää kovalevyä (sen ajureita) suorittamaan luvun.&lt;/li&gt;
-&lt;li&gt;Tiedoston luku tapahtuu&lt;/li&gt;
-&lt;li&gt;Käyttöjärjestelmä informoi Node.js-prosessia onnistuneesta luvusta.&lt;/li&gt;
-&lt;li&gt;Node.js-prosessi jatkaa suoritustaan.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Ongelman ydin on siinä, että vaiheiden 2-4 ajan Node.js-prosessi seisoo paikallaan.&lt;/p&gt;
-
-&lt;h3 id=&#34;asynkronoitu-bufferoitu&#34;&gt;Asynkronoitu, bufferoitu&lt;/h3&gt;
-
-&lt;p&gt;Ylläoleva ongelma ratkeaa suorittamalla tiedostonluku &lt;strong&gt;asynkronoidusti&lt;/strong&gt;.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var fs = require(&#39;fs&#39;)
-
-fs.readFile(&#39;tiedosto.txt&#39;, &#39;utf8&#39;, function(err, tiedostonSisalto) {
-	console.log(3)
-});
-
-console.log(1);
-console.log(2);
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Sen sijaan, että määrittäisimme paluuarvon sisälleen ottavan muuttujan, syötämme tiedoston lukemisesta vastaavaan Node.js-funktioon kyytipojaksi callback-funktion. Callback-funktio nimensä mukaisesti sitten joskus tulee kutsutuksi, saaden parametrinään tiedoston sisällön.&lt;/p&gt;
-
-&lt;p&gt;Huomioitavaa on, että nyt Node.js-runtime &lt;strong&gt;ei seiso&lt;/strong&gt; tyhjän panttina tiedostoluvun aikana. Sen sijaan tiedoston lukeminen fyysiseltä kovalevyltä tapahtuu yhtäaikaa Node.js-prosessin koodinajon kanssa.&lt;/p&gt;
-
-&lt;p&gt;Ylläolevassa koodissa &lt;em&gt;console.log()&lt;/em&gt;-komennot kuvaavat eri koodirivien suoritusjärjestystä. Callback-funktion sisällä oleva lokkaus tapahtuu viimeisenä.&lt;/p&gt;
-
-&lt;p&gt;Asynkronoitu ja bufferoitu ratkaisu on pätevä, ja yleisesti käytössä. Mutta entä jos emme halua bufferoida koko tiedostoa keskusmuistiin? Jos tiedoston koko on esimerkiksi 20 gigatavua, meillä ei riitä keskusmuistissa edes tila:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-FATAL ERROR: CALL_AND_RETRY_0 Allocation failed - process out of memory
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ratkaisu on striimata tiedosto pienissä paloissa.&lt;/p&gt;
-
-&lt;h3 id=&#34;asynkronoitu-streamattu&#34;&gt;Asynkronoitu, streamattu&lt;/h3&gt;
-
-&lt;p&gt;Kolmas ja viimeinen tapa hoitaa tiedoston lukeminen on &lt;em&gt;striimata&lt;/em&gt; tiedoston sisältö pienissä pätkissä kerrallaan. Tällöin kerrallaan keskusmuistissa on vain pieni osa tiedostoa; kun tuo osa on käsitelty, seuraava osa voi ottaa sen paikan.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var fs = require(&#39;fs&#39;);
-var readStream = fs.createReadStream(&#39;tiedosto.txt&#39;);
-
-readStream.on(&#39;data&#39;, function(chunk) {
-	console.log(chunk);
-});
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevassa ratkaisussa määritämme callback-funktion, jonka lähetämme kyytipojaksi tiedoston lukemisesta vastaavaan järjestelmäfunktioon. Tässä suhteessa ratkaisu on identtinen #2 ratkaisun kanssa.&lt;/p&gt;
-
-&lt;p&gt;Mutta ero #2 ratkaisuun tulee siinä, mitä tuo callback ottaa parametrinään sisälle. Kakkosratkaisussa koko tiedoston sisältö tuli parametrinä sisään. Nyt tulee vain &lt;em&gt;pieni osa&lt;/em&gt; tiedostoa - sen sijaan callback-funktiota kutsutaan *&lt;em&gt;uudelleen ja uudelleen&lt;/em&gt; niin kauan, kunnes koko tiedosto on pala palalta käsitelty.&lt;/p&gt;
-
-&lt;p&gt;Striimauksen ongelma on, että saamme palat yksitellen. Jos siis haluamme &lt;strong&gt;uudelleenrakentaa&lt;/strong&gt; tiedoston sisällön eheänä kokonaisuutena, meidän täytyy erikseen yhdistää nuo palat yhteen.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: yllä kolme yleisintä tapaa hoitaa tiedoston lukeminen ja käsittely Node.js-applikaatiossa. Eri tavat sopivat eri ongelmiin:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;&lt;p&gt;Synkronoitu ja bufferoitu sopii hyvin Node.js-applikaation initialisaatiovaiheeseen (eli kun applikaatio käynnistyy). Initialisaation aikana applikaatio rakentuu keskusmuistiin, ja varsinaisia loppukäyttäjien HTTP-kutsuja ei vielä käsitellä. Tästä syystä synkronoidun kutsun negatiiviset vaikutukset ovat vähäiset. Myöhemmin applikaation normaalin toiminnan aikana synkronoitu kutsu hidastaa merkittävästi applikaation vasteaikaa.&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Asynkronoitu ja bufferoitu sopii erinomaisesti pienten tiedostojen lukemiseen applikaation varsinaisen toiminta-ajon aikana. Applikaatio ei jumahda paikalleen, vaan pysyy käyttökelpoisena ja suorituskykyisenä.&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Asynkronoitu ja striimattu sopii suurten tiedostojen lukemiseen. Se sopii myös tapauksissa, joissa tiedoston sisältö voidaan pala palalta lähettää eteenpäin, esim. loppukäyttäjän HTTP-yhteyteen.&lt;/p&gt;&lt;/li&gt;
-&lt;/ol&gt;
 &lt;/blockquote&gt;
 </description>
     </item>

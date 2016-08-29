@@ -6,8 +6,72 @@
     <description>Recent content in Nodejs on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Tue, 23 Aug 2016 06:53:16 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 29 Aug 2016 13:39:19 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/nodejs/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Lodash: toPairs &#43; sortBy</title>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/lodash-object-transform-sort/</link>
+      <pubDate>Mon, 29 Aug 2016 13:39:19 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/lodash-object-transform-sort/</guid>
+      <description>&lt;p&gt;Löysin kivan patternin tallentaa objektin attribuuttien keskinäinen järjestys osaksi objektia.&lt;/p&gt;
+
+&lt;p&gt;Sanotaan esimerkkinä, että meillä on &lt;em&gt;asukasluettelo&lt;/em&gt;. Tuo luettelo on objekti, jossa &lt;em&gt;avaimena&lt;/em&gt; toimii asukkaan nimi, ja &lt;em&gt;arvona&lt;/em&gt; asukkaan ikä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var asukasLuettelo = {
+  &#39;Matti&#39; : {ika: 16},
+  &#39;Pekka&#39; : {ika: 28},
+  &#39;Pirjo&#39; : {ika: 35},
+  &#39;Lauri&#39; : {ika: 21},
+  // jne.	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Haluamme muuntaa asukasluettelon muotoon, jossa jokaisen iän yhteydeen on kirjattu &lt;em&gt;kuinka mones nousevassa ikäjärjestyksessä tuo asukas on&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Eli haluamme lopputuloksen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var asukasLuettelo = {
+  &#39;Matti&#39; : {ika: 16, jarj: 1},
+  &#39;Pekka&#39; : {ika: 28, jarj: 3},
+  &#39;Pirjo&#39; : {ika: 35, jarj: 4},
+  &#39;Lauri&#39; : {ika: 21, jarj: 2},
+  // jne.	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kuinka tehdä tuo muutos helposti? Yksinkertainen pätkä ketjutettuja Lodash-funktiokutsuja riittää:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+_.chain(asukasLuettelo)
+// Muunna objekti listaksi.
+.toPairs()
+// Lajittele asukkaat ikäjärjestykseen.
+.sortBy(function(asukasL) { return asukasL[1].ika})
+// Asukkaat nyt ikäjärjestyksessä.
+// Talletetaan kunkin asukkaan kohdalle tieto hänen järj.numerostaan.
+.each(function(asukasL, idx) { asukasL[1].jarj = idx+1})
+// Pakotetaan Lodash evaluoimaan kutsuketju
+.value()
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Koska teemme muutoksen suoraan asukas-objektiin, meidän ei tarvitse tallentaa funktioketjun paluuarvoa mihinkään.&lt;/p&gt;
+
+&lt;p&gt;Nyt jokaisen asukkaan yhteyteen on tallennettu hänen ikäjärjestysnumeronsa.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: ylläolevan kutsuketjun lopussa kutsumme apufunktiota &lt;em&gt;value()&lt;/em&gt;. Tämä kutsu on syytä suorittaa vaikka emme tarvitsekaan palautusarvoa mihinkään! Tämä siksi, että Lodash käyttää konseptia nimeltä &lt;em&gt;lazy evaluation&lt;/em&gt; kun se kohtaa tuollaisen kutsuketjun.&lt;/p&gt;
+
+&lt;p&gt;Laiskana miehenä Lodash ei lähde tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Bluebird: Catch &#43; Translate</title>

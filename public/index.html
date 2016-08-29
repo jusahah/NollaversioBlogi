@@ -68,6 +68,73 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://www.nollaversio.fi/blog/public/nodejs/lodash-object-transform-sort/">
+        Lodash: toPairs &#43; sortBy
+      </a>
+    </h1>
+
+    <span class="post-date">Mon, Aug 29, 2016</span>
+
+    <p>Löysin kivan patternin tallentaa objektin attribuuttien keskinäinen järjestys osaksi objektia.</p>
+
+<p>Sanotaan esimerkkinä, että meillä on <em>asukasluettelo</em>. Tuo luettelo on objekti, jossa <em>avaimena</em> toimii asukkaan nimi, ja <em>arvona</em> asukkaan ikä:</p>
+
+<pre><code class="language-javascript">
+var asukasLuettelo = {
+  'Matti' : {ika: 16},
+  'Pekka' : {ika: 28},
+  'Pirjo' : {ika: 35},
+  'Lauri' : {ika: 21},
+  // jne.	
+}
+
+</code></pre>
+
+<p>Haluamme muuntaa asukasluettelon muotoon, jossa jokaisen iän yhteydeen on kirjattu <em>kuinka mones nousevassa ikäjärjestyksessä tuo asukas on</em>.</p>
+
+<p>Eli haluamme lopputuloksen:</p>
+
+<pre><code class="language-javascript">
+var asukasLuettelo = {
+  'Matti' : {ika: 16, jarj: 1},
+  'Pekka' : {ika: 28, jarj: 3},
+  'Pirjo' : {ika: 35, jarj: 4},
+  'Lauri' : {ika: 21, jarj: 2},
+  // jne.	
+}
+
+</code></pre>
+
+<p>Kuinka tehdä tuo muutos helposti? Yksinkertainen pätkä ketjutettuja Lodash-funktiokutsuja riittää:</p>
+
+<pre><code class="language-javascript">
+_.chain(asukasLuettelo)
+// Muunna objekti listaksi.
+.toPairs()
+// Lajittele asukkaat ikäjärjestykseen.
+.sortBy(function(asukasL) { return asukasL[1].ika})
+// Asukkaat nyt ikäjärjestyksessä.
+// Talletetaan kunkin asukkaan kohdalle tieto hänen järj.numerostaan.
+.each(function(asukasL, idx) { asukasL[1].jarj = idx+1})
+// Pakotetaan Lodash evaluoimaan kutsuketju
+.value()
+
+</code></pre>
+
+<p>Koska teemme muutoksen suoraan asukas-objektiin, meidän ei tarvitse tallentaa funktioketjun paluuarvoa mihinkään.</p>
+
+<p>Nyt jokaisen asukkaan yhteyteen on tallennettu hänen ikäjärjestysnumeronsa.</p>
+
+<blockquote>
+<p>Loppukaneetti: ylläolevan kutsuketjun lopussa kutsumme apufunktiota <em>value()</em>. Tämä kutsu on syytä suorittaa vaikka emme tarvitsekaan palautusarvoa mihinkään! Tämä siksi, että Lodash käyttää konseptia nimeltä <em>lazy evaluation</em> kun se kohtaa tuollaisen kutsuketjun.</p>
+
+<p>Laiskana miehenä Lodash ei lähde tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/">
         Arkkitehtuuri: ohjaa pelaajat eteenpäin
       </a>
@@ -99,7 +166,7 @@
 
 <p>Kuvitellaan, että meillä on yksi Laravel-palvelin ja viisi Node.js-palvelinta. Kukin tietovisa pyörii yhdellä palvelimella. Tietovisat pyritään jakamaan tasaisesti palvelinten kesken, jotta kuormitus jakautuu mahdollisimman tasaisesti.</p>
 
-<p>Loppukäyttäjän eli tietovisan osallistujan kannalta viisi palvelinta on hiukka ongelmallista - kuinka loppukäyttäjä mihin palvelimeen ottaa yhteys tietovisan pelaamista varten?</p>
+<p>Loppukäyttäjän eli tietovisan osallistujan kannalta viisi palvelinta on hiukka ongelmallista - kuinka loppukäyttäjä tietää mihin palvelimeen ottaa yhteys tietovisan pelaamista varten?</p>
 
 <p>Ratkaisu on, että pelaaja ottaa <strong>ensin yhteyden Laravel-palvelimeen</strong>, joka <strong>kertoo pelaajalle hänen valitsemansa tietovisan Node.js-palvelimen IP-osoitteen</strong>.</p>
 
@@ -125,7 +192,7 @@
 <ol>
 <li><p>Palvelin kysyy Laravellilta &lsquo;onko uusia tietovisoja, joita voisin pyörittää?&rsquo;.</p></li>
 
-<li><p>Palvelin tarkistaa tietokannasta ja vastaa joko: &lsquo;ei&rsquo; tai &lsquo;kyllä on, tässä tietovisan pyöritykseen vaatittavat tiedot&rsquo;</p></li>
+<li><p>Palvelin tarkistaa tietokannasta ja vastaa joko: &lsquo;ei&rsquo; tai &lsquo;kyllä on, tässä tietovisan pyöritykseen vaadittavat tiedot&rsquo;</p></li>
 </ol>
 
 <p>Mitä tapahtuu Laravellin päässä kun Laravel <em>antaa</em> tietovisan pyörityksen tietyn Node.js-palvelimen kontolle? Laravel tietää IP-osoitteen, josta Node.js-palvelin otti yhteyttä. Joten pyöritysvastuun antamisen yhteydessä Laravel voi tallettaa tuon IP-osoitteen tietokantaan.</p>

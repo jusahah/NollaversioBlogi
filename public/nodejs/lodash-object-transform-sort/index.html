@@ -1,0 +1,137 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Lodash: toPairs &#43; sortBy &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Lodash: toPairs &#43; sortBy</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Mon, Aug 29, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      <p>Löysin kivan patternin tallentaa objektin attribuuttien keskinäinen järjestys osaksi objektia.</p>
+
+<p>Sanotaan esimerkkinä, että meillä on <em>asukasluettelo</em>. Tuo luettelo on objekti, jossa <em>avaimena</em> toimii asukkaan nimi, ja <em>arvona</em> asukkaan ikä:</p>
+
+<pre><code class="language-javascript">
+var asukasLuettelo = {
+  'Matti' : {ika: 16},
+  'Pekka' : {ika: 28},
+  'Pirjo' : {ika: 35},
+  'Lauri' : {ika: 21},
+  // jne.	
+}
+
+</code></pre>
+
+<p>Haluamme muuntaa asukasluettelon muotoon, jossa jokaisen iän yhteydeen on kirjattu <em>kuinka mones nousevassa ikäjärjestyksessä tuo asukas on</em>.</p>
+
+<p>Eli haluamme lopputuloksen:</p>
+
+<pre><code class="language-javascript">
+var asukasLuettelo = {
+  'Matti' : {ika: 16, jarj: 1},
+  'Pekka' : {ika: 28, jarj: 3},
+  'Pirjo' : {ika: 35, jarj: 4},
+  'Lauri' : {ika: 21, jarj: 2},
+  // jne.	
+}
+
+</code></pre>
+
+<p>Kuinka tehdä tuo muutos helposti? Yksinkertainen pätkä ketjutettuja Lodash-funktiokutsuja riittää:</p>
+
+<pre><code class="language-javascript">
+_.chain(asukasLuettelo)
+// Muunna objekti listaksi.
+.toPairs()
+// Lajittele asukkaat ikäjärjestykseen.
+.sortBy(function(asukasL) { return asukasL[1].ika})
+// Asukkaat nyt ikäjärjestyksessä.
+// Talletetaan kunkin asukkaan kohdalle tieto hänen järj.numerostaan.
+.each(function(asukasL, idx) { asukasL[1].jarj = idx+1})
+// Pakotetaan Lodash evaluoimaan kutsuketju
+.value()
+
+</code></pre>
+
+<p>Koska teemme muutoksen suoraan asukas-objektiin, meidän ei tarvitse tallentaa funktioketjun paluuarvoa mihinkään.</p>
+
+<p>Nyt jokaisen asukkaan yhteyteen on tallennettu hänen ikäjärjestysnumeronsa.</p>
+
+<blockquote>
+<p>Loppukaneetti: ylläolevan kutsuketjun lopussa kutsumme apufunktiota <em>value()</em>. Tämä kutsu on syytä suorittaa vaikka emme tarvitsekaan palautusarvoa mihinkään! Tämä siksi, että Lodash käyttää konseptia nimeltä <em>lazy evaluation</em> kun se kohtaa tuollaisen kutsuketjun.</p>
+
+<p>Laiskana miehenä Lodash ei lähde tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

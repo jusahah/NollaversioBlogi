@@ -39,7 +39,7 @@
 
 &lt;p&gt;Kuvitellaan, että meillä on yksi Laravel-palvelin ja viisi Node.js-palvelinta. Kukin tietovisa pyörii yhdellä palvelimella. Tietovisat pyritään jakamaan tasaisesti palvelinten kesken, jotta kuormitus jakautuu mahdollisimman tasaisesti.&lt;/p&gt;
 
-&lt;p&gt;Loppukäyttäjän eli tietovisan osallistujan kannalta viisi palvelinta on hiukka ongelmallista - kuinka loppukäyttäjä mihin palvelimeen ottaa yhteys tietovisan pelaamista varten?&lt;/p&gt;
+&lt;p&gt;Loppukäyttäjän eli tietovisan osallistujan kannalta viisi palvelinta on hiukka ongelmallista - kuinka loppukäyttäjä tietää mihin palvelimeen ottaa yhteys tietovisan pelaamista varten?&lt;/p&gt;
 
 &lt;p&gt;Ratkaisu on, että pelaaja ottaa &lt;strong&gt;ensin yhteyden Laravel-palvelimeen&lt;/strong&gt;, joka &lt;strong&gt;kertoo pelaajalle hänen valitsemansa tietovisan Node.js-palvelimen IP-osoitteen&lt;/strong&gt;.&lt;/p&gt;
 
@@ -65,7 +65,7 @@
 &lt;ol&gt;
 &lt;li&gt;&lt;p&gt;Palvelin kysyy Laravellilta &amp;lsquo;onko uusia tietovisoja, joita voisin pyörittää?&amp;rsquo;.&lt;/p&gt;&lt;/li&gt;
 
-&lt;li&gt;&lt;p&gt;Palvelin tarkistaa tietokannasta ja vastaa joko: &amp;lsquo;ei&amp;rsquo; tai &amp;lsquo;kyllä on, tässä tietovisan pyöritykseen vaatittavat tiedot&amp;rsquo;&lt;/p&gt;&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Palvelin tarkistaa tietokannasta ja vastaa joko: &amp;lsquo;ei&amp;rsquo; tai &amp;lsquo;kyllä on, tässä tietovisan pyöritykseen vaadittavat tiedot&amp;rsquo;&lt;/p&gt;&lt;/li&gt;
 &lt;/ol&gt;
 
 &lt;p&gt;Mitä tapahtuu Laravellin päässä kun Laravel &lt;em&gt;antaa&lt;/em&gt; tietovisan pyörityksen tietyn Node.js-palvelimen kontolle? Laravel tietää IP-osoitteen, josta Node.js-palvelin otti yhteyttä. Joten pyöritysvastuun antamisen yhteydessä Laravel voi tallettaa tuon IP-osoitteen tietokantaan.&lt;/p&gt;
