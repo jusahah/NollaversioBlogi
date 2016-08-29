@@ -7,7 +7,7 @@ title = "Lodash: toPairs + sortBy"
 
 Löysin kivan patternin tallentaa objektin attribuuttien keskinäinen järjestys osaksi objektia.
 
-Sanotaan esimerkkinä, että meillä on *asukasluettelo*. Tuo luettelo on objekti, jossa *avaimena* toimii asukkaan nimi, ja *arvona* asukkaan ikä:
+Sanotaan esimerkkinä, että meillä on *asukasluettelo*. Tuo luettelo on objekti, jossa *avaimena* toimii asukkaan nimi, ja *arvona* asukkaan iän kertova objekti:
 
 ```javascript
 
@@ -60,6 +60,6 @@ Nyt jokaisen asukkaan yhteyteen on tallennettu hänen ikäjärjestysnumeronsa.
 
 > Loppukaneetti: ylläolevan kutsuketjun lopussa kutsumme apufunktiota *value()*. Tämä kutsu on syytä suorittaa vaikka emme tarvitsekaan palautusarvoa mihinkään! Tämä siksi, että Lodash käyttää konseptia nimeltä *lazy evaluation* kun se kohtaa tuollaisen kutsuketjun. 
 >
-> Laiskana miehenä Lodash ei lähde tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.
+> Laiskana miehenä Lodash ei tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.
 
 
