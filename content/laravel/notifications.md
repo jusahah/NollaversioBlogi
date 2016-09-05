@@ -19,18 +19,13 @@ $matti->notify(new LaskuEraantynyt());
 
 Ylläoleva koodi kertoo Matille, että hänen laskunsa on erääntynyt.
 
-Pinnan alla tapahtuu ylläolevan koodinajon jälkeen vielä hiukka asioita. Ensiksi tarvitsemme *User*-luokkaan ($matti on User-luokan objekti) metodin nimeltä *via*. 
+Pinnan alla tapahtuu ylläolevan koodinajon jälkeen vielä hiukka asioita. Ensiksi tarvitsemme *User*-luokkaan ($matti on User-luokan objekti) metodin nimeltä *routeNotificationForSlack*. 
 
-Tämä via-metodi määrittelee *miten* ilmoitamme laskun erääntymisestä Matille. Se **ei** tee itse ilmoitusta, vaan ainoastaan kertoo mitä ilmoitustapaa käytämme.
+Tämä routeNotificationForSlack-metodi määrittelee mihin "postilaatikkoon" lähetämme laskun erääntymisestä kertovan ilmoituksen. Se **ei** tee itse ilmoitusta, vaan ainoastaan kertoo mihin tuo ilmoitus ohjataan.
 
 ```php
 
 // User.php
-
-public function via($notifiable) {
-  // Matti tykkää Slackista, joten lähetetään hänelle chat-viesti Slackiin.
-  return ['slack'];	
-}
 
 public function routeNotificationForSlack() {
   // Tässä määritetään Matin Slack-tilin endpoint joka vastaanottaa viestit.
@@ -41,7 +36,13 @@ public function routeNotificationForSlack() {
 
 ```
 
-Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vakiona tukee Slackkia, voimme luoda tuon luokan helposti:
+Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vakiona tukee Slackkia, voimme luoda tuon luokan helposti.
+
+Tarvitsemme ensinnäkin *via*-metodin, joka määrittää mitä ilmoitustapaa käytämme. Voimme käyttää esim. SMS-viestiä tai email-viestiä. Tässä esimerkissä tyydymme Slackin käyttöön.
+
+Lisäksi tarvitsemme *toSlack*-metodin, joka luo Slackia varten uuden viestin. Tätä metodia tarvitsemme ainoastaan lähettäessämme ilmoituksen Slackiin. 
+
+Jos lähettäisimme ilmoituksen emaililla, käyttäisimme metodia *toMail*. Koska lähetämme Slackiin, käytämme metodia *toSlack*. Suorastaan johdonmukaista.
 
 ```php
 
@@ -49,8 +50,14 @@ Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vaki
 
 class LaskuEraantynyt extends Notification {
 
+  public function via($notifiable) {
+    // Laskuilmoitukset lähetetään asiakkaiden Slack-kanaviin.
+    return ['slack'];	
+  }
+
   public function toSlack($notifiable) {
     // Kehys kutsuu tätä metodia kun Slack-viestiä luodaan/lähetetään.
+    // SlackMessage on Laravellin sisäinen apuluokka.
     return (new SlackMessage)->content('Maksa heti!');
 
   }
@@ -59,7 +66,9 @@ class LaskuEraantynyt extends Notification {
 
 ```
 
-Muuta ei tarvita. On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:
+Muuta ei tarvita (paitsi Guzzle, lue loppukaneetti). 
+
+On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:
 
 1. Kutsumme domain-koodissa User-objektin *notify*-metodia. Parametrinä sisään pyyhältää uunituore LaskuEraantynyt-objekti.
 2. Laravel selvittää User-objektin *via*-metodilla, että haluttu viestiväylä on Slack.
