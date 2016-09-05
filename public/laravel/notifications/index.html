@@ -1,0 +1,145 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Laravel 5.3: ilmoitukset &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Laravel 5.3: ilmoitukset</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Mon, Sep 5, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      <p>Laravellin uusin versio (5.3) tekee web-ohjelmoinnista taas laittoman helppoa. Ikäänkuin se ei olisi jo sitä ollut.</p>
+
+<p>Uusi versio tuo mukanaan <em>ilmoituksen</em> (engl. notification) konseptin, jonka avulla ns. domain-koodista pystyy ampumaan ilmoituksia suoraan domain-objektien suuntaan. Laravel-kehys sitten hoitaa loput.</p>
+
+<p>Tyypillinen tapa ilmoitttaa jotain on ampua ilmoitus <em>User</em>-objektin suuntaan. Homma toimii äärimmäisen yksinkertaisesti:</p>
+
+<pre><code class="language-php">
+$matti-&gt;notify(new LaskuEraantynyt());
+
+</code></pre>
+
+<p>Ylläoleva koodi kertoo Matille, että hänen laskunsa on erääntynyt.</p>
+
+<p>Pinnan alla tapahtuu ylläolevan koodinajon jälkeen vielä hiukka asioita. Ensiksi tarvitsemme <em>User</em>-luokkaan ($matti on User-luokan objekti) metodin nimeltä <em>via</em>.</p>
+
+<p>Tämä via-metodi määrittelee <em>miten</em> ilmoitamme laskun erääntymisestä Matille. Se <strong>ei</strong> tee itse ilmoitusta, vaan ainoastaan kertoo mitä ilmoitustapaa käytämme.</p>
+
+<pre><code class="language-php">
+// User.php
+
+public function via($notifiable) {
+  // Matti tykkää Slackista, joten lähetetään hänelle chat-viesti Slackiin.
+  return ['slack'];	
+}
+
+public function routeNotificationForSlack() {
+  // Tässä määritetään Matin Slack-tilin endpoint joka vastaanottaa viestit.
+  // Oletetaan että Matti on rekisteröinnin yhteydessä antanut endpoint-URL:n.
+  // Tuo Slack-URL on sitten tallennettu osaksi Matin käyttäjätietoja tietokantaan.
+  return $this-&gt;slack_url;	
+}
+
+</code></pre>
+
+<p>Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vakiona tukee Slackkia, voimme luoda tuon luokan helposti:</p>
+
+<pre><code class="language-php">
+// Notifications/LaskuEraantynyt.php
+
+class LaskuEraantynyt extends Notification {
+
+  public function toSlack($notifiable) {
+    // Kehys kutsuu tätä metodia kun Slack-viestiä luodaan/lähetetään.
+    return (new SlackMessage)-&gt;content('Maksa heti!');
+
+  }
+	
+}
+
+</code></pre>
+
+<p>Muuta ei tarvita. On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:</p>
+
+<ol>
+<li>Kutsumme domain-koodissa User-objektin <em>notify</em>-metodia. Parametrinä sisään pyyhältää uunituore LaskuEraantynyt-objekti.</li>
+<li>Laravel selvittää User-objektin <em>via</em>-metodilla, että haluttu viestiväylä on Slack.</li>
+<li>LaskuEraantynyt-objektin <em>toSlack</em>-metodi palauttaa SlackMessage-viestiobjektin.</li>
+<li>SlackMessage-viestiobjekti ohjataan User-objektin <em>routeNotificationForSlack</em>-metodin palauttamaan URL-osoitteeseen. Teknisesti tuon ohjauksen hoitaa Guzzle, joka kutsuu Slackin rajapintaa HTTP POST-pyynnön turvin.</li>
+</ol>
+
+<blockquote>
+<p>Loppukaneetti: Slack-viestin lähettäminen vaatii Guzzle-lisäosaa, joka ottaa yhteyden Slackin HTTP-rajapintaan.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

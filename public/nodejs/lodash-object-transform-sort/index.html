@@ -72,7 +72,7 @@
 				<hr style="margin-top: 12px;">
 			      <p>Löysin kivan patternin tallentaa objektin attribuuttien keskinäinen järjestys osaksi objektia.</p>
 
-<p>Sanotaan esimerkkinä, että meillä on <em>asukasluettelo</em>. Tuo luettelo on objekti, jossa <em>avaimena</em> toimii asukkaan nimi, ja <em>arvona</em> asukkaan ikä:</p>
+<p>Sanotaan esimerkkinä, että meillä on <em>asukasluettelo</em>. Tuo luettelo on objekti, jossa <em>avaimena</em> toimii asukkaan nimi, ja <em>arvona</em> asukkaan iän kertova objekti:</p>
 
 <pre><code class="language-javascript">
 var asukasLuettelo = {
@@ -123,7 +123,7 @@ _.chain(asukasLuettelo)
 <blockquote>
 <p>Loppukaneetti: ylläolevan kutsuketjun lopussa kutsumme apufunktiota <em>value()</em>. Tämä kutsu on syytä suorittaa vaikka emme tarvitsekaan palautusarvoa mihinkään! Tämä siksi, että Lodash käyttää konseptia nimeltä <em>lazy evaluation</em> kun se kohtaa tuollaisen kutsuketjun.</p>
 
-<p>Laiskana miehenä Lodash ei lähde tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.</p>
+<p>Laiskana miehenä Lodash ei tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.</p>
 </blockquote>
 
 			</div>

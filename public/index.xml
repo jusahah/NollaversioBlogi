@@ -6,8 +6,80 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Mon, 29 Aug 2016 13:39:19 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 05 Sep 2016 07:38:13 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Laravel 5.3: ilmoitukset</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/notifications/</link>
+      <pubDate>Mon, 05 Sep 2016 07:38:13 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/notifications/</guid>
+      <description>&lt;p&gt;Laravellin uusin versio (5.3) tekee web-ohjelmoinnista taas laittoman helppoa. Ikäänkuin se ei olisi jo sitä ollut.&lt;/p&gt;
+
+&lt;p&gt;Uusi versio tuo mukanaan &lt;em&gt;ilmoituksen&lt;/em&gt; (engl. notification) konseptin, jonka avulla ns. domain-koodista pystyy ampumaan ilmoituksia suoraan domain-objektien suuntaan. Laravel-kehys sitten hoitaa loput.&lt;/p&gt;
+
+&lt;p&gt;Tyypillinen tapa ilmoitttaa jotain on ampua ilmoitus &lt;em&gt;User&lt;/em&gt;-objektin suuntaan. Homma toimii äärimmäisen yksinkertaisesti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+$matti-&amp;gt;notify(new LaskuEraantynyt());
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva koodi kertoo Matille, että hänen laskunsa on erääntynyt.&lt;/p&gt;
+
+&lt;p&gt;Pinnan alla tapahtuu ylläolevan koodinajon jälkeen vielä hiukka asioita. Ensiksi tarvitsemme &lt;em&gt;User&lt;/em&gt;-luokkaan ($matti on User-luokan objekti) metodin nimeltä &lt;em&gt;via&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tämä via-metodi määrittelee &lt;em&gt;miten&lt;/em&gt; ilmoitamme laskun erääntymisestä Matille. Se &lt;strong&gt;ei&lt;/strong&gt; tee itse ilmoitusta, vaan ainoastaan kertoo mitä ilmoitustapaa käytämme.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// User.php
+
+public function via($notifiable) {
+  // Matti tykkää Slackista, joten lähetetään hänelle chat-viesti Slackiin.
+  return [&#39;slack&#39;];	
+}
+
+public function routeNotificationForSlack() {
+  // Tässä määritetään Matin Slack-tilin endpoint joka vastaanottaa viestit.
+  // Oletetaan että Matti on rekisteröinnin yhteydessä antanut endpoint-URL:n.
+  // Tuo Slack-URL on sitten tallennettu osaksi Matin käyttäjätietoja tietokantaan.
+  return $this-&amp;gt;slack_url;	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vakiona tukee Slackkia, voimme luoda tuon luokan helposti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Notifications/LaskuEraantynyt.php
+
+class LaskuEraantynyt extends Notification {
+
+  public function toSlack($notifiable) {
+    // Kehys kutsuu tätä metodia kun Slack-viestiä luodaan/lähetetään.
+    return (new SlackMessage)-&amp;gt;content(&#39;Maksa heti!&#39;);
+
+  }
+	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Muuta ei tarvita. On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Kutsumme domain-koodissa User-objektin &lt;em&gt;notify&lt;/em&gt;-metodia. Parametrinä sisään pyyhältää uunituore LaskuEraantynyt-objekti.&lt;/li&gt;
+&lt;li&gt;Laravel selvittää User-objektin &lt;em&gt;via&lt;/em&gt;-metodilla, että haluttu viestiväylä on Slack.&lt;/li&gt;
+&lt;li&gt;LaskuEraantynyt-objektin &lt;em&gt;toSlack&lt;/em&gt;-metodi palauttaa SlackMessage-viestiobjektin.&lt;/li&gt;
+&lt;li&gt;SlackMessage-viestiobjekti ohjataan User-objektin &lt;em&gt;routeNotificationForSlack&lt;/em&gt;-metodin palauttamaan URL-osoitteeseen. Teknisesti tuon ohjauksen hoitaa Guzzle, joka kutsuu Slackin rajapintaa HTTP POST-pyynnön turvin.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: Slack-viestin lähettäminen vaatii Guzzle-lisäosaa, joka ottaa yhteyden Slackin HTTP-rajapintaan.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Lodash: toPairs &#43; sortBy</title>
@@ -17,7 +89,7 @@
       <guid>http://www.nollaversio.fi/blog/public/nodejs/lodash-object-transform-sort/</guid>
       <description>&lt;p&gt;Löysin kivan patternin tallentaa objektin attribuuttien keskinäinen järjestys osaksi objektia.&lt;/p&gt;
 
-&lt;p&gt;Sanotaan esimerkkinä, että meillä on &lt;em&gt;asukasluettelo&lt;/em&gt;. Tuo luettelo on objekti, jossa &lt;em&gt;avaimena&lt;/em&gt; toimii asukkaan nimi, ja &lt;em&gt;arvona&lt;/em&gt; asukkaan ikä:&lt;/p&gt;
+&lt;p&gt;Sanotaan esimerkkinä, että meillä on &lt;em&gt;asukasluettelo&lt;/em&gt;. Tuo luettelo on objekti, jossa &lt;em&gt;avaimena&lt;/em&gt; toimii asukkaan nimi, ja &lt;em&gt;arvona&lt;/em&gt; asukkaan iän kertova objekti:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
 var asukasLuettelo = {
@@ -68,7 +140,7 @@ _.chain(asukasLuettelo)
 &lt;blockquote&gt;
 &lt;p&gt;Loppukaneetti: ylläolevan kutsuketjun lopussa kutsumme apufunktiota &lt;em&gt;value()&lt;/em&gt;. Tämä kutsu on syytä suorittaa vaikka emme tarvitsekaan palautusarvoa mihinkään! Tämä siksi, että Lodash käyttää konseptia nimeltä &lt;em&gt;lazy evaluation&lt;/em&gt; kun se kohtaa tuollaisen kutsuketjun.&lt;/p&gt;
 
-&lt;p&gt;Laiskana miehenä Lodash ei lähde tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.&lt;/p&gt;
+&lt;p&gt;Laiskana miehenä Lodash ei tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>
@@ -1765,152 +1837,6 @@ laajennukset[&#39;aikaKuluiUmpeen&#39;] = function() {
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Jatketaan tästä ensi kerralla.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Kuinka CSRF toimii?</title>
-      <link>http://www.nollaversio.fi/blog/public/laravel/csrf/</link>
-      <pubDate>Tue, 09 Aug 2016 06:07:23 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/laravel/csrf/</guid>
-      <description>
-
-&lt;p&gt;Lomakkeiden lähetys ja vastaanotto ovat tyypillisen web-applikaation tärkeimpiä vastuutehtäviä.&lt;/p&gt;
-
-&lt;p&gt;Lomakkeiden ja niiden datalähetysten suojaus on tärkeä aspekti turvallisen web-applikaation kannalta. Keskitytään tässä postauksessa yhteen suojamuuriin; CSRF-suojaukseen.&lt;/p&gt;
-
-&lt;h3 id=&#34;csrf&#34;&gt;CSRF&lt;/h3&gt;
-
-&lt;p&gt;CSRF tulee sanoista &amp;ldquo;Cross-Site Request Forgery&amp;rdquo;. Sanahirviö tarkoittaa yksinkertaisesti tilannetta, jossa &lt;em&gt;rikollinen käyttäjä&lt;/em&gt; huijaa web-applikaatiota luulemaan, että viesti tulee &lt;em&gt;rehelliseltä&lt;/em&gt; käyttäjältä.&lt;/p&gt;
-
-&lt;p&gt;Erityisesti tämä puijaus kohdistuu lomakkeiden lähetyksiin. Tyypillisellä web-applikaatiolla on oltava jokin tapa mahdollistaa käyttäjiensä tallettaa/muokata sisältöä.&lt;/p&gt;
-
-&lt;p&gt;Tuo sisältö voi olla blogipostauksia, pankkimaksuja, lentovarauksia, jne.&lt;/p&gt;
-
-&lt;p&gt;Useimmiten uuden sisällön luomista varten web-applikaatio tarjoaa lomakkeen, jonka täyttämällä ja lähettämällä sisällön luonti tapahtuu.&lt;/p&gt;
-
-&lt;p&gt;Otetaan esimerkkinä pankkisuorituksia hallinnoiva sivusto. Sivustolla voi tehdä tilisiirron täyttämällä lomake:&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Lähettäjän tili:&lt;/p&gt;
-
-&lt;p&gt;Saaja:&lt;/p&gt;
-
-&lt;p&gt;Saajan tili:&lt;/p&gt;
-
-&lt;p&gt;Summa:&lt;/p&gt;
-
-&lt;p&gt;Viesti:&lt;/p&gt;
-
-&lt;p&gt;Eräpäivä:&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Lomakkeen alla on &amp;ldquo;Maksa&amp;rdquo;-nappula, jota painamalla lähetys lähtee liikkeelle.&lt;/p&gt;
-
-&lt;p&gt;Ongelmaksi ylläolevassa muodostuu, että kuka tahansa voi luoda ylläolevan kaltaisen datapaketin, ja lähettää sen nettipankkiapplikaation suuntaan. Esimerkiksi minä voisin luoda seuraavanlaisen lähetyksen:&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Lähettäjän tili: Kimi Räikkönen FI00112233-4&lt;/p&gt;
-
-&lt;p&gt;Saaja: Jussi Hämäläinen&lt;/p&gt;
-
-&lt;p&gt;Saajan tili: FI22334455-6&lt;/p&gt;
-
-&lt;p&gt;Summa: 1000&lt;/p&gt;
-
-&lt;p&gt;Viesti: Jäätelöraha&lt;/p&gt;
-
-&lt;p&gt;Eräpäivä: 9.8.2016&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Nettipankkiapplikaatio vastaanottaa ylläolevan lomakelähetyksen. Mitä tapahtuu vastaanoton jälkeen?&lt;/p&gt;
-
-&lt;p&gt;Ei mitään, sillä käyttäjä &amp;ldquo;Kimi Räikkönen&amp;rdquo; ei ole kirjautunut sisään. Eli tilisiirtoa ei tapahdu. Huomioitavaa on, että Räikkösen sisäänkirjautuminen ei vaikuta CSRF-suojauksen toimintaan.&lt;/p&gt;
-
-&lt;p&gt;Vain sisäänkirjautuneet käyttäjät voivat luoda tilisiirtoja, joissa &amp;ldquo;Lähettäjän tili&amp;rdquo; on oma tili.&lt;/p&gt;
-
-&lt;p&gt;Mutta mennään askel pidemmälle. Kuvitellaan, että olen &lt;em&gt;jotenkin&lt;/em&gt; onnistunut injektoimaan skriptin nettipankin käyttöliittymään.&lt;/p&gt;
-
-&lt;p&gt;Tällä tarkoitan, että kun nettipankin käyttöliittymäsivu rakennetaan HTML-koodista, olen jollain tavalla onnistunut työntämään tuohon rakennusvaiheeseen palan painikkeeksi haluamaani koodia.&lt;/p&gt;
-
-&lt;p&gt;Ilmiöstä käytetään nimitystä XSS (Cross-Site Scripting).&lt;/p&gt;
-
-&lt;p&gt;XSS:n avulla kykenen toteuttamaan seuraavanlaisen tempun. Seuraavan kerran kun Kimi Räikkönen - siis oikea Kimi, joka tietää omat pankkitunnuksensa - loggautuu nettipankkijärjestelmään sisään ja siirtyy maksusuoritusten luomissivulle, &lt;strong&gt;minun&lt;/strong&gt; määrittämä koodinpätkäni suoritetaan Räikkösen tietokoneen web-selaimessa.&lt;/p&gt;
-
-&lt;p&gt;Mitä tuo minun määrittämä koodinpätkä tekee?&lt;/p&gt;
-
-&lt;p&gt;Se lähettää lomakelähetyksen (kuten yllä, jossa Räikkönen vippasi minulle tonnin jäätelörahaa) nettipankin suuntaan.&lt;/p&gt;
-
-&lt;p&gt;Lomakelähetys saapuu nettipankin rajapintaan. Ja nyt tullaan tärkeään vaiheeseen: &lt;strong&gt;koska Kimi Räikkönen on kirjautunut sisään omilla oikeilla tunnuksillaan, nettipankki luulee, että Räikkönen toden totta on tuon tilisiirron takana&lt;/strong&gt;. Ja miksi ei luulisi?&lt;/p&gt;
-
-&lt;p&gt;Tilisiirron tiedot sisältävä lomakelähetys lähti liikkeelle Räikkösen tietokoneelta. Nettipankkiapplikaatio ei tiedä, että lähetyksen liikkeellelähdön sai aikaan &lt;em&gt;minun&lt;/em&gt; ohjelmoimani skripti, joka &lt;em&gt;ajettiin&lt;/em&gt; Räikkösen www-selaimen sisällä.&lt;/p&gt;
-
-&lt;p&gt;Nettipankille tilanne näyttää siltä, että Räikkönen täytti lomakkeen ja klikkasi &amp;ldquo;Maksa&amp;rdquo;-nappulaa.&lt;/p&gt;
-
-&lt;p&gt;Joten nettipankilla ei ole mitään syytä epäillä, etteikö lomakelähetys olisi aito. Siispä se tekee tilisiirron ja raha vaihtaa omistajaansa.&lt;/p&gt;
-
-&lt;h3 id=&#34;miten-csrf-suojaus-auttaa&#34;&gt;Miten CSRF-suojaus auttaa?&lt;/h3&gt;
-
-&lt;p&gt;CSRF-suojauksen ydinajatus on, että kun käyttäjälle tarjotaan lomaketta täytettäväksi, tuo lomake yksilöidään jollain tunnisteella. Myöhemmin web-applikaatio kykenee tämän yksilöidyn tunnisteen avulla varmistamaan, että saapuva lomakelähetys (esim. tilisiirron tiedot) on luotu asianmukaisesti.&lt;/p&gt;
-
-&lt;p&gt;Eli aiempi datalähetys&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Lähettäjän tili: Kimi Räikkönen FI00112233-4&lt;/p&gt;
-
-&lt;p&gt;Saaja: Jussi Hämäläinen&lt;/p&gt;
-
-&lt;p&gt;Saajan tili: FI22334455-6&lt;/p&gt;
-
-&lt;p&gt;Summa: 1000&lt;/p&gt;
-
-&lt;p&gt;Viesti: Jäätelöraha&lt;/p&gt;
-
-&lt;p&gt;Eräpäivä: 9.8.2016&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;menee nyt muotoon&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;_CSRF: ejse72Hja7299391Jkla28&lt;/p&gt;
-
-&lt;p&gt;Lähettäjän tili: Kimi Räikkönen FI00112233-4&lt;/p&gt;
-
-&lt;p&gt;Saaja: Jussi Hämäläinen&lt;/p&gt;
-
-&lt;p&gt;Saajan tili: FI22334455-6&lt;/p&gt;
-
-&lt;p&gt;Summa: 1000&lt;/p&gt;
-
-&lt;p&gt;Viesti: Jäätelöraha&lt;/p&gt;
-
-&lt;p&gt;Eräpäivä: 9.8.2016&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Kuten huomaamme yltä, lomakedatan yhteyteen on lisätty &amp;ldquo;_CSRF&amp;rdquo;-niminen lomakekenttä.
-Käytännössä web-applikaatio siis lähettää lomakesivun mukana CSRF-tunnisteen, ja myöhemmin vastaanottaa datan sisältäen CSRF-tunnisteen. &lt;strong&gt;Vain jos nämä kaksi CSRF-tunnistetta täsmäävät, applikaatio hyväksyy vastaanotetun datan&lt;/strong&gt;.&lt;/p&gt;
-
-&lt;p&gt;Jos ne eivät täsmää, applikaatio kieltäytyy toimimasta.&lt;/p&gt;
-
-&lt;p&gt;Miksi CSRF-tunnisteiden täsmääminen ratkoo aiemman jäätelörahahuijauksen?&lt;/p&gt;
-
-&lt;p&gt;Yksikertaisesti siksi, että nettipankki osaa yhdistää tarjotun lomakkeen ja vastaanotetun lomakedatan toisiinsa. Täten jos minä XSS:n kautta lähetän tilisiirtolähetyksen (Räikkösen koneelta käsin, kiitos XSS:n), niin nettipankkiapplikaatio tekee seuraavan tarkistukset:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;Tilisiirtolähetys lähti liikkeelle sisäänkirjautuneelta käyttäjältä - &amp;gt; check!&lt;/li&gt;
-&lt;li&gt;Tilisiirtolähetyksen CSRF-tunniste täsmää applikaation tallentaman tunnisteen kanssa -&amp;gt; fail!&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;CSRF-tunniste ei täsmää, sillä &lt;em&gt;minun etukäteen tuottamani&lt;/em&gt; lomakelähetys ei tiedä tuota tunnistetta. Tunniste luodaan jokaiselle lomakkeelle erikseen, ja se on satunnainen merkkijono.&lt;/p&gt;
-
-&lt;p&gt;Lopputulos siis on, että nettipankkiapplikaatio &lt;strong&gt;ei&lt;/strong&gt; tee tilisiirtoa, ja jään ilman jäätelörahaa.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: XSS:n avulla saattaa teoriassa olla mahdollista &lt;em&gt;selvittää&lt;/em&gt; CRSF-tunniste kesken hyökkäyksen. Tällöin CSRF-suojaus menettää tehonsa. Tämä vaatii, että XSS-hyökkääjällä on mahdollisuus ajaa mielivaltaista Javascript-koodia uhrinsa www-selaimessa.&lt;/p&gt;
-
-&lt;p&gt;Jos tätä mahdollisuutta ei ole, CSRF-suojaus toimii ja estää useimmat muunlaiset hyökkäysyritykset; esim. linkki-injektion, jossa rikollinen on &lt;em&gt;jotenkin&lt;/em&gt; saanut nettipankin käyttöliittymään lisättyä linkin, jota klikkaamalla etukäteen suunniteltu lomakedata lähtee salaa liikkeelle. Koska tuo etukäteen suunniteltu lomakedata ei voi mitenkään tietää ETUKÄTEEN sen hetkisen CSRF-tunnisteen merkkijonoa, CSRF-suojaus toimii ja rikollinen jää nuolemaan näppejään.&lt;/p&gt;
-&lt;/blockquote&gt;
 </description>
     </item>
     

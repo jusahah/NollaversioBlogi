@@ -68,6 +68,81 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/notifications/">
+        Laravel 5.3: ilmoitukset
+      </a>
+    </h1>
+
+    <span class="post-date">Mon, Sep 5, 2016</span>
+
+    <p>Laravellin uusin versio (5.3) tekee web-ohjelmoinnista taas laittoman helppoa. Ikäänkuin se ei olisi jo sitä ollut.</p>
+
+<p>Uusi versio tuo mukanaan <em>ilmoituksen</em> (engl. notification) konseptin, jonka avulla ns. domain-koodista pystyy ampumaan ilmoituksia suoraan domain-objektien suuntaan. Laravel-kehys sitten hoitaa loput.</p>
+
+<p>Tyypillinen tapa ilmoitttaa jotain on ampua ilmoitus <em>User</em>-objektin suuntaan. Homma toimii äärimmäisen yksinkertaisesti:</p>
+
+<pre><code class="language-php">
+$matti-&gt;notify(new LaskuEraantynyt());
+
+</code></pre>
+
+<p>Ylläoleva koodi kertoo Matille, että hänen laskunsa on erääntynyt.</p>
+
+<p>Pinnan alla tapahtuu ylläolevan koodinajon jälkeen vielä hiukka asioita. Ensiksi tarvitsemme <em>User</em>-luokkaan ($matti on User-luokan objekti) metodin nimeltä <em>via</em>.</p>
+
+<p>Tämä via-metodi määrittelee <em>miten</em> ilmoitamme laskun erääntymisestä Matille. Se <strong>ei</strong> tee itse ilmoitusta, vaan ainoastaan kertoo mitä ilmoitustapaa käytämme.</p>
+
+<pre><code class="language-php">
+// User.php
+
+public function via($notifiable) {
+  // Matti tykkää Slackista, joten lähetetään hänelle chat-viesti Slackiin.
+  return ['slack'];	
+}
+
+public function routeNotificationForSlack() {
+  // Tässä määritetään Matin Slack-tilin endpoint joka vastaanottaa viestit.
+  // Oletetaan että Matti on rekisteröinnin yhteydessä antanut endpoint-URL:n.
+  // Tuo Slack-URL on sitten tallennettu osaksi Matin käyttäjätietoja tietokantaan.
+  return $this-&gt;slack_url;	
+}
+
+</code></pre>
+
+<p>Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vakiona tukee Slackkia, voimme luoda tuon luokan helposti:</p>
+
+<pre><code class="language-php">
+// Notifications/LaskuEraantynyt.php
+
+class LaskuEraantynyt extends Notification {
+
+  public function toSlack($notifiable) {
+    // Kehys kutsuu tätä metodia kun Slack-viestiä luodaan/lähetetään.
+    return (new SlackMessage)-&gt;content('Maksa heti!');
+
+  }
+	
+}
+
+</code></pre>
+
+<p>Muuta ei tarvita. On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:</p>
+
+<ol>
+<li>Kutsumme domain-koodissa User-objektin <em>notify</em>-metodia. Parametrinä sisään pyyhältää uunituore LaskuEraantynyt-objekti.</li>
+<li>Laravel selvittää User-objektin <em>via</em>-metodilla, että haluttu viestiväylä on Slack.</li>
+<li>LaskuEraantynyt-objektin <em>toSlack</em>-metodi palauttaa SlackMessage-viestiobjektin.</li>
+<li>SlackMessage-viestiobjekti ohjataan User-objektin <em>routeNotificationForSlack</em>-metodin palauttamaan URL-osoitteeseen. Teknisesti tuon ohjauksen hoitaa Guzzle, joka kutsuu Slackin rajapintaa HTTP POST-pyynnön turvin.</li>
+</ol>
+
+<blockquote>
+<p>Loppukaneetti: Slack-viestin lähettäminen vaatii Guzzle-lisäosaa, joka ottaa yhteyden Slackin HTTP-rajapintaan.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://www.nollaversio.fi/blog/public/nodejs/lodash-object-transform-sort/">
         Lodash: toPairs &#43; sortBy
       </a>
@@ -77,7 +152,7 @@
 
     <p>Löysin kivan patternin tallentaa objektin attribuuttien keskinäinen järjestys osaksi objektia.</p>
 
-<p>Sanotaan esimerkkinä, että meillä on <em>asukasluettelo</em>. Tuo luettelo on objekti, jossa <em>avaimena</em> toimii asukkaan nimi, ja <em>arvona</em> asukkaan ikä:</p>
+<p>Sanotaan esimerkkinä, että meillä on <em>asukasluettelo</em>. Tuo luettelo on objekti, jossa <em>avaimena</em> toimii asukkaan nimi, ja <em>arvona</em> asukkaan iän kertova objekti:</p>
 
 <pre><code class="language-javascript">
 var asukasLuettelo = {
@@ -128,7 +203,7 @@ _.chain(asukasLuettelo)
 <blockquote>
 <p>Loppukaneetti: ylläolevan kutsuketjun lopussa kutsumme apufunktiota <em>value()</em>. Tämä kutsu on syytä suorittaa vaikka emme tarvitsekaan palautusarvoa mihinkään! Tämä siksi, että Lodash käyttää konseptia nimeltä <em>lazy evaluation</em> kun se kohtaa tuollaisen kutsuketjun.</p>
 
-<p>Laiskana miehenä Lodash ei lähde tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.</p>
+<p>Laiskana miehenä Lodash ei tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.</p>
 </blockquote>
 
   </div>

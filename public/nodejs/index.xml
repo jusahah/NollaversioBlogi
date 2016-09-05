@@ -17,7 +17,7 @@
       <guid>http://www.nollaversio.fi/blog/public/nodejs/lodash-object-transform-sort/</guid>
       <description>&lt;p&gt;Löysin kivan patternin tallentaa objektin attribuuttien keskinäinen järjestys osaksi objektia.&lt;/p&gt;
 
-&lt;p&gt;Sanotaan esimerkkinä, että meillä on &lt;em&gt;asukasluettelo&lt;/em&gt;. Tuo luettelo on objekti, jossa &lt;em&gt;avaimena&lt;/em&gt; toimii asukkaan nimi, ja &lt;em&gt;arvona&lt;/em&gt; asukkaan ikä:&lt;/p&gt;
+&lt;p&gt;Sanotaan esimerkkinä, että meillä on &lt;em&gt;asukasluettelo&lt;/em&gt;. Tuo luettelo on objekti, jossa &lt;em&gt;avaimena&lt;/em&gt; toimii asukkaan nimi, ja &lt;em&gt;arvona&lt;/em&gt; asukkaan iän kertova objekti:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
 var asukasLuettelo = {
@@ -68,7 +68,7 @@ _.chain(asukasLuettelo)
 &lt;blockquote&gt;
 &lt;p&gt;Loppukaneetti: ylläolevan kutsuketjun lopussa kutsumme apufunktiota &lt;em&gt;value()&lt;/em&gt;. Tämä kutsu on syytä suorittaa vaikka emme tarvitsekaan palautusarvoa mihinkään! Tämä siksi, että Lodash käyttää konseptia nimeltä &lt;em&gt;lazy evaluation&lt;/em&gt; kun se kohtaa tuollaisen kutsuketjun.&lt;/p&gt;
 
-&lt;p&gt;Laiskana miehenä Lodash ei lähde tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.&lt;/p&gt;
+&lt;p&gt;Laiskana miehenä Lodash ei tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>

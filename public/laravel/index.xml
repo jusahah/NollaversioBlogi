@@ -6,8 +6,80 @@
     <description>Recent content in Laravels on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Thu, 25 Aug 2016 06:22:35 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 05 Sep 2016 07:38:13 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Laravel 5.3: ilmoitukset</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/notifications/</link>
+      <pubDate>Mon, 05 Sep 2016 07:38:13 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/notifications/</guid>
+      <description>&lt;p&gt;Laravellin uusin versio (5.3) tekee web-ohjelmoinnista taas laittoman helppoa. Ikäänkuin se ei olisi jo sitä ollut.&lt;/p&gt;
+
+&lt;p&gt;Uusi versio tuo mukanaan &lt;em&gt;ilmoituksen&lt;/em&gt; (engl. notification) konseptin, jonka avulla ns. domain-koodista pystyy ampumaan ilmoituksia suoraan domain-objektien suuntaan. Laravel-kehys sitten hoitaa loput.&lt;/p&gt;
+
+&lt;p&gt;Tyypillinen tapa ilmoitttaa jotain on ampua ilmoitus &lt;em&gt;User&lt;/em&gt;-objektin suuntaan. Homma toimii äärimmäisen yksinkertaisesti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+$matti-&amp;gt;notify(new LaskuEraantynyt());
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva koodi kertoo Matille, että hänen laskunsa on erääntynyt.&lt;/p&gt;
+
+&lt;p&gt;Pinnan alla tapahtuu ylläolevan koodinajon jälkeen vielä hiukka asioita. Ensiksi tarvitsemme &lt;em&gt;User&lt;/em&gt;-luokkaan ($matti on User-luokan objekti) metodin nimeltä &lt;em&gt;via&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tämä via-metodi määrittelee &lt;em&gt;miten&lt;/em&gt; ilmoitamme laskun erääntymisestä Matille. Se &lt;strong&gt;ei&lt;/strong&gt; tee itse ilmoitusta, vaan ainoastaan kertoo mitä ilmoitustapaa käytämme.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// User.php
+
+public function via($notifiable) {
+  // Matti tykkää Slackista, joten lähetetään hänelle chat-viesti Slackiin.
+  return [&#39;slack&#39;];	
+}
+
+public function routeNotificationForSlack() {
+  // Tässä määritetään Matin Slack-tilin endpoint joka vastaanottaa viestit.
+  // Oletetaan että Matti on rekisteröinnin yhteydessä antanut endpoint-URL:n.
+  // Tuo Slack-URL on sitten tallennettu osaksi Matin käyttäjätietoja tietokantaan.
+  return $this-&amp;gt;slack_url;	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vakiona tukee Slackkia, voimme luoda tuon luokan helposti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Notifications/LaskuEraantynyt.php
+
+class LaskuEraantynyt extends Notification {
+
+  public function toSlack($notifiable) {
+    // Kehys kutsuu tätä metodia kun Slack-viestiä luodaan/lähetetään.
+    return (new SlackMessage)-&amp;gt;content(&#39;Maksa heti!&#39;);
+
+  }
+	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Muuta ei tarvita. On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Kutsumme domain-koodissa User-objektin &lt;em&gt;notify&lt;/em&gt;-metodia. Parametrinä sisään pyyhältää uunituore LaskuEraantynyt-objekti.&lt;/li&gt;
+&lt;li&gt;Laravel selvittää User-objektin &lt;em&gt;via&lt;/em&gt;-metodilla, että haluttu viestiväylä on Slack.&lt;/li&gt;
+&lt;li&gt;LaskuEraantynyt-objektin &lt;em&gt;toSlack&lt;/em&gt;-metodi palauttaa SlackMessage-viestiobjektin.&lt;/li&gt;
+&lt;li&gt;SlackMessage-viestiobjekti ohjataan User-objektin &lt;em&gt;routeNotificationForSlack&lt;/em&gt;-metodin palauttamaan URL-osoitteeseen. Teknisesti tuon ohjauksen hoitaa Guzzle, joka kutsuu Slackin rajapintaa HTTP POST-pyynnön turvin.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: Slack-viestin lähettäminen vaatii Guzzle-lisäosaa, joka ottaa yhteyden Slackin HTTP-rajapintaan.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Monikielisyys Laravel-kehyksen turvin</title>
@@ -2314,117 +2386,6 @@ public function list(Request $request) {
 
 &lt;p&gt;Kätevää, varsin kätevää. Esimerkin &lt;em&gt;only&lt;/em&gt;-attribuutin lisäksi meillä on käytössämme &lt;em&gt;except&lt;/em&gt;-attribuutti, joka
 toimii nimensä mukaisesti - se suojaa kaikki muut väylät paitsi erikseen &lt;em&gt;except&lt;/em&gt;:in perässä määritellyt.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Laravel vinkit #1</title>
-      <link>http://www.nollaversio.fi/blog/public/laravel/vinkit1/</link>
-      <pubDate>Wed, 06 Jul 2016 06:28:46 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/laravel/vinkit1/</guid>
-      <description>&lt;p&gt;&lt;strong&gt;Kuinka lisätä uusi raportointitoiminnallisuus ilman muutoksia vanhaan koodipohjaan?&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;em&gt;Lyhyt vastaus: luomalla palveluntarjoaja, joka määrittää tapahtumakuuntelijan.&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;Laravellilla rakennettu järjestelmä on helposti laajennettavissa palveluntarjoajien kautta. Palveluntarjoajan mahdollistavat arkkitehtuurin rakentamisen siten, että uudet toiminnallisuudet elävät täysin erillään ns. ydinkoodista. Ydinkoodin ei edes tarvitse tietää uuden toiminnallisuuden olemassaolosta.&lt;/p&gt;
-
-&lt;p&gt;Paras tapa toteuttaa tämä erilläänolo on käyttää palveluntarjoajia (Service Provider).&lt;/p&gt;
-
-&lt;hr /&gt;
-
-&lt;p&gt;Käytetään esimerkkinä Nordean pankkijärjestelmää.&lt;/p&gt;
-
-&lt;p&gt;Oletetaan, että Nordean mahtava nettipankki sallii asiakkaidensa lisätä pankkitileilleen rahaa. Ahneuspäissään pankkiväki ei ole lisännyt mahdollisuutta nostaa rahaa tililtä - ainoastaan talletus on mahdollista.&lt;/p&gt;
-
-&lt;p&gt;Ihana nettipankki toimii kuin unelma, kunnes tulee lakimuutoksen myötä lisävaatimus: jokaisen pankkitilille tehtävän talletuksen jälkeen järjestelmän tulee ilmoittaa viranomaisille ko. pankkitilin uusi saldo.&lt;/p&gt;
-
-&lt;p&gt;Oletetaan, että tässä esimerkissä viranomaisilla on upea HTTP-rajapinta nimeltä &amp;ldquo;Pankkipoliisi&amp;rdquo;. Rajapinnan tarkempi toiminta ei ole oleellista, joten oletetaan, että pintaa voidaan kutsua tyyliin:&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;Pankkipoliisi::ilmoita($asiakasID, $uusiSaldo)&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Miten nykyistä Nordean pankkijärjestelmää tulee muuttaa, jotta lain vaatimus täyttyy?&lt;/p&gt;
-
-&lt;hr /&gt;
-
-&lt;p&gt;Tarvittava muutos järjestelmän on yksinkertainen. Vanha ydinkoodi - joka huolehtii pankkitilin hallinnasta - voi pysyä tismalleen identtisenä.&lt;/p&gt;
-
-&lt;p&gt;Vaatimuksen täyttöä varten lisäämme järjestelmään palveluntarjoajan, joka puolestaan lisää &lt;em&gt;tapahtumakuuntelijan&lt;/em&gt;. Tuo tapahtumakuuntelija on kaiken A ja O - se kuuntelee järjestelmän tuottamia tapahtumia ja valikoi niistä jatkokäsittelyyn itselleen mieluisat.&lt;/p&gt;
-
-&lt;p&gt;Käytännössä homma toimii siten, että &lt;strong&gt;vanha ydinkoodi tuottaa tapahtumia&lt;/strong&gt;, ja &lt;strong&gt;uusi koodipohja reagoi noihin tapahtumiin&lt;/strong&gt;.&lt;/p&gt;
-
-&lt;p&gt;Tämä patterni on yleismaailmallinen ja soveltuu moniin käyttötarkoituksiin: olemassaoleva järjestelmäkomponentti tuottaa informaatiota, uusi komponentti reagoi tuotettuun informaatioon.&lt;/p&gt;
-
-&lt;p&gt;Kaiken pohjalla toimii oletus siitä, että vanha komponentti ei tiedä uuden komponentin olemassaolosta mitään. Parhaimmillaan myöskään uusi komponentti ei havaitse vanhaa komponenttia. Kaikki informaatio kulkee tapahtumien muodossa.&lt;/p&gt;
-
-&lt;p&gt;Hieman karrikoiden; vanha komponentti &amp;ldquo;&lt;em&gt;ampuu tapahtumia kohti tyhjyyttä&lt;/em&gt;&amp;rdquo;, uusi komponentti &amp;ldquo;&lt;em&gt;vastaanottaa tapahtumia tyhjyydestä&lt;/em&gt;&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;Tämä on koko arkkitehtuurin perimmäinen ajatus - vanha ja uusi koodipohja elävät täysin omissa maailmoissaan tietämättä mitään toisistaan.&lt;/p&gt;
-
-&lt;p&gt;Uusi koodipohja vain ottaa sopivat tapahtumat kiinni.&lt;/p&gt;
-
-&lt;p&gt;Vanha ydinkoodi:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Models/Pankkitili.php
-
-public function saveCash(ICurrency $amount) {
-
-	// Ei tarvetta transaktiolle kun lisätään rahaa -&amp;gt; menee aina läpi.
-
-	// Lasketaan uusi saldo
-	$this-&amp;gt;balance = $this-&amp;gt;balance + $amount-&amp;gt;convert($this-&amp;gt;accountCurrency);
-	// Päivitetään muutos tietokantaan. 
-	// Luo ja ampuu tapahtuman &amp;quot;pankkitili päivitetty!&amp;quot;.
-	$this-&amp;gt;save();
-
-	return true;
-	
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Yllä siis ydinkoodipohja. Koodi ei missään sisällä ekspliittistä käskyä ampua tapahtumaa. Tapahtuman luonti ja välitys järjestelmän muille komponenteille tapahtuu implisiittisesti, pinnan alla, Laravellin toimesta.&lt;/p&gt;
-
-&lt;p&gt;Kun lisätoiminnallisuutta järjestelmään lisätään, &lt;em&gt;ylläolevaan koodipohjaan ei tarvitse koskea&lt;/em&gt;. Tämä on koko hajautetun, tapahtumien välitykseen perustuvan arkkitehtuurin keskeisin pointti.&lt;/p&gt;
-
-&lt;p&gt;Toteutetaan uusi raportointitoiminnallisuus lisäämällä palveluntarjoaja, jonka vastuulla on napata lennosta sopivat tapahtumat ja reagoida niihin.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;// Providers/RaportointiPankkipoliisille.php
-
-public function boot() {	
-
-  // Ilmoitetaan halustamme kuunnella Pankkitiliin liittyviä &amp;quot;updated&amp;quot;-tapahtumia.
-  Pankkitili::updated(function($tili) {
-    // Tämä klosuuri ajetaan aina kun tilin saldo on päivittynyt.
-    // Klosuurin sisällä käytössämme on $tili-objekti
-    // $tili edustaa sitä Pankkitiliä, johon päivitys kohdistui.
-
-    // Selvitetään uusi saldo lähettääksemme sen viranomaisille.
-    $uusiSaldo = $tili-&amp;gt;getBalance();
-
-    $poliisi = new Pankkipoliisi(/*api-tunnukset tähän*/);
-
-    // Ilmoitetaan käyttäjän uusi saldo, eli lähetetään käyttäjä-ID ja saldosumma.
-    try {
-      $poliisi-&amp;gt;ilmoita(\Auth::user()-&amp;gt;id(), $uusiSaldo);
-    } catch (\Exception $e) {
-      Log::warning(&#39;poliisi_ilmoitus_fail&#39;, $e);
-    }
-  });
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Pankkipoliisin asetukset täytyy määritellä jossain config-tiedostossa, mutta periaate on ylläolevan mukainen.&lt;/p&gt;
-
-&lt;p&gt;Tiivistettynä:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;Vanhan koodipohjan (&lt;em&gt;Pankkitili.php&lt;/em&gt;) ei tässä esimerkissä tarvinnut muuttua kun halusimme lisätä uuden toiminnallisuuden järjestelmään.&lt;/li&gt;
-&lt;li&gt;Uusi palveluntarjoaja (&lt;em&gt;RaportointiPankkipoliisille.php&lt;/em&gt;) lisäsi &lt;strong&gt;laajennuksen&lt;/strong&gt; olemassaolevaan järjestelmään.&lt;/li&gt;
-&lt;li&gt;Lisätyn laajennuksen määrittämä &lt;em&gt;tapahtumakuuntelija&lt;/em&gt; nappaa sopivat tapahtumat kiinni ja reagoi niihin lähettämällä viestin viranomaisille.&lt;/li&gt;
-&lt;/ol&gt;
 </description>
     </item>
     
