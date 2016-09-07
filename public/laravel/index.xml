@@ -6,8 +6,127 @@
     <description>Recent content in Laravels on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Mon, 05 Sep 2016 07:38:13 +0300</lastBuildDate>
+    <lastBuildDate>Wed, 07 Sep 2016 18:03:38 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>CQRS ja Laravel</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/cqrs-in-laravel/</link>
+      <pubDate>Wed, 07 Sep 2016 18:03:38 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/cqrs-in-laravel/</guid>
+      <description>
+
+&lt;p&gt;CQRS (Command Query Responsibility Separation) on vahva keino selkeyttää vastuunjakoa ohjelma-arkkitehtuurissa.&lt;/p&gt;
+
+&lt;p&gt;Sen perusidea on &lt;em&gt;datan haun&lt;/em&gt; ja &lt;em&gt;datan muokkauksen&lt;/em&gt; erottaminen toisistaan. Tämä tarkoittaa pohjimmiltaan sitä, että tietty operaatio joko hakee dataa tai muokkaa dataa, mutta &lt;strong&gt;ei koskaan molempia yhtaikaa.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Kun operaatio on joko &lt;em&gt;hakubisneksessä&lt;/em&gt; tai &lt;em&gt;muokkausbisneksessä&lt;/em&gt;, mutta ei ikinä molemmissa, voi operaatio optimoida itsensä valitun &amp;ldquo;bisneksen&amp;rdquo; mukaan. Esimerkiksi hakuoperaatio voidaan optimoida käyttämään datalähdettä, jossa data on valmiiksi käsitelty helposti haettavaan muotoon. Muokkausoperaatio puolestaan voi käyttää datalähdettä, jossa data on käsitelty helposti muokattavaan muotoon.&lt;/p&gt;
+
+&lt;p&gt;Useimmiten ylläoleva tarkoittaa, että datasta on kaksi kopiota; yksi hakua varten, toinen muokkausta varten. Kopiot pidetään ajan tasalla toisiinsa nähden esimerkiksi rakentamalla hakukopio puhtaalta pöydältä aina kun muokkauskopioon tulee päivitys (=dataa muokataan).&lt;/p&gt;
+
+&lt;p&gt;CQRS ei itsessään vaadi datakopioiden olemassaoloa. Haku- ja muokkausoperaatioiden erottelu voidaan suorittaa siten, että molemmat operaatiot käyttävät samaa datalähdettä, mutta vaatimukset esim. virhetilanteiden käsittelylle ovat erilaiset.&lt;/p&gt;
+
+&lt;h3 id=&#34;hakuoperaatio-query&#34;&gt;Hakuoperaatio (Query)&lt;/h3&gt;
+
+&lt;p&gt;Hakuoperaation luonteeseen kuuluu, että haku ei voi mennä &lt;em&gt;kriittisellä&lt;/em&gt; tavalla pieleen. Kriittisellä tarkoitan tässä, että jos operaatio epäonnistuu, datalähde ei ole moksiskaan. Operaation epäonnistuminen rajoittuu operaatioon itseensä; ympäröivä järjestelmä ei kärsi vaurioita.&lt;/p&gt;
+
+&lt;p&gt;Miksi näin? Luonnollisesti ihan siksi, että hakuoperaatio - nimensä mukaisesti - &lt;em&gt;hakee&lt;/em&gt; tietoa. Tuo haku joko onnistuu tai epäonnistuu. Riippumatta operaation lopputulemasta, datalähde pysyy intaktina.&lt;/p&gt;
+
+&lt;h3 id=&#34;muokkausoperaatio-command&#34;&gt;Muokkausoperaatio (Command)&lt;/h3&gt;
+
+&lt;p&gt;Muokkausoperaation luonteeseen taas kuuluu, että operaatio muokkaa datalähdettä. Esimerkiksi puhelinnumeron muokkaus Facebookin profiilissa on selkeä muokkausoperaatio; uusi puhelinnumero tulee tallentaa jonnekin. Uuden datan tallennus (tai vanhan muokkaus) on operaatio, joka &lt;em&gt;ei&lt;/em&gt; jätä datalähdettä intaktiin tilaan.&lt;/p&gt;
+
+&lt;h3 id=&#34;mitä-haku-vs-muokkaus-tarkoittaa-koodin-tasolla&#34;&gt;Mitä haku vs. muokkaus tarkoittaa koodin tasolla?&lt;/h3&gt;
+
+&lt;p&gt;Koska hakuoperaatio ei voi edes teoriassa sotkea datalähdettä, tuo operaatio voidaan suorittaa varsin &amp;ldquo;vapaamielisesti&amp;rdquo;. Toisin sanoen vailla huolen häivää.&lt;/p&gt;
+
+&lt;p&gt;Itse tuppaan suorittamaan hakuoperaatiot suoraan Controllerista käsin. Controller on siis perinteisessä web-MVC-arkkitehtuurissa se osanen, joka vastaa sisääntulevan palvelupyynnön käsittelystä ja vastauksen (response) muodostamisesta.&lt;/p&gt;
+
+&lt;p&gt;Ihannearkkitehtuurissa Controller ei ole se paikka, josta tehdään tietokantakutsuja, mutta mikään laki ei estä tietokantakutsuja suorittamasta. Ja koska hakuoperaation kohdalla vaatimukset tietokantakutsuille ovat niin löyhät, voi tuollaisia kutsuja suorittaa huoletta.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Controller/LainausController.php
+
+public class LainausController {
+	
+  public function list() {
+
+    // Tietokantakutsu käyttäen Kirja-mallia.
+    $kirjat = Kirja::all();
+
+
+    return view(&#39;kirjat.lista&#39;, compact(&#39;kirjat&#39;));
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Muokkausoperaation kohdalla en lähtökohtaisesti tee tietokantakutsuja Controllerista käsin. Miksi? Koska muokkausoperaation epäonnistuminen voi pahimmillaan tuhota koko tietokannan eheyden. Siksi on tärkeää, että muokkausoperaatio suoritetaan johdonmukaisesti ja turvatoimenpiteet huomioiden.&lt;/p&gt;
+
+&lt;p&gt;Turvatoimenpiteellä tarkoitan lähinnä sitä, että moniosainen muokkaus tehdään &lt;em&gt;tietokantatransaktion&lt;/em&gt; sisällä.&lt;/p&gt;
+
+&lt;p&gt;Koska tietty muokkausoperaatio on varsin mahdollista suorittaa useammasta eri Controllerista käsin, on syytä abstraktoida muokkausoperaatio erilliseen apuluokkaan:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Usecases/Lainaakirja.php
+
+public class LainaaKirja {
+	
+  public function suorita(User $user, $koodi) {
+    // Kirjan lainaus muokkaa sekä kirjan tietoja että lainaajan tietoja.
+    // Muokkaukset on syytä tehdä transaktion sisällä jotta ne molemmat
+    // joko onnistuvat tai epäonnistuvat. 
+
+    // Missään tapauksessa ei saa käydä niin, että käyttäjä rekisteröi 
+    // lainauksen, mutta kirja ei rekisteröi lainaajaa.
+
+    $kirja = Kirja::findOrFail($koodi);
+    // Onko kirja saatavilla?
+    if ($kirja-&amp;gt;parhaillaanLainassa()) {
+      throw new KirjaJoLainassa($koodi);
+    }
+
+    // Aloitetaan transaktio.
+    // Huomattavaa on, että joku toinen saattaa 
+    // juuri tässä kohtaa lainata kirjan. Jos näin käy,
+    // transaktio epäonnistuu rivillä &#39;$kirja-&amp;gt;rekisteroiLainaaja($user)&#39;
+    
+    DB::transaction(function () use ($user, $kirja) {
+      // Jos jompi kumpi epäonnistuu, molemmat epäonnistuvat.
+      $user-&amp;gt;rekisteroiLainaus($kirja);
+      $kirja-&amp;gt;rekisteroiLainaaja($user);
+    });
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Controller/LainausController.php
+
+public class LainausController {
+	
+  public function lainaaKirja($kirjaKoodi) {
+    $user = Auth::user();
+    (new LainaaKirja)-&amp;gt;suorita($user, $kirjaKoodi);
+
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa koodissa Controllerin tehtäväksi jää kutsua apuluokkaa, joka suorittaa varsinaisen muokkausoperaation. Tuo apuluokka yksinkertaisesti enkapsuloi sisäänsä tarvittavan logiikan, jonka avulla lainaus suoritetaan.&lt;/p&gt;
+
+&lt;p&gt;Ero hakuoperaation ja muokkausoperaation välillä on selkeä: &lt;strong&gt;hakuoperaatio suoritetaan suoraan Controllerista käsin, muokkausoperaatio delegoidaan apuluokalle, joka huolehtii tarvittavista lisätoimenpiteistä (kuten transaktion luonti).&lt;/strong&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: Controllerista käsin tietokantakutsujen tekeminen on useimpien mielestä kyseenalaista. Höpsis. Jos tietokantakutsu on turvallinen ja yksinkertainen, ei ole mitään syytä lähteä abstraktoimaan sitä sen enempää. Kunhan vain kutsut tietokantaa ja sillä sipuli.&lt;/p&gt;
+
+&lt;p&gt;Muokkausoperaation kohdalla tilanne on toinen. Vaativissa applikaatioissa muokkausoperaatiot voivat olla erittäin monimutkaisia ja sisältää monta askelta. Tällöin on tärkeää, että mahdolliset virhetilanteet käsitellään asianmukaisesti. Muokkausoperaation voi suorittaa Controllerista käsin, mutta applikaation rakenteen kannalta on selkeämpää, että elintärkeä ja mutkikas muokkaus eristetään omaksi apuluokakseen. Tämä eristys myös mahdollistaa, että useampi eri Controller voi uudelleenkäyttää tuota muokkauslogiikkaa mikäli tarve niin vaatii.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Laravel 5.3: ilmoitukset</title>
@@ -28,17 +147,12 @@ $matti-&amp;gt;notify(new LaskuEraantynyt());
 
 &lt;p&gt;Ylläoleva koodi kertoo Matille, että hänen laskunsa on erääntynyt.&lt;/p&gt;
 
-&lt;p&gt;Pinnan alla tapahtuu ylläolevan koodinajon jälkeen vielä hiukka asioita. Ensiksi tarvitsemme &lt;em&gt;User&lt;/em&gt;-luokkaan ($matti on User-luokan objekti) metodin nimeltä &lt;em&gt;via&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;Pinnan alla tapahtuu ylläolevan koodinajon jälkeen vielä hiukka asioita. Ensiksi tarvitsemme &lt;em&gt;User&lt;/em&gt;-luokkaan ($matti on User-luokan objekti) metodin nimeltä &lt;em&gt;routeNotificationForSlack&lt;/em&gt;.&lt;/p&gt;
 
-&lt;p&gt;Tämä via-metodi määrittelee &lt;em&gt;miten&lt;/em&gt; ilmoitamme laskun erääntymisestä Matille. Se &lt;strong&gt;ei&lt;/strong&gt; tee itse ilmoitusta, vaan ainoastaan kertoo mitä ilmoitustapaa käytämme.&lt;/p&gt;
+&lt;p&gt;Tämä routeNotificationForSlack-metodi määrittelee mihin &amp;ldquo;postilaatikkoon&amp;rdquo; lähetämme laskun erääntymisestä kertovan ilmoituksen. Se &lt;strong&gt;ei&lt;/strong&gt; tee itse ilmoitusta, vaan ainoastaan kertoo mihin tuo ilmoitus ohjataan.&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
 // User.php
-
-public function via($notifiable) {
-  // Matti tykkää Slackista, joten lähetetään hänelle chat-viesti Slackiin.
-  return [&#39;slack&#39;];	
-}
 
 public function routeNotificationForSlack() {
   // Tässä määritetään Matin Slack-tilin endpoint joka vastaanottaa viestit.
@@ -49,15 +163,27 @@ public function routeNotificationForSlack() {
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vakiona tukee Slackkia, voimme luoda tuon luokan helposti:&lt;/p&gt;
+&lt;p&gt;Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vakiona tukee Slackkia, voimme luoda tuon luokan helposti.&lt;/p&gt;
+
+&lt;p&gt;Tarvitsemme ensinnäkin &lt;em&gt;via&lt;/em&gt;-metodin, joka määrittää mitä ilmoitustapaa käytämme. Voimme käyttää esim. SMS-viestiä tai email-viestiä. Tässä esimerkissä tyydymme Slackin käyttöön.&lt;/p&gt;
+
+&lt;p&gt;Lisäksi tarvitsemme &lt;em&gt;toSlack&lt;/em&gt;-metodin, joka luo Slackia varten uuden viestin. Tätä metodia tarvitsemme ainoastaan lähettäessämme ilmoituksen Slackiin.&lt;/p&gt;
+
+&lt;p&gt;Jos lähettäisimme ilmoituksen emaililla, käyttäisimme metodia &lt;em&gt;toMail&lt;/em&gt;. Koska lähetämme Slackiin, käytämme metodia &lt;em&gt;toSlack&lt;/em&gt;. Suorastaan johdonmukaista.&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
 // Notifications/LaskuEraantynyt.php
 
 class LaskuEraantynyt extends Notification {
 
+  public function via($notifiable) {
+    // Laskuilmoitukset lähetetään asiakkaiden Slack-kanaviin.
+    return [&#39;slack&#39;];	
+  }
+
   public function toSlack($notifiable) {
     // Kehys kutsuu tätä metodia kun Slack-viestiä luodaan/lähetetään.
+    // SlackMessage on Laravellin sisäinen apuluokka.
     return (new SlackMessage)-&amp;gt;content(&#39;Maksa heti!&#39;);
 
   }
@@ -66,11 +192,13 @@ class LaskuEraantynyt extends Notification {
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;Muuta ei tarvita. On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:&lt;/p&gt;
+&lt;p&gt;Muuta ei tarvita (paitsi Guzzle, lue loppukaneetti).&lt;/p&gt;
+
+&lt;p&gt;On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:&lt;/p&gt;
 
 &lt;ol&gt;
 &lt;li&gt;Kutsumme domain-koodissa User-objektin &lt;em&gt;notify&lt;/em&gt;-metodia. Parametrinä sisään pyyhältää uunituore LaskuEraantynyt-objekti.&lt;/li&gt;
-&lt;li&gt;Laravel selvittää User-objektin &lt;em&gt;via&lt;/em&gt;-metodilla, että haluttu viestiväylä on Slack.&lt;/li&gt;
+&lt;li&gt;Laravel selvittää LaskuEraantynyt-objektin &lt;em&gt;via&lt;/em&gt;-metodilla, että haluttu viestiväylä on Slack.&lt;/li&gt;
 &lt;li&gt;LaskuEraantynyt-objektin &lt;em&gt;toSlack&lt;/em&gt;-metodi palauttaa SlackMessage-viestiobjektin.&lt;/li&gt;
 &lt;li&gt;SlackMessage-viestiobjekti ohjataan User-objektin &lt;em&gt;routeNotificationForSlack&lt;/em&gt;-metodin palauttamaan URL-osoitteeseen. Teknisesti tuon ohjauksen hoitaa Guzzle, joka kutsuu Slackin rajapintaa HTTP POST-pyynnön turvin.&lt;/li&gt;
 &lt;/ol&gt;
@@ -2204,188 +2332,6 @@ protected function validateSiirtoRequest(Request $request)
 &lt;p&gt;Usecase-arkkitehtuurin vahvuus piilee juuri edellisessä huomiossa. Voimme käsitellä &amp;ldquo;ylätason toimintoja&amp;rdquo; selkeinä kokonaisuuksina, eli usecasenaina, käyttötarkoituksina. Samaan aikaan usecase on &lt;em&gt;irrallaan&lt;/em&gt; kaikesta siitä ikävästä, mutta pakollisesta säläkoodista, joka liittyy internet-applikaation tekniseen toteutukseen. Eli HTTP-pyyntöjen hallinnasta, jne.&lt;/p&gt;
 
 &lt;p&gt;Hyvässä web-applikaatiossa päteekin, että itse applikaation ydinkoodi - tässä tapauksessa se koodi, joka suorittaa siirtoja ja nostoja pankkien välillä - ei edes tiedä asuvansa osana web-applikaatiota. Se tietää asuvansa osana &lt;em&gt;applikaatiota&lt;/em&gt;, mutta webin olemassaolosta se on onnellisen tietämätön.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Suojaa tuloväylät - mutta miten?</title>
-      <link>http://www.nollaversio.fi/blog/public/laravel/protecting-routes/</link>
-      <pubDate>Wed, 20 Jul 2016 20:42:23 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/laravel/protecting-routes/</guid>
-      <description>
-
-&lt;p&gt;Tyypillinen web-applikaatio ottaa vastaan monenlaista palvelupyyntöä. Osa pyynnöistä tulee rekisteröityneiltä käyttäjiltä, osa vierailta, osa hakkereilta, osa sisältää dataa, osa ei.&lt;/p&gt;
-
-&lt;p&gt;Kaiken tämän keskellä applikaatio tulisi kehittää niin, että jokainen sisääntuloväylä on suojattu asianmukaisesti. Eli portti on kunnossa ja pysyy kiinni esim. SQL-injektioille.&lt;/p&gt;
-
-&lt;p&gt;Helppo, nopea tapa huolehtia suojauksesta on jokaisen tuloväylän portilla tarkistaa, että asianmukaiset paperit ovat mukana:&lt;/p&gt;
-
-&lt;h3 id=&#34;versio-1&#34;&gt;versio 1&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// AdminController.php
-
-public function store(Request $request) {
-	$this-&amp;gt;tarkistaAdminOikeudet();
-
-	// Kaikki hyvin, käsittele request
-}
-
-public function index(Request $request) {
-	$this-&amp;gt;tarkistaAdminOikeudet();
-
-	// Kaikki hyvin, käsittele request
-}
-
-public function list(Request $request) {
-	$this-&amp;gt;tarkistaAdminOikeudet();
-
-	// Kaikki hyvin, käsittele request
-}
-
-private function tarkistaAdminOikeudet() {
-	if (Auth::user()-&amp;gt;isNotAdmin()) {
-		throw new Exception(&amp;quot;Admin-oikeudet puuttuvat!&amp;quot;);
-	}
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevasta heti nähdään, että jotain on pielessä. Sama admin-tarkistus joudutaan tekemään kolmesti eri kohdissa.&lt;/p&gt;
-
-&lt;p&gt;Huomattavasti paremman ratkaisun tarjoaa konstruktori-metodi, joka mahdollistaa kaikille public-metodeille &lt;em&gt;yhteisen&lt;/em&gt; tarkistuksen määrittämisen. Eli:&lt;/p&gt;
-
-&lt;h3 id=&#34;versio-2&#34;&gt;versio 2&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// AdminController.php
-
-public function __construct(Request $request) {
-
-	$this-&amp;gt;tarkistaAdminOikeudet();
-}
-
-public function store(Request $request) {
-
-	// Kaikki hyvin, käsittele request
-}
-
-public function index(Request $request) {
-
-	// Kaikki hyvin, käsittele request
-}
-
-public function list(Request $request) {
-
-	// Kaikki hyvin, käsittele request
-}
-
-private function tarkistaAdminOikeudet() {
-	if (Auth::user()-&amp;gt;isNotAdmin()) {
-		throw new Exception(&amp;quot;Admin-oikeudet puuttuvat!&amp;quot;);
-	}
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kuten huomaamme, duplikaatio poistui. Tarkistus tehdään vain yhdessä pisteessä.&lt;/p&gt;
-
-&lt;p&gt;Mutta miksi turhaan edes keksiä pyörää uudestaan? Laravel tarjoaa &amp;ldquo;Middleware&amp;rdquo;-nimisen konseptin käyttöömme. Middleware on käytännössä yksi ylimääräinen kerros internetin ja applikaatiosi välissä. Tuo ylimääräinen &amp;ldquo;rasvakerros&amp;rdquo; soveltuu hyvin admin-tarkistuksen suorituspisteeksi.&lt;/p&gt;
-
-&lt;h3 id=&#34;versio-3&#34;&gt;versio 3&lt;/h3&gt;
-
-&lt;p&gt;// Middleware/TarkistaAdmin.php&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-class TarkistaAdmin
-{
-
-    public function handle($request, Closure $next)
-    {
-        if (Auth::user()-&amp;gt;isNotAdmin()) {
-        	// Ohjataan käyttäjä kirjautumissivulle.
-            return redirect(&#39;kirjaudu_sisaan&#39;);
-        }
-
-        // Kaikki ok!
-        // Muu applikaatio voi luottaa että käyttäjällä on tarvittavat oikeudet!
-
-        return $next($request);
-    }
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// AdminController.php
-
-public function __construct(Request $request) {
-
-	$this-&amp;gt;middleware(&#39;tarkistaAdmin&#39;)
-}
-
-public function store(Request $request) {
-
-	// Kaikki hyvin, käsittele request
-}
-
-public function index(Request $request) {
-
-	// Kaikki hyvin, käsittele request
-}
-
-public function list(Request $request) {
-
-	// Kaikki hyvin, käsittele request
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tämä on jo varsin pätevä ratkaisu. Ensinnäkin admin-tarkistuksen logiikka elää nyt poissa AdminControllerista. Tämä on ihan hyvä, sillä oletettavasti joku muukin komponentti applikaatiossa on kiinnostunut tekemään admin-tarkistuksia. Kun admin-tarkistus elää middleware-kerroksessa, se on kaikkien applikaation osasten käytettävissä.&lt;/p&gt;
-
-&lt;p&gt;Noin muutenkin on järkevintä tsekata admin-oikeudet mahdollisimman aikaisin. Tilanne on vastaava kuin lentokentällä - turvatarkastus tapahtuu &lt;em&gt;keskitetysti&lt;/em&gt; ennen lähtöporteille siirtymistä. Millainen sotku syntyisi, jos turvatarkastus järjestettäisiin kunkin lähtöportin edessä erikseen? Aikamoinen.&lt;/p&gt;
-
-&lt;p&gt;Sama konsepti pätee web-applikaatioon - mitä aiemmin tarkastukset tehdään, sitä parempi. Aikainen tarkastus selkeyttää kaikkien osapuolten toimintaa. Lentokentälläkin on helpompi kuljeskella, kun turvatarkastus on rajattu tietylle alueelle.&lt;/p&gt;
-
-&lt;p&gt;Laravellin middleware-konsepti lisää myös uusia mahdollisuuksia valikoimaamme. Voimme esimerkiksi määrittää suoraan konstruktorissa, mille kaikille sisääntuloväylille (eli public metodeille) haluamme middleware-suojauksen pätevän.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// AdminController.php
-
-public function __construct(Request $request) {
-
-	$this-&amp;gt;middleware(&#39;tarkistaAdmin&#39;, [&#39;only&#39; =&amp;gt; [
-		&#39;store&#39;,
-		&#39;update&#39;
-	]]);
-}
-
-public function store(Request $request) {
-
-	// SUOJATTU!
-}
-
-public function update(Request $request) {
-
-	// SUOJATTU!
-}
-
-public function index(Request $request) {
-
-	// EI SUOJATTU!
-}
-
-public function list(Request $request) {
-
-	// EI SUOJATTU!
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kätevää, varsin kätevää. Esimerkin &lt;em&gt;only&lt;/em&gt;-attribuutin lisäksi meillä on käytössämme &lt;em&gt;except&lt;/em&gt;-attribuutti, joka
-toimii nimensä mukaisesti - se suojaa kaikki muut väylät paitsi erikseen &lt;em&gt;except&lt;/em&gt;:in perässä määritellyt.&lt;/p&gt;
 </description>
     </item>
     

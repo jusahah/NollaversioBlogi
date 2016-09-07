@@ -71,7 +71,7 @@ Muuta ei tarvita (paitsi Guzzle, lue loppukaneetti).
 On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:
 
 1. Kutsumme domain-koodissa User-objektin *notify*-metodia. Parametrinä sisään pyyhältää uunituore LaskuEraantynyt-objekti.
-2. Laravel selvittää User-objektin *via*-metodilla, että haluttu viestiväylä on Slack.
+2. Laravel selvittää LaskuEraantynyt-objektin *via*-metodilla, että haluttu viestiväylä on Slack.
 3. LaskuEraantynyt-objektin *toSlack*-metodi palauttaa SlackMessage-viestiobjektin.
 4. SlackMessage-viestiobjekti ohjataan User-objektin *routeNotificationForSlack*-metodin palauttamaan URL-osoitteeseen. Teknisesti tuon ohjauksen hoitaa Guzzle, joka kutsuu Slackin rajapintaa HTTP POST-pyynnön turvin.
 

@@ -68,6 +68,128 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/cqrs-in-laravel/">
+        CQRS ja Laravel
+      </a>
+    </h1>
+
+    <span class="post-date">Wed, Sep 7, 2016</span>
+
+    
+
+<p>CQRS (Command Query Responsibility Separation) on vahva keino selkeyttää vastuunjakoa ohjelma-arkkitehtuurissa.</p>
+
+<p>Sen perusidea on <em>datan haun</em> ja <em>datan muokkauksen</em> erottaminen toisistaan. Tämä tarkoittaa pohjimmiltaan sitä, että tietty operaatio joko hakee dataa tai muokkaa dataa, mutta <strong>ei koskaan molempia yhtaikaa.</strong></p>
+
+<p>Kun operaatio on joko <em>hakubisneksessä</em> tai <em>muokkausbisneksessä</em>, mutta ei ikinä molemmissa, voi operaatio optimoida itsensä valitun &ldquo;bisneksen&rdquo; mukaan. Esimerkiksi hakuoperaatio voidaan optimoida käyttämään datalähdettä, jossa data on valmiiksi käsitelty helposti haettavaan muotoon. Muokkausoperaatio puolestaan voi käyttää datalähdettä, jossa data on käsitelty helposti muokattavaan muotoon.</p>
+
+<p>Useimmiten ylläoleva tarkoittaa, että datasta on kaksi kopiota; yksi hakua varten, toinen muokkausta varten. Kopiot pidetään ajan tasalla toisiinsa nähden esimerkiksi rakentamalla hakukopio puhtaalta pöydältä aina kun muokkauskopioon tulee päivitys (=dataa muokataan).</p>
+
+<p>CQRS ei itsessään vaadi datakopioiden olemassaoloa. Haku- ja muokkausoperaatioiden erottelu voidaan suorittaa siten, että molemmat operaatiot käyttävät samaa datalähdettä, mutta vaatimukset esim. virhetilanteiden käsittelylle ovat erilaiset.</p>
+
+<h3 id="hakuoperaatio-query">Hakuoperaatio (Query)</h3>
+
+<p>Hakuoperaation luonteeseen kuuluu, että haku ei voi mennä <em>kriittisellä</em> tavalla pieleen. Kriittisellä tarkoitan tässä, että jos operaatio epäonnistuu, datalähde ei ole moksiskaan. Operaation epäonnistuminen rajoittuu operaatioon itseensä; ympäröivä järjestelmä ei kärsi vaurioita.</p>
+
+<p>Miksi näin? Luonnollisesti ihan siksi, että hakuoperaatio - nimensä mukaisesti - <em>hakee</em> tietoa. Tuo haku joko onnistuu tai epäonnistuu. Riippumatta operaation lopputulemasta, datalähde pysyy intaktina.</p>
+
+<h3 id="muokkausoperaatio-command">Muokkausoperaatio (Command)</h3>
+
+<p>Muokkausoperaation luonteeseen taas kuuluu, että operaatio muokkaa datalähdettä. Esimerkiksi puhelinnumeron muokkaus Facebookin profiilissa on selkeä muokkausoperaatio; uusi puhelinnumero tulee tallentaa jonnekin. Uuden datan tallennus (tai vanhan muokkaus) on operaatio, joka <em>ei</em> jätä datalähdettä intaktiin tilaan.</p>
+
+<h3 id="mitä-haku-vs-muokkaus-tarkoittaa-koodin-tasolla">Mitä haku vs. muokkaus tarkoittaa koodin tasolla?</h3>
+
+<p>Koska hakuoperaatio ei voi edes teoriassa sotkea datalähdettä, tuo operaatio voidaan suorittaa varsin &ldquo;vapaamielisesti&rdquo;. Toisin sanoen vailla huolen häivää.</p>
+
+<p>Itse tuppaan suorittamaan hakuoperaatiot suoraan Controllerista käsin. Controller on siis perinteisessä web-MVC-arkkitehtuurissa se osanen, joka vastaa sisääntulevan palvelupyynnön käsittelystä ja vastauksen (response) muodostamisesta.</p>
+
+<p>Ihannearkkitehtuurissa Controller ei ole se paikka, josta tehdään tietokantakutsuja, mutta mikään laki ei estä tietokantakutsuja suorittamasta. Ja koska hakuoperaation kohdalla vaatimukset tietokantakutsuille ovat niin löyhät, voi tuollaisia kutsuja suorittaa huoletta.</p>
+
+<pre><code class="language-php">
+// Controller/LainausController.php
+
+public class LainausController {
+	
+  public function list() {
+
+    // Tietokantakutsu käyttäen Kirja-mallia.
+    $kirjat = Kirja::all();
+
+
+    return view('kirjat.lista', compact('kirjat'));
+  }
+}
+
+</code></pre>
+
+<p>Muokkausoperaation kohdalla en lähtökohtaisesti tee tietokantakutsuja Controllerista käsin. Miksi? Koska muokkausoperaation epäonnistuminen voi pahimmillaan tuhota koko tietokannan eheyden. Siksi on tärkeää, että muokkausoperaatio suoritetaan johdonmukaisesti ja turvatoimenpiteet huomioiden.</p>
+
+<p>Turvatoimenpiteellä tarkoitan lähinnä sitä, että moniosainen muokkaus tehdään <em>tietokantatransaktion</em> sisällä.</p>
+
+<p>Koska tietty muokkausoperaatio on varsin mahdollista suorittaa useammasta eri Controllerista käsin, on syytä abstraktoida muokkausoperaatio erilliseen apuluokkaan:</p>
+
+<pre><code class="language-php">
+// Usecases/Lainaakirja.php
+
+public class LainaaKirja {
+	
+  public function suorita(User $user, $koodi) {
+    // Kirjan lainaus muokkaa sekä kirjan tietoja että lainaajan tietoja.
+    // Muokkaukset on syytä tehdä transaktion sisällä jotta ne molemmat
+    // joko onnistuvat tai epäonnistuvat. 
+
+    // Missään tapauksessa ei saa käydä niin, että käyttäjä rekisteröi 
+    // lainauksen, mutta kirja ei rekisteröi lainaajaa.
+
+    $kirja = Kirja::findOrFail($koodi);
+    // Onko kirja saatavilla?
+    if ($kirja-&gt;parhaillaanLainassa()) {
+      throw new KirjaJoLainassa($koodi);
+    }
+
+    // Aloitetaan transaktio.
+    // Huomattavaa on, että joku toinen saattaa 
+    // juuri tässä kohtaa lainata kirjan. Jos näin käy,
+    // transaktio epäonnistuu rivillä '$kirja-&gt;rekisteroiLainaaja($user)'
+    
+    DB::transaction(function () use ($user, $kirja) {
+      // Jos jompi kumpi epäonnistuu, molemmat epäonnistuvat.
+      $user-&gt;rekisteroiLainaus($kirja);
+      $kirja-&gt;rekisteroiLainaaja($user);
+    });
+  }
+}
+
+</code></pre>
+
+<pre><code class="language-php">
+// Controller/LainausController.php
+
+public class LainausController {
+	
+  public function lainaaKirja($kirjaKoodi) {
+    $user = Auth::user();
+    (new LainaaKirja)-&gt;suorita($user, $kirjaKoodi);
+
+  }
+}
+
+</code></pre>
+
+<p>Ylläolevassa koodissa Controllerin tehtäväksi jää kutsua apuluokkaa, joka suorittaa varsinaisen muokkausoperaation. Tuo apuluokka yksinkertaisesti enkapsuloi sisäänsä tarvittavan logiikan, jonka avulla lainaus suoritetaan.</p>
+
+<p>Ero hakuoperaation ja muokkausoperaation välillä on selkeä: <strong>hakuoperaatio suoritetaan suoraan Controllerista käsin, muokkausoperaatio delegoidaan apuluokalle, joka huolehtii tarvittavista lisätoimenpiteistä (kuten transaktion luonti).</strong></p>
+
+<blockquote>
+<p>Loppukaneetti: Controllerista käsin tietokantakutsujen tekeminen on useimpien mielestä kyseenalaista. Höpsis. Jos tietokantakutsu on turvallinen ja yksinkertainen, ei ole mitään syytä lähteä abstraktoimaan sitä sen enempää. Kunhan vain kutsut tietokantaa ja sillä sipuli.</p>
+
+<p>Muokkausoperaation kohdalla tilanne on toinen. Vaativissa applikaatioissa muokkausoperaatiot voivat olla erittäin monimutkaisia ja sisältää monta askelta. Tällöin on tärkeää, että mahdolliset virhetilanteet käsitellään asianmukaisesti. Muokkausoperaation voi suorittaa Controllerista käsin, mutta applikaation rakenteen kannalta on selkeämpää, että elintärkeä ja mutkikas muokkaus eristetään omaksi apuluokakseen. Tämä eristys myös mahdollistaa, että useampi eri Controller voi uudelleenkäyttää tuota muokkauslogiikkaa mikäli tarve niin vaatii.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://www.nollaversio.fi/blog/public/laravel/notifications/">
         Laravel 5.3: ilmoitukset
       </a>
@@ -88,17 +210,12 @@ $matti-&gt;notify(new LaskuEraantynyt());
 
 <p>Ylläoleva koodi kertoo Matille, että hänen laskunsa on erääntynyt.</p>
 
-<p>Pinnan alla tapahtuu ylläolevan koodinajon jälkeen vielä hiukka asioita. Ensiksi tarvitsemme <em>User</em>-luokkaan ($matti on User-luokan objekti) metodin nimeltä <em>via</em>.</p>
+<p>Pinnan alla tapahtuu ylläolevan koodinajon jälkeen vielä hiukka asioita. Ensiksi tarvitsemme <em>User</em>-luokkaan ($matti on User-luokan objekti) metodin nimeltä <em>routeNotificationForSlack</em>.</p>
 
-<p>Tämä via-metodi määrittelee <em>miten</em> ilmoitamme laskun erääntymisestä Matille. Se <strong>ei</strong> tee itse ilmoitusta, vaan ainoastaan kertoo mitä ilmoitustapaa käytämme.</p>
+<p>Tämä routeNotificationForSlack-metodi määrittelee mihin &ldquo;postilaatikkoon&rdquo; lähetämme laskun erääntymisestä kertovan ilmoituksen. Se <strong>ei</strong> tee itse ilmoitusta, vaan ainoastaan kertoo mihin tuo ilmoitus ohjataan.</p>
 
 <pre><code class="language-php">
 // User.php
-
-public function via($notifiable) {
-  // Matti tykkää Slackista, joten lähetetään hänelle chat-viesti Slackiin.
-  return ['slack'];	
-}
 
 public function routeNotificationForSlack() {
   // Tässä määritetään Matin Slack-tilin endpoint joka vastaanottaa viestit.
@@ -109,15 +226,27 @@ public function routeNotificationForSlack() {
 
 </code></pre>
 
-<p>Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vakiona tukee Slackkia, voimme luoda tuon luokan helposti:</p>
+<p>Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vakiona tukee Slackkia, voimme luoda tuon luokan helposti.</p>
+
+<p>Tarvitsemme ensinnäkin <em>via</em>-metodin, joka määrittää mitä ilmoitustapaa käytämme. Voimme käyttää esim. SMS-viestiä tai email-viestiä. Tässä esimerkissä tyydymme Slackin käyttöön.</p>
+
+<p>Lisäksi tarvitsemme <em>toSlack</em>-metodin, joka luo Slackia varten uuden viestin. Tätä metodia tarvitsemme ainoastaan lähettäessämme ilmoituksen Slackiin.</p>
+
+<p>Jos lähettäisimme ilmoituksen emaililla, käyttäisimme metodia <em>toMail</em>. Koska lähetämme Slackiin, käytämme metodia <em>toSlack</em>. Suorastaan johdonmukaista.</p>
 
 <pre><code class="language-php">
 // Notifications/LaskuEraantynyt.php
 
 class LaskuEraantynyt extends Notification {
 
+  public function via($notifiable) {
+    // Laskuilmoitukset lähetetään asiakkaiden Slack-kanaviin.
+    return ['slack'];	
+  }
+
   public function toSlack($notifiable) {
     // Kehys kutsuu tätä metodia kun Slack-viestiä luodaan/lähetetään.
+    // SlackMessage on Laravellin sisäinen apuluokka.
     return (new SlackMessage)-&gt;content('Maksa heti!');
 
   }
@@ -126,11 +255,13 @@ class LaskuEraantynyt extends Notification {
 
 </code></pre>
 
-<p>Muuta ei tarvita. On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:</p>
+<p>Muuta ei tarvita (paitsi Guzzle, lue loppukaneetti).</p>
+
+<p>On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:</p>
 
 <ol>
 <li>Kutsumme domain-koodissa User-objektin <em>notify</em>-metodia. Parametrinä sisään pyyhältää uunituore LaskuEraantynyt-objekti.</li>
-<li>Laravel selvittää User-objektin <em>via</em>-metodilla, että haluttu viestiväylä on Slack.</li>
+<li>Laravel selvittää LaskuEraantynyt-objektin <em>via</em>-metodilla, että haluttu viestiväylä on Slack.</li>
 <li>LaskuEraantynyt-objektin <em>toSlack</em>-metodi palauttaa SlackMessage-viestiobjektin.</li>
 <li>SlackMessage-viestiobjekti ohjataan User-objektin <em>routeNotificationForSlack</em>-metodin palauttamaan URL-osoitteeseen. Teknisesti tuon ohjauksen hoitaa Guzzle, joka kutsuu Slackin rajapintaa HTTP POST-pyynnön turvin.</li>
 </ol>

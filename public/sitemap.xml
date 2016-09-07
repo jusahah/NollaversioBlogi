@@ -3,7 +3,12 @@
   
   <url>
     <loc>http://www.nollaversio.fi/blog/public/</loc>
-    <lastmod>2016-09-05T07:38:13+03:00</lastmod>
+    <lastmod>2016-09-07T18:03:38+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>http://www.nollaversio.fi/blog/public/laravel/cqrs-in-laravel/</loc>
+    <lastmod>2016-09-07T18:03:38+03:00</lastmod>
   </url>
   
   <url>

@@ -6,8 +6,127 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Mon, 05 Sep 2016 07:38:13 +0300</lastBuildDate>
+    <lastBuildDate>Wed, 07 Sep 2016 18:03:38 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>CQRS ja Laravel</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/cqrs-in-laravel/</link>
+      <pubDate>Wed, 07 Sep 2016 18:03:38 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/cqrs-in-laravel/</guid>
+      <description>
+
+&lt;p&gt;CQRS (Command Query Responsibility Separation) on vahva keino selkeyttää vastuunjakoa ohjelma-arkkitehtuurissa.&lt;/p&gt;
+
+&lt;p&gt;Sen perusidea on &lt;em&gt;datan haun&lt;/em&gt; ja &lt;em&gt;datan muokkauksen&lt;/em&gt; erottaminen toisistaan. Tämä tarkoittaa pohjimmiltaan sitä, että tietty operaatio joko hakee dataa tai muokkaa dataa, mutta &lt;strong&gt;ei koskaan molempia yhtaikaa.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Kun operaatio on joko &lt;em&gt;hakubisneksessä&lt;/em&gt; tai &lt;em&gt;muokkausbisneksessä&lt;/em&gt;, mutta ei ikinä molemmissa, voi operaatio optimoida itsensä valitun &amp;ldquo;bisneksen&amp;rdquo; mukaan. Esimerkiksi hakuoperaatio voidaan optimoida käyttämään datalähdettä, jossa data on valmiiksi käsitelty helposti haettavaan muotoon. Muokkausoperaatio puolestaan voi käyttää datalähdettä, jossa data on käsitelty helposti muokattavaan muotoon.&lt;/p&gt;
+
+&lt;p&gt;Useimmiten ylläoleva tarkoittaa, että datasta on kaksi kopiota; yksi hakua varten, toinen muokkausta varten. Kopiot pidetään ajan tasalla toisiinsa nähden esimerkiksi rakentamalla hakukopio puhtaalta pöydältä aina kun muokkauskopioon tulee päivitys (=dataa muokataan).&lt;/p&gt;
+
+&lt;p&gt;CQRS ei itsessään vaadi datakopioiden olemassaoloa. Haku- ja muokkausoperaatioiden erottelu voidaan suorittaa siten, että molemmat operaatiot käyttävät samaa datalähdettä, mutta vaatimukset esim. virhetilanteiden käsittelylle ovat erilaiset.&lt;/p&gt;
+
+&lt;h3 id=&#34;hakuoperaatio-query&#34;&gt;Hakuoperaatio (Query)&lt;/h3&gt;
+
+&lt;p&gt;Hakuoperaation luonteeseen kuuluu, että haku ei voi mennä &lt;em&gt;kriittisellä&lt;/em&gt; tavalla pieleen. Kriittisellä tarkoitan tässä, että jos operaatio epäonnistuu, datalähde ei ole moksiskaan. Operaation epäonnistuminen rajoittuu operaatioon itseensä; ympäröivä järjestelmä ei kärsi vaurioita.&lt;/p&gt;
+
+&lt;p&gt;Miksi näin? Luonnollisesti ihan siksi, että hakuoperaatio - nimensä mukaisesti - &lt;em&gt;hakee&lt;/em&gt; tietoa. Tuo haku joko onnistuu tai epäonnistuu. Riippumatta operaation lopputulemasta, datalähde pysyy intaktina.&lt;/p&gt;
+
+&lt;h3 id=&#34;muokkausoperaatio-command&#34;&gt;Muokkausoperaatio (Command)&lt;/h3&gt;
+
+&lt;p&gt;Muokkausoperaation luonteeseen taas kuuluu, että operaatio muokkaa datalähdettä. Esimerkiksi puhelinnumeron muokkaus Facebookin profiilissa on selkeä muokkausoperaatio; uusi puhelinnumero tulee tallentaa jonnekin. Uuden datan tallennus (tai vanhan muokkaus) on operaatio, joka &lt;em&gt;ei&lt;/em&gt; jätä datalähdettä intaktiin tilaan.&lt;/p&gt;
+
+&lt;h3 id=&#34;mitä-haku-vs-muokkaus-tarkoittaa-koodin-tasolla&#34;&gt;Mitä haku vs. muokkaus tarkoittaa koodin tasolla?&lt;/h3&gt;
+
+&lt;p&gt;Koska hakuoperaatio ei voi edes teoriassa sotkea datalähdettä, tuo operaatio voidaan suorittaa varsin &amp;ldquo;vapaamielisesti&amp;rdquo;. Toisin sanoen vailla huolen häivää.&lt;/p&gt;
+
+&lt;p&gt;Itse tuppaan suorittamaan hakuoperaatiot suoraan Controllerista käsin. Controller on siis perinteisessä web-MVC-arkkitehtuurissa se osanen, joka vastaa sisääntulevan palvelupyynnön käsittelystä ja vastauksen (response) muodostamisesta.&lt;/p&gt;
+
+&lt;p&gt;Ihannearkkitehtuurissa Controller ei ole se paikka, josta tehdään tietokantakutsuja, mutta mikään laki ei estä tietokantakutsuja suorittamasta. Ja koska hakuoperaation kohdalla vaatimukset tietokantakutsuille ovat niin löyhät, voi tuollaisia kutsuja suorittaa huoletta.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Controller/LainausController.php
+
+public class LainausController {
+	
+  public function list() {
+
+    // Tietokantakutsu käyttäen Kirja-mallia.
+    $kirjat = Kirja::all();
+
+
+    return view(&#39;kirjat.lista&#39;, compact(&#39;kirjat&#39;));
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Muokkausoperaation kohdalla en lähtökohtaisesti tee tietokantakutsuja Controllerista käsin. Miksi? Koska muokkausoperaation epäonnistuminen voi pahimmillaan tuhota koko tietokannan eheyden. Siksi on tärkeää, että muokkausoperaatio suoritetaan johdonmukaisesti ja turvatoimenpiteet huomioiden.&lt;/p&gt;
+
+&lt;p&gt;Turvatoimenpiteellä tarkoitan lähinnä sitä, että moniosainen muokkaus tehdään &lt;em&gt;tietokantatransaktion&lt;/em&gt; sisällä.&lt;/p&gt;
+
+&lt;p&gt;Koska tietty muokkausoperaatio on varsin mahdollista suorittaa useammasta eri Controllerista käsin, on syytä abstraktoida muokkausoperaatio erilliseen apuluokkaan:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Usecases/Lainaakirja.php
+
+public class LainaaKirja {
+	
+  public function suorita(User $user, $koodi) {
+    // Kirjan lainaus muokkaa sekä kirjan tietoja että lainaajan tietoja.
+    // Muokkaukset on syytä tehdä transaktion sisällä jotta ne molemmat
+    // joko onnistuvat tai epäonnistuvat. 
+
+    // Missään tapauksessa ei saa käydä niin, että käyttäjä rekisteröi 
+    // lainauksen, mutta kirja ei rekisteröi lainaajaa.
+
+    $kirja = Kirja::findOrFail($koodi);
+    // Onko kirja saatavilla?
+    if ($kirja-&amp;gt;parhaillaanLainassa()) {
+      throw new KirjaJoLainassa($koodi);
+    }
+
+    // Aloitetaan transaktio.
+    // Huomattavaa on, että joku toinen saattaa 
+    // juuri tässä kohtaa lainata kirjan. Jos näin käy,
+    // transaktio epäonnistuu rivillä &#39;$kirja-&amp;gt;rekisteroiLainaaja($user)&#39;
+    
+    DB::transaction(function () use ($user, $kirja) {
+      // Jos jompi kumpi epäonnistuu, molemmat epäonnistuvat.
+      $user-&amp;gt;rekisteroiLainaus($kirja);
+      $kirja-&amp;gt;rekisteroiLainaaja($user);
+    });
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Controller/LainausController.php
+
+public class LainausController {
+	
+  public function lainaaKirja($kirjaKoodi) {
+    $user = Auth::user();
+    (new LainaaKirja)-&amp;gt;suorita($user, $kirjaKoodi);
+
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa koodissa Controllerin tehtäväksi jää kutsua apuluokkaa, joka suorittaa varsinaisen muokkausoperaation. Tuo apuluokka yksinkertaisesti enkapsuloi sisäänsä tarvittavan logiikan, jonka avulla lainaus suoritetaan.&lt;/p&gt;
+
+&lt;p&gt;Ero hakuoperaation ja muokkausoperaation välillä on selkeä: &lt;strong&gt;hakuoperaatio suoritetaan suoraan Controllerista käsin, muokkausoperaatio delegoidaan apuluokalle, joka huolehtii tarvittavista lisätoimenpiteistä (kuten transaktion luonti).&lt;/strong&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukaneetti: Controllerista käsin tietokantakutsujen tekeminen on useimpien mielestä kyseenalaista. Höpsis. Jos tietokantakutsu on turvallinen ja yksinkertainen, ei ole mitään syytä lähteä abstraktoimaan sitä sen enempää. Kunhan vain kutsut tietokantaa ja sillä sipuli.&lt;/p&gt;
+
+&lt;p&gt;Muokkausoperaation kohdalla tilanne on toinen. Vaativissa applikaatioissa muokkausoperaatiot voivat olla erittäin monimutkaisia ja sisältää monta askelta. Tällöin on tärkeää, että mahdolliset virhetilanteet käsitellään asianmukaisesti. Muokkausoperaation voi suorittaa Controllerista käsin, mutta applikaation rakenteen kannalta on selkeämpää, että elintärkeä ja mutkikas muokkaus eristetään omaksi apuluokakseen. Tämä eristys myös mahdollistaa, että useampi eri Controller voi uudelleenkäyttää tuota muokkauslogiikkaa mikäli tarve niin vaatii.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Laravel 5.3: ilmoitukset</title>
@@ -28,17 +147,12 @@ $matti-&amp;gt;notify(new LaskuEraantynyt());
 
 &lt;p&gt;Ylläoleva koodi kertoo Matille, että hänen laskunsa on erääntynyt.&lt;/p&gt;
 
-&lt;p&gt;Pinnan alla tapahtuu ylläolevan koodinajon jälkeen vielä hiukka asioita. Ensiksi tarvitsemme &lt;em&gt;User&lt;/em&gt;-luokkaan ($matti on User-luokan objekti) metodin nimeltä &lt;em&gt;via&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;Pinnan alla tapahtuu ylläolevan koodinajon jälkeen vielä hiukka asioita. Ensiksi tarvitsemme &lt;em&gt;User&lt;/em&gt;-luokkaan ($matti on User-luokan objekti) metodin nimeltä &lt;em&gt;routeNotificationForSlack&lt;/em&gt;.&lt;/p&gt;
 
-&lt;p&gt;Tämä via-metodi määrittelee &lt;em&gt;miten&lt;/em&gt; ilmoitamme laskun erääntymisestä Matille. Se &lt;strong&gt;ei&lt;/strong&gt; tee itse ilmoitusta, vaan ainoastaan kertoo mitä ilmoitustapaa käytämme.&lt;/p&gt;
+&lt;p&gt;Tämä routeNotificationForSlack-metodi määrittelee mihin &amp;ldquo;postilaatikkoon&amp;rdquo; lähetämme laskun erääntymisestä kertovan ilmoituksen. Se &lt;strong&gt;ei&lt;/strong&gt; tee itse ilmoitusta, vaan ainoastaan kertoo mihin tuo ilmoitus ohjataan.&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
 // User.php
-
-public function via($notifiable) {
-  // Matti tykkää Slackista, joten lähetetään hänelle chat-viesti Slackiin.
-  return [&#39;slack&#39;];	
-}
 
 public function routeNotificationForSlack() {
   // Tässä määritetään Matin Slack-tilin endpoint joka vastaanottaa viestit.
@@ -49,15 +163,27 @@ public function routeNotificationForSlack() {
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vakiona tukee Slackkia, voimme luoda tuon luokan helposti:&lt;/p&gt;
+&lt;p&gt;Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vakiona tukee Slackkia, voimme luoda tuon luokan helposti.&lt;/p&gt;
+
+&lt;p&gt;Tarvitsemme ensinnäkin &lt;em&gt;via&lt;/em&gt;-metodin, joka määrittää mitä ilmoitustapaa käytämme. Voimme käyttää esim. SMS-viestiä tai email-viestiä. Tässä esimerkissä tyydymme Slackin käyttöön.&lt;/p&gt;
+
+&lt;p&gt;Lisäksi tarvitsemme &lt;em&gt;toSlack&lt;/em&gt;-metodin, joka luo Slackia varten uuden viestin. Tätä metodia tarvitsemme ainoastaan lähettäessämme ilmoituksen Slackiin.&lt;/p&gt;
+
+&lt;p&gt;Jos lähettäisimme ilmoituksen emaililla, käyttäisimme metodia &lt;em&gt;toMail&lt;/em&gt;. Koska lähetämme Slackiin, käytämme metodia &lt;em&gt;toSlack&lt;/em&gt;. Suorastaan johdonmukaista.&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
 // Notifications/LaskuEraantynyt.php
 
 class LaskuEraantynyt extends Notification {
 
+  public function via($notifiable) {
+    // Laskuilmoitukset lähetetään asiakkaiden Slack-kanaviin.
+    return [&#39;slack&#39;];	
+  }
+
   public function toSlack($notifiable) {
     // Kehys kutsuu tätä metodia kun Slack-viestiä luodaan/lähetetään.
+    // SlackMessage on Laravellin sisäinen apuluokka.
     return (new SlackMessage)-&amp;gt;content(&#39;Maksa heti!&#39;);
 
   }
@@ -66,11 +192,13 @@ class LaskuEraantynyt extends Notification {
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;Muuta ei tarvita. On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:&lt;/p&gt;
+&lt;p&gt;Muuta ei tarvita (paitsi Guzzle, lue loppukaneetti).&lt;/p&gt;
+
+&lt;p&gt;On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:&lt;/p&gt;
 
 &lt;ol&gt;
 &lt;li&gt;Kutsumme domain-koodissa User-objektin &lt;em&gt;notify&lt;/em&gt;-metodia. Parametrinä sisään pyyhältää uunituore LaskuEraantynyt-objekti.&lt;/li&gt;
-&lt;li&gt;Laravel selvittää User-objektin &lt;em&gt;via&lt;/em&gt;-metodilla, että haluttu viestiväylä on Slack.&lt;/li&gt;
+&lt;li&gt;Laravel selvittää LaskuEraantynyt-objektin &lt;em&gt;via&lt;/em&gt;-metodilla, että haluttu viestiväylä on Slack.&lt;/li&gt;
 &lt;li&gt;LaskuEraantynyt-objektin &lt;em&gt;toSlack&lt;/em&gt;-metodi palauttaa SlackMessage-viestiobjektin.&lt;/li&gt;
 &lt;li&gt;SlackMessage-viestiobjekti ohjataan User-objektin &lt;em&gt;routeNotificationForSlack&lt;/em&gt;-metodin palauttamaan URL-osoitteeseen. Teknisesti tuon ohjauksen hoitaa Guzzle, joka kutsuu Slackin rajapintaa HTTP POST-pyynnön turvin.&lt;/li&gt;
 &lt;/ol&gt;
@@ -1643,200 +1771,6 @@ describe(&#39;Matikka&#39;, function() {
 &lt;p&gt;Synkronoidussa versiossa ei tarvitse. Tämä siksi, että Mocha voi olettaa testauksen olevan valmis heti kun kooditiedosto on ajettu kerralla loppuun. Eli siis ollaan saavuttu viimeiselle koodiriville.&lt;/p&gt;
 
 &lt;p&gt;Mutta asynkronoidussa versiossa Mocha ei voi tehdä tuollaisia rämäpäisiä oletuksia. Osa testauskoodista saattaa odottaa vuoroaan. Meidän esimerkissämme näin tekee Googlen palvelimelta yhteenlaskun tulosta odottava koodipätkä. Tällöin Mocha ei voi vain julistaa testejä suoritetuksi heti kun testitiedoston viimeinen koodirivi on nähty ja ajettu; testit ajetaan &lt;em&gt;myöhemmin&lt;/em&gt; ja on syytä jäätä odottamaan testien tuloksia. Done-funktion käyttö mahdollistaa odotuksen - kukin yksittäinen testi ilmoittaa oman done-funktionsa kautta milloin se on valmis.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Rekursiivinen lupausketju ajurina? (osa 2)</title>
-      <link>http://www.nollaversio.fi/blog/public/nodejs/promise-mapseries/</link>
-      <pubDate>Wed, 10 Aug 2016 03:08:44 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/nodejs/promise-mapseries/</guid>
-      <description>&lt;p&gt;(Tämä on jatkoa postaukselle &lt;a href=&#34;http://nollaversio.fi/blog/public/nodejs/promise-workflow-manager&#34;&gt;Rekursiivinen lupausketju ajurina? (osa 1)&lt;/a&gt;)&lt;/p&gt;
-
-&lt;p&gt;Rakennan parhaillaan ohjelmakehystä (työ)nimeltään &lt;em&gt;PromiseMonopoly&lt;/em&gt;. Tuon kehyksen tarkoitus on valmistuessaan mahdollistaa keskuspalvelimen kautta toimivien vuoropohjaisten pelien helpompi toteuttaminen.&lt;/p&gt;
-
-&lt;p&gt;Kehys abstraktoi vastuulleen yhteyksien hallinnan ja ns. game-loopin pyörittämisen. Jälkimmäinen vastuualue on keskeinen osa mitä tahansa vuoropohjaista peliä. Ajatellaan vaikka Monopolia; meillä on viisi pelaajaa, jotka kukin tekevät siirtonsa vuorollaan. Siirtovuoro kiertää ympyrää kullakin hetkellä pelissä mukana olevien pelaajien kesken kunnes lopulta jäljellä on vain yksi pelaaja. Tämä viimeinen mohikaani on pelin voittaja.&lt;/p&gt;
-
-&lt;p&gt;Vastaava ympyrää kiertävä siirtovuorojärjestys on ominainen käytännössä kaikille vuoropohjaisille peleille. Ainoa mikä vaihtelee on pelaajien määrä.&lt;/p&gt;
-
-&lt;p&gt;Esimerkiksi shakissa siirtovuoro hyppii kahden pelaajan välillä. Shakkipeli päättyy heti kun toinen pelaajista ei enää kykene tekemään siirtoa (eli laudalla on matti tai patti).&lt;/p&gt;
-
-&lt;p&gt;Rakennusvaiheessa oleva ohjelmistokehykseni abstraktoi siirtovuorojen hallinnan seuraavalla tavalla:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var peliTila = new Peli();
-
-var SIIRTO_MAX_AIKA = 5000; // Siirtoaika max. viisi sekuntia.
-
-function aloitaPeli(pelaajat) {
-    // Pyydä kutakin pelaajaa yksitellen tekemään siirtonsa  
-	return siirtoKierros(pelaajat)
-	// Pelaajat, jotka eivät jatka seuraavalle siirtokierrokselle saivat 
-	// palautusarvonaan &amp;quot;null&amp;quot;, joten heidät voi filteröidä pois.
-	.then(_.compact)
-	.then(function(mukanaOlevatPelaajat) {
-
-	  if (mukanaOlevaPelaajat.length &amp;lt;= 1) {
-		// Vain yksi tai nolla pelaajaa enää mukana, lopeta peli.
-		throw new LopetaPeli();
-	  }
-
-	  // Peli jatkuu, aloita uusi siirtoKierros 
-	  // Vain yhä mukana olevat pelaajat pääsevät mukaan
-	  // uudelle siirtokierrokselle.
-	  return siirtoKierros(mukanaOlevatPelaajat);
-	})
-	.catch(LopetaPeli, function() {
-		// Peli on päättynyt
-		// Älä rekursoi
-		console.log(&amp;quot;Peli päättynyt&amp;quot;);
-	})
-}
-
-function siirtoKierros(pelaajat) {
-  return Promise.mapSeries(pelaajat, function(pelaaja) {
-    if (pelaaja.hasDisconnected()) return null;
-    return __pyydaSiirtoa(pelaaja);
-  });	
-}
-
-function __pyydaSiirtoa(pelaaja) {
-  // pelaaja.teeSiirto() lähettää pelaajalle pyynnön tehdä siirto.
-  // .timeout() määrittää maksimiajan jonka puitteissa tuo siirto on tehtävä.
-  return pelaaja.teeSiirto().timeout(SIIRTO_MAX_AIKA)
-  .tap(function(siirto) {
-    // Throws &amp;quot;Laitonsiirto&amp;quot;-Error jos kyseessä laiton siirto.
-    return tarkistaSiirronLaillisuus(siirto);
-  })
-  .then(function(siirto) {
-    // Jos pääsemme tänne, siirto on ollut laillinen
-    // Muokkaamme pelin tämän hetkistä tilaa siirron pohjalta.
-    // Pelitila yksinkertaisesti tarkoittaa pelin tämän hetkistä pelitilannetta, esim.
-    // shakkipelissä pelitila tarkoittaa laudalla olevaa asemaa.
-    var uusiPelitila = toteutaSiirto(siirto);
-    // Ilmoitamme uuden tilapäivityksen kaikille pelin osanottajille.
-    // (jotta he pysyvät kärryillä pelin etenemisestä).
-
-    viestiPelaajille(pelaajat, {
-      aihe: &#39;uusi_siirto_tehty&#39;,
-      siirto: siirto,
-      pelitila: uusiPelitila
-    });
-    // Palautamme pelaajan sillä hän jatkaa mukana pelissä.
-    return pelaaja;
-
-    // 
-  })
-  .catch(Laitonsiirto, function() {
-    // Pelaaja yritti tehdä laittoman siirron.
-    // Palauta vuoro pelaajalle ja pyydä tekemään laillinen siirto.
-    // Kutsumme rekursiivisesti tätä funktiota uudestaan.
-    return this.__pyydaSiirtoa(pelaaja);
-
-  })
-  .catch(TimeoutError, function() {
-    // .timeout(aika) metodimme heitti virheen, eli
-    // pelaaja ei ehtinyt tekemään siirtoaan ajoissa.
-
-    // Vakioasetuksena pelaaja häviää pelin, eli palautamme arvon null.
-    return null;
-  })
-
-	
-}
-
-function toteutaSiirto(siirto) {
-  // Muokkaa pelitilaa siirron pohjalta jotenkin ja palauta muokattu pelitila.
-  // Muokkaaminen on pelikohtaista ja kehyksen käyttäjä määrittää muokkausfunktion.
-
-  return peliTila;
-}
-
-function viestiPelaajille(pelaajat, viesti) {
-  // Kutsu kunkin pelaajan &amp;quot;lahetaViesti&amp;quot;-metodia, joka
-  // hoitaa kommunikoinnin pelaajan suuntaan.
-  _.map(pelaajat, function(pelaaja) {
-    pelaaja.lahetaViesti(viesti);
-  });
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Yllä on yksinkertaistettu versio asynkronoidusta game-loopista, joka pyytää vuorotellen pelaajia tekemään siirtojaan kunnes lopulta vain yksi pelaaja on jäljellä.&lt;/p&gt;
-
-&lt;p&gt;Koko loopin keskiössä on &lt;strong&gt;Promise.mapSeries&lt;/strong&gt;, joka yksi kerrallaan kutsuu &lt;em&gt;__pyydaSiirtoa&lt;/em&gt;-funktiota kullekin pelaajalle. &lt;strong&gt;Promise.mapSeries&lt;/strong&gt;-kutsun palautusarvo sisältää listan pelaajista, jotka jatkavat peliä seuraavalle kierrokselle.&lt;/p&gt;
-
-&lt;p&gt;Tämä lista rakentuu pelaaja pelaajalta sen mukaan, mitä &lt;em&gt;__pyydaSiirtoa&lt;/em&gt;-funktio palauttaa. Jos &lt;em&gt;__pyydaSiirtoa&lt;/em&gt; palauttaa &lt;em&gt;null&lt;/em&gt;, pelaaja ei jatka seuraavalle kierrokselle (= hän on hävinnyt pelin). Jos &lt;em&gt;__pyydaSiirtoa&lt;/em&gt; palauttaa &lt;em&gt;Pelaajan&lt;/em&gt;, pelaajan jatkaa seuraavalle kierrokselle.&lt;/p&gt;
-
-&lt;p&gt;Ylimmällä tasolla funktio &lt;strong&gt;aloitaPeli&lt;/strong&gt; laittaa pyörät pyörimään. Se kutsuu rekursiivisesti aina uutta siirtokierrosta pelattavaksi. Kunkin siirtokierroksen päätteeksi se tarkistaa onko peli päättynyt (= vähemmän kuin kaksi pelaajaa jäljellä). Jos ei ole, se aloittaa uuden siirtokierroksen.&lt;/p&gt;
-
-&lt;p&gt;Asynkronoidun game-loopin perusominaisuus on, että kaikki funktiot palauttavat &lt;em&gt;lupauksen&lt;/em&gt;. Tämä lupaus voidaan sitten ketjuttaa osaksi suurempaa lupausketjua. Poikkeuksena on funktio kuten &lt;strong&gt;viestiPelaajille&lt;/strong&gt;, jonka oletetaan suorittavan tehtävänsä välittömästi (viestien lähettäminen kullekin pelaajalle yksinkertaisesti oletetaan onnistuvaksi, myöhemmässä versiossa oletuksesta luovutaan ja käytetään erillistä &amp;ldquo;disconnect&amp;rdquo;-handleria reagoimaan yhteysvirheisiin pelaajan ja palvelimen välillä).&lt;/p&gt;
-
-&lt;p&gt;Ylläolevasta koodista puuttuu vielä &lt;em&gt;tärkein&lt;/em&gt; ohjelmistokehykselle ominainen aspekti; mahdollisuus kutsua kehyksen käyttäjän määrittämiä lisäfunktioita. Koska esimerkiksi shakkipelissä tehtävän siirron laillisuuden tarkistaminen on varsin erilainen prosessi kuin pokeripelissä tehtävän siirron laillisuuden tarkistaminen, on kehyksen käyttäjän pystyttävä &lt;em&gt;pluggaamaan sisään&lt;/em&gt; haluamansa tarkistusfunktio.&lt;/p&gt;
-
-&lt;p&gt;Toisin sanoen, tämä kohta koodia:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-.tap(function(siirto) {
-   // Throws &amp;quot;Laitonsiirto&amp;quot;-Error jos kyseessä laiton siirto.
-   // Kutsumme staattisesti valittua tarkistusfunktiota.
-   return tarkistaSiirronLaillisuus(siirto);
-})
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;menee kutakuinkin muotoon&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-.tap(function(siirto) {
-   // Throws &amp;quot;Laitonsiirto&amp;quot;-Error jos kyseessä laiton siirto.
-   // Kehyksen käyttäjä tarjoaa meille tarkistusfunktion osana
-   // &amp;quot;laajennukset&amp;quot;-objektia, jonka hän on määrittänyt.
-   return laajennukset[&#39;tarkistaSiirronLaillisuus&#39;](siirto);
-})
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Antamalla käyttäjälle vapauden valita &lt;em&gt;laajennukset&lt;/em&gt;-objektin funktioiden toteutukset, kehyksen käyttäjä kykenee toteuttamaan haluamansa pelilogiikan kehyksen pohjalle. Esimerkiksi timeout-virhetilanteen hallinta:&lt;/p&gt;
-
-&lt;p&gt;Vanha muoto:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-.catch(TimeoutError, function() {
-	// .timeout(aika) metodimme heitti virheen, eli
-	// pelaaja ei ehtinyt tekemään siirtoaan ajoissa.
-
-	// Vakioasetuksena pelaaja häviää pelin, eli palautamme arvon null.
-	return null;
-})
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;ja uusi muoto:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-.catch(TimeoutError, function() {
-	// .timeout(aika) metodimme heitti virheen, eli
-	// pelaaja ei ehtinyt tekemään siirtoaan ajoissa.
-
-	// Annamme kehyksen käyttäjän tarjoaman funktion 
-	// päättää miten reagoidaan
-	return laajennukset[&#39;aikaKuluiUmpeen&#39;]();
-})
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Huomioitavaa on, että kehyksen käyttäjän tarjoama kutsufunktio voi sisältään myös heittää virhetilanteita, jotka sitten kehyksen lupausketju nappaa kiinni. Tällä tavoin kutsufunktio voi esimerkiksi päättää pelin ennenaikaisesti (= ennen kuin vain yksi tai nolla pelaajaa on jäljellä).&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-laajennukset[&#39;aikaKuluiUmpeen&#39;] = function() {
-	throw new LopetaPeli();
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Jatketaan tästä ensi kerralla.&lt;/p&gt;
 </description>
     </item>
     
