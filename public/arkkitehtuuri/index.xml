@@ -6,8 +6,124 @@
     <description>Recent content in Arkkitehtuuris on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Fri, 26 Aug 2016 04:30:43 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 12 Sep 2016 08:10:14 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Sisäinen eheys vs. ulkoinen eheys</title>
+      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/aggregate-consistency/</link>
+      <pubDate>Mon, 12 Sep 2016 08:10:14 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/aggregate-consistency/</guid>
+      <description>
+
+&lt;p&gt;Sain yhden perustavanlaatuisimmista oivalluksistani liittyen Domain-Driven Designiin pdf-dokumentista &lt;em&gt;Domain-Driven Design Reference: Definitions and Pattern Summaries&lt;/em&gt;. Tuossa Eric Evansin (se &amp;ldquo;sinisen kirjan&amp;rdquo; guru) rustaamassa dokkarissa on elintärkeä lause piilotettuna tekstin joukkoon:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Within an aggregate boundary, apply consistency rules &lt;strong&gt;synchronously&lt;/strong&gt;. Across boundaries, handle updates &lt;strong&gt;asynchronously&lt;/strong&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Tummennukset allekirjoittaneen.&lt;/p&gt;
+
+&lt;p&gt;Vapaasti suomennettuna ja hieman yksinkertaistettuna lausahdus menee muotoon:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;yhden aggregaatin &lt;em&gt;sisäinen&lt;/em&gt; eheys hoidetaan transaktioiden avulla, useamman eri aggregaatin &lt;em&gt;ulkoinen&lt;/em&gt; (tai &amp;ldquo;välinen&amp;rdquo;) eheys hoidetaan muulla tavoin.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&#34;aggregaatti-sisäinen-eheys-vs-ulkoinen-eheys&#34;&gt;Aggregaatti? Sisäinen eheys vs. ulkoinen eheys?&lt;/h3&gt;
+
+&lt;p&gt;Ensiksi määritetään aggregaatti. Aggregaatti on entiteetti, joka on jaettavissa pienempiin osiin. Mutta nuo pienemmät osat ovat nähtävissä vain &lt;em&gt;sisältä käsin&lt;/em&gt;; ulkoa katsottuna aggregaatti on eheä ja atominen palanen.&lt;/p&gt;
+
+&lt;p&gt;Esimerkiksi lentokone voidaan nähdä aggregaattina. Ulkoapäin katsottuna lentokone näyttää yksittäiseltä objektilta. Kun minä katson Espoon Vanttilan yli pyyhältävää Finnairin matkustajajettiä, näen yksittäinen objektin.&lt;/p&gt;
+
+&lt;p&gt;Minun näkökulmastani katsottuna tuo kilometrin korkeudessa pyyhältävä lentokone on eheä kokonaisuus, joka ei ole jaettavissa pienempiin osiin.&lt;/p&gt;
+
+&lt;p&gt;Lentokoneen sisällä reissatessa taas huomaa selvästi, että lentokone on jaettavissa pienempiin osiin. Penkit, ovet, ruuma, cockpit, suihkumoottorit - tästä sisäisestä näkökulmasta asiaa tarkastellessa huomaa, että lentokone on &lt;em&gt;aggregaatti&lt;/em&gt;; objekti, joka koostuu valtavasta määrästä muita objekteja.&lt;/p&gt;
+
+&lt;p&gt;Jatketaan esimerkkiä. Sanotaan, että tehtävämme on kehittää tietojärjestelmä, joka mallintaa lentokoneiden liikennöintiä Helsinki-Vantaan ilmatilassa. Järjestelmä mallintaa koneiden toimintaa mahdollisimman yksityiskohtaisella tasolla, esim. yksittäisen lentokoneen suihkumoottoreiden toiminta mallinnetaan.&lt;/p&gt;
+
+&lt;p&gt;Tämä järjestelmä koostuu ilmiselvästi objekteista - tai paremminkin &lt;em&gt;entiteeteistä&lt;/em&gt; - jotka ovat tyyppiä &amp;ldquo;lentokone&amp;rdquo;. Jokainen lentokone on järjestelmän sisällä itsenäinen entiteetti.&lt;/p&gt;
+
+&lt;p&gt;Samaan aikaan jokainen lentokone on myös aggregaatti, joka koostuu siivistä, suihkumoottoreista, navigointilaitteista, yms.&lt;/p&gt;
+
+&lt;h3 id=&#34;sisäinen-eheys&#34;&gt;Sisäinen eheys&lt;/h3&gt;
+
+&lt;p&gt;Nyt tässä kontekstissa sisäinen eheys tarkoittaa, että kukin lentokone on kunakin ajan hetkenä sisäisesti eheässä tilassa. Toisin sanoen, jokainen lentokoneen omat alikomponentit ovat keskenään johdonmukaisessa tilassa.&lt;/p&gt;
+
+&lt;p&gt;Millainen olisi sisäisesti ei-johdonmukainen tila? Esimerkiksi sellainen, jossa lentokoneen kerosiinitankki olisi typötyhjä, mutta polttoainemittari näyttäisi 100%.&lt;/p&gt;
+
+&lt;p&gt;Tai sellainen, jossa koneen laskeutumistelineet olisivat visusti ylhäällä, mutta cockpitin infonäyttö näyttäisi niiden olevan alhaalla.&lt;/p&gt;
+
+&lt;p&gt;Sanomattakin selvää, että yllämainitun kaltaiset &lt;em&gt;epäjohdonmukaisuustilat&lt;/em&gt; ovat hengenvaarallisia lentoturvallisuuden suhteen. Siksi on elintärkeää, että lentokone ei koskaan päädy niihin. &lt;strong&gt;Lentokoneen tulee siis olla sisäisesti johdonmukaisessa tilassa kaikkina ajan hetkinä&lt;/strong&gt;. Jos löpömittari näyttää 100%, tankissa on oltava polttoainetta piri pintaan asti.&lt;/p&gt;
+
+&lt;p&gt;Samaan aikaan kun jokainen lentokone on sisäisesti johdonmukaisessa tilassa, tulee järjestelmän olla kokonaisuutena johdonmukainen.&lt;/p&gt;
+
+&lt;p&gt;Tämä tarkoittaa, että eri lentokoneiden tulee olla &lt;em&gt;toisiinsa nähden&lt;/em&gt; johdonmukaisessa tilassa.&lt;/p&gt;
+
+&lt;h3 id=&#34;ulkoinen-eheys&#34;&gt;Ulkoinen eheys&lt;/h3&gt;
+
+&lt;p&gt;Millainen olisi ulkoisesti epäjohdonmukainen tila?&lt;/p&gt;
+
+&lt;p&gt;Esimerkiksi sellainen, jossa kaksi lentokonetta laskeutuisi yhdelle samalle kiitoradalle tismalleen samaan aikaan. Järjestelmän oikean toiminnan kannalta on elintärkeää, että yhdelle kiitoradalle laskeutuu vain yksi lentokone kerrallaan.&lt;/p&gt;
+
+&lt;p&gt;Sisäinen eheys on siis lentokoneen sisäisen tilan johdonmukaisuus.&lt;/p&gt;
+
+&lt;p&gt;Ulkoinen eheys on eri lentokoneiden johdonmukaisuus toisiinsa nähden.&lt;/p&gt;
+
+&lt;h3 id=&#34;järjestelmän-toiminta-ja-eri-eheyksien-varmistaminen&#34;&gt;Järjestelmän toiminta ja eri eheyksien varmistaminen?&lt;/h3&gt;
+
+&lt;p&gt;Palataan postauksen alun kultaiseen lausahdukseen:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Within an aggregate boundary, apply consistency rules &lt;strong&gt;synchronously&lt;/strong&gt;. Across boundaries, handle updates &lt;strong&gt;asynchronously&lt;/strong&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Esimerkissämme lentokone on &amp;ldquo;aggregate boundary&amp;rdquo;. Lausahduksen mukaan meidän tulee lentokoneen sisäinen eheys varmistaa &lt;em&gt;synkronoidusti&lt;/em&gt;. Synkronoitu tarkoittaa tässä tapauksessa sitä, että muun järjestelmän kannalta lentokoneen tulee olla &lt;em&gt;kaikkina ajanhetkinä&lt;/em&gt; sisäisesti eheässä tilassa.&lt;/p&gt;
+
+&lt;p&gt;Tämä onnistuu transaktioita käyttämällä. Kun lentokone laskee laskutelineensä, tarvitsemme transaktion, joka huolehtii että &lt;em&gt;laskutelineiden laskeminen&lt;/em&gt; ja &lt;em&gt;cockpitin telinemittarin päivitys&lt;/em&gt; joko onnistuvat tai epäonnistuvat yhdessä.&lt;/p&gt;
+
+&lt;p&gt;Toisin sanoen, missään välissä ei saa olla tilannetta, jossa &lt;em&gt;laskutelineiden asento&lt;/em&gt; ja &lt;em&gt;laskutelinemittariston väittämä asento&lt;/em&gt; eivät täsmäisi.&lt;/p&gt;
+
+&lt;p&gt;Transaktion tehtävä on huolehtia, että tuollaista epäjohdonmukaisuutta ei pääse syntymään.&lt;/p&gt;
+
+&lt;p&gt;Sitten siirrytään huomattavasti mielenkiintoisempaan kakkosvaatimukseen:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Across boundaries, handle updates &lt;strong&gt;asynchronously&lt;/strong&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Palataan laskeutumisesimerkkiin. Helsinki-Vantaan ilmatilaan on saapumassa Air Francen Airbus. Samaan aikaan Finnairin DC-10 on parhaillaan kiitoradan #1 alkupäässä odottamassa nousulupaa.&lt;/p&gt;
+
+&lt;p&gt;Lennonjohto päättää, että Airbus saa välittömän laskeutumisluvan kiitoradalle #1, ja että DC-10 käyttäköön kiitorataa #2. Mutta DC-10 on iso kone, ja sillä kestää pari minuuttia poistua kiitoradalta #1.&lt;/p&gt;
+
+&lt;p&gt;Nyt jos järjestelmä vaatisi eri lentokoneiden välille (&amp;ldquo;across boundaries&amp;rdquo;) &lt;em&gt;synkronoitua&lt;/em&gt; eheyttä, ei missään välissä saisi tulla tilannetta, jossa Airbus yrittäisi laskeutua kiitoradalle, jolla on toinen lentokone. Toisin sanoen, synkronoidun eheys vaatimus vaatii, että lennonjohto ensin varmistaa kiitoradan #1 olevan typötyhjä, ja sitten antaa Airbus-koneelle laskeutumisluvan.&lt;/p&gt;
+
+&lt;p&gt;Asynkronoidun eheys tapauksessa teemme löysennyksen ylläolevaan: sallimme, että &lt;strong&gt;hetkellisesti&lt;/strong&gt; järjestelmä voi olla epäjohdonmukaisessa tilassa.&lt;/p&gt;
+
+&lt;p&gt;Esimerkkimme tapauksessa se tarkoittaa, että Airbus saa laskeutumisluvan kiitoradalle #1 vaikka tuolla kiitoradalla seisoo DC-10 odottamassa nousulupaa. Tämä tilanne aiheuttaa sen, että järjestelmä on hetkellisesti ristiriitaisessa tai epäjohdonmukaisessa tilassa; järjestelmän perussääntö on, että kaksi lentokonetta ei voi käyttää samaa kiitorataa samanaikaisesti.&lt;/p&gt;
+
+&lt;p&gt;Huomionarvoista on termi &amp;ldquo;hetkellinen&amp;rdquo;. Järjestelmän on huolehdittava, että epäjohdonmukaisuus on väliaikainen. Toisin sanoen lennonjohdon on pidettävä huoli, että DC-10 poistuu kiitoradalta ennenkuin Airbus laskeutuu sille.&lt;/p&gt;
+
+&lt;p&gt;Asynkronoitu tuo siis mukaan ajallisen ulottuvuuden. Kaksi lentokonetta voi olla toisiinsa nähden epäjohdonmukaisessa tilassa jos a) tuo epäjohdonmukaisuus kestää vain hetken ja b) tuon hetken aikana ei ehdi tapahtua mitään katastrofaalista.&lt;/p&gt;
+
+&lt;p&gt;Oikean elämän lennonjohto toimii juurikin asynkronoituun johdonmukaisuuteen perustuen. Kaksi lentokonetta voi olla hetkellisesti suoralla törmäyskurssilla toisiinsa nähden. Riittää, että lennonjohto muuttaa jomman kumman koneen kurssia hyvissä ajoin ennen törmäystä.&lt;/p&gt;
+
+&lt;h3 id=&#34;mitä-seurauksia-tekniseen-toteutukseen&#34;&gt;Mitä seurauksia tekniseen toteutukseen?&lt;/h3&gt;
+
+&lt;p&gt;Asynkronoidun ja synkronoidun johdonmukaisuuksien erottaminen toisistaan antaa meille lisämahdollisuuksia järjestelmän teknisen toteutuksen kannalta.&lt;/p&gt;
+
+&lt;p&gt;Synkronoitu johdonmukaisuus täytyy kyetä hoitamaan yhden ja saman transaktion sisällä. Käytännössä tämä tarkoittaa, että transaktion tulee elää yksittäisen tietokoneen (siis ihan fyysisen palvelinraudan) sisällä.&lt;/p&gt;
+
+&lt;p&gt;Asynkronoitu johdonmukaisuus sallii tilanteen, että järjestelmä on hetkellisesti epäjohdonmukaisessa tilassa. Riittää, että ennen pitkään järjestelmä tila palaa johdonmukaiseksi. Tämä sääntökevennys sallii viestittelyn esim. tietoverkkoa pitkin. Järjestelmän yksi osanen voi tehdä omaan tietokantaansa muutoksen, lähettää &lt;em&gt;sen jälkeen&lt;/em&gt; viestin järjestelmän toiselle osaselle, joka tekee vastaavan muutoksen omaan tietokantaansa.&lt;/p&gt;
+
+&lt;p&gt;Viestin liikkuminen tietoverkon lävitse kestää hetken aikaa; tuon hetken ajan järjestelmä on epäjohdonmukaisessa tilassa. Kun viesti lopulta saapuu vastaanottavaan osaseen, järjestelmä palautuu johdonmukaiseen tilaan.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Asynkronoidun johdonmukaisuuden vaatimus on löysempi kuin synkronoidun johdonmukaisuuden vaatimus. Synkronoidusti johdonmukainen järjestelmä ei voi olla hetkeäkään epäjohdonmukaisessa tilassa (esim. tilassa, jossa kaksi laskeutuvaa lentokonetta suuntaa kohti samaa kiitorataa). Asynkronoidusti johdonmukainen järjestelmä &lt;em&gt;voi olla&lt;/em&gt; hetkellisesti epäjohdonmukaisessa tilassa; riittää, että epäjohdonmukaisuus &lt;em&gt;poistuu&lt;/em&gt; ennenkuin mitään peruuttamatonta vahinkoa ehtii syntymään.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Arkkitehtuuri: ohjaa pelaajat eteenpäin</title>
