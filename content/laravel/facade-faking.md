@@ -87,7 +87,7 @@ Otetaan esimerkkinä tuo Cache-fasaadi. Haluamme että Cache-fasaadi tallentaa v
 
 class Cache extends Facade {
 
-  public function fake() {
+  public static function fake() {
     // Korvaamme vakiotoiminnot tarjoavat luokan jollain toisella luokalla.
     // Tässä siis kytketään fasaadi siten, että missä ikinä
     // käytämmekään *Cache*-fasaadia, se vie meidät 
