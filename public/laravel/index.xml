@@ -6,8 +6,176 @@
     <description>Recent content in Laravels on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Wed, 07 Sep 2016 18:03:38 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 19 Sep 2016 09:43:34 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Fasaadin feikkaus</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/facade-faking/</link>
+      <pubDate>Mon, 19 Sep 2016 09:43:34 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/facade-faking/</guid>
+      <description>
+
+&lt;p&gt;Laravel hyödyntää runsaasti konseptia / design patternia nimeltä &amp;ldquo;Facade&amp;rdquo;. Kehys tarjoaa kehittäjän käyttöön tarttumapinnan moniin aputoiminnallisuuksiin juurikin fasaadien kautta, esim. applikaation oman välimuistin käsittely käy helposti &lt;em&gt;Cache&lt;/em&gt;-fasaadin avulla:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Cache-fasaadi tarjoaa meille globaalin tarttumapinnan 
+// Laravellin omaan välimuistiin.
+$nimi = Cache::get(&#39;pelaajan_nimi&#39;);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Fasaadin käytössä on myös heikkoutensa. Pääasiallinen heikkous on, että fasaadin kutsuminen on &lt;em&gt;staattinen kutsu&lt;/em&gt;; toisin sanoen, kutsuttava luokka on määritelty suoraan koodiin.&lt;/p&gt;
+
+&lt;p&gt;Toinen vaihtoehtohan on &lt;em&gt;olla määrittämättä&lt;/em&gt; kutsuttavaa luokkaa suoraan koodiin. Miten ihmeessä se on mahdollista? Käyttämällä konseptia nimeltä &lt;em&gt;dependency injection&lt;/em&gt;, eli riippuvuuksien injektointi.&lt;/p&gt;
+
+&lt;p&gt;Vertaa näitä kahta tapaa:&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Fasaadin käyttö&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+public function tallennaNimi() {
+  // Cache-fasaadi tarjoaa meille globaalin tarttumapinnan välimuistiin.
+  Cache::set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Riippuuvuuden injektointi&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+public function tallennaNimi(ICache $valimuisti) {
+  // ICache-rajapintaa noudattava objektin ei tarvitse olla Cache-luokasta,
+  // vaan se voi olla *mikä tahansa* objekti joka implementoi ICachen.
+  $valimuisti-&amp;gt;set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kahden ylläolevan esimerkin välinen ero on juurikin siinä, että &lt;strong&gt;ensimmäisessä versiossa kutsumme staattisesti Cache-luokan metodia.&lt;/strong&gt; Jälkimmäisessä puolestaan &lt;strong&gt;kutsumme dynaamisesti sisäänsaadun objektin metodia.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Jälkimmäistä kutsua kutsumme nimeltä &lt;em&gt;polymorphinen&lt;/em&gt; kutsu. Tämä tarkoittaa, että koodia &lt;em&gt;kirjoitettaessa&lt;/em&gt; meillä ei ole varmaa tietoa siitä, mikä pätkä koodia lopulta tulee ajetuksi kun metodikutsu &lt;em&gt;$valimuisti-&amp;gt;set()&lt;/em&gt; suoritetaan.&lt;/p&gt;
+
+&lt;p&gt;Mitä hyötyä tuollaisesta polymorphisesta kutsusta on? Se, että voimme ulkoakäsin määritellä millainen ICache-rajapintaa noudattava objekti halutaan käyttöön.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+public function tallennaNimi(ICache $valimuisti) {
+  // ICache-rajapintaa noudattava objektin ei tarvitse olla Cache-luokasta,
+  // vaan se voi olla *mikä tahansa* objekti joka vain implementoi ICachen.
+  $valimuisti-&amp;gt;set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
+}
+
+// Vaihtoehto #1, Laravellin default-välimuisti
+tallennaNimi(new Cache());
+// Vaihtoehto #2, käytetään lokaalia tekstitiedostoa
+tallennaNimi(new Loki(&#39;pelaajat.txt&#39;));
+// Vaihtoehto #3, käytetään Googlen nettilevyä
+tallennaNimi(new HTTPCache(&#39;http://www.docs.google.com/jrk5u5emsdmk&#39;));
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Riippuvuuden injektointi on siis joustavampi kuin fasaadin käyttö.&lt;/p&gt;
+
+&lt;h3 id=&#34;fasaadin-feikkaus&#34;&gt;Fasaadin feikkaus&lt;/h3&gt;
+
+&lt;p&gt;Mutta.&lt;/p&gt;
+
+&lt;p&gt;Laravel 5.3 kehyksessä fasaadia käyttävän kutsun voi myös muuttaa polymorphiseksi. Muutos vain täytyy tehdä koko applikaatiolle kerrallaan.&lt;/p&gt;
+
+&lt;p&gt;Tärkeä huomio: &lt;em&gt;yksittäistä fasaadikutsua ei voi muuttaa polymorphiseksi, mutta koko fasaadin voi.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Tämä tarkoittaa, että kun defaulttina &lt;strong&gt;Cache&lt;/strong&gt;-fasaadi johtaa Laravellin omaan välimuistiin, on mahdollista asettaa &lt;strong&gt;Cache&lt;/strong&gt;-fasaadi johtamaan johonkin muuhun luokkaan. Muutos koskee koko applikaatiota.&lt;/p&gt;
+
+&lt;p&gt;Laravel 5.3 tarjoaa sisäänrakennetun korvausmekanismin. Kullekin fasaadille on määritelty &lt;em&gt;fake&lt;/em&gt;-metodi, joka mahdollistaa korvata fasaadiin kytketty vakioluokka jollain muulla luokalla.&lt;/p&gt;
+
+&lt;p&gt;Otetaan esimerkkinä tuo Cache-fasaadi. Haluamme että Cache-fasaadi tallentaa välimuistitiedot Dropboxiin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class Cache extends Facade {
+
+  public function fake() {
+    // Korvaamme vakiotoiminnot tarjoavat luokan jollain toisella luokalla.
+    // Tässä siis kytketään fasaadi siten, että missä ikinä
+    // käytämmekään *Cache*-fasaadia, se vie meidät 
+    // *NettiLevyValimuisti*-luokan metodeihin.
+    static::swap(new NettiLevyValimuisti(&#39;dropbox.com/j53jySD&#39;));
+  }
+	
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva ei vielä ihan riitä. Meidän täytyy jotenkin ilmaista Laravel-kehykselle, että haluamme tuon swappauksen tehdä, eli haluamme ottaa nettilevyn käyttöön. Ilmoitus tehdään yksinkertaisesti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Swapataan.
+Cache::fake();
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tästä eteenpäin voimme &lt;em&gt;Cache&lt;/em&gt;-fasaadin kautta tallettaa tietoja suoraan Dropboxiin.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Swapataan.
+Cache::fake();
+
+// Swappaus suoritettu.
+// Pinnan alla HTTP-kutsu lähtee matkaan kohti Dropboxin palvelinta.
+Cache::set(&#39;pelaajan_nimi&#39;, &#39;Jussi&#39;); 
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;milloin-fasaadin-korvaus-milloin-injektointi&#34;&gt;Milloin fasaadin korvaus, milloin injektointi?&lt;/h3&gt;
+
+&lt;p&gt;Yllä näimme kaksi tapaa järjestää rajapintakutsu. Ensimmäinen tapa turvaa fasaadin käyttöön. Toinen tapa turvaa sopivan objektin injektointiin ja sen objektin metodikutsuun.&lt;/p&gt;
+
+&lt;p&gt;On tärkeä huomata, että vaikka fasaadin &amp;ldquo;vakio-ohjaus&amp;rdquo; voidaan pinnan alla korvata kustomoidulla ohjauksella, on injektointi edelleenkin joustavampi tapa. Tämä johtuu siitä, että fasaadin tapauksessa korvaus on aina &lt;strong&gt;globaali&lt;/strong&gt;. Tietty fasaadi johtaa aina tiettyyn implementaatioon.&lt;/p&gt;
+
+&lt;p&gt;Injektointi taas mahdollistaa &lt;strong&gt;lokaalin&lt;/strong&gt; korvauksen. Injektoinnin avulla kukin injektoidun objekti voi johtaa eri toiminnallisuuksiin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+public function tallennaNimi(ICache $valimuisti) {
+  $valimuisti-&amp;gt;set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
+}
+
+// Eri toiminnallisuuksia voi olla rajaton määrä...
+tallennaNimi(new Cache());
+tallennaNimi(new Loki(&#39;pelaajat.txt&#39;));
+tallennaNimi(new HTTPCache(&#39;http://www.docs.google.com/jrk5u5emsdmk&#39;));
+tallennaNimi(new CDLevy());
+tallennaNimi(new SaviTaulu());
+
+// jne jne...
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Fasaadia käytettäessä korvaus voidaan tehdä vain kerran.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+public function tallennaNimi() {
+  Cache-&amp;gt;set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
+}
+
+// Vakiotoiminnallisuuden voi korvata vain kerran.
+
+tallennaNimi(); // Tallentaa vakio-välimuistiin.
+tallennaNimi(); // Tallentaa vakio-välimuistiin.
+tallennaNimi(); // Tallentaa vakio-välimuistiin.
+Cache::fake(); // Suoritetaan korvaus
+tallennaNimi(); // Tallentaa nettilevylle;
+tallennaNimi(); // Tallentaa nettilevylle;
+tallennaNimi(); // Tallentaa nettilevylle;
+// jne jne...
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Injektointi on suositeltava tapa silloin kun on syytä dynaamisesti kesken business-koodin kyetä muuttamaan metodikutsun määränpäätä. Fasaadien käyttö on täysin ok jos tälläistä kykyä ei tarvitse. Testauksen kannalta molemmat ovat ok - testejä ajettaessa riittää, että esimerkiksi välimuisti korvataan feikkivälimuistilla globaalisti.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>CQRS ja Laravel</title>
@@ -2039,299 +2207,6 @@ public function vapaatKuonot() {
 &lt;/ul&gt;
 
 &lt;p&gt;Ylläoleva checklist on osoittanut hyödyllisyytensä useammassa omassa projektissani. Kun on muistilista, jota seurata orjallisesti, pysyy laatu tasaisena ja työtahti tiiviinä.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Usecase-arkkitehtuurin vahvuus</title>
-      <link>http://www.nollaversio.fi/blog/public/laravel/usecase-bliss/</link>
-      <pubDate>Fri, 22 Jul 2016 14:44:27 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/laravel/usecase-bliss/</guid>
-      <description>
-
-&lt;p&gt;Usecase-arkkitehtuuri on eräs tapa järjestää Laravel-pohjaisen tietokoneohjelman control flow.&lt;/p&gt;
-
-&lt;p&gt;Mitä usecase-arkkitehtuuri painottaa? Nimensä mukaisesti se pyrkii abstraktoimaan koodin erillisiin käyttötarkoituksiin, usecaseihin.&lt;/p&gt;
-
-&lt;p&gt;Käyttötarkoitus on esim. &amp;ldquo;nosta rahaa pankista&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;Otetaan esimerkki. Kuvitellaan järjestelmä, jossa loppukäyttäjä voi ryhtyä haluamansa pankin asiakkaaksi. Pankkeja on useita, ja asiakas voi yhden järjestelmän kautta hallita asiakkuuksiaan kussakin pankissa.&lt;/p&gt;
-
-&lt;h3 id=&#34;ensimmäinen-usecase-rahan-nosto&#34;&gt;Ensimmäinen usecase - rahan nosto&lt;/h3&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// NostaRahaa_useCase.php
-
-public function nostaRahaa(int $pankkiID, int $asiakasID, int $summa) {
-
-	// Alkuvalmistelut, eli varmistetaan että asiakas-ID on olemassa
-	$asiakas = Asiakas::findById($asiakasID); // Throws &amp;quot;EiOlemassa&amp;quot;
-	// Varmistetaan, että pankkiID on olemassa
-	$pankki = Pankki::findById($pankkiID); // Throws &amp;quot;EiOlemassa&amp;quot;
-
-	// Usecasen tunnusmerkkejä on, että siinä tietyt toimenpiteet
-	// suoritetaan järjestyksessä, ja tällä tavoin saavutetaan
-	// haluttu lopputulos.
-
-	// Tässä tapauksessa vaiheet ovat:
-	// 1. Varmista asiakkuus
-	// 2. Nosta rahat
-	// 3. Lähetä ilmoitus nostosta asiakkaalle 
-
-	// Virheet napataan kiinni ylempänä call stäkissä.
-	
-	// #1
-	// Throws &amp;quot;EiAsiakkuutta&amp;quot; mikäli varmistus epäonnistuu.
-	$pankki-&amp;gt;varmistaAsiakkuus($asiakas); 
-
-	// #2
-	// Throws &amp;quot;EiKatetta&amp;quot; mikäli ei tarpeeksi rahaa tilillä.
-	$nostettuSumma = $pankki-&amp;gt;nostaTililta($asiakas, $summa); 
-
-	// #3
-	// Onnistuu aina (oletamme)
-	$asiakas-&amp;gt;lahetaSMS(&#39;nostoHyvaksytty&#39;, [
-		&#39;summa&#39; =&amp;gt; $nostettuSumma,
-		&#39;ajankohta&#39; =&amp;gt; Carbon::now(),
-	]);
-
-}  
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// PankkiController.php
-
-public function nostaRahaa(Request $request, int $pankkiID) {
-	// parametrit tulevat IOC-containerin kautta
-
-	// Validation sisääntullut request jotenkin
-	try {
-		$this-&amp;gt;validateNostoRequest($request); // Throws &amp;quot;ValidaatioVirhe&amp;quot;		
-	} catch (ValidaatioVirhe $vv) {
-		return Response::error(&#39;Nosto epäonnistui - tarkista tiedot&#39;);
-	}
-
-	$asiakasID = $request-&amp;gt;get(&#39;asiakasID&#39;);
-	$summa     = $request-&amp;gt;get(&#39;summa&#39;);
-
-	// Kutsutaan usecasea!
-	try {
-		$nosto = (new NostaRahaa_useCase())-&amp;gt;nostaRahaa($pankkiID, $asiakasID, $summa);
-	} catch (Error $e) {
-		// Ei tarvetta tietää mikä tietty virhe tapahtui, sen sijaan ilmoitetaan
-		// virheviesti käyttäjälle. Viesti kertoo kaiken oleellisen.
-		return Response::error($e);
-	}
-
-	// Kaikki meni oikein mukavasti.
-	return Response::success(&#39;nostoOnnistui&#39;, $nosto);
-
-}
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva usecase-arkkitehtuuri erottelee &lt;em&gt;sisääntulevan palvelupyynnön&lt;/em&gt; käsittelyn ja &lt;em&gt;itse toiminnon läpiviemisen&lt;/em&gt; toisistaan. On syytä muistaa, että rahan nostaminen pankista on palvelupyyntö asiakkaalta pankille. Jotta tuo palvelupyyntö voidaan viedä läpi, täytyy asiakkaan tietokoneen lähettää tekninen palvelupyyntö järjestelmän palvelimelle.&lt;/p&gt;
-
-&lt;p&gt;Tässä onkin &lt;em&gt;kaksi fundamentaalista konseptia&lt;/em&gt;:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;Palvelupyyntö siinä mielessä, että tosimaailmassa minä pyydän sinua tekemään jotain.&lt;/li&gt;
-&lt;li&gt;Palvelupyyntö siinä mielessä, että kasa bittejä siirtyy tietokoneelta toiselle.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;&lt;strong&gt;Jälkimmäinen on pelkkä bittimaailman kuvaus ensimmäisestä&lt;/strong&gt;. Täydellisessä maailmassa jälkimmäiselle konseptille ei olisi lainkaan tarvetta. Mutta meidän maailmassamme on - tieto rahan nostosta täytyy jotenkin välittää kotikoneelta palvelimelle. Se ei välity telepatialla, joten joudumme turvautumaan &lt;em&gt;teknisen palvelupyynnön&lt;/em&gt; lähettämiseen.&lt;/p&gt;
-
-&lt;p&gt;Usecase-arkkitehtuuri mahdollistaa näiden kahden konseptin erottelun &lt;em&gt;kauas&lt;/em&gt; toisistaan. Siis kauas siinä mielessä, että ne sijaitsevat eri tiedostoissa. Tässä on suuri vahvuus.&lt;/p&gt;
-
-&lt;p&gt;Usecase-tiedoston ei tarvitse välittää siitä, millä tavoin asiakkaan kotikone ilmaisi palvelimen suuntaan halunsa nostaa rahaa.&lt;/p&gt;
-
-&lt;p&gt;Sen sijaan Controller-tiedosto (PankkiController.php) välittää tuommoisista alhaisen tason detaljeista. Controller ottaa sisään teknisen palvelupyynnön (siis #2 äskeisessä listassamme!), ja luo sen pohjalta oikean palvelupyynnön (#1 listassamme). Usecase-tiedosto ei koskaan edes tiedä #2 olemassaolosta - se välittää vain #1 käsittelystä.&lt;/p&gt;
-
-&lt;p&gt;Itse asiassa Usecase-tiedosto ei edes tiedä, että se on osa internet-applikaatiota. Sillä kaikki internet-liikenteeseen liittyvä logiikka elää Controller-tiedostossa.&lt;/p&gt;
-
-&lt;h3 id=&#34;toinen-usecase-rahan-siirto&#34;&gt;Toinen usecase - rahan siirto&lt;/h3&gt;
-
-&lt;p&gt;Lisätään järjestelmään toinen usecase. Mitä muuta haluamme pankkijärjestelmältämme kuin nostaa rahaa? No, ainakin siirtää rahaa yhdeltä tililtä toiselle.&lt;/p&gt;
-
-&lt;p&gt;Oletetaan, että rahan siirron voi tehdä miltä tahansa tililtä mille tahansa tilille. Tilien ei tarvitse olla samassa pankissa. Ainoa vaatimus on, että siirron tekevä asiakas omistaa lähtötilin, ja on asiakkaana siinä pankissa, jossa lähtötili sijaitsee.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// SiirraRahaa_useCase.php
-
-public function siirraRahaa(
-	int $lahtoPankkiID, /* Mistä pankista rahat lähtevät? */
-	int $tuloPankkiID, /* Mihin pankkiin rahat saapuvat? */
-	int $lahettajaID,    /* Kenen tili lähtöpankissa? */
-	int $vastaanottajaID,  /* Kenen tili tulopankissa? */
-	int $summa
-) {
-	// Tässä oletetaan, että jokaisella asiakkaalla voi olla max. yksi tili per pankki.
-	// Täten yhdistelmä {pankki, asiakasID} kuvaa yksilöllisesti pankkitilin.
-	// Oikeassa maailmassa käyttäisimme tietenkin *tilinumeroa*, mutta tämä järjestelmä
-	// ei sellaista konseptia tunne.
-
-	// Alkuvalmistelut, eli varmistetaan että lähettäjä ja vastaanottaja ovat olemassa.
-	$lahettaja = Asiakas::findById($asiakasID); // Throws &amp;quot;EiOlemassa&amp;quot;
-	$vastaanottaja = Asiakas::findById($vastaanottajaID); // Throws &amp;quot;EiOlemassa&amp;quot;
-
-	// Varmistetaan, että molemmat pankit ovat olemassa.
-	$lahtoPankki = Pankki::findById($lahtoPankkiID); // Throws &amp;quot;EiOlemassa&amp;quot;
-	$tuloPankki = Pankki::findById($tuloPankkiID); // Throws &amp;quot;EiOlemassa&amp;quot;	
-
-	// Tämän usecasen vaiheet ovat:
-	// 1. Varmista asiakkuudet
-	// 2. Nosta summa lähettäjän tililtä
-	// 3. Lisää summa vastaanottajan tilille
-	// 4. Lähetä ilmoitus nostosta lähettäjälle 
-	// 5. Lähetä ilmoitus saapuneesta rahasummasta vastaanottajalle
-
-	// Virheet napataan kiinni ylempänä call stäkissä.
-	
-	// #1 Varmista asiakkuudet
-	// Throws &amp;quot;EiAsiakkuutta&amp;quot; mikäli varmistus epäonnistuu.
-	$lahtoPankki-&amp;gt;varmistaAsiakkuus($lahettaja); 
-	$tuloPankki-&amp;gt;varmistaAsiakkuus($vastaanottaja); 
-
-	// Koska nosto yhdeltä tililtä ja talletus toiselle tilille
-	// ovat toisistaan *riippuvaisia* operaatioita - eli joko
-	// molemmat onnistuvat tai ei kumpikaan - meidän tulee
-	// turvautua transaktioon.
-
-
-	DB::transaction(function () use ($lahtoPankki, $tuloPankki, $lahettaja, $vastaanottaja, $summa) {
-
-		// #2 Nosta summa lähettäjän tililtä
-		// Throws &amp;quot;EiKatetta&amp;quot; mikäli ei tarpeeksi rahaa tilillä.
-		$nostettuSumma = $lahtoPankki-&amp;gt;nostaTililta($lahettaja, $summa); 
-
-		// #3 Lisää summa vastaanottajan tilille
-		$tuloPankki-&amp;gt;talletaTilille($vastaanottaja, $nostettuSumma);
-	});
-
-	// #4 Lähetä ilmoitus nostosta
-	$lahettaja-&amp;gt;lahetaSMS(&#39;siirtoHyvaksytty&#39;, [
-		&#39;summa&#39; =&amp;gt; $summa,
-		&#39;ajankohta&#39; =&amp;gt; Carbon::now(),
-	]);
-
-	// #5 Lähetä ilmoitus saapuneesta rahasummasta
-	$vastaanottaja-&amp;gt;lahetaSMS(&#39;siirtoSaapunut&#39;, [
-		&#39;summa&#39; =&amp;gt; $summa,
-		&#39;ajankohta&#39; =&amp;gt; Carbon::now(),
-	]);
-}  
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// PankkiController.php
-
-public function nostaRahaa(Request $request, int $pankkiID) {
-	// Kuten ennenkin
-	// ...
-}
-
-public function siirraRahaa(Request $request, int $lahtoPankkiID) {
-	// Parametrit IOC:in kautta
-	// Miksi otamme IOC:n kautta $lahtoPankin, mutta emme $tuloPankkia?
-	// Koska lähettäjä operoi omalla selaimellaan *tietyn* pankin käyttöliittymässä, 
-	// ja kaikki lähettäjän tekemät palvelupyynnöt tehdään tietyn pankin suuntaan.
-	// Toisin sanoen, kaikki sisääntulevat palvelupyynnöt tehdään URL:ään, jonka rakenne
-	// on seuraavanlainen:
-
-	/*
-		http://pankkijarjestelma.fi/pankki/pankkiID/operaatio
-	*/
-
-	// Validoi sisääntullut request jotenkin
-	try {
-		$this-&amp;gt;validateSiirtoRequest($request); // Throws &amp;quot;ValidaatioVirhe&amp;quot;		
-	} catch (ValidaatioVirhe $vv) {
-		return Response::error(&#39;Rahan siirto epäonnistui - tarkista tiedot&#39;);
-	}
-
-	// Haetaan siirtoon liittyvät tiedot.
-	$tuloPankkiID = $request-&amp;gt;get(&#39;tuloPankkiID&#39;);
-	$lahettajaID = $request-&amp;gt;get(&#39;lahettajaID&#39;);
-	$vastaanottajaID = $request-&amp;gt;get(&#39;vastaanottajaID&#39;);
-	$summa     = $request-&amp;gt;get(&#39;summa&#39;);
-
-	// Kutsutaan usecasea!
-	try {
-		(new SiirraRahaa_useCase())-&amp;gt;siirraRahaa(
-			$lahtoPankkiID, 
-			$tuloPankkiID,
-			$lahettajaID,
-			$vastaanottajaID, 
-			$summa
-		);
-
-	} catch (Error $e) {
-		// Ei tarvetta tietää mikä tietty virhe tapahtui, sen sijaan ilmoitetaan
-		// virheviesti käyttäjälle. Viesti kertoo kaiken oleellisen.
-		return Response::error($e);
-	}
-
-	// Kaikki meni oikein mukavasti.
-	return Response::success(&#39;siirtoOnnistui&#39;);	
-
-
-}
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tässä vaiheessa on hyvä mainita eräästä seikasta.&lt;/p&gt;
-
-&lt;p&gt;Kuten huomaamme, sisääntulevan datan validaatio on jaettu kahteen osaan. Esimerkiksi vastaanottajaID:&lt;/p&gt;
-
-&lt;p&gt;1) Ensin validoimme, että vastaanottajaID on mukana sisään tulevassa palvelupyynnössä. Tämä validointi tapahtuu &lt;code&gt;$this-&amp;gt;validateSiirtoRequest($request)&lt;/code&gt; rivillä. Millainen tuo metodi on? Esimerkiksi seuraavanlainen:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-protected function validateSiirtoRequest(Request $request)
-{
-	// Throws &amp;quot;ValidaatioVirhe&amp;quot;
-    $this-&amp;gt;validate($request, [
-        &#39;tuloPankkiID&#39; =&amp;gt; &#39;required|int&#39;,
-        &#39;lahettajaID&#39; =&amp;gt; &#39;required|int&#39;,
-        &#39;vastaanottajaID&#39; =&amp;gt; &#39;required|int&#39;,
-        &#39;summa&#39; =&amp;gt; &#39;required|int|min:0|max:99999999&#39;,
-    ]);
-
-    // Kaikki kunnossa
-    return true;
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Huomioitavaa on, että tämä tarkistus/validatointi tapahtuu &lt;em&gt;controllerin&lt;/em&gt; puolella.&lt;/p&gt;
-
-&lt;p&gt;2) Myöhemmin validoimme/tarkistamme - että kunkin ID:n takaa löytyy oikea, aito objekti. Eli jos pankkiID on 15, järjestelmässämme on olemassa Pankki, jonka ID on 15.&lt;/p&gt;
-
-&lt;p&gt;Tämä tarkistus tapahtuu &lt;em&gt;usecasen&lt;/em&gt; puolella.&lt;/p&gt;
-
-&lt;h3 id=&#34;controller-validaatio-vs-usecase-validaatio&#34;&gt;Controller-validaatio vs. usecase-validaatio&lt;/h3&gt;
-
-&lt;p&gt;Miksi validaatio on jaettu kahteen paikkaan? Eikö olisi selkeämpää, jos molemmat validaatiot tehtäisiin yhdessä ja samassa paikassa?&lt;/p&gt;
-
-&lt;p&gt;Ei.&lt;/p&gt;
-
-&lt;p&gt;On syytä huomata, että nämä kaksi validaatiota tarkistavat &lt;em&gt;eri&lt;/em&gt; asioita.&lt;/p&gt;
-
-&lt;p&gt;Controller-validaatio tarkistaa, että sisääntulevat ID:t ovat &lt;em&gt;numeroita&lt;/em&gt;. Ne eivät saa olla esimerkiksi JPG-kuvia - on vaikea etsiä pankkia JPG-kuvan kautta.&lt;/p&gt;
-
-&lt;p&gt;Usecase-validaatio tarkistaa, että &lt;em&gt;ID-numero&lt;/em&gt; (ja usecasen kohdalla me jo varmuudella tiedämme, että ID on numero, kiitos Controller-validaation!) vastaa jotakin järjestelmässä sijaitsee pankkia. On mahdollista, että palvelupyynnön mukana tullut ID-numero ei vastaa yhtäkään pankkia. Pankkeja ei kuitenkaan ole rajatonta määrää, numeroita sen sijaan on.&lt;/p&gt;
-
-&lt;p&gt;Tässä on ero. &lt;strong&gt;Controller validoi, että sisääntuleva data on oikeanmuotoista. Usecase validoi, että sisääntuleva data on järjellistä järjestelmän kannalta.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;h3 id=&#34;summa-summarum&#34;&gt;Summa summarum&lt;/h3&gt;
-
-&lt;p&gt;Usecase-arkkitehtuurin vahvuus piilee juuri edellisessä huomiossa. Voimme käsitellä &amp;ldquo;ylätason toimintoja&amp;rdquo; selkeinä kokonaisuuksina, eli usecasenaina, käyttötarkoituksina. Samaan aikaan usecase on &lt;em&gt;irrallaan&lt;/em&gt; kaikesta siitä ikävästä, mutta pakollisesta säläkoodista, joka liittyy internet-applikaation tekniseen toteutukseen. Eli HTTP-pyyntöjen hallinnasta, jne.&lt;/p&gt;
-
-&lt;p&gt;Hyvässä web-applikaatiossa päteekin, että itse applikaation ydinkoodi - tässä tapauksessa se koodi, joka suorittaa siirtoja ja nostoja pankkien välillä - ei edes tiedä asuvansa osana web-applikaatiota. Se tietää asuvansa osana &lt;em&gt;applikaatiota&lt;/em&gt;, mutta webin olemassaolosta se on onnellisen tietämätön.&lt;/p&gt;
 </description>
     </item>
     

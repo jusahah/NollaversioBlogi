@@ -1,0 +1,241 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Fasaadin feikkaus &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Fasaadin feikkaus</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Mon, Sep 19, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Laravel hyödyntää runsaasti konseptia / design patternia nimeltä &ldquo;Facade&rdquo;. Kehys tarjoaa kehittäjän käyttöön tarttumapinnan moniin aputoiminnallisuuksiin juurikin fasaadien kautta, esim. applikaation oman välimuistin käsittely käy helposti <em>Cache</em>-fasaadin avulla:</p>
+
+<pre><code class="language-php">
+// Cache-fasaadi tarjoaa meille globaalin tarttumapinnan 
+// Laravellin omaan välimuistiin.
+$nimi = Cache::get('pelaajan_nimi');
+
+</code></pre>
+
+<p>Fasaadin käytössä on myös heikkoutensa. Pääasiallinen heikkous on, että fasaadin kutsuminen on <em>staattinen kutsu</em>; toisin sanoen, kutsuttava luokka on määritelty suoraan koodiin.</p>
+
+<p>Toinen vaihtoehtohan on <em>olla määrittämättä</em> kutsuttavaa luokkaa suoraan koodiin. Miten ihmeessä se on mahdollista? Käyttämällä konseptia nimeltä <em>dependency injection</em>, eli riippuvuuksien injektointi.</p>
+
+<p>Vertaa näitä kahta tapaa:</p>
+
+<p><strong>Fasaadin käyttö</strong></p>
+
+<pre><code class="language-php">
+public function tallennaNimi() {
+  // Cache-fasaadi tarjoaa meille globaalin tarttumapinnan välimuistiin.
+  Cache::set('pelaajan_nimi', Auth::user()-&gt;name);	
+}
+
+</code></pre>
+
+<p><strong>Riippuuvuuden injektointi</strong></p>
+
+<pre><code class="language-php">
+public function tallennaNimi(ICache $valimuisti) {
+  // ICache-rajapintaa noudattava objektin ei tarvitse olla Cache-luokasta,
+  // vaan se voi olla *mikä tahansa* objekti joka implementoi ICachen.
+  $valimuisti-&gt;set('pelaajan_nimi', Auth::user()-&gt;name);	
+}
+
+</code></pre>
+
+<p>Kahden ylläolevan esimerkin välinen ero on juurikin siinä, että <strong>ensimmäisessä versiossa kutsumme staattisesti Cache-luokan metodia.</strong> Jälkimmäisessä puolestaan <strong>kutsumme dynaamisesti sisäänsaadun objektin metodia.</strong></p>
+
+<p>Jälkimmäistä kutsua kutsumme nimeltä <em>polymorphinen</em> kutsu. Tämä tarkoittaa, että koodia <em>kirjoitettaessa</em> meillä ei ole varmaa tietoa siitä, mikä pätkä koodia lopulta tulee ajetuksi kun metodikutsu <em>$valimuisti-&gt;set()</em> suoritetaan.</p>
+
+<p>Mitä hyötyä tuollaisesta polymorphisesta kutsusta on? Se, että voimme ulkoakäsin määritellä millainen ICache-rajapintaa noudattava objekti halutaan käyttöön.</p>
+
+<pre><code class="language-php">
+public function tallennaNimi(ICache $valimuisti) {
+  // ICache-rajapintaa noudattava objektin ei tarvitse olla Cache-luokasta,
+  // vaan se voi olla *mikä tahansa* objekti joka vain implementoi ICachen.
+  $valimuisti-&gt;set('pelaajan_nimi', Auth::user()-&gt;name);	
+}
+
+// Vaihtoehto #1, Laravellin default-välimuisti
+tallennaNimi(new Cache());
+// Vaihtoehto #2, käytetään lokaalia tekstitiedostoa
+tallennaNimi(new Loki('pelaajat.txt'));
+// Vaihtoehto #3, käytetään Googlen nettilevyä
+tallennaNimi(new HTTPCache('http://www.docs.google.com/jrk5u5emsdmk'));
+
+</code></pre>
+
+<p>Riippuvuuden injektointi on siis joustavampi kuin fasaadin käyttö.</p>
+
+<h3 id="fasaadin-feikkaus">Fasaadin feikkaus</h3>
+
+<p>Mutta.</p>
+
+<p>Laravel 5.3 kehyksessä fasaadia käyttävän kutsun voi myös muuttaa polymorphiseksi. Muutos vain täytyy tehdä koko applikaatiolle kerrallaan.</p>
+
+<p>Tärkeä huomio: <em>yksittäistä fasaadikutsua ei voi muuttaa polymorphiseksi, mutta koko fasaadin voi.</em></p>
+
+<p>Tämä tarkoittaa, että kun defaulttina <strong>Cache</strong>-fasaadi johtaa Laravellin omaan välimuistiin, on mahdollista asettaa <strong>Cache</strong>-fasaadi johtamaan johonkin muuhun luokkaan. Muutos koskee koko applikaatiota.</p>
+
+<p>Laravel 5.3 tarjoaa sisäänrakennetun korvausmekanismin. Kullekin fasaadille on määritelty <em>fake</em>-metodi, joka mahdollistaa korvata fasaadiin kytketty vakioluokka jollain muulla luokalla.</p>
+
+<p>Otetaan esimerkkinä tuo Cache-fasaadi. Haluamme että Cache-fasaadi tallentaa välimuistitiedot Dropboxiin:</p>
+
+<pre><code class="language-php">
+class Cache extends Facade {
+
+  public function fake() {
+    // Korvaamme vakiotoiminnot tarjoavat luokan jollain toisella luokalla.
+    // Tässä siis kytketään fasaadi siten, että missä ikinä
+    // käytämmekään *Cache*-fasaadia, se vie meidät 
+    // *NettiLevyValimuisti*-luokan metodeihin.
+    static::swap(new NettiLevyValimuisti('dropbox.com/j53jySD'));
+  }
+	
+
+}
+
+</code></pre>
+
+<p>Ylläoleva ei vielä ihan riitä. Meidän täytyy jotenkin ilmaista Laravel-kehykselle, että haluamme tuon swappauksen tehdä, eli haluamme ottaa nettilevyn käyttöön. Ilmoitus tehdään yksinkertaisesti:</p>
+
+<pre><code class="language-php">
+// Swapataan.
+Cache::fake();
+
+</code></pre>
+
+<p>Tästä eteenpäin voimme <em>Cache</em>-fasaadin kautta tallettaa tietoja suoraan Dropboxiin.</p>
+
+<pre><code class="language-php">
+// Swapataan.
+Cache::fake();
+
+// Swappaus suoritettu.
+// Pinnan alla HTTP-kutsu lähtee matkaan kohti Dropboxin palvelinta.
+Cache::set('pelaajan_nimi', 'Jussi'); 
+
+</code></pre>
+
+<h3 id="milloin-fasaadin-korvaus-milloin-injektointi">Milloin fasaadin korvaus, milloin injektointi?</h3>
+
+<p>Yllä näimme kaksi tapaa järjestää rajapintakutsu. Ensimmäinen tapa turvaa fasaadin käyttöön. Toinen tapa turvaa sopivan objektin injektointiin ja sen objektin metodikutsuun.</p>
+
+<p>On tärkeä huomata, että vaikka fasaadin &ldquo;vakio-ohjaus&rdquo; voidaan pinnan alla korvata kustomoidulla ohjauksella, on injektointi edelleenkin joustavampi tapa. Tämä johtuu siitä, että fasaadin tapauksessa korvaus on aina <strong>globaali</strong>. Tietty fasaadi johtaa aina tiettyyn implementaatioon.</p>
+
+<p>Injektointi taas mahdollistaa <strong>lokaalin</strong> korvauksen. Injektoinnin avulla kukin injektoidun objekti voi johtaa eri toiminnallisuuksiin:</p>
+
+<pre><code class="language-php">
+public function tallennaNimi(ICache $valimuisti) {
+  $valimuisti-&gt;set('pelaajan_nimi', Auth::user()-&gt;name);	
+}
+
+// Eri toiminnallisuuksia voi olla rajaton määrä...
+tallennaNimi(new Cache());
+tallennaNimi(new Loki('pelaajat.txt'));
+tallennaNimi(new HTTPCache('http://www.docs.google.com/jrk5u5emsdmk'));
+tallennaNimi(new CDLevy());
+tallennaNimi(new SaviTaulu());
+
+// jne jne...
+
+</code></pre>
+
+<p>Fasaadia käytettäessä korvaus voidaan tehdä vain kerran.</p>
+
+<pre><code class="language-php">
+public function tallennaNimi() {
+  Cache-&gt;set('pelaajan_nimi', Auth::user()-&gt;name);	
+}
+
+// Vakiotoiminnallisuuden voi korvata vain kerran.
+
+tallennaNimi(); // Tallentaa vakio-välimuistiin.
+tallennaNimi(); // Tallentaa vakio-välimuistiin.
+tallennaNimi(); // Tallentaa vakio-välimuistiin.
+Cache::fake(); // Suoritetaan korvaus
+tallennaNimi(); // Tallentaa nettilevylle;
+tallennaNimi(); // Tallentaa nettilevylle;
+tallennaNimi(); // Tallentaa nettilevylle;
+// jne jne...
+
+</code></pre>
+
+<blockquote>
+<p>Injektointi on suositeltava tapa silloin kun on syytä dynaamisesti kesken business-koodin kyetä muuttamaan metodikutsun määränpäätä. Fasaadien käyttö on täysin ok jos tälläistä kykyä ei tarvitse. Testauksen kannalta molemmat ovat ok - testejä ajettaessa riittää, että esimerkiksi välimuisti korvataan feikkivälimuistilla globaalisti.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

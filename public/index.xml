@@ -6,8 +6,176 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Mon, 12 Sep 2016 08:10:14 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 19 Sep 2016 09:43:34 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Fasaadin feikkaus</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/facade-faking/</link>
+      <pubDate>Mon, 19 Sep 2016 09:43:34 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/facade-faking/</guid>
+      <description>
+
+&lt;p&gt;Laravel hyödyntää runsaasti konseptia / design patternia nimeltä &amp;ldquo;Facade&amp;rdquo;. Kehys tarjoaa kehittäjän käyttöön tarttumapinnan moniin aputoiminnallisuuksiin juurikin fasaadien kautta, esim. applikaation oman välimuistin käsittely käy helposti &lt;em&gt;Cache&lt;/em&gt;-fasaadin avulla:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Cache-fasaadi tarjoaa meille globaalin tarttumapinnan 
+// Laravellin omaan välimuistiin.
+$nimi = Cache::get(&#39;pelaajan_nimi&#39;);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Fasaadin käytössä on myös heikkoutensa. Pääasiallinen heikkous on, että fasaadin kutsuminen on &lt;em&gt;staattinen kutsu&lt;/em&gt;; toisin sanoen, kutsuttava luokka on määritelty suoraan koodiin.&lt;/p&gt;
+
+&lt;p&gt;Toinen vaihtoehtohan on &lt;em&gt;olla määrittämättä&lt;/em&gt; kutsuttavaa luokkaa suoraan koodiin. Miten ihmeessä se on mahdollista? Käyttämällä konseptia nimeltä &lt;em&gt;dependency injection&lt;/em&gt;, eli riippuvuuksien injektointi.&lt;/p&gt;
+
+&lt;p&gt;Vertaa näitä kahta tapaa:&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Fasaadin käyttö&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+public function tallennaNimi() {
+  // Cache-fasaadi tarjoaa meille globaalin tarttumapinnan välimuistiin.
+  Cache::set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Riippuuvuuden injektointi&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+public function tallennaNimi(ICache $valimuisti) {
+  // ICache-rajapintaa noudattava objektin ei tarvitse olla Cache-luokasta,
+  // vaan se voi olla *mikä tahansa* objekti joka implementoi ICachen.
+  $valimuisti-&amp;gt;set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kahden ylläolevan esimerkin välinen ero on juurikin siinä, että &lt;strong&gt;ensimmäisessä versiossa kutsumme staattisesti Cache-luokan metodia.&lt;/strong&gt; Jälkimmäisessä puolestaan &lt;strong&gt;kutsumme dynaamisesti sisäänsaadun objektin metodia.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Jälkimmäistä kutsua kutsumme nimeltä &lt;em&gt;polymorphinen&lt;/em&gt; kutsu. Tämä tarkoittaa, että koodia &lt;em&gt;kirjoitettaessa&lt;/em&gt; meillä ei ole varmaa tietoa siitä, mikä pätkä koodia lopulta tulee ajetuksi kun metodikutsu &lt;em&gt;$valimuisti-&amp;gt;set()&lt;/em&gt; suoritetaan.&lt;/p&gt;
+
+&lt;p&gt;Mitä hyötyä tuollaisesta polymorphisesta kutsusta on? Se, että voimme ulkoakäsin määritellä millainen ICache-rajapintaa noudattava objekti halutaan käyttöön.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+public function tallennaNimi(ICache $valimuisti) {
+  // ICache-rajapintaa noudattava objektin ei tarvitse olla Cache-luokasta,
+  // vaan se voi olla *mikä tahansa* objekti joka vain implementoi ICachen.
+  $valimuisti-&amp;gt;set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
+}
+
+// Vaihtoehto #1, Laravellin default-välimuisti
+tallennaNimi(new Cache());
+// Vaihtoehto #2, käytetään lokaalia tekstitiedostoa
+tallennaNimi(new Loki(&#39;pelaajat.txt&#39;));
+// Vaihtoehto #3, käytetään Googlen nettilevyä
+tallennaNimi(new HTTPCache(&#39;http://www.docs.google.com/jrk5u5emsdmk&#39;));
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Riippuvuuden injektointi on siis joustavampi kuin fasaadin käyttö.&lt;/p&gt;
+
+&lt;h3 id=&#34;fasaadin-feikkaus&#34;&gt;Fasaadin feikkaus&lt;/h3&gt;
+
+&lt;p&gt;Mutta.&lt;/p&gt;
+
+&lt;p&gt;Laravel 5.3 kehyksessä fasaadia käyttävän kutsun voi myös muuttaa polymorphiseksi. Muutos vain täytyy tehdä koko applikaatiolle kerrallaan.&lt;/p&gt;
+
+&lt;p&gt;Tärkeä huomio: &lt;em&gt;yksittäistä fasaadikutsua ei voi muuttaa polymorphiseksi, mutta koko fasaadin voi.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Tämä tarkoittaa, että kun defaulttina &lt;strong&gt;Cache&lt;/strong&gt;-fasaadi johtaa Laravellin omaan välimuistiin, on mahdollista asettaa &lt;strong&gt;Cache&lt;/strong&gt;-fasaadi johtamaan johonkin muuhun luokkaan. Muutos koskee koko applikaatiota.&lt;/p&gt;
+
+&lt;p&gt;Laravel 5.3 tarjoaa sisäänrakennetun korvausmekanismin. Kullekin fasaadille on määritelty &lt;em&gt;fake&lt;/em&gt;-metodi, joka mahdollistaa korvata fasaadiin kytketty vakioluokka jollain muulla luokalla.&lt;/p&gt;
+
+&lt;p&gt;Otetaan esimerkkinä tuo Cache-fasaadi. Haluamme että Cache-fasaadi tallentaa välimuistitiedot Dropboxiin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class Cache extends Facade {
+
+  public function fake() {
+    // Korvaamme vakiotoiminnot tarjoavat luokan jollain toisella luokalla.
+    // Tässä siis kytketään fasaadi siten, että missä ikinä
+    // käytämmekään *Cache*-fasaadia, se vie meidät 
+    // *NettiLevyValimuisti*-luokan metodeihin.
+    static::swap(new NettiLevyValimuisti(&#39;dropbox.com/j53jySD&#39;));
+  }
+	
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva ei vielä ihan riitä. Meidän täytyy jotenkin ilmaista Laravel-kehykselle, että haluamme tuon swappauksen tehdä, eli haluamme ottaa nettilevyn käyttöön. Ilmoitus tehdään yksinkertaisesti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Swapataan.
+Cache::fake();
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tästä eteenpäin voimme &lt;em&gt;Cache&lt;/em&gt;-fasaadin kautta tallettaa tietoja suoraan Dropboxiin.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Swapataan.
+Cache::fake();
+
+// Swappaus suoritettu.
+// Pinnan alla HTTP-kutsu lähtee matkaan kohti Dropboxin palvelinta.
+Cache::set(&#39;pelaajan_nimi&#39;, &#39;Jussi&#39;); 
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;milloin-fasaadin-korvaus-milloin-injektointi&#34;&gt;Milloin fasaadin korvaus, milloin injektointi?&lt;/h3&gt;
+
+&lt;p&gt;Yllä näimme kaksi tapaa järjestää rajapintakutsu. Ensimmäinen tapa turvaa fasaadin käyttöön. Toinen tapa turvaa sopivan objektin injektointiin ja sen objektin metodikutsuun.&lt;/p&gt;
+
+&lt;p&gt;On tärkeä huomata, että vaikka fasaadin &amp;ldquo;vakio-ohjaus&amp;rdquo; voidaan pinnan alla korvata kustomoidulla ohjauksella, on injektointi edelleenkin joustavampi tapa. Tämä johtuu siitä, että fasaadin tapauksessa korvaus on aina &lt;strong&gt;globaali&lt;/strong&gt;. Tietty fasaadi johtaa aina tiettyyn implementaatioon.&lt;/p&gt;
+
+&lt;p&gt;Injektointi taas mahdollistaa &lt;strong&gt;lokaalin&lt;/strong&gt; korvauksen. Injektoinnin avulla kukin injektoidun objekti voi johtaa eri toiminnallisuuksiin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+public function tallennaNimi(ICache $valimuisti) {
+  $valimuisti-&amp;gt;set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
+}
+
+// Eri toiminnallisuuksia voi olla rajaton määrä...
+tallennaNimi(new Cache());
+tallennaNimi(new Loki(&#39;pelaajat.txt&#39;));
+tallennaNimi(new HTTPCache(&#39;http://www.docs.google.com/jrk5u5emsdmk&#39;));
+tallennaNimi(new CDLevy());
+tallennaNimi(new SaviTaulu());
+
+// jne jne...
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Fasaadia käytettäessä korvaus voidaan tehdä vain kerran.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+public function tallennaNimi() {
+  Cache-&amp;gt;set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
+}
+
+// Vakiotoiminnallisuuden voi korvata vain kerran.
+
+tallennaNimi(); // Tallentaa vakio-välimuistiin.
+tallennaNimi(); // Tallentaa vakio-välimuistiin.
+tallennaNimi(); // Tallentaa vakio-välimuistiin.
+Cache::fake(); // Suoritetaan korvaus
+tallennaNimi(); // Tallentaa nettilevylle;
+tallennaNimi(); // Tallentaa nettilevylle;
+tallennaNimi(); // Tallentaa nettilevylle;
+// jne jne...
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Injektointi on suositeltava tapa silloin kun on syytä dynaamisesti kesken business-koodin kyetä muuttamaan metodikutsun määränpäätä. Fasaadien käyttö on täysin ok jos tälläistä kykyä ei tarvitse. Testauksen kannalta molemmat ovat ok - testejä ajettaessa riittää, että esimerkiksi välimuisti korvataan feikkivälimuistilla globaalisti.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Sisäinen eheys vs. ulkoinen eheys</title>
@@ -1604,171 +1772,6 @@ public function valitseVoittaja(array $osallistujat) {
 &lt;p&gt;Tilanne on sama kuin yritysmaailmassa. Nollaversio IT:n kaltaisessa pienessä nakkipuljussa yksi mies voi hoitaa niin markkinoinnin, ohjelmoinnin kuin laskutuksenkin. Suuressa pörssiyhtiössä yksi henkilö ei millään kykene hoitamaan kaikkia arkirutiineja, vaan vastuualueet on jaettava usean työntekijän kesken. Yksi toteuttaa asiakasprojektit (=ydintoimenpide), toinen pyörittää lakiosastoa (=tukitoimenpide), kolmas luuttuaa toimiston lattiat (=tukitoimenpide).&lt;/p&gt;
 
 &lt;p&gt;Eli mitä monimutkaisempi web-applikaatio on kyseessä, sitä tärkeämpää on tehdä pesäero ydintoimintojen ja tukitoimintojen välille.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Poikkeuksen väärinkäyttö?</title>
-      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</link>
-      <pubDate>Fri, 12 Aug 2016 06:46:20 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</guid>
-      <description>
-
-&lt;p&gt;Yksi suht usein tarvittava algoritmi on tietyn arvon etsiminen binaaripuusta. Etsinnän voi suorittaa esimerkiksi näin:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-function etsiArvoBinaaripuusta(puu, arvo) {
-  var loytynyt = false;	
-
-  function etsiAlipuu(juuri, arvo) {
-    if (juuri.arvo === arvo) loytynyt = true;
-    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti
-    etsiAlipuu(juuri.vasenHaara, arvo);
-    etsiAlipuu(juuri.oikeaHaara, arvo);
-  }
-  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
-  etsiAlipuu(puu, arvo);
-
-  return loytynyt;
-
-}
-
-// Kutsutaan etsintäfunktiota
-var binaaripuu = /* rakenna puu, ei oleellista etsinnän kannalta */
-var tulos = etsiArvoBinaaripuusta(binaaripuu, &#39;hauki&#39;);
-console.log(tulos); // true tai false
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva toimii. Mutta etsintä käy koko puun rekursiivisesti läpi &lt;em&gt;kaikissa tapauksissa&lt;/em&gt;, ml. siinä erikoistapauksessa, että arvo löytyy heti koko puun juuresta.&lt;/p&gt;
-
-&lt;p&gt;Arvokas huomio funktion tehokkuuden kannalta onkin huomata, että heti kun arvo on löytynyt, ei jäljellä olevan puun läpikäyminen ole järkevää. Se on vain ajanhukkaa.&lt;/p&gt;
-
-&lt;p&gt;Asia on korvattavissa pitämällä huolen, että arvon löytyessä puuetsintää ei jatketa ko. oksan kohdalta alaspäin:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-function etsiArvoBinaaripuusta(puu, arvo) {
-  var loytynyt = false;	
-
-  function etsiAlipuu(juuri, arvo) {
-    if (!juuri) return;
-    if (juuri.arvo === arvo) loytynyt = true;
-    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
-    // mutta vain jos arvoa ei löytynyt!
-    else {
-      etsiAlipuu(juuri.vasenHaara, arvo);
-      etsiAlipuu(juuri.oikeaHaara, arvo);   	
-    }
-
-  }
-  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
-  etsiAlipuu(puu, arvo);
-
-  return loytynyt;
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva on himpun verran parempi tapa hoitaa etsintä. Mutta edelleenkin etsintä jatkuu tarpeettoman kauan. Asian voi tarkistaa seuraavalla ajatuskokeella; puu jaetaan kahteen haaraan, vasen ja oikea. Kumpikin haara etsitään &lt;em&gt;erikseen&lt;/em&gt;. &lt;strong&gt;Jos arvo löytyy heti vasemman haaran alkupäästä, ainoastaan vasemman haaran etsintä stoppaa&lt;/strong&gt;. Oikean haaran etsintä joutuu yhä käymään läpi koko oikean puolen puun.&lt;/p&gt;
-
-&lt;p&gt;Tämä huomio johtaa meidät pieneen ongelmaan. Binaaripuulle on ominaista suorittaa etsintä binaarisesti - eli jakamalla jäljellä oleva puu aina kahteen osaan. Kumpikin osa saa oman &amp;ldquo;etsintäpartionsa&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;Mutta optimaalisinta olisi jos nuo kaksi etsintäpartiota voisivat kommunikoida keskenään. Näin ei kummassakaan ylläolevassa ratkaisussa ole. Kommunikaatio ei ole mahdollista - vasen partio ja oikea partio rämpivät täysin toisistaan erillään ja itsenäisesti.&lt;/p&gt;
-
-&lt;p&gt;Haluamme saavuttaa tilanteen, jossa &lt;strong&gt;heti kun oikean puolen etsintäpartio löytää arvon, se viestittää tiedon vasemman puolen partiolle&lt;/strong&gt;.&lt;/p&gt;
-
-&lt;p&gt;Kuinka saavuttaa tälläinen kommunikaatio?&lt;/p&gt;
-
-&lt;h3 id=&#34;poikkeus-apuun&#34;&gt;Poikkeus apuun&lt;/h3&gt;
-
-&lt;p&gt;Käytännössä kaikki yleisimmät ohjelmointikielet tarjoavat konseptin nimeltä &lt;em&gt;poikkeus&lt;/em&gt; (engl. exception). Poikkeus on tarkoitettu ohjelman ajon aikana tapahtuvien virhetilanteiden hallintaan. Jos esimerkiksi yrität jakaa nollalla, ohjelma heittää poikkeuksen, joka kertoo että metsään mentiin.&lt;/p&gt;
-
-&lt;p&gt;Mikään laki ei estä käyttämästä poikkeuksia myös muihin tarkoituksiin kuin ns. aitojen virhetilanteiden käsittelyyn.&lt;/p&gt;
-
-&lt;p&gt;Voimme luoda &lt;em&gt;keinotekoisen virhetilanteen&lt;/em&gt;, joka heittää poikkeuksen. Tuollainen keinotekoinen &amp;ldquo;virhe&amp;rdquo; voi olla esimerkiksi halutun arvon löytyminen binaaripuusta:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-function etsiArvoBinaaripuusta(puu, arvo) {
-  var loytynyt = false;	
-
-  function etsiAlipuu(juuri, arvo) {
-    if (!juuri) return;
-    if (juuri.arvo === arvo) throw new Error(&amp;quot;Löytyi!&amp;quot;);
-    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
-    etsiAlipuu(juuri.vasenHaara, arvo);
-    etsiAlipuu(juuri.oikeaHaara, arvo);   	
-    
-  }
-  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
-  try {
-    etsiAlipuu(puu, arvo);
-  } catch (e) {
-    loytynyt = true;
-  }
-
-  return loytynyt;
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva koodi toimii halutusti. Mutta mikä parasta, ylläolevassa koodissa &lt;em&gt;kaikki&lt;/em&gt; etsintäpartiot heittävät hanskat tiskiin heti kun arvo on löytynyt. Miksi näin? Koska heittämällä poikkeuksen - heti kun arvo löytyy - koodinajo &lt;em&gt;rullaa&lt;/em&gt; itsensä suoraan &lt;strong&gt;catch-komentoon&lt;/strong&gt;.&lt;/p&gt;
-
-&lt;p&gt;Toisin sanoen, heti kun arvo löytyy, hyödynnämme Javascriptin sisäänrakennettua poikkeusten hallintaa ja luomme keinotekoisen virhetilanteen. Tuo virhetilanne &lt;em&gt;abortoi&lt;/em&gt; kaiken käynnissä olevan etsinnän ja siirtää koodinajon catch-komennon riville:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Heti kun arvo on löytynyt, koodi pomppaa tänne
-catch (e) {
-  loytynyt = true;
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Catch-komennon sisällä yksinkertaisesti merkkaamme arvon löydetyksi. Tämän jälkeen koodinajo jatkaa catch-komentoa seuraavalta riviltä.&lt;/p&gt;
-
-&lt;p&gt;Ylläolevaa koodia voi vielä hiukan parantaa. Ei ole mikään pakko heittää &lt;em&gt;geneeristä&lt;/em&gt; poikkeusta, vaan luokaamme suosiolla sopivasti nimetty &lt;em&gt;spesiaalipoikkeus&lt;/em&gt;:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Spesiaalipoikkeuksen määritys
-// Huom! Spesiaalipoikkeuksen täytyy ekstentoida Error-objektia.
-function ArvoLoytyi() {};
-ArvoLoytyi.prototype = new Error();
-
-function etsiArvoBinaaripuusta(puu, arvo) {
-  var loytynyt = false;	
-
-  function etsiAlipuu(juuri, arvo) {
-    if (!juuri) return;
-    if (juuri.arvo === arvo) throw new ArvoLoytyi(&amp;quot;Löytyi!&amp;quot;);
-    // Käy läpi vasemman ja oikeanpuoliset alipuut rekursiivisesti,
-    etsiAlipuu(juuri.vasenHaara, arvo);
-    etsiAlipuu(juuri.oikeaHaara, arvo);   	
-    
-  }
-  // Aloita rekursio kutsumalla alipuun etsintäfunktiota.
-  try {
-    etsiAlipuu(puu, arvo);
-  } catch (err) {
-    if (err instanceof ArvoLoytyi) {
-    	// Arvo on löytynyt
-    	loytynyt = true;
-    } else {
-    	// Jotain muuta meni pieleen, arvo ei löytynyt.
-    	// Heitä poikkeus uudelleen, joku muu huolehtikoot...
-    	throw err;
-    }
-    
-  }
-
-  return loytynyt;
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: monet tahot suhtautuvat &lt;em&gt;erittäin&lt;/em&gt; epäilevästi poikkeusten väärinkäyttöön ylläolevan esimerkin tavoin. Epäilevässä suhtautumisessa on perusteensa - poikkeukset on luotu ohjelman ajon aikana tapahtuvien virheiden käsittelyyn, ja valtaosa ohjelmoijista lähtee tästä oletuksesta liikkeelle. Mikäli poikkeusta käyttää muuhun tarkoitukseen, on asia syytä selkeästi ilmaista lähdekoodin kommenteissa - tällä tavalla (ehkä, kenties) vältytään väärinkäsityksiltä.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>
