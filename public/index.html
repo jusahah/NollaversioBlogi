@@ -68,6 +68,61 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/forge-continuous-delivery/">
+        Forge ja koodin käyttöönotto
+      </a>
+    </h1>
+
+    <span class="post-date">Tue, Sep 20, 2016</span>
+
+    
+
+<p>Laravellin ekosysteemiin kuuluu oleellisena osana palvelu nimeltä <a href="https://forge.laravel.com/">Forge</a>. Tuo palvelu mahdollistaa Laravel-applikaatioiden devops-ylläpidon helposti suoraan esim. Linoden pilvipalvelinten päällä.</p>
+
+<p>Erityisesti Forge mahdollistaa erään nykyaikaisen ohjelmistokehityksen kulmakivenä toimivan konseptin; koodin jatkuvan käyttöönoton.</p>
+
+<h3 id="oma-kone-github-tuotantopalvelin">Oma kone -&gt; Github -&gt; Tuotantopalvelin</h3>
+
+<p>Homma toimii näin yksinkertaisesti.</p>
+
+<p>Sanotaan esimerkin vuoksi, että Laravel-applikaatio vaatii bugikorjauksen. Ammattimaisella kehittäjällä on kaikista Laravel-applikaatiostaan ajan tasaiset kopiot omalla työkoneellaan, joten voin lähteä saman tien bugia korjaamaan.</p>
+
+<p>Korjaan bugin työkoneella olevaan Laravel-applikaatioon muutamassa minuutissa. Testaan applikaation toiminnan (yksikkötestaus + nopea smoke test riittävät, integraatiotestaus yleensä ajan tuhlausta pienissä applikaatioissa) ja kaikki toimii odotetusti.</p>
+
+<p>Seuraavaksi tuo <em>uusi versio</em> applikaatiosta tulee saada tuotantopalvelimelle. Eli tuotantopalvelimella tällä hetkellä pyörivä buginen versio tulee <em>korvatuksi</em> tällä uudella, ei-bugisella versiolla.</p>
+
+<p>Kuinka homma onnistuu?</p>
+
+<p>Minun näkökulmasta toimenpide on naurettavan yksinkertainen. <strong>Pusken yksinkertaisesti uuden koodipohjan Githubiin projektipuuhun.</strong></p>
+
+<p>Tämä onnistuu luonnollisesti yhdellä komennolla:</p>
+
+<pre><code>git push origin master
+
+</code></pre>
+
+<p>Pinnan alla Forge ja Github <em>automaattisesti</em> hoitavat loput. Kas näin:</p>
+
+<ol>
+<li>Pusken siis uuden koodipohjan Githubiin (koodi liikkuu työkoneeltani -&gt; pilveen).</li>
+<li>Github ilmoittaa Forgelle, että uutta koodia on tarjolla.</li>
+<li>Forge ottaa homman haltuun ja siirtää Githubista uuden koodin tuotantopalvelimelle.</li>
+<li>Siirron jälkeen Forge ajaa tarvittavat asennukset, skriptit, tietokanta-migraatiot yms.</li>
+<li>Tuotantopalvelimella pyörii uusin versio applikaatiosta.</li>
+</ol>
+
+<p>Syytä huomata siis, että minun vastuuni loppuu listan kohtaan #1. <strong>Kaikki muu osa-alueet hoituvat automaattisesti.</strong></p>
+
+<p>Tätä on moderni PHP-ohjelmistokehitys.</p>
+
+<blockquote>
+<p>Forge on kätevä työkalu Laravel-applikaation pyöritykseen tuotantopalvelimella. Forge itsessään ei tarjoa palvelintilaa tai -ohjelmistoja, vaan se toimii ikäänkuin <em>kapellimestarina</em>; Forge käskyttää tuotantopalvelinta ja toimii yhteistyössä Githubin rajapinnan kanssa hakeakseen uusimman koodipohjan aina kun sellainen on saatavilla.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://www.nollaversio.fi/blog/public/laravel/facade-faking/">
         Fasaadin feikkaus
       </a>
@@ -154,7 +209,7 @@ tallennaNimi(new HTTPCache('http://www.docs.google.com/jrk5u5emsdmk'));
 <pre><code class="language-php">
 class Cache extends Facade {
 
-  public function fake() {
+  public static function fake() {
     // Korvaamme vakiotoiminnot tarjoavat luokan jollain toisella luokalla.
     // Tässä siis kytketään fasaadi siten, että missä ikinä
     // käytämmekään *Cache*-fasaadia, se vie meidät 

@@ -1,0 +1,125 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Forge ja koodin käyttöönotto &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Forge ja koodin käyttöönotto</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Tue, Sep 20, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Laravellin ekosysteemiin kuuluu oleellisena osana palvelu nimeltä <a href="https://forge.laravel.com/">Forge</a>. Tuo palvelu mahdollistaa Laravel-applikaatioiden devops-ylläpidon helposti suoraan esim. Linoden pilvipalvelinten päällä.</p>
+
+<p>Erityisesti Forge mahdollistaa erään nykyaikaisen ohjelmistokehityksen kulmakivenä toimivan konseptin; koodin jatkuvan käyttöönoton.</p>
+
+<h3 id="oma-kone-github-tuotantopalvelin">Oma kone -&gt; Github -&gt; Tuotantopalvelin</h3>
+
+<p>Homma toimii näin yksinkertaisesti.</p>
+
+<p>Sanotaan esimerkin vuoksi, että Laravel-applikaatio vaatii bugikorjauksen. Ammattimaisella kehittäjällä on kaikista Laravel-applikaatiostaan ajan tasaiset kopiot omalla työkoneellaan, joten voin lähteä saman tien bugia korjaamaan.</p>
+
+<p>Korjaan bugin työkoneella olevaan Laravel-applikaatioon muutamassa minuutissa. Testaan applikaation toiminnan (yksikkötestaus + nopea smoke test riittävät, integraatiotestaus yleensä ajan tuhlausta pienissä applikaatioissa) ja kaikki toimii odotetusti.</p>
+
+<p>Seuraavaksi tuo <em>uusi versio</em> applikaatiosta tulee saada tuotantopalvelimelle. Eli tuotantopalvelimella tällä hetkellä pyörivä buginen versio tulee <em>korvatuksi</em> tällä uudella, ei-bugisella versiolla.</p>
+
+<p>Kuinka homma onnistuu?</p>
+
+<p>Minun näkökulmasta toimenpide on naurettavan yksinkertainen. <strong>Pusken yksinkertaisesti uuden koodipohjan Githubiin projektipuuhun.</strong></p>
+
+<p>Tämä onnistuu luonnollisesti yhdellä komennolla:</p>
+
+<pre><code>git push origin master
+
+</code></pre>
+
+<p>Pinnan alla Forge ja Github <em>automaattisesti</em> hoitavat loput. Kas näin:</p>
+
+<ol>
+<li>Pusken siis uuden koodipohjan Githubiin (koodi liikkuu työkoneeltani -&gt; pilveen).</li>
+<li>Github ilmoittaa Forgelle, että uutta koodia on tarjolla.</li>
+<li>Forge ottaa homman haltuun ja siirtää Githubista uuden koodin tuotantopalvelimelle.</li>
+<li>Siirron jälkeen Forge ajaa tarvittavat asennukset, skriptit, tietokanta-migraatiot yms.</li>
+<li>Tuotantopalvelimella pyörii uusin versio applikaatiosta.</li>
+</ol>
+
+<p>Syytä huomata siis, että minun vastuuni loppuu listan kohtaan #1. <strong>Kaikki muu osa-alueet hoituvat automaattisesti.</strong></p>
+
+<p>Tätä on moderni PHP-ohjelmistokehitys.</p>
+
+<blockquote>
+<p>Forge on kätevä työkalu Laravel-applikaation pyöritykseen tuotantopalvelimella. Forge itsessään ei tarjoa palvelintilaa tai -ohjelmistoja, vaan se toimii ikäänkuin <em>kapellimestarina</em>; Forge käskyttää tuotantopalvelinta ja toimii yhteistyössä Githubin rajapinnan kanssa hakeakseen uusimman koodipohjan aina kun sellainen on saatavilla.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

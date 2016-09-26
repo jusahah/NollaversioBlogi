@@ -6,8 +6,60 @@
     <description>Recent content in Laravels on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Mon, 19 Sep 2016 09:43:34 +0300</lastBuildDate>
+    <lastBuildDate>Tue, 20 Sep 2016 07:50:09 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Forge ja koodin käyttöönotto</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/forge-continuous-delivery/</link>
+      <pubDate>Tue, 20 Sep 2016 07:50:09 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/forge-continuous-delivery/</guid>
+      <description>
+
+&lt;p&gt;Laravellin ekosysteemiin kuuluu oleellisena osana palvelu nimeltä &lt;a href=&#34;https://forge.laravel.com/&#34;&gt;Forge&lt;/a&gt;. Tuo palvelu mahdollistaa Laravel-applikaatioiden devops-ylläpidon helposti suoraan esim. Linoden pilvipalvelinten päällä.&lt;/p&gt;
+
+&lt;p&gt;Erityisesti Forge mahdollistaa erään nykyaikaisen ohjelmistokehityksen kulmakivenä toimivan konseptin; koodin jatkuvan käyttöönoton.&lt;/p&gt;
+
+&lt;h3 id=&#34;oma-kone-github-tuotantopalvelin&#34;&gt;Oma kone -&amp;gt; Github -&amp;gt; Tuotantopalvelin&lt;/h3&gt;
+
+&lt;p&gt;Homma toimii näin yksinkertaisesti.&lt;/p&gt;
+
+&lt;p&gt;Sanotaan esimerkin vuoksi, että Laravel-applikaatio vaatii bugikorjauksen. Ammattimaisella kehittäjällä on kaikista Laravel-applikaatiostaan ajan tasaiset kopiot omalla työkoneellaan, joten voin lähteä saman tien bugia korjaamaan.&lt;/p&gt;
+
+&lt;p&gt;Korjaan bugin työkoneella olevaan Laravel-applikaatioon muutamassa minuutissa. Testaan applikaation toiminnan (yksikkötestaus + nopea smoke test riittävät, integraatiotestaus yleensä ajan tuhlausta pienissä applikaatioissa) ja kaikki toimii odotetusti.&lt;/p&gt;
+
+&lt;p&gt;Seuraavaksi tuo &lt;em&gt;uusi versio&lt;/em&gt; applikaatiosta tulee saada tuotantopalvelimelle. Eli tuotantopalvelimella tällä hetkellä pyörivä buginen versio tulee &lt;em&gt;korvatuksi&lt;/em&gt; tällä uudella, ei-bugisella versiolla.&lt;/p&gt;
+
+&lt;p&gt;Kuinka homma onnistuu?&lt;/p&gt;
+
+&lt;p&gt;Minun näkökulmasta toimenpide on naurettavan yksinkertainen. &lt;strong&gt;Pusken yksinkertaisesti uuden koodipohjan Githubiin projektipuuhun.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Tämä onnistuu luonnollisesti yhdellä komennolla:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;git push origin master
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Pinnan alla Forge ja Github &lt;em&gt;automaattisesti&lt;/em&gt; hoitavat loput. Kas näin:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Pusken siis uuden koodipohjan Githubiin (koodi liikkuu työkoneeltani -&amp;gt; pilveen).&lt;/li&gt;
+&lt;li&gt;Github ilmoittaa Forgelle, että uutta koodia on tarjolla.&lt;/li&gt;
+&lt;li&gt;Forge ottaa homman haltuun ja siirtää Githubista uuden koodin tuotantopalvelimelle.&lt;/li&gt;
+&lt;li&gt;Siirron jälkeen Forge ajaa tarvittavat asennukset, skriptit, tietokanta-migraatiot yms.&lt;/li&gt;
+&lt;li&gt;Tuotantopalvelimella pyörii uusin versio applikaatiosta.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Syytä huomata siis, että minun vastuuni loppuu listan kohtaan #1. &lt;strong&gt;Kaikki muu osa-alueet hoituvat automaattisesti.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Tätä on moderni PHP-ohjelmistokehitys.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Forge on kätevä työkalu Laravel-applikaation pyöritykseen tuotantopalvelimella. Forge itsessään ei tarjoa palvelintilaa tai -ohjelmistoja, vaan se toimii ikäänkuin &lt;em&gt;kapellimestarina&lt;/em&gt;; Forge käskyttää tuotantopalvelinta ja toimii yhteistyössä Githubin rajapinnan kanssa hakeakseen uusimman koodipohjan aina kun sellainen on saatavilla.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Fasaadin feikkaus</title>
@@ -94,7 +146,7 @@ tallennaNimi(new HTTPCache(&#39;http://www.docs.google.com/jrk5u5emsdmk&#39;));
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
 class Cache extends Facade {
 
-  public function fake() {
+  public static function fake() {
     // Korvaamme vakiotoiminnot tarjoavat luokan jollain toisella luokalla.
     // Tässä siis kytketään fasaadi siten, että missä ikinä
     // käytämmekään *Cache*-fasaadia, se vie meidät 
@@ -2140,73 +2192,6 @@ public function vapaatKuonot() {
 
 &lt;p&gt;Kyseessä on klassinen tradeoff.&lt;/p&gt;
 &lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Muistilista uutta Laravel-projektia aloittaessa</title>
-      <link>http://www.nollaversio.fi/blog/public/laravel/start-checklist/</link>
-      <pubDate>Fri, 22 Jul 2016 16:14:13 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/laravel/start-checklist/</guid>
-      <description>
-
-&lt;p&gt;Olen ihastanut suuresti &lt;a href=&#34;https://en.wikipedia.org/wiki/The_Checklist_Manifesto&#34; target=&#34;_blank&#34;&gt;checklist-manifestoon.&lt;/a&gt; Manifeston hengessä loin alkukesästä itselleni muistilistan asioista, joita uutta Laravel-projektia aloittaessa tulee ottaa huomioon.&lt;/p&gt;
-
-&lt;p&gt;Monet listan kohdista pätevät yleisesti kaikkiin ohjelmistoprojekteihin.&lt;/p&gt;
-
-&lt;h3 id=&#34;laravel-checklist&#34;&gt;Laravel-checklist&lt;/h3&gt;
-
-&lt;h4 id=&#34;vaiheet-1-3-projektikansion-valmistelu-projekti-boilerplate-etc&#34;&gt;Vaiheet 1-3: Projektikansion valmistelu, projekti-boilerplate, etc&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;1. Alusta Git-repo projektikansioon, luo Github-repo, kytke yhteen.&lt;/li&gt;
-&lt;li&gt;2. Lataa Composer.phar projektikansioon&lt;/li&gt;
-&lt;li&gt;3. Kloonaa Laravel-boilerplate&lt;/li&gt;
-&lt;li&gt;4. Muokkaa hakemisto-oikeudet (mm. Laravellin storage-kansio)&lt;/li&gt;
-&lt;li&gt;5. Luo uusi Sublime-projekti&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;vaiheet-6-9-tietokannan-luonti-valmistelu-tietokantayhteys-email-testaus&#34;&gt;Vaiheet 6-9: Tietokannan luonti, valmistelu, tietokantayhteys, email-testaus&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;6. Luo uusi tietokanta (esim. phpMyAdmin:in kautta)&lt;/li&gt;
-&lt;li&gt;7. Päivitä projektitiedostoihin tietokannan käyttäjätunnus + salasana.&lt;/li&gt;
-&lt;li&gt;8. Aseta email-ajuri osoittamaan testitiedostoon (loki).&lt;/li&gt;
-&lt;li&gt;9. Luo &amp;ldquo;finnish&amp;rdquo;-kielitiedosto.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;vaiheet-10-12-ensimmäiset-tietokantataulut-relaatiot-mallit-models&#34;&gt;Vaiheet 10-12: Ensimmäiset tietokantataulut, relaatiot, mallit (models)&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;10. Suorita &amp;lsquo;php artisan make:auth&amp;rsquo;, joka luo käyttäjähallinnan tietokantaan.&lt;/li&gt;
-&lt;li&gt;11. Luo mallit kuvaamaan domain-käsitteitä. Tässä vaiheessa riittää tyhjä tiedosto kullekin mallille.&lt;/li&gt;
-&lt;li&gt;12. Luo applikaation migraatiot (yksi per malli). Hahmottele kunkin mallin tietorakenne.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&#34;vaiheet-13-15-seeders-tehtaat-migraatioiden-toiminnan-varmistus&#34;&gt;Vaiheet 13-15: Seeders, tehtaat, migraatioiden toiminnan varmistus&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;13. Luo seeder-tehtaat (seeder factories) kullekin mallille.&lt;/li&gt;
-&lt;li&gt;14. Luo seeder-tehtaiden avulla (feikki)käyttäjiä ym. domain-objekteja.&lt;/li&gt;
-&lt;li&gt;15. Testaa, että migraatiot toimivat ja että relaatiot eri mallien välillä ovat kunnossa.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Tähän muistilistani päättyy. Tästä eteenpäin alkaa ns. raaka työ, eli itse applikaation toimintalogiikan ja käyttöliittymän ohjelmointi.&lt;/p&gt;
-
-&lt;p&gt;Tämä on se pisin ja uuvuttavin vaihe projektissa. &lt;em&gt;Vaiheet 1-15 ovat verrattavissa arkkitehdin työhön. Vaiheet 16-20 ovat verrattavissa kirvesmiehen työhön.&lt;/em&gt;&lt;/p&gt;
-
-&lt;h4 id=&#34;vaiheet-16-20-toteuta-logiikka-käyttöliittymä-jne&#34;&gt;Vaiheet 16-20: Toteuta logiikka, käyttöliittymä, jne.&lt;/h4&gt;
-
-&lt;ul&gt;
-&lt;li&gt;16. Hahmottele, koodaa, testaa, näpyttele sormet kipeäksi.&lt;/li&gt;
-&lt;li&gt;17. Kiroile, paisko pari hiirtä tusinan päreiksi, harkitse puutarhurin uraa.&lt;/li&gt;
-&lt;li&gt;18. Onnistu lopulta ratkomaan ongelmat.&lt;/li&gt;
-&lt;li&gt;19. Juhlista valmista applikaatiota.&lt;/li&gt;
-&lt;li&gt;20. Aloita seuraava projekti.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Ylläoleva checklist on osoittanut hyödyllisyytensä useammassa omassa projektissani. Kun on muistilista, jota seurata orjallisesti, pysyy laatu tasaisena ja työtahti tiiviinä.&lt;/p&gt;
 </description>
     </item>
     
