@@ -6,8 +6,63 @@
     <description>Recent content in Arkkitehtuuris on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Mon, 12 Sep 2016 08:10:14 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 26 Sep 2016 10:22:11 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Likainen lippu - vältä turhaa työtä</title>
+      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/dirty-flag/</link>
+      <pubDate>Mon, 26 Sep 2016 10:22:11 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/dirty-flag/</guid>
+      <description>&lt;p&gt;Törmäsin patterniin nimeltä &amp;ldquo;dirty flag&amp;rdquo;. Tuo patterni on ollut käytössä itselläni useissa applikaatioissa, mutta vasta nyt tajusin että sille on annettu tarkka nimikin.&lt;/p&gt;
+
+&lt;p&gt;Minkä ongelman dirty flag ratkoo?&lt;/p&gt;
+
+&lt;p&gt;Kuvitellaan applikaatio, joka analysoi shakkiasemia reaaliajassa. Applikaatio pitää kirjaa tietyn shakkipelin - jota kaksi ihmispelaajaa pelaa - siirroista. Applikaation kautta katsojat voivat seurata tuota peliä. Lisämausteena applikaatio tarjoaa analysointipalvelun, jonka kautta katsojat saavat tietokonearvion kulloisestakin peliasemasta.&lt;/p&gt;
+
+&lt;p&gt;Shakkipeliaseman tietokonearvio on aika raskas laskenta suorittaa. Luotettavan arvio tuottaminen tekoälyn turvin vie rutosti CPU-aikaa. Täten analysointi suoritetaan vain kun tarve vaatii.&lt;/p&gt;
+
+&lt;p&gt;Jos esimerkiksi peliä ei tietyllä ajanhetkellä seuraa yhtään katsojaa, on laskentatehon väärinkäyttöä tuottaa analysointipalvelua. Reaaliaikaisesta analysoinnista ei ole hyötyä jos kukaan ei ole sitä näkemässä.&lt;/p&gt;
+
+&lt;p&gt;Toinen huomioonotettava seikka on, että kukin asema on järkevää analysoida vain kerran. Kun analysointi tietylle asemalle on suoritettu, analysoinnin tulos talletetaan välimuistiin.&lt;/p&gt;
+
+&lt;p&gt;Jälkimmäinen vaatimus antaa hyvän syyn käyttää &lt;em&gt;likaista lippua&lt;/em&gt;. Kun katsojalta tulee pyyntö saada tuorein analysointitulos käyttöönsä, seuraava algoritmi ajetaan:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Jos likainen lippu olemassa, hae analysointitulos välimuistista.&lt;/li&gt;
+&lt;li&gt;Jos likaista lippua ei olemassa, hae tuore asema tietokannasta. Aloita sen analysointi. Aseta muuttuja ilmoittamaan analysoinnin käynnissäolo.&lt;/li&gt;
+&lt;li&gt;Kun analysointi valmis, talleta tulos välimuistiin ja aseta likainen lippu.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Kun taas uusi peliasema saapuu, toimimme yksinkertaisesti seuraavasti:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Talleta peliasema applikaation tietokantaan. Älä aloita analysointia.&lt;/li&gt;
+&lt;li&gt;Jos likainen lippu olemassa, tuhoa se.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Upouuden aseman saapuessa siis tuhoamme (mahdollisen) vanhan likaisen lipun. Tällä tavalla seuraavan kerran kun joku katsojista pyytää viimeisintä analyysiä käyttöönsä, applikaatio osaa hakea tuoreimman aseman tietokannasta ja aloittaa sen analysoinnin.&lt;/p&gt;
+
+&lt;p&gt;Kun joku toinen katsoja tämän jälkeen pyytää analyysiä, likainen lippu on jo olemassa ja analysointi ei käynnisty. Sen sijaan viimeisin analysointitulos palautetaan välittömästi välimuistista.&lt;/p&gt;
+
+&lt;p&gt;Toisin sanoen likainen lippu kertoo vastauksen seuraavaan kysymykseen: &lt;em&gt;onko analysointi tuoreimmalle peliasemalle jo kertaalleen suoritettu?&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Jos on, palauta tulos välimuistista.&lt;/p&gt;
+
+&lt;p&gt;Jos ei, aloita analysointi ja analysoinnin päätyttyä aseta likainen lippu.&lt;/p&gt;
+
+&lt;p&gt;Ja uuden aseman saapuminen luonnollisesti tuhoaa likaisen lipun; muussa tapauksessa yksi ja sama analysointitulos palautettaisiin uudestaan ja uudestaan riippumatta peliasemasta. &lt;em&gt;Koska kukin analysointitulos on järkevä vain yhden ja tietyn peliaseman yhteydessä&lt;/em&gt;, täytyy analysointi suorittaa erikseen jokaiselle peliasemalle.&lt;/p&gt;
+
+&lt;p&gt;Yllämainitun arkkitehtuurin suuri vahvuus on, että &lt;em&gt;mikäli hetkellisesti shakkipeliä ei seuraa yhtään ainutta katsojaa, ei myöskään analysointia ajeta.&lt;/em&gt; Tämä johtuu siitä tosiasiasta, että analysointi käynnistyy vain katsojan &lt;strong&gt;pyytäessä&lt;/strong&gt; tuoreinta analyysitulosta. Jos yksikään katsoja ei ole paikalle pyyntöjä tekemässä, analyysi jää suorittamatta.&lt;/p&gt;
+
+&lt;p&gt;Tällä tavoin vältetään turhaa työtä.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Dirty flag -patternin ydinajatus on välttää turhaa työtä. Ajatus on vastaava kuin inventaariota tehdessä ruokakaupassa. Inventaarion tekeminen on valtava urakka. Kun se on kerran tehty, sitä ei ole järkeä tehdä uudestaan &lt;em&gt;ennenkuin vähintään yksi tuote on saapunut/poistunut hyllyistä&lt;/em&gt;. Kahden inventaarion tekeminen perätysten on järjetöntä ajanhaaskausta; ne kun tuottavat saman tuloksen. Parempi tehdä yksi inventaario, asettaa &lt;em&gt;dirty flag&lt;/em&gt;, ja tehdä seuraava inventaario vasta kun tarpeeksi paljon tuotteita on liikkunut kaupasta ulos ja sisään.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Sisäinen eheys vs. ulkoinen eheys</title>

@@ -68,6 +68,200 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/queue-worker/">
+        Laravel jonottaa puolestasi
+      </a>
+    </h1>
+
+    <span class="post-date">Tue, Sep 27, 2016</span>
+
+    
+
+<p>Yksinkertaiset PHP-applikaatiot toimivat seuraavanlaisesti:</p>
+
+<ol>
+<li>Nettisurffaaja lähettää HTTP-pyynnön.</li>
+<li>Palvelin ajaa PHP-koodin, joka käsittelee tuon pyynnön.</li>
+<li>Koodinajon päätteeksi PHP-koodin luoma vastaus palautetaan surffaajalle.</li>
+</ol>
+
+<p>Ylläoleva toimintamalli on ns. request-response -paradigman ytimessä. Yksi osapuoli tekee pyyntöjä (request), toinen osapuoli vastaan niihin pyyntöihin (response).</p>
+
+<p>Huomionarvoista on, että palvelin ei pysty tekemään pyyntöjä loppukäyttäjän suuntaan - se kun ei tiedä satunnaisen loppukäyttäjän IP-osoitetta. Satunnainen loppukäyttäjä sen sijaan tietää palvelimen IP-osoitteen.</p>
+
+<blockquote>
+<p>Loppukäyttäjän web-selain saa IP-osoitteen tietoonsa luonnollisesti domain-nimen kautta. Nettiselain huolehtii esim. &ldquo;www.iltasanomat.fi&rdquo;-osoitteen muuntamisesta IP-osoitteeksi. Ihmiskäyttäjän ei tarvitse asialla vaivata päätään.</p>
+</blockquote>
+
+<p>Request-response -malli sopii erinomaisesti tyypilliseen tietokantapohjaiseen web-applikaatioon.</p>
+
+<p>Yksi PHP:lle ominainen ongelma kuitenkin nostaa päätään request-response -mallin yhteydessä. Koska vastaus käyttäjälle palautetaan vasta kun PHP-koodi on ajanut itsensä läpi, pitkäkestoinen koodinajo tarkoittaa pitkää odotusaikaa loppukäyttäjän päässä.</p>
+
+<p>Eli jos koodi suorittaa raskaan operaation, joka kestää viisi sekuntia, ei loppukäyttäjä saa vastausta takaisin kuin aikaisintaan viiden sekunnin kuluttua.</p>
+
+<blockquote>
+<p>Ylläoleva on hienoinen yksinkertaistus. Teknisesti on mahdollista kikkailla <em>flush()</em>-tyylisillä PHP-funktioilla, mutta tuollainen kikkailu on turhan sotkuista ja tuppaa aiheuttamaan ylläpidollisia ongelmia koodipohjalle pitkällä aikavälillä.</p>
+</blockquote>
+
+<h3 id="jonotus-pelastaan-päivän">Jonotus pelastaan päivän</h3>
+
+<p>Onneksi apunamme on Laravel-kehyksen erinomainen <strong>Queue</strong>-toiminnallisuus. Käytännössä jonotustoiminnon avulla voimme saavuttaa seuraavanlaisen tavan käsitellä sisääntuleva pyyntö.</p>
+
+<ol>
+<li>Palvelupyyntö loppukäyttäjältä tulee sisään.</li>
+<li>PHP-koodi puskee <em>työvaiheen</em> jonoon.</li>
+<li>Palvelupyynnön vastaus palautetaan loppukäyttäjälle.</li>
+<li>PHP-koodi aloittaa <em>työvaiheen</em> erillisessä prosessissa.</li>
+<li>&hellip;(aikaa kuluu, työvaihe on hidas suorittaa)</li>
+<li>Työvaihe valmis.</li>
+</ol>
+
+<p>Ylläoleva mahdollistaa juurikin <em>raskaiden ja hitaiden</em> työvaiheiden siirtämisen erillisen käyttöjärjestelmän prosessin suoritettavaksi. Tällä tavoin työvaiheen suoritus ei hidasta vastauksen palauttamista loppukäyttäjälle.</p>
+
+<blockquote>
+<p>Periaate on sama kuin loistohotellien concierge-palvelussa. Hotelliasiakas voi antaa conciergen hoidettavaksi vaikkapa varauksen suorittamisen illan teatteriesitykseen.</p>
+
+<p>Tässä tapauksessa asiakas tekee <em>requestin</em> concierge-palvelijan suuntaan. Palvelija ottaa pyynnön vastaan ja palauttaa <em>responsen</em> välittömästi asiakkaalle. Itse pyynnön toteutuksen - tässä tapauksessa lippujen hankkimisen teatteriin - palvelija hoitaa myöhempänä ajankohtana.</p>
+
+<p>Tärkeintä asiakaspalvelun laadun kannalta on se, että hotelliasiakkaan ei tarvitse toljottaa tyhjän panttina odottamassa että concierge saa teatteriliput ostettua. Sen sijaan hotelliasiakas voi vaikka käydä olusella teatterilippuja odotellessaan.</p>
+</blockquote>
+
+<p>Vertaa ylläolevaa viiden kohdan listaa vanhaan malliin, jossa jonotusta ei käytetty:</p>
+
+<p>Vanha malli:</p>
+
+<ol>
+<li>Palvelupyyntö loppukäyttäjältä tulee sisään.</li>
+<li>PHP-koodi aloittaa <em>työvaiheen</em> samassa prosessissa.</li>
+<li>&hellip;(aikaa kuluu, työvaihe on hidas suorittaa)</li>
+<li>Työvaihe valmis.</li>
+<li>Palvelupyynnön vastaus palautetaan loppukäyttäjälle.</li>
+</ol>
+
+<h3 id="käytännön-toteutus">Käytännön toteutus</h3>
+
+<p>Laravel tekee kaikesta liian helppoa. Myös jonottamisesta. Mistä tahansa koodin osasta voimme yksinkertaisesti kutsua globaalia apufunktiota <em>dispatch</em>, joka siirtää halutun työvaiheen jonoon:</p>
+
+<pre><code class="language-php">
+// Controllers/TilausController.php
+
+public function vastaanotaTilaus(Tilaus $tilaus) {
+  
+  Log::log(&quot;Tilaus vastaanotettu järjestelmään: &quot; . $tilaus-&gt;id);
+  // Pusketaan uusi työvaihe jonoon.
+  dispatch(new IlmoitaTavaranToimittajille($tilaus));
+
+  // Palautetaan vastaus loppukäyttäjälle välittömästi.
+  return &quot;Tilaus vastaanotettu - käsittelemme sen piakkoin.&quot;;
+
+}
+
+</code></pre>
+
+<p>Tarvitsemme luonnollisesti <em>IlmoitaTavaranToimittajille</em>-luokan. Tämän luokan luoma objekti on lopulta se, joka <em>erillisessä prosessissa</em> ajetaan sitten joskus myöhemmin.</p>
+
+<pre><code class="language-php">
+// Jobs/IlmoitaTavaranToimittajille.php
+
+class IlmoitaTavaranToimittajille implemets ShouldQueue {
+
+  // Lisätoiminnallisuuksia jotka vaaditaan jonotusta varten.
+  // Näistä ei koodarin tarvitse suuremmin välittää, kehys hoitaa.
+  use InteractsWithQueue, Queueable, SerializesModels;	
+
+  protected $tilaus;
+
+  public function __construct(Tilaus $tilaus) {
+    $this-&gt;tilaus = $tilaus;
+  }
+  // Handle-metodi kutsutaan kehyksen toimesta kun suoritus alkaa!
+  public function handle() {
+    $tilaus-&gt;tavarat-&gt;each(function($tavara) {
+      $toimittaja = Tavaratoimittaja::haeToimittaja($tavara);
+      try {
+        $toimittaja-&gt;varaaYksiKappale($tavara);
+      } catch (EiVarastossa $e) {
+      	// Tilausta ei voida täyttää. Tee jotain.
+      }
+    });
+
+    $tilaus-&gt;tavaratVahvistettu();
+  }
+
+}
+
+</code></pre>
+
+<p>Kaiken tämän lisäksi tarvitaan vielä käyttöjärjestelmän prosessi huolehtimaan jonon pyörittämisestä. Jonon käynnistys onnistuu suoraan komentoriviltä:</p>
+
+<pre><code>php artisan queue:work
+
+</code></pre>
+
+<p>Ja siinäpä se onkin. Jonoprosessi automaattisesti monitoroi jonoa, suorittaen sinne lisätyt työvaiheet sopivana ajanhetkenä.</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/dirty-flag/">
+        Likainen lippu - vältä turhaa työtä
+      </a>
+    </h1>
+
+    <span class="post-date">Mon, Sep 26, 2016</span>
+
+    <p>Törmäsin patterniin nimeltä &ldquo;dirty flag&rdquo;. Tuo patterni on ollut käytössä itselläni useissa applikaatioissa, mutta vasta nyt tajusin että sille on annettu tarkka nimikin.</p>
+
+<p>Minkä ongelman dirty flag ratkoo?</p>
+
+<p>Kuvitellaan applikaatio, joka analysoi shakkiasemia reaaliajassa. Applikaatio pitää kirjaa tietyn shakkipelin - jota kaksi ihmispelaajaa pelaa - siirroista. Applikaation kautta katsojat voivat seurata tuota peliä. Lisämausteena applikaatio tarjoaa analysointipalvelun, jonka kautta katsojat saavat tietokonearvion kulloisestakin peliasemasta.</p>
+
+<p>Shakkipeliaseman tietokonearvio on aika raskas laskenta suorittaa. Luotettavan arvio tuottaminen tekoälyn turvin vie rutosti CPU-aikaa. Täten analysointi suoritetaan vain kun tarve vaatii.</p>
+
+<p>Jos esimerkiksi peliä ei tietyllä ajanhetkellä seuraa yhtään katsojaa, on laskentatehon väärinkäyttöä tuottaa analysointipalvelua. Reaaliaikaisesta analysoinnista ei ole hyötyä jos kukaan ei ole sitä näkemässä.</p>
+
+<p>Toinen huomioonotettava seikka on, että kukin asema on järkevää analysoida vain kerran. Kun analysointi tietylle asemalle on suoritettu, analysoinnin tulos talletetaan välimuistiin.</p>
+
+<p>Jälkimmäinen vaatimus antaa hyvän syyn käyttää <em>likaista lippua</em>. Kun katsojalta tulee pyyntö saada tuorein analysointitulos käyttöönsä, seuraava algoritmi ajetaan:</p>
+
+<ol>
+<li>Jos likainen lippu olemassa, hae analysointitulos välimuistista.</li>
+<li>Jos likaista lippua ei olemassa, hae tuore asema tietokannasta. Aloita sen analysointi. Aseta muuttuja ilmoittamaan analysoinnin käynnissäolo.</li>
+<li>Kun analysointi valmis, talleta tulos välimuistiin ja aseta likainen lippu.</li>
+</ol>
+
+<p>Kun taas uusi peliasema saapuu, toimimme yksinkertaisesti seuraavasti:</p>
+
+<ol>
+<li>Talleta peliasema applikaation tietokantaan. Älä aloita analysointia.</li>
+<li>Jos likainen lippu olemassa, tuhoa se.</li>
+</ol>
+
+<p>Upouuden aseman saapuessa siis tuhoamme (mahdollisen) vanhan likaisen lipun. Tällä tavalla seuraavan kerran kun joku katsojista pyytää viimeisintä analyysiä käyttöönsä, applikaatio osaa hakea tuoreimman aseman tietokannasta ja aloittaa sen analysoinnin.</p>
+
+<p>Kun joku toinen katsoja tämän jälkeen pyytää analyysiä, likainen lippu on jo olemassa ja analysointi ei käynnisty. Sen sijaan viimeisin analysointitulos palautetaan välittömästi välimuistista.</p>
+
+<p>Toisin sanoen likainen lippu kertoo vastauksen seuraavaan kysymykseen: <em>onko analysointi tuoreimmalle peliasemalle jo kertaalleen suoritettu?</em>.</p>
+
+<p>Jos on, palauta tulos välimuistista.</p>
+
+<p>Jos ei, aloita analysointi ja analysoinnin päätyttyä aseta likainen lippu.</p>
+
+<p>Ja uuden aseman saapuminen luonnollisesti tuhoaa likaisen lipun; muussa tapauksessa yksi ja sama analysointitulos palautettaisiin uudestaan ja uudestaan riippumatta peliasemasta. <em>Koska kukin analysointitulos on järkevä vain yhden ja tietyn peliaseman yhteydessä</em>, täytyy analysointi suorittaa erikseen jokaiselle peliasemalle.</p>
+
+<p>Yllämainitun arkkitehtuurin suuri vahvuus on, että <em>mikäli hetkellisesti shakkipeliä ei seuraa yhtään ainutta katsojaa, ei myöskään analysointia ajeta.</em> Tämä johtuu siitä tosiasiasta, että analysointi käynnistyy vain katsojan <strong>pyytäessä</strong> tuoreinta analyysitulosta. Jos yksikään katsoja ei ole paikalle pyyntöjä tekemässä, analyysi jää suorittamatta.</p>
+
+<p>Tällä tavoin vältetään turhaa työtä.</p>
+
+<blockquote>
+<p>Dirty flag -patternin ydinajatus on välttää turhaa työtä. Ajatus on vastaava kuin inventaariota tehdessä ruokakaupassa. Inventaarion tekeminen on valtava urakka. Kun se on kerran tehty, sitä ei ole järkeä tehdä uudestaan <em>ennenkuin vähintään yksi tuote on saapunut/poistunut hyllyistä</em>. Kahden inventaarion tekeminen perätysten on järjetöntä ajanhaaskausta; ne kun tuottavat saman tuloksen. Parempi tehdä yksi inventaario, asettaa <em>dirty flag</em>, ja tehdä seuraava inventaario vasta kun tarpeeksi paljon tuotteita on liikkunut kaupasta ulos ja sisään.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://www.nollaversio.fi/blog/public/laravel/forge-continuous-delivery/">
         Forge ja koodin käyttöönotto
       </a>

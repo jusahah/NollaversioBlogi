@@ -1,0 +1,206 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Laravel jonottaa puolestasi &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Laravel jonottaa puolestasi</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Tue, Sep 27, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Yksinkertaiset PHP-applikaatiot toimivat seuraavanlaisesti:</p>
+
+<ol>
+<li>Nettisurffaaja lähettää HTTP-pyynnön.</li>
+<li>Palvelin ajaa PHP-koodin, joka käsittelee tuon pyynnön.</li>
+<li>Koodinajon päätteeksi PHP-koodin luoma vastaus palautetaan surffaajalle.</li>
+</ol>
+
+<p>Ylläoleva toimintamalli on ns. request-response -paradigman ytimessä. Yksi osapuoli tekee pyyntöjä (request), toinen osapuoli vastaan niihin pyyntöihin (response).</p>
+
+<p>Huomionarvoista on, että palvelin ei pysty tekemään pyyntöjä loppukäyttäjän suuntaan - se kun ei tiedä satunnaisen loppukäyttäjän IP-osoitetta. Satunnainen loppukäyttäjä sen sijaan tietää palvelimen IP-osoitteen.</p>
+
+<blockquote>
+<p>Loppukäyttäjän web-selain saa IP-osoitteen tietoonsa luonnollisesti domain-nimen kautta. Nettiselain huolehtii esim. &ldquo;www.iltasanomat.fi&rdquo;-osoitteen muuntamisesta IP-osoitteeksi. Ihmiskäyttäjän ei tarvitse asialla vaivata päätään.</p>
+</blockquote>
+
+<p>Request-response -malli sopii erinomaisesti tyypilliseen tietokantapohjaiseen web-applikaatioon.</p>
+
+<p>Yksi PHP:lle ominainen ongelma kuitenkin nostaa päätään request-response -mallin yhteydessä. Koska vastaus käyttäjälle palautetaan vasta kun PHP-koodi on ajanut itsensä läpi, pitkäkestoinen koodinajo tarkoittaa pitkää odotusaikaa loppukäyttäjän päässä.</p>
+
+<p>Eli jos koodi suorittaa raskaan operaation, joka kestää viisi sekuntia, ei loppukäyttäjä saa vastausta takaisin kuin aikaisintaan viiden sekunnin kuluttua.</p>
+
+<blockquote>
+<p>Ylläoleva on hienoinen yksinkertaistus. Teknisesti on mahdollista kikkailla <em>flush()</em>-tyylisillä PHP-funktioilla, mutta tuollainen kikkailu on turhan sotkuista ja tuppaa aiheuttamaan ylläpidollisia ongelmia koodipohjalle pitkällä aikavälillä.</p>
+</blockquote>
+
+<h3 id="jonotus-pelastaan-päivän">Jonotus pelastaan päivän</h3>
+
+<p>Onneksi apunamme on Laravel-kehyksen erinomainen <strong>Queue</strong>-toiminnallisuus. Käytännössä jonotustoiminnon avulla voimme saavuttaa seuraavanlaisen tavan käsitellä sisääntuleva pyyntö.</p>
+
+<ol>
+<li>Palvelupyyntö loppukäyttäjältä tulee sisään.</li>
+<li>PHP-koodi puskee <em>työvaiheen</em> jonoon.</li>
+<li>Palvelupyynnön vastaus palautetaan loppukäyttäjälle.</li>
+<li>PHP-koodi aloittaa <em>työvaiheen</em> erillisessä prosessissa.</li>
+<li>&hellip;(aikaa kuluu, työvaihe on hidas suorittaa)</li>
+<li>Työvaihe valmis.</li>
+</ol>
+
+<p>Ylläoleva mahdollistaa juurikin <em>raskaiden ja hitaiden</em> työvaiheiden siirtämisen erillisen käyttöjärjestelmän prosessin suoritettavaksi. Tällä tavoin työvaiheen suoritus ei hidasta vastauksen palauttamista loppukäyttäjälle.</p>
+
+<blockquote>
+<p>Periaate on sama kuin loistohotellien concierge-palvelussa. Hotelliasiakas voi antaa conciergen hoidettavaksi vaikkapa varauksen suorittamisen illan teatteriesitykseen.</p>
+
+<p>Tässä tapauksessa asiakas tekee <em>requestin</em> concierge-palvelijan suuntaan. Palvelija ottaa pyynnön vastaan ja palauttaa <em>responsen</em> välittömästi asiakkaalle. Itse pyynnön toteutuksen - tässä tapauksessa lippujen hankkimisen teatteriin - palvelija hoitaa myöhempänä ajankohtana.</p>
+
+<p>Tärkeintä asiakaspalvelun laadun kannalta on se, että hotelliasiakkaan ei tarvitse toljottaa tyhjän panttina odottamassa että concierge saa teatteriliput ostettua. Sen sijaan hotelliasiakas voi vaikka käydä olusella teatterilippuja odotellessaan.</p>
+</blockquote>
+
+<p>Vertaa ylläolevaa viiden kohdan listaa vanhaan malliin, jossa jonotusta ei käytetty:</p>
+
+<p>Vanha malli:</p>
+
+<ol>
+<li>Palvelupyyntö loppukäyttäjältä tulee sisään.</li>
+<li>PHP-koodi aloittaa <em>työvaiheen</em> samassa prosessissa.</li>
+<li>&hellip;(aikaa kuluu, työvaihe on hidas suorittaa)</li>
+<li>Työvaihe valmis.</li>
+<li>Palvelupyynnön vastaus palautetaan loppukäyttäjälle.</li>
+</ol>
+
+<h3 id="käytännön-toteutus">Käytännön toteutus</h3>
+
+<p>Laravel tekee kaikesta liian helppoa. Myös jonottamisesta. Mistä tahansa koodin osasta voimme yksinkertaisesti kutsua globaalia apufunktiota <em>dispatch</em>, joka siirtää halutun työvaiheen jonoon:</p>
+
+<pre><code class="language-php">
+// Controllers/TilausController.php
+
+public function vastaanotaTilaus(Tilaus $tilaus) {
+  
+  Log::log(&quot;Tilaus vastaanotettu järjestelmään: &quot; . $tilaus-&gt;id);
+  // Pusketaan uusi työvaihe jonoon.
+  dispatch(new IlmoitaTavaranToimittajille($tilaus));
+
+  // Palautetaan vastaus loppukäyttäjälle välittömästi.
+  return &quot;Tilaus vastaanotettu - käsittelemme sen piakkoin.&quot;;
+
+}
+
+</code></pre>
+
+<p>Tarvitsemme luonnollisesti <em>IlmoitaTavaranToimittajille</em>-luokan. Tämän luokan luoma objekti on lopulta se, joka <em>erillisessä prosessissa</em> ajetaan sitten joskus myöhemmin.</p>
+
+<pre><code class="language-php">
+// Jobs/IlmoitaTavaranToimittajille.php
+
+class IlmoitaTavaranToimittajille implemets ShouldQueue {
+
+  // Lisätoiminnallisuuksia jotka vaaditaan jonotusta varten.
+  // Näistä ei koodarin tarvitse suuremmin välittää, kehys hoitaa.
+  use InteractsWithQueue, Queueable, SerializesModels;	
+
+  protected $tilaus;
+
+  public function __construct(Tilaus $tilaus) {
+    $this-&gt;tilaus = $tilaus;
+  }
+  // Handle-metodi kutsutaan kehyksen toimesta kun suoritus alkaa!
+  public function handle() {
+    $tilaus-&gt;tavarat-&gt;each(function($tavara) {
+      $toimittaja = Tavaratoimittaja::haeToimittaja($tavara);
+      try {
+        $toimittaja-&gt;varaaYksiKappale($tavara);
+      } catch (EiVarastossa $e) {
+      	// Tilausta ei voida täyttää. Tee jotain.
+      }
+    });
+
+    $tilaus-&gt;tavaratVahvistettu();
+  }
+
+}
+
+</code></pre>
+
+<p>Kaiken tämän lisäksi tarvitaan vielä käyttöjärjestelmän prosessi huolehtimaan jonon pyörittämisestä. Jonon käynnistys onnistuu suoraan komentoriviltä:</p>
+
+<pre><code>php artisan queue:work
+
+</code></pre>
+
+<p>Ja siinäpä se onkin. Jonoprosessi automaattisesti monitoroi jonoa, suorittaen sinne lisätyt työvaiheet sopivana ajanhetkenä.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

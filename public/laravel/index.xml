@@ -6,8 +6,141 @@
     <description>Recent content in Laravels on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Tue, 20 Sep 2016 07:50:09 +0300</lastBuildDate>
+    <lastBuildDate>Tue, 27 Sep 2016 09:44:12 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Laravel jonottaa puolestasi</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/queue-worker/</link>
+      <pubDate>Tue, 27 Sep 2016 09:44:12 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/queue-worker/</guid>
+      <description>
+
+&lt;p&gt;Yksinkertaiset PHP-applikaatiot toimivat seuraavanlaisesti:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Nettisurffaaja lähettää HTTP-pyynnön.&lt;/li&gt;
+&lt;li&gt;Palvelin ajaa PHP-koodin, joka käsittelee tuon pyynnön.&lt;/li&gt;
+&lt;li&gt;Koodinajon päätteeksi PHP-koodin luoma vastaus palautetaan surffaajalle.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Ylläoleva toimintamalli on ns. request-response -paradigman ytimessä. Yksi osapuoli tekee pyyntöjä (request), toinen osapuoli vastaan niihin pyyntöihin (response).&lt;/p&gt;
+
+&lt;p&gt;Huomionarvoista on, että palvelin ei pysty tekemään pyyntöjä loppukäyttäjän suuntaan - se kun ei tiedä satunnaisen loppukäyttäjän IP-osoitetta. Satunnainen loppukäyttäjä sen sijaan tietää palvelimen IP-osoitteen.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppukäyttäjän web-selain saa IP-osoitteen tietoonsa luonnollisesti domain-nimen kautta. Nettiselain huolehtii esim. &amp;ldquo;www.iltasanomat.fi&amp;rdquo;-osoitteen muuntamisesta IP-osoitteeksi. Ihmiskäyttäjän ei tarvitse asialla vaivata päätään.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Request-response -malli sopii erinomaisesti tyypilliseen tietokantapohjaiseen web-applikaatioon.&lt;/p&gt;
+
+&lt;p&gt;Yksi PHP:lle ominainen ongelma kuitenkin nostaa päätään request-response -mallin yhteydessä. Koska vastaus käyttäjälle palautetaan vasta kun PHP-koodi on ajanut itsensä läpi, pitkäkestoinen koodinajo tarkoittaa pitkää odotusaikaa loppukäyttäjän päässä.&lt;/p&gt;
+
+&lt;p&gt;Eli jos koodi suorittaa raskaan operaation, joka kestää viisi sekuntia, ei loppukäyttäjä saa vastausta takaisin kuin aikaisintaan viiden sekunnin kuluttua.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Ylläoleva on hienoinen yksinkertaistus. Teknisesti on mahdollista kikkailla &lt;em&gt;flush()&lt;/em&gt;-tyylisillä PHP-funktioilla, mutta tuollainen kikkailu on turhan sotkuista ja tuppaa aiheuttamaan ylläpidollisia ongelmia koodipohjalle pitkällä aikavälillä.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&#34;jonotus-pelastaan-päivän&#34;&gt;Jonotus pelastaan päivän&lt;/h3&gt;
+
+&lt;p&gt;Onneksi apunamme on Laravel-kehyksen erinomainen &lt;strong&gt;Queue&lt;/strong&gt;-toiminnallisuus. Käytännössä jonotustoiminnon avulla voimme saavuttaa seuraavanlaisen tavan käsitellä sisääntuleva pyyntö.&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Palvelupyyntö loppukäyttäjältä tulee sisään.&lt;/li&gt;
+&lt;li&gt;PHP-koodi puskee &lt;em&gt;työvaiheen&lt;/em&gt; jonoon.&lt;/li&gt;
+&lt;li&gt;Palvelupyynnön vastaus palautetaan loppukäyttäjälle.&lt;/li&gt;
+&lt;li&gt;PHP-koodi aloittaa &lt;em&gt;työvaiheen&lt;/em&gt; erillisessä prosessissa.&lt;/li&gt;
+&lt;li&gt;&amp;hellip;(aikaa kuluu, työvaihe on hidas suorittaa)&lt;/li&gt;
+&lt;li&gt;Työvaihe valmis.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Ylläoleva mahdollistaa juurikin &lt;em&gt;raskaiden ja hitaiden&lt;/em&gt; työvaiheiden siirtämisen erillisen käyttöjärjestelmän prosessin suoritettavaksi. Tällä tavoin työvaiheen suoritus ei hidasta vastauksen palauttamista loppukäyttäjälle.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Periaate on sama kuin loistohotellien concierge-palvelussa. Hotelliasiakas voi antaa conciergen hoidettavaksi vaikkapa varauksen suorittamisen illan teatteriesitykseen.&lt;/p&gt;
+
+&lt;p&gt;Tässä tapauksessa asiakas tekee &lt;em&gt;requestin&lt;/em&gt; concierge-palvelijan suuntaan. Palvelija ottaa pyynnön vastaan ja palauttaa &lt;em&gt;responsen&lt;/em&gt; välittömästi asiakkaalle. Itse pyynnön toteutuksen - tässä tapauksessa lippujen hankkimisen teatteriin - palvelija hoitaa myöhempänä ajankohtana.&lt;/p&gt;
+
+&lt;p&gt;Tärkeintä asiakaspalvelun laadun kannalta on se, että hotelliasiakkaan ei tarvitse toljottaa tyhjän panttina odottamassa että concierge saa teatteriliput ostettua. Sen sijaan hotelliasiakas voi vaikka käydä olusella teatterilippuja odotellessaan.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Vertaa ylläolevaa viiden kohdan listaa vanhaan malliin, jossa jonotusta ei käytetty:&lt;/p&gt;
+
+&lt;p&gt;Vanha malli:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Palvelupyyntö loppukäyttäjältä tulee sisään.&lt;/li&gt;
+&lt;li&gt;PHP-koodi aloittaa &lt;em&gt;työvaiheen&lt;/em&gt; samassa prosessissa.&lt;/li&gt;
+&lt;li&gt;&amp;hellip;(aikaa kuluu, työvaihe on hidas suorittaa)&lt;/li&gt;
+&lt;li&gt;Työvaihe valmis.&lt;/li&gt;
+&lt;li&gt;Palvelupyynnön vastaus palautetaan loppukäyttäjälle.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&#34;käytännön-toteutus&#34;&gt;Käytännön toteutus&lt;/h3&gt;
+
+&lt;p&gt;Laravel tekee kaikesta liian helppoa. Myös jonottamisesta. Mistä tahansa koodin osasta voimme yksinkertaisesti kutsua globaalia apufunktiota &lt;em&gt;dispatch&lt;/em&gt;, joka siirtää halutun työvaiheen jonoon:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Controllers/TilausController.php
+
+public function vastaanotaTilaus(Tilaus $tilaus) {
+  
+  Log::log(&amp;quot;Tilaus vastaanotettu järjestelmään: &amp;quot; . $tilaus-&amp;gt;id);
+  // Pusketaan uusi työvaihe jonoon.
+  dispatch(new IlmoitaTavaranToimittajille($tilaus));
+
+  // Palautetaan vastaus loppukäyttäjälle välittömästi.
+  return &amp;quot;Tilaus vastaanotettu - käsittelemme sen piakkoin.&amp;quot;;
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tarvitsemme luonnollisesti &lt;em&gt;IlmoitaTavaranToimittajille&lt;/em&gt;-luokan. Tämän luokan luoma objekti on lopulta se, joka &lt;em&gt;erillisessä prosessissa&lt;/em&gt; ajetaan sitten joskus myöhemmin.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// Jobs/IlmoitaTavaranToimittajille.php
+
+class IlmoitaTavaranToimittajille implemets ShouldQueue {
+
+  // Lisätoiminnallisuuksia jotka vaaditaan jonotusta varten.
+  // Näistä ei koodarin tarvitse suuremmin välittää, kehys hoitaa.
+  use InteractsWithQueue, Queueable, SerializesModels;	
+
+  protected $tilaus;
+
+  public function __construct(Tilaus $tilaus) {
+    $this-&amp;gt;tilaus = $tilaus;
+  }
+  // Handle-metodi kutsutaan kehyksen toimesta kun suoritus alkaa!
+  public function handle() {
+    $tilaus-&amp;gt;tavarat-&amp;gt;each(function($tavara) {
+      $toimittaja = Tavaratoimittaja::haeToimittaja($tavara);
+      try {
+        $toimittaja-&amp;gt;varaaYksiKappale($tavara);
+      } catch (EiVarastossa $e) {
+      	// Tilausta ei voida täyttää. Tee jotain.
+      }
+    });
+
+    $tilaus-&amp;gt;tavaratVahvistettu();
+  }
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kaiken tämän lisäksi tarvitaan vielä käyttöjärjestelmän prosessi huolehtimaan jonon pyörittämisestä. Jonon käynnistys onnistuu suoraan komentoriviltä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;php artisan queue:work
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ja siinäpä se onkin. Jonoprosessi automaattisesti monitoroi jonoa, suorittaen sinne lisätyt työvaiheet sopivana ajanhetkenä.&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Forge ja koodin käyttöönotto</title>
@@ -1967,230 +2100,6 @@ public function testaaArtikkelinLuonti() {
 &lt;p&gt;Värimaailma &lt;em&gt;ei ole&lt;/em&gt; elintärkeä applikaation toiminnan kannalta, ainakaan Wikipedian tapauksessa. Sen sijaan mahdollisuus muokata artikkelia &lt;em&gt;on&lt;/em&gt; elintärkeä applikaation toiminnan kannalta.&lt;/p&gt;
 
 &lt;p&gt;Jokaisella applikaatiolla on tietenkin omat reunaehtonsa sen suhteen, mitkä aspektit ovat tärkeitä ja mitkä eivät.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Varausten hallinta tietokannan tasolla</title>
-      <link>http://www.nollaversio.fi/blog/public/laravel/reservation-pattern/</link>
-      <pubDate>Tue, 26 Jul 2016 11:32:03 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/laravel/reservation-pattern/</guid>
-      <description>
-
-&lt;p&gt;Otetaan esimerkki seuraavankaltaisesta applikaatiosta. Applikaatio mahdollistaa uhanalaisten sarvikuonojen ostamisen lemmikeiksi. Afrikan salametsästäjät (tai tässä tapauksessa &amp;lsquo;salakidnappaajat&amp;rsquo;) tuovat järjestelmään uusia sarvikuonoja, joita eurooppalaiset intoilijat ostavat.&lt;/p&gt;
-
-&lt;p&gt;Ostoprosessi ei kuitenkaan ole yksinkertainen. Kukin sarvikuono varataan ostoprosessin ajaksi - mikäli ostoprosessi menee onnistuneesti läpi, sarvikuonopolo rahdataan Eurooppaan uudelle isännälleen. Mikäli ostoprosessi ei mene lävitse, sarvikuono vapautuu takaisin markkinapaikalle.&lt;/p&gt;
-
-&lt;p&gt;Tietokanta voisi olla esim. tämän kaltainen:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
-
-| id |   ostaja  | hinta | tullut_myyntiin |
-| -- | --------- | ----- | --------------- |
-| 1  |   NULL    |  25   |   1.6.2016      |
-| 2  |   NULL    |  32   |   3.6.2016      |
-| 3  |   2       |  26   |   4.6.2016      |
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code&gt;// Ostajat-taulu
-
-| id |   nimi    |  maa  |   email         |
-| -- | --------- | ----- | --------------- |
-| 1  |   Pekka   |  FI   |   pekka@24.fi   |
-| 2  |   Mikko   |  FI   |   m85@gmail.com |
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Järjestelmä toimii ylläolevia tauluja hyödyntäen. Ostaja kirjautuu sarvikuonojen markkinapaikalle - se miten tuo kirjautuminen tapahtuu ei ole tässä esimerkissä oleellista. Sen jälkeen hän selaa ostettavissa olevia sarvikuonoja. &lt;em&gt;Sarvikuonot&lt;/em&gt;-taulusta saadaan helposti haettu vapaana (ostomielessä) olevat kuonokkaat - vapaalla sarvikuonolla &lt;em&gt;ostaja&lt;/em&gt;-sarake on tyhjä (NULL).&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;SELECT * from Sarvikuonot WHERE ostaja=NULL&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Mutta kuten alussa mainitsimme, haluamme myös sallia sarvikuonon &lt;em&gt;varauksen&lt;/em&gt; itse ostoprosessin ajaksi.&lt;/p&gt;
-
-&lt;p&gt;Miksi tämä on tärkeää? &lt;strong&gt;Siksi, että muuten saattaisi hyvinkin käydä niin, että useampi henkilö yrittäisi samanaikaisesti ostaa samaa kuonokasta.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Ongelman ydin on siinä, että sarvikuonon &lt;em&gt;ostaja&lt;/em&gt;-sarake päivitetään vasta aivan ostoprosessin lopussa. Tämä on loogista siinä mielessä, että ostos ei ole vahvistettu kuin vasta prosessin lopussa.&lt;/p&gt;
-
-&lt;p&gt;Mutta järjestelmän muiden asiakkaiden tämä ei ole optimaalista. On varsin ikävää jos joku heistä aloittaa oman ostoprosessinsa sarvikuonosta, jota sinä olet parhaillaan maksamassa Nordean nettipankissa. Kun maksusi menee läpi, tuo toinen asiakas on umpikujassa.&lt;/p&gt;
-
-&lt;p&gt;Hänen kannaltaan on varsin ikävää, mikäli ostos epäonnistuu aivan kalkkiviivoilla. Vähemmästäkin ihminen repii juurikasvunsa.&lt;/p&gt;
-
-&lt;p&gt;Ongelman ydin siis on, että ostoprosessilla on &lt;strong&gt;alku&lt;/strong&gt; ja &lt;strong&gt;loppu&lt;/strong&gt;. Mikäli ostoprosessi olisi pistemäinen tapahtuma, mitään ongelmaa ei olisi. Varaus ja osto tapahtuisivat tismalleen samalla ajan hetkellä, joten tarve varauksen olemassaololle poistuisi.&lt;/p&gt;
-
-&lt;p&gt;Esimerkkinä tälläisestä pistetapahtumasta on ruokakaupassa käynti. Sanotaan, että maitohyllyllä on tasan yksi maitopurkki. Kauppaan saapuu kaksi perhekuntaa maito-ostoksille.&lt;/p&gt;
-
-&lt;p&gt;Kumpi poppoo tuon maitopurtilon saa mukaansa? Kumpi ensimmäisenä sen hyllyltä nappaa. Voittaja vie maidon. Seuraava käsi hapuilee pelkkää tyhjää ilmaa. Tyhjyyttä kohti kurotteleva kyllä varsin nopeasti hoksaa, että maito meni jo, joten hänen ei tarvitse jatkaa ostoprosessiaan eteenpäin. Ainoastaan voittaja kävelee kohti kassapistettä.&lt;/p&gt;
-
-&lt;p&gt;Ratkaiskaamme sarvikuonojen &lt;em&gt;varaus vs. osto&lt;/em&gt; -ongelma lisäämällä erillinen varaus-sarake tietokantatauluun.&lt;/p&gt;
-
-&lt;h3 id=&#34;varaus-ja-osto-eriteltynä-tietokannassa&#34;&gt;Varaus ja osto eriteltynä tietokannassa&lt;/h3&gt;
-
-&lt;p&gt;Uusi Sarvikuonot-taulu näyttää tältä:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
-
-| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
-| -- | --------- | ------- | ----- | --------------- |
-| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
-| 2  |   NULL    |  1      |   32  |   3.6.2016      |
-| 3  |   2       |  2      |   26  |   4.6.2016      |
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Järjestelmä toimii seuraavanlaisesti: heti kun potentiaalinen kuonoaddikti aloittaa ostoprosessin, hänen ostajanumeronsa lisätään sarvikuonon &lt;em&gt;varaaja&lt;/em&gt;-kenttään.&lt;/p&gt;
-
-&lt;p&gt;Tällä tavoin taulu sisältää tiedon siitä, että kyseistä sarvikuonoa &lt;em&gt;ollaan parhaillaan ostamassa&lt;/em&gt;. Muille asiakkaille tuota sarvikasta ei tarvitse näyttää listauksissa - heidän kannaltaan sarvikuono on jo myyty. Täten ostettavissa olevat sarvikuonot haetaan tietokantakomennolla:&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;SELECT * from Sarvikuonot WHERE varaaja=NULL&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Kun varausta tekevä taho sitten lopulta &lt;em&gt;vahvistaa&lt;/em&gt; kuonokkaan oston, tieto vahvistuksesta päivitetään tauluun &lt;em&gt;ostaja&lt;/em&gt;-sarakkeeseen.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
-// Sarvikuonon #2 osto vahvistettu ostajalle #1.
-
-| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
-| -- | --------- | ------- | ----- | --------------- |
-| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
-| 2  |   1       |  1      |   32  |   3.6.2016      |
-| 3  |   2       |  2      |   26  |   4.6.2016      |
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kaksi eri asiakasta eivät voi enää aloittaa ostoprosessia samasta sarvikuonosta samanaikaisesti. Erinomaista. Onko järjestelmämme nyt täydellinen?&lt;/p&gt;
-
-&lt;p&gt;Ei todellakaan.&lt;/p&gt;
-
-&lt;p&gt;Entä jos ostoprosessi ei menekään läpi? Koska &lt;em&gt;varaaja&lt;/em&gt;-kenttä on jo täytetty, sarvikuono on muiden asiakkaiden näkökulmasta ostettu. Mutta jos ostoprosessi menee pieleen (ehkä ostaja tulee katumapäälle kesken maksamisen), tuo sarvikuono on ikuisesti jumissa limbossa.&lt;/p&gt;
-
-&lt;p&gt;Tarvitsemme siis mekanismin, joka jollain tavoin &lt;em&gt;vapauttaa&lt;/em&gt; limboon joutuneet sarvikuonot. Mekanismiksi on kaksi hyvää vaihtoehtoa.&lt;/p&gt;
-
-&lt;h3 id=&#34;varausten-vapautus-aktiivinen-vs-passiivinen&#34;&gt;Varausten vapautus - aktiivinen vs. passiivinen&lt;/h3&gt;
-
-&lt;p&gt;Kerrataan, tietokantataulumme näyttää tältä:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
-
-| id |   ostaja  | varaaja | hinta | tullut_myyntiin |
-| -- | --------- | ------- | ----- | --------------- |
-| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |
-| 2  |   NULL    |  1      |   32  |   3.6.2016      |
-| 3  |   2       |  2      |   26  |   4.6.2016      |
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ja potentiaalinen ostajamme #1 yllättäen saa aivoinfraktin ja poistuu linjoilta. Hän ei tule enää koskaan ostamaan edes tikkukaramellia saati savannin hyökkäysvaunua. Joten tehtävämme on jollain tavoin &lt;em&gt;poistaa&lt;/em&gt; varaus sarvikuonolta #2.&lt;/p&gt;
-
-&lt;h4 id=&#34;aktiivinen-poisto&#34;&gt;Aktiivinen poisto&lt;/h4&gt;
-
-&lt;p&gt;Yksi tapa hoitaa poistot on pitää yllä erillistä &lt;em&gt;poisto-ohjelmaa&lt;/em&gt;, joka tasaisin väliajoin käy etsimässä + poistamassa &lt;em&gt;erääntyneitä&lt;/em&gt; varauksia.&lt;/p&gt;
-
-&lt;p&gt;Vastaavan kaltainen systeemi on käytössä hotelleissa - jos et ole viimeistään klo 18 vastaanottamassa huoneesi avainta, varauksesi poistetaan asiakaspalvelijan toimesta.&lt;/p&gt;
-
-&lt;p&gt;Meidän sarvikuonomarkkinapaikkamme kohdalla loogisinta on kirjata ylös ajankohta, jolloin ostoprosessi alkoi. Vaadimme ostajilta, että heidän tulee suorittaa ostoprosessinsa läpi yhden tunnin aikana. Jos ostoprosessi on epäonnistunut (tai yhä kesken!) tuon yhden tunnin rajapyykin umpeuduttua, varaus poistetaan.&lt;/p&gt;
-
-&lt;p&gt;Muokataan tauluamme, jotta saamme kirjattua ylös varauksen tekoajankohdan:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
-
-| id |   ostaja  | varaaja | hinta | tullut_myyntiin |   varaus_tehty    |
-| -- | --------- | ------- | ----- | --------------- | ----------------- |
-| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |       NULL        |
-| 2  |   NULL    |  1      |   32  |   3.6.2016      | 26.7.16 klo 12.15 |
-| 3  |   2       |  2      |   26  |   4.6.2016      | 21.7.16 klo 17.33 |
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ohessa pieni skripti, joka pyörii ikäänkuin &lt;em&gt;taustapalveluna&lt;/em&gt;, käyden
-tasaisin väliajoin poistamassa erääntyneet varaukset:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Tätä skriptiä kutsutaan esim. käyttöjärjestelmän cron-tabin toimesta.
-// Esimerkiksi aina 1 minuutin välein.
-
-// Aloita tietokanta-transaktio
-DB::transaction(function() {
-	// Rajapyykkinä toimii ajankohta yksi tunti sitten.
-	$aikaRajapyykki = Carbon::now()-&amp;gt;subHour();
-
-	// Sarvikuonot, jotka ovat erääntyneet, 
-	// mutta ei ostettu (&#39;ostaja&#39; on NULL),
-	// tyhjennetään varaustiedot
-	Sarvikuono
-		::where(&#39;varaus_tehty&#39;, &amp;lt;, $aikaRajapyykki)
-		-&amp;gt;where(&#39;ostaja&#39;, NULL)
-		-&amp;gt;update([
-			&#39;varaaja&#39; =&amp;gt; NULL,
-			&#39;varaus_tehty&#39; =&amp;gt; NULL
-		]);
-});
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kun ylläoleva skripti on käynyt poistamassa varauksen tiedot, on sarvikuono #2 jälleen muiden
-markkinapaikan kävijöiden nähtävissä.&lt;/p&gt;
-
-&lt;p&gt;On myös toinen keino, ns. passiivinen poisto.&lt;/p&gt;
-
-&lt;h4 id=&#34;passiivinen&#34;&gt;Passiivinen&lt;/h4&gt;
-
-&lt;p&gt;Aktiivisessa poistossa meillä on erillinen, itse itseään kontrolloiva/ajastava prosessi (=&lt;em&gt;käyttöjärjestelmän prosessi&lt;/em&gt;), joka käy tasaisin väliajoin tekemässä poistot. Tuo prosessi elää omaa elämäänsä irrallaan siitä prosessista, joka pyörittää markkinapaikkaamme.&lt;/p&gt;
-
-&lt;p&gt;Toinen vaihtoehto on jättää varauksen tiedot maatumaan tietokantaan, ja suorittaa erääntyneiden varausten käsittely suoraan applikaatiomme ydinkoodin puolella.&lt;/p&gt;
-
-&lt;p&gt;Tämä on läpeensä sysimusta idea, mutta esimerkin omaisesti esittelen myös sen.&lt;/p&gt;
-
-&lt;p&gt;Sarvikuonot-taulu ei muutu mihinkään. Se on edelleen tälläinen:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;// Sarvikuonot-taulu
-
-| id |   ostaja  | varaaja | hinta | tullut_myyntiin |   varaus_tehty    |
-| -- | --------- | ------- | ----- | --------------- | ----------------- |
-| 1  |   NULL    |  NULL   |   25  |   1.6.2016      |       NULL        |
-| 2  |   NULL    |  1      |   32  |   3.6.2016      | 26.7.16 klo 12.15 |
-| 3  |   2       |  2      |   26  |   4.6.2016      | 21.7.16 klo 17.33 |
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Erillisen skriptin sijasta meillä on &lt;em&gt;suoraan applikaatiomme sisuksiin koodattu sopivat reagoinnit&lt;/em&gt; erääntyneisiin varauksiin.&lt;/p&gt;
-
-&lt;p&gt;Esimerkiksi ostettavissa olevien kuonojen listaus näyttää nyt tältä:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;// SarvikuonoController.php
-
-public function vapaatKuonot() {
-
-	// Vapaat kuonot ovat niitä, joilla pätee joko:
-	// 1) &#39;varaaja&#39; on tyhjä (NULL)
-	// 2) &#39;varaus_tehty&#39; ajankohta yli 1 tunti sitten
-
-	$aikaRajapyykki = Carbon::now()-&amp;gt;subHour();
-	$vapaat = Sarvikuonot
-		::where(&#39;varaus_tehty&#39;, &amp;lt;, $aikaRajapyykki)
-		-&amp;gt;where(&#39;ostaja&#39;, NULL)
-		-&amp;gt;get();
-
-	return View::make(&#39;listaus&#39;, compact(&#39;vapaat&#39;));	
-
-	
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Muut toiminnot joutuvat nyt turvautumaan vastaavaan logiikkaan. Esimerkiksi ostoprosessin lopussa on vielä kerran varmistettava, että varaus on yhä voimassa. Homma toimii, joten kuten.&lt;/p&gt;
-
-&lt;p&gt;Passiivisessa lähestymistavassa on puolensakin. Ylimääräinen prosessin (aktiivinen) olemassaolo lisää järjestelmän kuormitusta ja luo uudenlaisen bugityypin - jos erillinen poistoprosessi kaatuu, varaukset eivät enää eräänny lainkaan. Passiivisessa mallissa tätä riskiä ei ole, sillä &amp;ldquo;erääntyminen&amp;rdquo; on koodattu suoraan osaksi ydinalgoritmia.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: passiivisen ja aktiivisen lähestymistavan ero on pohjimmiltaan filosofinen, ja siitä löytyy oikean elämän esimerkkejä kosolti. Otetaan esimerkiksi käteisen rahan käyttö.&lt;/p&gt;
-
-&lt;p&gt;Yksi nostaa joka kuukausi 100 euroa käteistä, ja sujauttaa setelit lompakkoonsa. Jos hän kuukauden aikana tarvitsee käteistä, hän voi luottaa siihen, että sitä lompakosta löytyy. Hänen ei tarvitse jokaisen kirppariostoksen kohdalla erikseen miettiä asiaa.&lt;/p&gt;
-
-&lt;p&gt;Toinen ei nosta käteistä rahaa, vaan kantaa mukanaan yksinomaan muovirahaa. Hänen ei tarvitse huolehtia kuukausittaisesta Otto-automaatilla vierailusta. Mutta jos hän joskus sattuu tarvitsemaan käteistä, hänellä ei sitä ole. Toisin sanoen, jokaista ostosta tehdessään hänen täytyy erikseen varmistaa, että muoviraha käy.&lt;/p&gt;
-
-&lt;p&gt;Kyseessä on klassinen tradeoff.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>

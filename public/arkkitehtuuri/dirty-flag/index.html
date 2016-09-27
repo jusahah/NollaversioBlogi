@@ -1,0 +1,128 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Likainen lippu - vältä turhaa työtä &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Likainen lippu - vältä turhaa työtä</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Mon, Sep 26, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      <p>Törmäsin patterniin nimeltä &ldquo;dirty flag&rdquo;. Tuo patterni on ollut käytössä itselläni useissa applikaatioissa, mutta vasta nyt tajusin että sille on annettu tarkka nimikin.</p>
+
+<p>Minkä ongelman dirty flag ratkoo?</p>
+
+<p>Kuvitellaan applikaatio, joka analysoi shakkiasemia reaaliajassa. Applikaatio pitää kirjaa tietyn shakkipelin - jota kaksi ihmispelaajaa pelaa - siirroista. Applikaation kautta katsojat voivat seurata tuota peliä. Lisämausteena applikaatio tarjoaa analysointipalvelun, jonka kautta katsojat saavat tietokonearvion kulloisestakin peliasemasta.</p>
+
+<p>Shakkipeliaseman tietokonearvio on aika raskas laskenta suorittaa. Luotettavan arvio tuottaminen tekoälyn turvin vie rutosti CPU-aikaa. Täten analysointi suoritetaan vain kun tarve vaatii.</p>
+
+<p>Jos esimerkiksi peliä ei tietyllä ajanhetkellä seuraa yhtään katsojaa, on laskentatehon väärinkäyttöä tuottaa analysointipalvelua. Reaaliaikaisesta analysoinnista ei ole hyötyä jos kukaan ei ole sitä näkemässä.</p>
+
+<p>Toinen huomioonotettava seikka on, että kukin asema on järkevää analysoida vain kerran. Kun analysointi tietylle asemalle on suoritettu, analysoinnin tulos talletetaan välimuistiin.</p>
+
+<p>Jälkimmäinen vaatimus antaa hyvän syyn käyttää <em>likaista lippua</em>. Kun katsojalta tulee pyyntö saada tuorein analysointitulos käyttöönsä, seuraava algoritmi ajetaan:</p>
+
+<ol>
+<li>Jos likainen lippu olemassa, hae analysointitulos välimuistista.</li>
+<li>Jos likaista lippua ei olemassa, hae tuore asema tietokannasta. Aloita sen analysointi. Aseta muuttuja ilmoittamaan analysoinnin käynnissäolo.</li>
+<li>Kun analysointi valmis, talleta tulos välimuistiin ja aseta likainen lippu.</li>
+</ol>
+
+<p>Kun taas uusi peliasema saapuu, toimimme yksinkertaisesti seuraavasti:</p>
+
+<ol>
+<li>Talleta peliasema applikaation tietokantaan. Älä aloita analysointia.</li>
+<li>Jos likainen lippu olemassa, tuhoa se.</li>
+</ol>
+
+<p>Upouuden aseman saapuessa siis tuhoamme (mahdollisen) vanhan likaisen lipun. Tällä tavalla seuraavan kerran kun joku katsojista pyytää viimeisintä analyysiä käyttöönsä, applikaatio osaa hakea tuoreimman aseman tietokannasta ja aloittaa sen analysoinnin.</p>
+
+<p>Kun joku toinen katsoja tämän jälkeen pyytää analyysiä, likainen lippu on jo olemassa ja analysointi ei käynnisty. Sen sijaan viimeisin analysointitulos palautetaan välittömästi välimuistista.</p>
+
+<p>Toisin sanoen likainen lippu kertoo vastauksen seuraavaan kysymykseen: <em>onko analysointi tuoreimmalle peliasemalle jo kertaalleen suoritettu?</em>.</p>
+
+<p>Jos on, palauta tulos välimuistista.</p>
+
+<p>Jos ei, aloita analysointi ja analysoinnin päätyttyä aseta likainen lippu.</p>
+
+<p>Ja uuden aseman saapuminen luonnollisesti tuhoaa likaisen lipun; muussa tapauksessa yksi ja sama analysointitulos palautettaisiin uudestaan ja uudestaan riippumatta peliasemasta. <em>Koska kukin analysointitulos on järkevä vain yhden ja tietyn peliaseman yhteydessä</em>, täytyy analysointi suorittaa erikseen jokaiselle peliasemalle.</p>
+
+<p>Yllämainitun arkkitehtuurin suuri vahvuus on, että <em>mikäli hetkellisesti shakkipeliä ei seuraa yhtään ainutta katsojaa, ei myöskään analysointia ajeta.</em> Tämä johtuu siitä tosiasiasta, että analysointi käynnistyy vain katsojan <strong>pyytäessä</strong> tuoreinta analyysitulosta. Jos yksikään katsoja ei ole paikalle pyyntöjä tekemässä, analyysi jää suorittamatta.</p>
+
+<p>Tällä tavoin vältetään turhaa työtä.</p>
+
+<blockquote>
+<p>Dirty flag -patternin ydinajatus on välttää turhaa työtä. Ajatus on vastaava kuin inventaariota tehdessä ruokakaupassa. Inventaarion tekeminen on valtava urakka. Kun se on kerran tehty, sitä ei ole järkeä tehdä uudestaan <em>ennenkuin vähintään yksi tuote on saapunut/poistunut hyllyistä</em>. Kahden inventaarion tekeminen perätysten on järjetöntä ajanhaaskausta; ne kun tuottavat saman tuloksen. Parempi tehdä yksi inventaario, asettaa <em>dirty flag</em>, ja tehdä seuraava inventaario vasta kun tarpeeksi paljon tuotteita on liikkunut kaupasta ulos ja sisään.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>
