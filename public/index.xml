@@ -6,8 +6,254 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Tue, 27 Sep 2016 09:44:12 +0300</lastBuildDate>
+    <lastBuildDate>Wed, 28 Sep 2016 10:08:17 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Älä kuole ääneti</title>
+      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/disposing-resource/</link>
+      <pubDate>Wed, 28 Sep 2016 10:08:17 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/disposing-resource/</guid>
+      <description>
+
+&lt;p&gt;Monet ohjelmointikielet sisältävät tärkeän konseptin nimeltä *garbage collection&amp;rdquo;, suomeksi siis roskienkeruu. Tuo konsepti tarkoittaa yksinkertaisesti sitä, että ohjelmointiympäristö automaattisesti huolehtii ohjelman ajon aikana luotujen &lt;em&gt;objektien&lt;/em&gt; tuhoamisesta.&lt;/p&gt;
+
+&lt;p&gt;Alimmalla raudan tasolla tämä tuhoamisesta huolehtiminen tarkoittaa sitä, että keskusmuistista vapautetaan tilaa uusia objekteja varten.&lt;/p&gt;
+
+&lt;p&gt;Myös Javascript noudattaa garbage collection-periaatetta. Kun tietystä objektista tulee tarpeeton, Javascriptin runtime-ympäristö hoksaa vapauttaa objektin varaamaan muistitilan. Se kuinka tuo &lt;em&gt;hoksaaminen&lt;/em&gt; käytännössä tapahtuu ei ole oleellista ohjelmoijan kannalta; oleellista on vain se, että &lt;em&gt;ohjelmoijan ei tarvitse asiasta välittää&lt;/em&gt;. Ohjelmointikielen taustalla pyörivä runtime-alusta toimii roskakuskina.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Niille jotka ovat kiinnostuneita roskienkeruun teknisestä toteutuksesta, seuraava linkki auttaa: &lt;a href=&#34;http://stackoverflow.com/questions/10112670/when-are-javascript-objects-destroyed&#34;&gt;http://stackoverflow.com/questions/10112670/when-are-javascript-objects-destroyed&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Asiassa on kuitenkin yksi mutta.&lt;/p&gt;
+
+&lt;p&gt;Entä jos roskakoriin päätyvä objekti on varannut olemassaolonsa ajaksi käyttöönsä jonkin &lt;em&gt;ulkoisen resurssin&lt;/em&gt;? Kun Javascript objekti tulee elinkaarensa päähän, runtime-alusta viskaa sen roskakoriin. Mutta miten käy tuon objektin omistaman resurssin?&lt;/p&gt;
+
+&lt;p&gt;Tosimaailman esimerkki selventää.&lt;/p&gt;
+
+&lt;h3 id=&#34;tosimaailman-esimerkki&#34;&gt;Tosimaailman esimerkki&lt;/h3&gt;
+
+&lt;p&gt;Kuvitellaan, että varaan liput teatteriesitykseen huomisillalle. Ikäväkseni kuitenkin käy niin, että saan kohtalokkaan sydänkohtauksen tänä iltana, ja siirryn ajasta ikuisuuteen.&lt;/p&gt;
+
+&lt;p&gt;Vielä tämän päivän puolella eloton ruumiini käydään noukkimassa ruumishuoneelle (&amp;ldquo;roskien keruu&amp;rdquo;).&lt;/p&gt;
+
+&lt;p&gt;Vaan miten käy teatterilippujeni? Olen varannut liput huomisen esitykseen. Se, että menin kuolemaan tässä välissä, &lt;em&gt;ei automaattisesti peruuta varaustani huomisen teatteriesitykseen.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Kuolleena en valitettavasti pääse paikalle teatteriin, mutta teatteri ei myöskään voi antaa paikkaa kellekään toiselle, sillä teatteri ei tiedä kuolemastani.&lt;/p&gt;
+
+&lt;p&gt;Ongelman ydin on siinä, että &lt;em&gt;kuollessani kukaan ei peruuta paikkavaraustani&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Mutta entä jos toimisin seuraavasti; vielä kun olen elävien kirjoissa, raapustan post-it-lapulle tekstin &amp;ldquo;peruuta paikkavaraus teatteriin mikäli olen kuollut&amp;rdquo;. Asetan lapun lompakkooni ajokortin oheen.&lt;/p&gt;
+
+&lt;p&gt;Kuka ikinä elottoman ruumiini löytää, löytää myös tuon lapun. Hän voi toimia lapun ohjeiden mukaan. Teatteri saa tiedon siitä, etten pääse paikalle esitystä seuraamaan. Täten teatteri voi myydä paikkani jollekin toiselle.&lt;/p&gt;
+
+&lt;h3 id=&#34;esimerkki-applikoituna-ohjelmoinnin-maailmaan&#34;&gt;Esimerkki applikoituna ohjelmoinnin maailmaan&lt;/h3&gt;
+
+&lt;p&gt;Ylläolevan esimerkin logiikkaa seuraten voimme myös toteuttaa &lt;em&gt;resurssin vapautuksen&lt;/em&gt; resurssia hallinnoivan objektin kuollessa. Vai voimmeko? Riippuu ohjelmointikielestä.&lt;/p&gt;
+
+&lt;p&gt;C++ -kielessä on konsepti nimeltä &lt;em&gt;&amp;ldquo;destructor&amp;rdquo;&lt;/em&gt;, joka mahdollistaa juurikin tuollaisen post-it-lapun luomisen. &lt;em&gt;Objektin destructor kutsutaan juuri ennen objektin kuolemaa&lt;/em&gt;. Tällä tavoin destructor-metodi voi ajaa tarvittavan koodin, jolla huolehditaan että &lt;em&gt;objekti ei jätä keskeneräisiä velvoitteita peräänsä kuollessaan&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Esimerkiksi teatteriesityksen tapauksessa:&lt;/p&gt;
+
+&lt;p&gt;(HUOM! C++ koodia)&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-cpp&#34;&gt;
+class Katsoja {
+public:
+   Katsoja(char* nimi, Teatteriesitys *esitys); 
+   ~Katsoja();
+private:
+  char *nimi;
+  Teatteriesitys *esitys;
+};
+
+Katsoja::~Katsoja() {
+  // Ilmoitetaan teatterille, että tämä katsoja
+  // ei pääse paikalle; hän kun on kuolemaisillaan.
+  esitys-&amp;gt;vapautaPaikka(this);
+}
+
+// jne. muut metodit
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa koodissa objekti &lt;em&gt;ilmoittaa kaikille kiinnostuneille osapuolille&lt;/em&gt; että hän on kuolemassa. Tämän ilmoituksen hän tekee &lt;em&gt;juuri ennen&lt;/em&gt; kupsahtamistaan.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;HUOM! C++ suorittaa automaattisen roskien keruun ainoastaan ns. lokaaleille objekteille. Tälläisiä objekteja ovat ne, jotka luodaan suoraan funktion sisälle lokaaliin käyttöön (ns. &amp;ldquo;stäkkimuuttujat&amp;rdquo;).&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;C++:n puolella ylläoleva konsepti &amp;ldquo;&lt;em&gt;kerro omasta kuolemastasi juuri ennen kuin kuolet&lt;/em&gt;&amp;rdquo; toimii erinomaisesti. Konseptin ja stäkkimuuttujien automaattisen destruktion varaan on rakennettu erittäin vahva patteri nimeltä *&lt;em&gt;RAII&lt;/em&gt; (&amp;ldquo;resource acquisation is initialization&amp;rdquo;).&lt;/p&gt;
+
+&lt;p&gt;Mutta Javascriptin puolella konsepti ei toimi, sillä Javascript ei tunne &lt;em&gt;destructorin&lt;/em&gt; käsitettä lainkaan.&lt;/p&gt;
+
+&lt;p&gt;Tämä destructorin puute on ongelmallista. Kun roskakuski nappaa turhaksi käyneen objektin, objekti ei voi ilmoittaa viimeisenä äännähdyksenään muulle maailmalle että &amp;ldquo;hei, se on menoa nyt!&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Eritoten Javascript-objekti ei kuolemansa hetkellä ajaa koodia, joka vapauttaa objektin omistamat resurssit (esim. teatterivarauksen).&lt;/p&gt;
+
+&lt;p&gt;Käytännössä tämä tarkoittaa, että koodarin täytyy vastaava logiikka ohjelmoida itse ja huolehtia visusti, että objekti &lt;em&gt;tapetaan eksplisiittisesti&lt;/em&gt;; ts. objekti tapetaan ohjelmoijan kirjoittaman koodin toimesta.&lt;/p&gt;
+
+&lt;p&gt;Myöhempi automaattinen roskien keruu on typistyy kuolleen ruumiin siivoamiseksi pois kadulta.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function Katsoja(esitys) {
+  
+  this.kuole = function() {
+    // Kerro teatterille että kuolema iski päälle.
+    esitys.vapautaPaikka(this);
+  }	
+
+  // jne...
+}
+
+var esitys = new TeatteriEsitys(&#39;Mielensäpahoittajan paluu&#39;);
+var katsoja = new Katsoja(esitys);
+
+// jne...
+
+katsoja-&amp;gt;kuole();
+
+// Muuttuja &amp;quot;katsoja&amp;quot; kerätään roskiin kunhan se menee out-of-scope.
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yllä Javascript-koodissa määritämme &lt;em&gt;kuole&lt;/em&gt;-metodin. Metodi on pitkälti vastaava kuin C++:n &lt;em&gt;~Katsoja&lt;/em&gt;-metodi.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Merkittävä ero on, että C++:ssa tuo metodi kutsutaan automaattisesti, Javascriptissä meidän tulee kutsua metodia itse!&lt;/strong&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Resurssien hallinta on tärkeä osa ohjelmointia. Hallinta pohjimmiltaan typistyy kysymykseen: &amp;ldquo;kuinka &lt;em&gt;varmistua&lt;/em&gt; siitä, ettei kuollut objekti vahingossa &lt;em&gt;unohda&lt;/em&gt; vapauttaa omistamaansa resurssia&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Mikäli objektit unohtavat vapautuksen, järjestelmä pikkuhiljaa syö kaikki resurssit. Tosimaailmassa vastaava ilmiö tapahtuisi mikäli kuolleet ihmiset eivät menettäisi omistusoikeuttaan esim. kiinteistöihinsä kuolemansa hetkellä.&lt;/p&gt;
+
+&lt;p&gt;Koska kuolleet eivät voi niitä myydä (kuolleelta on pirun vaikea saada allekirjoitusta kauppakirjaan), ne olisivat kuolleiden omistuksessa &lt;em&gt;ikuisesti&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Ajan mittaan Suomen kaikki rakennukset olisivat kuolleiden ihmisten omistuksessa. Tälläistä ilmiötä kutsutaan ohjelmoinnin parissa nimellä &amp;ldquo;resource depletion&amp;rdquo;. Yksi jos toinenkin (päin mäntyjä ohjelmoitu) applikaatio kärsii ongelmasta.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Älä kuole ääneti</title>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/disposing-resource/</link>
+      <pubDate>Wed, 28 Sep 2016 10:08:17 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/disposing-resource/</guid>
+      <description>&lt;p&gt;Monet ohjelmointikielet sisältävät tärkeän konseptin nimeltä *garbage collection&amp;rdquo;, suomeksi siis roskienkeruu. Tuo konsepti tarkoittaa yksinkertaisesti sitä, että ohjelmointiympäristö automaattisesti huolehtii ohjelman ajon aikana luotujen &lt;em&gt;objektien&lt;/em&gt; tuhoamisesta.&lt;/p&gt;
+
+&lt;p&gt;Alimmalla raudan tasolla tämä tuhoamisesta huolehtiminen tarkoittaa sitä, että keskusmuistista vapautetaan tilaa uusia objekteja varten.&lt;/p&gt;
+
+&lt;p&gt;Myös Javascript noudattaa garbage collection-periaatetta. Kun tietystä objektista tulee tarpeeton, Javascriptin runtime-ympäristö hoksaa vapauttaa objektin varaamaan muistitilan. Se kuinka tuo &lt;em&gt;hoksaaminen&lt;/em&gt; käytännössä tapahtuu ei ole oleellista ohjelmoijan kannalta; oleellista on vain se, että &lt;em&gt;ohjelmoijan ei tarvitse asiasta välittää&lt;/em&gt;. Ohjelmointikielen taustalla pyörivä runtime-alusta toimii roskakuskina.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Niille jotka ovat kiinnostuneita roskienkeruun teknisestä toteutuksesta, seuraava linkki auttaa: &lt;a href=&#34;http://stackoverflow.com/questions/10112670/when-are-javascript-objects-destroyed&#34;&gt;http://stackoverflow.com/questions/10112670/when-are-javascript-objects-destroyed&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Asiassa on kuitenkin yksi mutta.&lt;/p&gt;
+
+&lt;p&gt;Entä jos roskakoriin päätyvä objekti on varannut olemassaolonsa ajaksi käyttöönsä jonkin &lt;em&gt;ulkoisen resurssin&lt;/em&gt;? Kun Javascript objekti tulee elinkaarensa päähän, runtime-alusta viskaa sen roskakoriin. Mutta miten käy tuon objektin omistaman resurssin?&lt;/p&gt;
+
+&lt;p&gt;Tosimaailman esimerkki selventää.&lt;/p&gt;
+
+&lt;p&gt;Kuvitellaan, että varaan liput teatteriesitykseen huomisillalle. Ikäväkseni kuitenkin käy niin, että saan kohtalokkaan sydänkohtauksen tänä iltana, ja siirryn ajasta ikuisuuteen.&lt;/p&gt;
+
+&lt;p&gt;Vielä tämän päivän puolella eloton ruumiini käydään noukkimassa ruumishuoneelle (&amp;ldquo;roskien keruu&amp;rdquo;).&lt;/p&gt;
+
+&lt;p&gt;Vaan miten käy teatterilippujeni? Olen varannut liput huomisen esitykseen. Se, että menin kuolemaan tässä välissä, &lt;em&gt;ei automaattisesti peruuta varaustani huomisen teatteriesitykseen.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Kuolleena en valitettavasti pääse paikalle teatteriin, mutta teatteri ei myöskään voi antaa paikkaa kellekään toiselle, sillä teatteri ei tiedä kuolemastani.&lt;/p&gt;
+
+&lt;p&gt;Ongelman ydin on siinä, että &lt;em&gt;kuollessani kukaan ei peruuta paikkavaraustani&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Mutta entä jos toimisin seuraavasti; vielä kun olen elävien kirjoissa, raapustan post-it-lapulle tekstin &amp;ldquo;peruuta paikkavaraus teatteriin mikäli olen kuollut&amp;rdquo;. Asetan lapun lompakkooni ajokortin oheen.&lt;/p&gt;
+
+&lt;p&gt;Kuka ikinä elottoman ruumiini löytää, löytää myös tuon lapun. Hän voi toimia lapun ohjeiden mukaan. Teatteri saa tiedon siitä, etten pääse paikalle esitystä seuraamaan. Täten teatteri voi myydä paikkani jollekin toiselle.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevan esimerkin logiikkaa seuraten voimme myös toteuttaa &lt;em&gt;resurssin vapautuksen&lt;/em&gt; resurssia hallinnoivan objektin kuollessa. Vai voimmeko? Riippuu ohjelmointikielestä.&lt;/p&gt;
+
+&lt;p&gt;C++ -kielessä on konsepti nimeltä &amp;ldquo;destructor&amp;rdquo;, joka mahdollistaa juurikin tuollaisen post-it-lapun luomisen. &lt;em&gt;Objektin destructor kutsutaan juuri ennen objektin kuolemaa&lt;/em&gt;. Tällä tavoin destructor-metodi voi ajaa tarvittavan koodin, jolla huolehditaan että &lt;em&gt;objekti ei jätä keskeneräisiä velvoitteita peräänsä kuollessaan&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Esimerkiksi teatteriesityksen tapauksessa:&lt;/p&gt;
+
+&lt;p&gt;(HUOM! C++ koodia)&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;
+class Katsoja {
+public:
+   Katsoja(char* nimi, Teatteriesitys *esitys); 
+   ~Katsoja();
+private:
+  char *nimi;
+  Teatteriesitys *esitys;
+};
+
+Katsoja::~Katsoja() {
+  // Ilmoitetaan teatterille, että tämä katsoja
+  // ei pääse paikalle; hän kun on kuolemaisillaan.
+  esitys-&amp;gt;vapautaPaikka(this);
+}
+
+// jne. muut metodit
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa koodissa objekti &lt;em&gt;ilmoittaa kaikille kiinnostuneille osapuolille&lt;/em&gt; että hän on kuolemassa. Tämän ilmoituksen hän tekee &lt;em&gt;juuri ennen&lt;/em&gt; kupsahtamistaan.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;HUOM! C++ suorittaa automaattisen roskien keruun ainoastaan ns. lokaaleille objekteille. Tälläisiä objekteja ovat ne, jotka luodaan suoraan funktion sisälle lokaaliin käyttöön (ns. &amp;ldquo;stäkkimuuttujat&amp;rdquo;).&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;C++:n puolella ylläoleva konsepti &amp;ldquo;&lt;em&gt;kerro omasta kuolemastasi juuri ennen kuin kuolet&lt;/em&gt;&amp;rdquo; toimii erinomaisesti. Konseptin ja stäkkimuuttujien automaattisen destruktion varaan on rakennettu erittäin vahva patteri nimeltä *&lt;em&gt;RAII&lt;/em&gt; (&amp;ldquo;resource acquisation is initialization&amp;rdquo;).&lt;/p&gt;
+
+&lt;p&gt;Mutta Javascriptin puolella konsepti ei toimi, sillä Javascript ei tunne &lt;em&gt;destructorin&lt;/em&gt; käsitettä lainkaan.&lt;/p&gt;
+
+&lt;p&gt;Tämä destructorin puute on ongelmallista. Kun roskakuski nappaa turhaksi käyneen objektin, objekti ei voi ilmoittaa viimeisenä äännähdyksenään muulle maailmalle että &amp;ldquo;hei, se on menoa nyt!&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Eritoten Javascript-objekti ei kuolemansa hetkellä ajaa koodia, joka vapauttaa objektin omistamat resurssit (esim. teatterivarauksen).&lt;/p&gt;
+
+&lt;p&gt;Käytännössä tämä tarkoittaa, että koodarin täytyy vastaava logiikka ohjelmoida itse ja huolehtia visusti, että objekti &lt;em&gt;tapetaan eksplisiittisesti&lt;/em&gt;; ts. objekti tapetaan ohjelmoijan kirjoittaman koodin toimesta.&lt;/p&gt;
+
+&lt;p&gt;Myöhempi automaattinen roskien keruu on typistyy kuolleen ruumiin siivoamiseksi pois kadulta.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function Katsoja(esitys) {
+  
+  this.kuole = function() {
+    // Kerro teatterille että kuolema iski päälle.
+    esitys.vapautaPaikka(this);
+  }	
+
+  // jne...
+}
+
+var esitys = new TeatteriEsitys(&#39;Mielensäpahoittajan paluu&#39;);
+var katsoja = new Katsoja(esitys);
+
+// jne...
+
+katsoja-&amp;gt;kuole();
+
+// Muuttuja &amp;quot;katsoja&amp;quot; kerätään roskiin kunhan se menee out-of-scope.
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yllä Javascript-koodissa määritämme &lt;em&gt;kuole&lt;/em&gt;-metodin. Metodi on pitkälti vastaava kuin C++:n &lt;em&gt;~Katsoja&lt;/em&gt;-metodi.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Merkittävä ero on, että C++:ssa tuo metodi kutsutaan automaattisesti, Javascriptissä meidän tulee kutsua metodia itse!&lt;/strong&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Resurssien hallinta on tärkeä osa ohjelmointia. Hallinta pohjimmiltaan typistyy kysymykseen: &amp;ldquo;kuinka &lt;em&gt;varmistua&lt;/em&gt; siitä, ettei kuollut objekti vahingossa &lt;em&gt;unohda&lt;/em&gt; vapauttaa omistamaansa resurssia&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Mikäli objektit unohtavat vapautuksen, järjestelmä pikkuhiljaa syö kaikki resurssit. Tosimaailmassa vastaava ilmiö tapahtuisi mikäli kuolleet ihmiset eivät menettäisi omistusoikeuttaan esim. kiinteistöihinsä kuolemansa hetkellä.&lt;/p&gt;
+
+&lt;p&gt;Koska kuolleet eivät voi niitä myydä (kuolleelta on pirun vaikea saada allekirjoitusta kauppakirjaan), ne olisivat kuolleiden omistuksessa &lt;em&gt;ikuisesti&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Ajan mittaan Suomen kaikki rakennukset olisivat kuolleiden ihmisten omistuksessa. Tälläistä ilmiötä kutsutaan ohjelmoinnin parissa nimellä &amp;ldquo;resource depletion&amp;rdquo;. Yksi jos toinenkin (päin mäntyjä ohjelmoitu) applikaatio kärsii ongelmasta.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Laravel jonottaa puolestasi</title>
@@ -1374,220 +1620,6 @@ $valotKopio3 = $valotKopio2-&amp;gt;toggleKeittio();
 &lt;blockquote&gt;
 &lt;p&gt;Huomio! Tässä ketjutettava rajapinta esiteltiin PHP-kielen kautta. Ketjutuksen konsepti ei ole sidonnainen PHP-kieleen, vaan pätee kutakuinkin kaikissa funktiokutsuja tukevissa ohjelmointikielissä.&lt;/p&gt;
 &lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Slack and Laravel</title>
-      <link>http://www.nollaversio.fi/blog/public/laravel/slack-and-laravel/</link>
-      <pubDate>Fri, 19 Aug 2016 06:26:46 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/laravel/slack-and-laravel/</guid>
-      <description>&lt;p&gt;Uuden Laravel 5.3 ohjelmistokehyksen avulla web-applikaation integrointi Slackin kanssa on naurettavan helppoa. Otetaan esimerkkinä tapaus, jossa haluamme lähettää tiedoksiantoja Slackin suuntaan.&lt;/p&gt;
-
-&lt;p&gt;Sanotaan vaikka, että meillä on Slack-käyttäjänä bisnespersoona Jari Sarasvuo. Applikaatiomme haravoi internettiä etsien blogimainintoja hänen firmastaan Trainer&amp;rsquo;s House. Aina kun joku bloggari kirjoittaa blogiinsa postauksen, jossa termi &amp;lsquo;Trainer&amp;rsquo;s House&amp;rsquo; mainitaan, applikaatiomme tuottaa Slack-viestin ja lähettää sen Sarasvuon Slack-tilille.&lt;/p&gt;
-
-&lt;p&gt;Ylimmällä tasolla applikaatiomme toimii esim. näin:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// BlogiController.php
-
-use App\Notifications\SlackViesti;
-
-class BlogiController extends Controller {
-
-	protected $blogs; // lista blogeja, täytetään jotenkin
-
-	// Tätä metodia kutsutaan jonkin ulkoisen skriptin toimesta
-	// esim. kerran minuutissa, tällä tavoin blogit tulee tarkistetuksi
-	// minuutin välein.
-
-	// Ulkoisen skriptin ei tarvitse olla PHP-skripti, vaan se voi hoitaa
-	// kutsun HTTP-endpointin kautta. Saapuva HTTP-kutsu sitten ohjautuu tähän metodiin.
-	public function tarkistaBlogit(Request $_request) {
-	  
-	  $maininnat = $this-&amp;gt;blogs-&amp;gt;map(function(blogi) {
-	    // Tsekkaa blogi-objektia käyttäen jos uusi maininta havaittu
-	    if ($blogi-&amp;gt;uusiMainintaHavaittu()) return $blogi-&amp;gt;haeMaininta();
-	    return null;   	
-	  })-&amp;gt;filter(function($maininta) {
-	    // Filteröi nullit pois
-	    return $maininta !== null;
-	  });
-
-	  // Haetaan tietokannasta Sarasvuon käyttäjä-objekti.
-	  $sarasvuo = User::where(&#39;nimi&#39;, &#39;Jari Sarasvuo&#39;)-&amp;gt;first();
-
-	  // Ilmoitetaan Sarasvuon Slack-tilille.
-	  $sarasvuo-&amp;gt;notify(new SlackViesti($maininnat));
-
-	}	
-
-}
-
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylimmällä tasolla Slack-viestin lähettäminen on juurikin noin helppoa kuin yllä. Toki tarvitsemme vielä lisäksi pari luokkaa:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// App\Notifications\SlackViesti.php
-
-class SlackViesti {
-
-  protected $maininnat;
-
-  public function __construct($maininnat) {
-    // Talletetaan maininnat jotta voidaan käyttää sitä myöhemmin
-    $this-&amp;gt;maininnat = maininnat;
-  }
-
-  // Kehys kutsuu tätä metodia kun tiedoksianto luodaan ja lähetetään
-  // Parametrinä sisään tulee tässä tapauksessa Sarasvuon käyttäjä-objekti.	
-  public function via($sarasvuo) {
-    // Täällä päätämme mitä tiedoksiantokanavaa haluamme käyttää.
-    return [&#39;slack&#39;];
-
-  }
-
-  public function toSlack($user) {
-    // Hoidetaan Slack-viestin luonti.
-    // Kehys hoitaa loput.
-
-    $mainintaTeksti = $this-&amp;gt;maininnat-&amp;gt;reduce(function($teksti, $maininta) {
-      return $teksti . $maininta-&amp;gt;url . &amp;quot;, &amp;quot;;
-    }, &#39;Blogimaininnat: &#39;)
-
-    // SlackMessage on Laravel-kehyksen sisäinen apuluokka.
-    return (new SlackMessage)
-      -&amp;gt;line(&#39;Uusia Trainers House mainintoja&#39;)
-      -&amp;gt;line(&#39;Firmasi mainittiin blogeissa &#39; . $mainintaTeksti);
-  }
-
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// User.php
-
-class User extends Authenticatable {
-
-  // Mahdollistaa tiedoksiantojen lähetyksen käyttäjälle.	
-  use Notifiable;
-
-  // Mahdollistaa Slack-viestien lähettämisen tiettyyn Slack-endpointiin.
-  public function routeNotificationForSlack() {
-    // Sarasvuo on luonut itselleen HTTP-endpointin Slack-appin puolella.
-    // Tässä tapauksessa kirjoitetaan testi-endpoint suoraan lähdekoodiin.
-    // Oikeassa applikaatiossa haluamme tallentaa tuo endpointin tietokantaan.
-
-    return &#39;https://hooks.slack.com/services/T00000000/B00000000/1234abcd&#39;;
-  }
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevan koodin kautta Sarasvuo saa suoraan Slackiin ilmoituksia tyyliin:&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Uusia Trainers House mainintoja&lt;/p&gt;
-
-&lt;p&gt;Firmasi mainittiin blogeissa: &lt;a href=&#34;http://www.kakkumaakari.fi&#34;&gt;http://www.kakkumaakari.fi&lt;/a&gt;, &lt;a href=&#34;http://nollaversio.fi&#34;&gt;http://nollaversio.fi&lt;/a&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Nuo ilmoitukset siis menevät suoraan Slackin palvelimelle, josta ne sitten jaetaan Jarille. Hyvä puoli tässä on, että Slack tarjoaa appinsa niin työpöytäkoneeseen, läppäriin kuin mobiilikännykkäänkin. En ihmettelisi ellei pian olisi Slack-appi Teslan monitoiminäyttöönkin.&lt;/p&gt;
-
-&lt;p&gt;Meidän applikaatiomme ei siis tarvitse huolehtia siitä mitä päätelaitetta Sarasvuo käyttää. Riittää, että kutsumme Slack-endpointia.&lt;/p&gt;
-
-&lt;p&gt;Toimii kuin unelma. Laravel tekee tässäkin tapauksessa koodarin elämästä lähes laittoman helppoa. Ja Slack hoitaa loput.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Konsolitulosteen väritys</title>
-      <link>http://www.nollaversio.fi/blog/public/nodejs/console-log-coloring/</link>
-      <pubDate>Thu, 18 Aug 2016 05:47:59 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/nodejs/console-log-coloring/</guid>
-      <description>&lt;p&gt;Löysin muutama kuukausi sitten Node.js-lisäosan nimeltä &lt;a href=&#34;https://github.com/chalk/chalk&#34;&gt;chalk&lt;/a&gt;. Tämä chalk-kirjasto tarjoaa kivan rajapinnan &lt;em&gt;värittää&lt;/em&gt; komentorivillä näkyvät console.log-tekstit. Värityksestä on paljon hyötyä tapauksissa, joissa Node.js-skripti printtaa runsaasti tekstiä komentoriville.&lt;/p&gt;
-
-&lt;p&gt;Käyttö on helppoa - riittää, että työntää merkkijonon chalk-kirjaston metodikutsun sisälle:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-console.log(chalk.cyan(&amp;quot;beforeMove cb&amp;quot;))
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;tuottaa seuraavanlaisen lopputuleman:&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&#34;http://www.nollaversio.fi/blog/public/blog/public/img/console-log-cyan.png&#34; alt=&#34;Turkoosin värinen merkkijono&#34; /&gt;&lt;/p&gt;
-
-&lt;p&gt;Käytän eri värejä &lt;em&gt;simuloimaan&lt;/em&gt; eri käyttäjien kommunikaatiota Node.js-serverin kanssa. Sanotaan esimerkiksi, että meillä on kolme käyttäjää A, B ja C. Nuo kaikki kolme saavat viestejä applikaatiolta. Tuotantokäytössä nuo viestit luonnollisesti menisivät kunkin käyttäjän www-selaimeen, mutta testivaiheessa on helpompaa vain printata kunkin käyttäjän saama viesti komentoriville. Ongelmaksi muodostuu, että &lt;em&gt;komentoriviltä on visuaalisesti vaikea hahmottaa mikä viesti kuuluu millekin käyttäjälle&lt;/em&gt;:&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&#34;http://www.nollaversio.fi/blog/public/blog/public/img/console-log-users-white.png&#34; alt=&#34;Kaikkien käyttäjien kommunikaatio palvelimen kanssa printataan testiajossa komentoriville&#34; /&gt;&lt;/p&gt;
-
-&lt;p&gt;Chalk-kirjaston avulla voimme assignoida kullekin käyttäjälle oman värin, jolloin on visuaalisesti helppo erottaa eri käyttäjien viestit toisistaan:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Participant.js
-
-var chalk = require(&#39;chalk&#39;);
-
-// Määritä kullekin testikäyttäjälle oma väritysfunktio
-var consoleColorers = {
-  &#39;A&#39;: chalk.bgGreen,
-  &#39;B&#39;: chalk.bgYellow,
-  &#39;C&#39;: chalk.bgBlue
-}
-
-function Participant(id, communicator) {
-  // Unique among all participants
-  this.id = id;
-  // communicator is probably Socket-object, can be mocked.
-  this.communicator = communicator;
-
-  this.msg = function(msg) {
-    // Väritä tämän käyttäjän saama viesti hänen omalla värillään
-    // ja printtaa viesti komentoriville.
-    var text = this.id + &#39;: &#39; + msg.msg;
-    console.log(consoleColorers[this.id](text));
-  }
-
-  // ... muut metodit
-
-}
-
-module.exports = Participant;
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// test.js
-
-var _ = require(&#39;lodash&#39;); // _.map-funktiota varten
-var Participant = require(&#39;./Participant&#39;);
-
-// Luo testipelaajia kolme kpl.
-var players = [new Participant(&#39;A&#39;, {}), new Participant(&#39;B&#39;, {}), new Participant(&#39;C&#39;, {})];
-
-// Lähetä kullekin pelaajalle viesti kerran sekunnissa
-setInterval(function() {
-  _.map(players, function(player) {
-    player.msg({topic: &#39;testi&#39;, msg: &#39;Sinulle on postia&#39;});
-  })
-}, 1000);
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva tuottaa kauniin lopputuloksen komentoriville kun test.js-tiedosto suoritetaan:&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&#34;http://www.nollaversio.fi/blog/public/blog/public/img/console-log-users-custom-colors.png&#34; alt=&#34;Kullakin käyttäjällä on oma värinsä komentoriville&#34; /&gt;&lt;/p&gt;
-
-&lt;p&gt;Pohjimmiltaan värien käyttö on tietenkin makukysymys, mutta ainakin itselläni se helpottaa testitulosteen lukemista huomattavasti.&lt;/p&gt;
 </description>
     </item>
     

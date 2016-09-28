@@ -1,0 +1,199 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Älä kuole ääneti &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Älä kuole ääneti</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Wed, Sep 28, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Monet ohjelmointikielet sisältävät tärkeän konseptin nimeltä *garbage collection&rdquo;, suomeksi siis roskienkeruu. Tuo konsepti tarkoittaa yksinkertaisesti sitä, että ohjelmointiympäristö automaattisesti huolehtii ohjelman ajon aikana luotujen <em>objektien</em> tuhoamisesta.</p>
+
+<p>Alimmalla raudan tasolla tämä tuhoamisesta huolehtiminen tarkoittaa sitä, että keskusmuistista vapautetaan tilaa uusia objekteja varten.</p>
+
+<p>Myös Javascript noudattaa garbage collection-periaatetta. Kun tietystä objektista tulee tarpeeton, Javascriptin runtime-ympäristö hoksaa vapauttaa objektin varaamaan muistitilan. Se kuinka tuo <em>hoksaaminen</em> käytännössä tapahtuu ei ole oleellista ohjelmoijan kannalta; oleellista on vain se, että <em>ohjelmoijan ei tarvitse asiasta välittää</em>. Ohjelmointikielen taustalla pyörivä runtime-alusta toimii roskakuskina.</p>
+
+<blockquote>
+<p>Niille jotka ovat kiinnostuneita roskienkeruun teknisestä toteutuksesta, seuraava linkki auttaa: <a href="http://stackoverflow.com/questions/10112670/when-are-javascript-objects-destroyed">http://stackoverflow.com/questions/10112670/when-are-javascript-objects-destroyed</a></p>
+</blockquote>
+
+<p>Asiassa on kuitenkin yksi mutta.</p>
+
+<p>Entä jos roskakoriin päätyvä objekti on varannut olemassaolonsa ajaksi käyttöönsä jonkin <em>ulkoisen resurssin</em>? Kun Javascript objekti tulee elinkaarensa päähän, runtime-alusta viskaa sen roskakoriin. Mutta miten käy tuon objektin omistaman resurssin?</p>
+
+<p>Tosimaailman esimerkki selventää.</p>
+
+<h3 id="tosimaailman-esimerkki">Tosimaailman esimerkki</h3>
+
+<p>Kuvitellaan, että varaan liput teatteriesitykseen huomisillalle. Ikäväkseni kuitenkin käy niin, että saan kohtalokkaan sydänkohtauksen tänä iltana, ja siirryn ajasta ikuisuuteen.</p>
+
+<p>Vielä tämän päivän puolella eloton ruumiini käydään noukkimassa ruumishuoneelle (&ldquo;roskien keruu&rdquo;).</p>
+
+<p>Vaan miten käy teatterilippujeni? Olen varannut liput huomisen esitykseen. Se, että menin kuolemaan tässä välissä, <em>ei automaattisesti peruuta varaustani huomisen teatteriesitykseen.</em></p>
+
+<p>Kuolleena en valitettavasti pääse paikalle teatteriin, mutta teatteri ei myöskään voi antaa paikkaa kellekään toiselle, sillä teatteri ei tiedä kuolemastani.</p>
+
+<p>Ongelman ydin on siinä, että <em>kuollessani kukaan ei peruuta paikkavaraustani</em>.</p>
+
+<p>Mutta entä jos toimisin seuraavasti; vielä kun olen elävien kirjoissa, raapustan post-it-lapulle tekstin &ldquo;peruuta paikkavaraus teatteriin mikäli olen kuollut&rdquo;. Asetan lapun lompakkooni ajokortin oheen.</p>
+
+<p>Kuka ikinä elottoman ruumiini löytää, löytää myös tuon lapun. Hän voi toimia lapun ohjeiden mukaan. Teatteri saa tiedon siitä, etten pääse paikalle esitystä seuraamaan. Täten teatteri voi myydä paikkani jollekin toiselle.</p>
+
+<h3 id="esimerkki-applikoituna-ohjelmoinnin-maailmaan">Esimerkki applikoituna ohjelmoinnin maailmaan</h3>
+
+<p>Ylläolevan esimerkin logiikkaa seuraten voimme myös toteuttaa <em>resurssin vapautuksen</em> resurssia hallinnoivan objektin kuollessa. Vai voimmeko? Riippuu ohjelmointikielestä.</p>
+
+<p>C++ -kielessä on konsepti nimeltä <em>&ldquo;destructor&rdquo;</em>, joka mahdollistaa juurikin tuollaisen post-it-lapun luomisen. <em>Objektin destructor kutsutaan juuri ennen objektin kuolemaa</em>. Tällä tavoin destructor-metodi voi ajaa tarvittavan koodin, jolla huolehditaan että <em>objekti ei jätä keskeneräisiä velvoitteita peräänsä kuollessaan</em>.</p>
+
+<p>Esimerkiksi teatteriesityksen tapauksessa:</p>
+
+<p>(HUOM! C++ koodia)</p>
+
+<pre><code class="language-cpp">
+class Katsoja {
+public:
+   Katsoja(char* nimi, Teatteriesitys *esitys); 
+   ~Katsoja();
+private:
+  char *nimi;
+  Teatteriesitys *esitys;
+};
+
+Katsoja::~Katsoja() {
+  // Ilmoitetaan teatterille, että tämä katsoja
+  // ei pääse paikalle; hän kun on kuolemaisillaan.
+  esitys-&gt;vapautaPaikka(this);
+}
+
+// jne. muut metodit
+
+</code></pre>
+
+<p>Ylläolevassa koodissa objekti <em>ilmoittaa kaikille kiinnostuneille osapuolille</em> että hän on kuolemassa. Tämän ilmoituksen hän tekee <em>juuri ennen</em> kupsahtamistaan.</p>
+
+<blockquote>
+<p>HUOM! C++ suorittaa automaattisen roskien keruun ainoastaan ns. lokaaleille objekteille. Tälläisiä objekteja ovat ne, jotka luodaan suoraan funktion sisälle lokaaliin käyttöön (ns. &ldquo;stäkkimuuttujat&rdquo;).</p>
+</blockquote>
+
+<p>C++:n puolella ylläoleva konsepti &ldquo;<em>kerro omasta kuolemastasi juuri ennen kuin kuolet</em>&rdquo; toimii erinomaisesti. Konseptin ja stäkkimuuttujien automaattisen destruktion varaan on rakennettu erittäin vahva patteri nimeltä *<em>RAII</em> (&ldquo;resource acquisation is initialization&rdquo;).</p>
+
+<p>Mutta Javascriptin puolella konsepti ei toimi, sillä Javascript ei tunne <em>destructorin</em> käsitettä lainkaan.</p>
+
+<p>Tämä destructorin puute on ongelmallista. Kun roskakuski nappaa turhaksi käyneen objektin, objekti ei voi ilmoittaa viimeisenä äännähdyksenään muulle maailmalle että &ldquo;hei, se on menoa nyt!&rdquo;.</p>
+
+<p>Eritoten Javascript-objekti ei kuolemansa hetkellä ajaa koodia, joka vapauttaa objektin omistamat resurssit (esim. teatterivarauksen).</p>
+
+<p>Käytännössä tämä tarkoittaa, että koodarin täytyy vastaava logiikka ohjelmoida itse ja huolehtia visusti, että objekti <em>tapetaan eksplisiittisesti</em>; ts. objekti tapetaan ohjelmoijan kirjoittaman koodin toimesta.</p>
+
+<p>Myöhempi automaattinen roskien keruu on typistyy kuolleen ruumiin siivoamiseksi pois kadulta.</p>
+
+<pre><code class="language-javascript">
+function Katsoja(esitys) {
+  
+  this.kuole = function() {
+    // Kerro teatterille että kuolema iski päälle.
+    esitys.vapautaPaikka(this);
+  }	
+
+  // jne...
+}
+
+var esitys = new TeatteriEsitys('Mielensäpahoittajan paluu');
+var katsoja = new Katsoja(esitys);
+
+// jne...
+
+katsoja-&gt;kuole();
+
+// Muuttuja &quot;katsoja&quot; kerätään roskiin kunhan se menee out-of-scope.
+
+</code></pre>
+
+<p>Yllä Javascript-koodissa määritämme <em>kuole</em>-metodin. Metodi on pitkälti vastaava kuin C++:n <em>~Katsoja</em>-metodi.</p>
+
+<p><strong>Merkittävä ero on, että C++:ssa tuo metodi kutsutaan automaattisesti, Javascriptissä meidän tulee kutsua metodia itse!</strong></p>
+
+<blockquote>
+<p>Resurssien hallinta on tärkeä osa ohjelmointia. Hallinta pohjimmiltaan typistyy kysymykseen: &ldquo;kuinka <em>varmistua</em> siitä, ettei kuollut objekti vahingossa <em>unohda</em> vapauttaa omistamaansa resurssia&rdquo;.</p>
+
+<p>Mikäli objektit unohtavat vapautuksen, järjestelmä pikkuhiljaa syö kaikki resurssit. Tosimaailmassa vastaava ilmiö tapahtuisi mikäli kuolleet ihmiset eivät menettäisi omistusoikeuttaan esim. kiinteistöihinsä kuolemansa hetkellä.</p>
+
+<p>Koska kuolleet eivät voi niitä myydä (kuolleelta on pirun vaikea saada allekirjoitusta kauppakirjaan), ne olisivat kuolleiden omistuksessa <em>ikuisesti</em>.</p>
+
+<p>Ajan mittaan Suomen kaikki rakennukset olisivat kuolleiden ihmisten omistuksessa. Tälläistä ilmiötä kutsutaan ohjelmoinnin parissa nimellä &ldquo;resource depletion&rdquo;. Yksi jos toinenkin (päin mäntyjä ohjelmoitu) applikaatio kärsii ongelmasta.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

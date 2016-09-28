@@ -6,8 +6,128 @@
     <description>Recent content in Nodejs on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Mon, 29 Aug 2016 13:39:19 +0300</lastBuildDate>
+    <lastBuildDate>Wed, 28 Sep 2016 10:08:17 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/nodejs/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Älä kuole ääneti</title>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/disposing-resource/</link>
+      <pubDate>Wed, 28 Sep 2016 10:08:17 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/disposing-resource/</guid>
+      <description>&lt;p&gt;Monet ohjelmointikielet sisältävät tärkeän konseptin nimeltä *garbage collection&amp;rdquo;, suomeksi siis roskienkeruu. Tuo konsepti tarkoittaa yksinkertaisesti sitä, että ohjelmointiympäristö automaattisesti huolehtii ohjelman ajon aikana luotujen &lt;em&gt;objektien&lt;/em&gt; tuhoamisesta.&lt;/p&gt;
+
+&lt;p&gt;Alimmalla raudan tasolla tämä tuhoamisesta huolehtiminen tarkoittaa sitä, että keskusmuistista vapautetaan tilaa uusia objekteja varten.&lt;/p&gt;
+
+&lt;p&gt;Myös Javascript noudattaa garbage collection-periaatetta. Kun tietystä objektista tulee tarpeeton, Javascriptin runtime-ympäristö hoksaa vapauttaa objektin varaamaan muistitilan. Se kuinka tuo &lt;em&gt;hoksaaminen&lt;/em&gt; käytännössä tapahtuu ei ole oleellista ohjelmoijan kannalta; oleellista on vain se, että &lt;em&gt;ohjelmoijan ei tarvitse asiasta välittää&lt;/em&gt;. Ohjelmointikielen taustalla pyörivä runtime-alusta toimii roskakuskina.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Niille jotka ovat kiinnostuneita roskienkeruun teknisestä toteutuksesta, seuraava linkki auttaa: &lt;a href=&#34;http://stackoverflow.com/questions/10112670/when-are-javascript-objects-destroyed&#34;&gt;http://stackoverflow.com/questions/10112670/when-are-javascript-objects-destroyed&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Asiassa on kuitenkin yksi mutta.&lt;/p&gt;
+
+&lt;p&gt;Entä jos roskakoriin päätyvä objekti on varannut olemassaolonsa ajaksi käyttöönsä jonkin &lt;em&gt;ulkoisen resurssin&lt;/em&gt;? Kun Javascript objekti tulee elinkaarensa päähän, runtime-alusta viskaa sen roskakoriin. Mutta miten käy tuon objektin omistaman resurssin?&lt;/p&gt;
+
+&lt;p&gt;Tosimaailman esimerkki selventää.&lt;/p&gt;
+
+&lt;p&gt;Kuvitellaan, että varaan liput teatteriesitykseen huomisillalle. Ikäväkseni kuitenkin käy niin, että saan kohtalokkaan sydänkohtauksen tänä iltana, ja siirryn ajasta ikuisuuteen.&lt;/p&gt;
+
+&lt;p&gt;Vielä tämän päivän puolella eloton ruumiini käydään noukkimassa ruumishuoneelle (&amp;ldquo;roskien keruu&amp;rdquo;).&lt;/p&gt;
+
+&lt;p&gt;Vaan miten käy teatterilippujeni? Olen varannut liput huomisen esitykseen. Se, että menin kuolemaan tässä välissä, &lt;em&gt;ei automaattisesti peruuta varaustani huomisen teatteriesitykseen.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Kuolleena en valitettavasti pääse paikalle teatteriin, mutta teatteri ei myöskään voi antaa paikkaa kellekään toiselle, sillä teatteri ei tiedä kuolemastani.&lt;/p&gt;
+
+&lt;p&gt;Ongelman ydin on siinä, että &lt;em&gt;kuollessani kukaan ei peruuta paikkavaraustani&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Mutta entä jos toimisin seuraavasti; vielä kun olen elävien kirjoissa, raapustan post-it-lapulle tekstin &amp;ldquo;peruuta paikkavaraus teatteriin mikäli olen kuollut&amp;rdquo;. Asetan lapun lompakkooni ajokortin oheen.&lt;/p&gt;
+
+&lt;p&gt;Kuka ikinä elottoman ruumiini löytää, löytää myös tuon lapun. Hän voi toimia lapun ohjeiden mukaan. Teatteri saa tiedon siitä, etten pääse paikalle esitystä seuraamaan. Täten teatteri voi myydä paikkani jollekin toiselle.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevan esimerkin logiikkaa seuraten voimme myös toteuttaa &lt;em&gt;resurssin vapautuksen&lt;/em&gt; resurssia hallinnoivan objektin kuollessa. Vai voimmeko? Riippuu ohjelmointikielestä.&lt;/p&gt;
+
+&lt;p&gt;C++ -kielessä on konsepti nimeltä &amp;ldquo;destructor&amp;rdquo;, joka mahdollistaa juurikin tuollaisen post-it-lapun luomisen. &lt;em&gt;Objektin destructor kutsutaan juuri ennen objektin kuolemaa&lt;/em&gt;. Tällä tavoin destructor-metodi voi ajaa tarvittavan koodin, jolla huolehditaan että &lt;em&gt;objekti ei jätä keskeneräisiä velvoitteita peräänsä kuollessaan&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Esimerkiksi teatteriesityksen tapauksessa:&lt;/p&gt;
+
+&lt;p&gt;(HUOM! C++ koodia)&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;
+class Katsoja {
+public:
+   Katsoja(char* nimi, Teatteriesitys *esitys); 
+   ~Katsoja();
+private:
+  char *nimi;
+  Teatteriesitys *esitys;
+};
+
+Katsoja::~Katsoja() {
+  // Ilmoitetaan teatterille, että tämä katsoja
+  // ei pääse paikalle; hän kun on kuolemaisillaan.
+  esitys-&amp;gt;vapautaPaikka(this);
+}
+
+// jne. muut metodit
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa koodissa objekti &lt;em&gt;ilmoittaa kaikille kiinnostuneille osapuolille&lt;/em&gt; että hän on kuolemassa. Tämän ilmoituksen hän tekee &lt;em&gt;juuri ennen&lt;/em&gt; kupsahtamistaan.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;HUOM! C++ suorittaa automaattisen roskien keruun ainoastaan ns. lokaaleille objekteille. Tälläisiä objekteja ovat ne, jotka luodaan suoraan funktion sisälle lokaaliin käyttöön (ns. &amp;ldquo;stäkkimuuttujat&amp;rdquo;).&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;C++:n puolella ylläoleva konsepti &amp;ldquo;&lt;em&gt;kerro omasta kuolemastasi juuri ennen kuin kuolet&lt;/em&gt;&amp;rdquo; toimii erinomaisesti. Konseptin ja stäkkimuuttujien automaattisen destruktion varaan on rakennettu erittäin vahva patteri nimeltä *&lt;em&gt;RAII&lt;/em&gt; (&amp;ldquo;resource acquisation is initialization&amp;rdquo;).&lt;/p&gt;
+
+&lt;p&gt;Mutta Javascriptin puolella konsepti ei toimi, sillä Javascript ei tunne &lt;em&gt;destructorin&lt;/em&gt; käsitettä lainkaan.&lt;/p&gt;
+
+&lt;p&gt;Tämä destructorin puute on ongelmallista. Kun roskakuski nappaa turhaksi käyneen objektin, objekti ei voi ilmoittaa viimeisenä äännähdyksenään muulle maailmalle että &amp;ldquo;hei, se on menoa nyt!&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Eritoten Javascript-objekti ei kuolemansa hetkellä ajaa koodia, joka vapauttaa objektin omistamat resurssit (esim. teatterivarauksen).&lt;/p&gt;
+
+&lt;p&gt;Käytännössä tämä tarkoittaa, että koodarin täytyy vastaava logiikka ohjelmoida itse ja huolehtia visusti, että objekti &lt;em&gt;tapetaan eksplisiittisesti&lt;/em&gt;; ts. objekti tapetaan ohjelmoijan kirjoittaman koodin toimesta.&lt;/p&gt;
+
+&lt;p&gt;Myöhempi automaattinen roskien keruu on typistyy kuolleen ruumiin siivoamiseksi pois kadulta.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function Katsoja(esitys) {
+  
+  this.kuole = function() {
+    // Kerro teatterille että kuolema iski päälle.
+    esitys.vapautaPaikka(this);
+  }	
+
+  // jne...
+}
+
+var esitys = new TeatteriEsitys(&#39;Mielensäpahoittajan paluu&#39;);
+var katsoja = new Katsoja(esitys);
+
+// jne...
+
+katsoja-&amp;gt;kuole();
+
+// Muuttuja &amp;quot;katsoja&amp;quot; kerätään roskiin kunhan se menee out-of-scope.
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yllä Javascript-koodissa määritämme &lt;em&gt;kuole&lt;/em&gt;-metodin. Metodi on pitkälti vastaava kuin C++:n &lt;em&gt;~Katsoja&lt;/em&gt;-metodi.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Merkittävä ero on, että C++:ssa tuo metodi kutsutaan automaattisesti, Javascriptissä meidän tulee kutsua metodia itse!&lt;/strong&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Resurssien hallinta on tärkeä osa ohjelmointia. Hallinta pohjimmiltaan typistyy kysymykseen: &amp;ldquo;kuinka &lt;em&gt;varmistua&lt;/em&gt; siitä, ettei kuollut objekti vahingossa &lt;em&gt;unohda&lt;/em&gt; vapauttaa omistamaansa resurssia&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Mikäli objektit unohtavat vapautuksen, järjestelmä pikkuhiljaa syö kaikki resurssit. Tosimaailmassa vastaava ilmiö tapahtuisi mikäli kuolleet ihmiset eivät menettäisi omistusoikeuttaan esim. kiinteistöihinsä kuolemansa hetkellä.&lt;/p&gt;
+
+&lt;p&gt;Koska kuolleet eivät voi niitä myydä (kuolleelta on pirun vaikea saada allekirjoitusta kauppakirjaan), ne olisivat kuolleiden omistuksessa &lt;em&gt;ikuisesti&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Ajan mittaan Suomen kaikki rakennukset olisivat kuolleiden ihmisten omistuksessa. Tälläistä ilmiötä kutsutaan ohjelmoinnin parissa nimellä &amp;ldquo;resource depletion&amp;rdquo;. Yksi jos toinenkin (päin mäntyjä ohjelmoitu) applikaatio kärsii ongelmasta.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Lodash: toPairs &#43; sortBy</title>
@@ -1970,233 +2090,6 @@ function separatePositionsForEachGame(...) {...}
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Aika kaunista.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Nodejs - riippuvuuksien injektointi</title>
-      <link>http://www.nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</link>
-      <pubDate>Mon, 11 Jul 2016 06:35:00 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</guid>
-      <description>
-
-&lt;p&gt;Riippuvuuksien injektointi (engl. dependency injection) on varsin vahva tapa varmistaa modulaarinen koodipohja. Kun tietyn komponentin jokainen alikomponentti otetaan vastaan &amp;ldquo;ulkoa annettuna&amp;rdquo;, on komponenttia mahdollista muokata
-rakentamalla se eri palikoista.&lt;/p&gt;
-
-&lt;p&gt;Alla esimerkki komponentista, joka hallitsee itse riippuvuuksiaan (alikomponenttejaan):&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Termostaatti.js
-
-module.exports = Termostaatti;
-
-function Termostaatti() {
-	this.lampomittari = new Lampomittari();
-	this.tuuletus = new Tuuletusjarjestelma();
-
-	...
-
-}
-
-function Lampomittari() {...}
-function Tuuletusjarjestelma() {...}
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva Termostaatti-komponentti paitsi itse päättää omat alikomponenttinsa, myös sisältää
-alikomponenttien koodin sisuksissaan. Kyseessä on äärimmilleen viety tapa &amp;ldquo;paketoida&amp;rdquo; komponentti
-loogiseksi kokonaisuudeksi, ikäänkuin mustaksi laatikoksi.&lt;/p&gt;
-
-&lt;p&gt;Termostaatin loppukäyttäjän kannalta ratkaisu on peräti toimiva, olettaen, että loppukäyttäjä vain
-haluaa termostaatin käyttöönsä annetussa muodossa.&lt;/p&gt;
-
-&lt;p&gt;Ongelmana kuitenkin on, että esimerkiksi lämpömittarin koodipohjalla olisi ehkä käyttöä muuallakin, esimerkiksi komponenttia &lt;strong&gt;Leivinuuni&lt;/strong&gt; rakennettaessa. Jos lämpömittarin koodi elää &lt;strong&gt;Termostaatin&lt;/strong&gt; sisuksissa, se on käytännössä vangittuna ikuiseen tyrmään.&lt;/p&gt;
-
-&lt;p&gt;Täten helppo tapa parantaa koodia on refaktoroida &lt;strong&gt;Termostaatti&lt;/strong&gt; muotoon, jossa lämpömittari elää omassa kooditiedostossaan, täten helposti siirrettävissä muihin tarkoituksiin.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Termostaatti.js
-
-var Lampomittari = require(&#39;Lampomittari&#39;);
-
-module.exports = Termostaatti;
-
-function Termostaatti() {
-	this.lampomittari = new Lampomittari();
-	this.tuuletus = new Tuuletusjarjestelma();
-	...
-}
-
-function Tuuletusjarjestelma() {...}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-
-// Lampomittari.js
-
-module.exports = Lampomittari;
-
-function Lampomittari() {...}
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;strong&gt;Lampomittari-alikomponentti&lt;/strong&gt; otetaan ylläolevassa esimerkissä erikseen käyttöön osaksi &lt;strong&gt;Termostaatti-komponenttia&lt;/strong&gt;. Lämpömittari ei siis enää elä &lt;strong&gt;Termostaatin&lt;/strong&gt; sisällä. Selkeä parannus aiempaan siinä mielessä, että eri komponenttien koodipohjat ovat entistä paremmin jaoteltuina omiin tiedostoihinsa.&lt;/p&gt;
-
-&lt;p&gt;Varsinainen otsikon ongelma ei silti ratkennut - Termostaatti itse hallitsee alikomponentin ottamisen käyttöön.&lt;/p&gt;
-
-&lt;p&gt;Seuraava parannus on siirtää päätäntävalta pois Termostaatin ulottuvilta. Termostaatin vastuulla ei pidä olla lämpömittarin valinta. Termostaatin vastuulla on huolehtia lämpömittarin mitta-asteikon lukemisesta. Oleellista on, että termostaatti saa käyttöönsä luettavissa olevan lämpömittarin.&lt;/p&gt;
-
-&lt;p&gt;Oletetaan esimerkin nimissä, että meillä on kaksi eri tyyppistä lämpömittaria; digitaalinen mittari ja elohopeamittari.&lt;/p&gt;
-
-&lt;p&gt;Termostaattia ei kiinnosta kumpi mittari on sen käytettävissä KUNHAN VAIN molemmat mittarit ovat luettavissa ongelmitta.&lt;/p&gt;
-
-&lt;p&gt;Mutta meitä huoneiston omistajina asia saattaa kiinnostaa. Emme halua elohopeamittaria, sillä elohopea on ympäristömyrkky. Olemme viherhihhuleita, ja suosimme digitaalista mittaria (jonka toiminta ei perustu elohopean lämpölaajenemiseen).&lt;/p&gt;
-
-&lt;p&gt;Käytännössä meillä on kaksi tapaa toteuttaa koodipohja siten, että termostaatti ei ole edes tietoinen millaisen mittarin se saa käyttöönsä.&lt;/p&gt;
-
-&lt;h3 id=&#34;tapa-1-tiedosto-interface&#34;&gt;Tapa 1 (&amp;ldquo;tiedosto-interface&amp;rdquo;)&lt;/h3&gt;
-
-&lt;p&gt;Helpoin tapa ratkoa ongelma on hoksata, että Lampomittari.js -tiedoston määrittämä komponentti otetaan käyttöön Termostaatti.js-tiedostossa nimellä &amp;ldquo;Lampomittari&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;Toisin sanoen, mitä ikinä Lampomittari.js-tiedosto määrittääkään, termostaatti näkee sen nimellä &amp;ldquo;Lampomittari&amp;rdquo;. Kyseessä on puhdas interface, joka pätee tiedostojärjestelmän tasolla. Niin kauan kuin Lampomittari.js-tiedoston nimi ei muutu, voimme &lt;em&gt;kontrolloida termostaatin sisäistä toimintaa ilman että meidän tarvitsee koskea lainkaan Termostaatti.js-tiedostoon.&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;Eli:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Termostaatti.js
-
-var Lampomittari = require(&#39;Lampomittari&#39;);
-
-module.exports = Termostaatti;
-
-function Termostaatti() {
-	this.lampomittari = new Lampomittari();
-	this.tuuletus = new Tuuletusjarjestelma();
-	...
-}
-
-function Tuuletusjarjestelma() {...}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-
-// Lampomittari.js
-
-module.exports = DigitaalinenLampomittari;
-
-function DigitaalinenLampomittari() {...}
-
-function ElohopeaLampomittari() {...}
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva koodipohja antaa Lampomittari.js-tiedostolle tilaisuuden kontrolloida termostaatin sisäistä toimintaa. Jos haluamme vaihtaa termostaatin lämmonmittauksen vanhan koulukunnan menetelmiin, riittää yksi muutos:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Muutos Lampomittari.js koodiin
-module.exports = ElohopeaLampomittari;
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Vielä parempaa - voimme käyttää koko Lampomittari.js-tiedostoa yhtenä suurena &amp;ldquo;dispatchina&amp;rdquo;. Tällöin kaikki eri tyyppiset mittarit elävät omissa tiedostoissaan, ja Lampomittari.js-tiedoston tehtäväksi jää valita niistä yksi ja tarjota sitä ulkopuolisille &amp;ldquo;Lampomittari&amp;rdquo;-interfacen nimissä.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// Lampomittari.js
-var ElohopeaMittari = require(&#39;ElohopeaLampomittari&#39;);
-var DigitalMittari  = require(&#39;DigitaalinenLampomittari&#39;);
-var SaunaMittari    = require(&#39;SaunaLampomittari&#39;);
-
-module.exports = SaunaMittari;
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Mutta asiassa on ongelma. Entä jos huoneistoon halutaan &lt;em&gt;useampi&lt;/em&gt; termostaatti? Entä jos eri termostaatit eivät halua käyttää samaa lämmönmittaustapaa?&lt;/p&gt;
-
-&lt;p&gt;Niin kauan kuin Lampomittari.js-tiedosto toimii interfacena, se pystyy tarjoamaan vain yhden tavan mitata lämpötila. Lisäksi tuo tapa on kirjoitettu suoraan lähdekoodiin. Tarkoittaen, että ohjelman ajon aikana tuo valittu tapa on vakio - sitä ei pysty muuttamaan.&lt;/p&gt;
-
-&lt;p&gt;Yksi suht typerä tapa ratkaista ongelma on luoda erillinen Termostaatti-tiedosto jokaista erilaista termostaattia varten:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// ElohopeaTermostaatti.js
-
-var Lampomittari = require(&#39;ElohopeaLampomittari&#39;);
-
-module.exports = Termostaatti;
-
-function Termostaatti() {
-	this.lampomittari = new Lampomittari();
-	this.tuuletus = new Tuuletusjarjestelma();
-	...
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;// DigitaalinenTermostaatti.js
-
-var Lampomittari = require(&#39;DigitaalinenLampomittari&#39;);
-
-module.exports = Termostaatti;
-
-function Termostaatti() {
-	this.lampomittari = new Lampomittari();
-	this.tuuletus = new Tuuletusjarjestelma();
-	...
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevassa ei ole mitään järkeä. Huomattavaa on, että eri tiedostojen välillä vain yksi koodirivi muuttuu - valitun lämpömittarin nimi.&lt;/p&gt;
-
-&lt;p&gt;Parempikin tapa on.&lt;/p&gt;
-
-&lt;h3 id=&#34;tapa-2-riippuvuuksien-injektointi-moduuliin&#34;&gt;Tapa 2 (&amp;ldquo;riippuvuuksien injektointi moduuliin&amp;rdquo;)&lt;/h3&gt;
-
-&lt;p&gt;Kaiken päämääränä on se, ettei meidän tarvitse koskea Termostaatti.js-tiedostoon silloin, kun haluamme vaihtaa termostaatin lämmönmittaustapaa. Yllä saavutimme tavoitteen require-komennon kautta; otimme käyttöön require-toiminnolla Lampomittari.fi -komponentin - joka ei itse asiassa ollut komponentti lainkaan, vaan ainoastaan &lt;em&gt;esitti&lt;/em&gt; komponenttia. Oikea komponentti oli piilossa Lampomittari.js-tiedoston selän takana.&lt;/p&gt;
-
-&lt;p&gt;Vaihtoehtoinen tapa toteuttaa tavoitteemme on yksinkertaisesti syöttää tarvittavat alikomponentit sisään samalla kun luomme termostaattia.&lt;/p&gt;
-
-&lt;p&gt;Huomioitavaa on, että syötämme alikomponentit sisään &lt;em&gt;ohjelman ajon aikana&lt;/em&gt;. Toisin sanoen, valinta käytetyistä alikomponenteista on tiedossa vasta ohjelman ajon aikana.&lt;/p&gt;
-
-&lt;p&gt;Tämä on fundamentaaline ero aiempiin ratkaisuyrityksiimme. Aiemmissa ratkaisuissa valinta oli aina &lt;strong&gt;kirjattu suoraan lähdekoodiin&lt;/strong&gt;.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Termostaatti.js
-
-module.exports = function(lampomittari, tuuletusjarjestelma) {
-	// Onko lampomittari digitaalinen vai elohopea? 
-	// Emme tiedä. Emme välitä.
-	return new Termostaatti(lampomittari, tuuletusjarjestelma);
-}
-
-function Termostaatti(lampomittari, tuuletusjarjestelma) {
-	
-	...
-}
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tämä toimintamalli eroaa aiemmista siten, että Termostaatti ottaa vastaan alikomponentit täysin ulkoa annettuina. Termostaatti.js-tiedoston tehtäväksi jää &lt;em&gt;rakentaa termostaatti kytkemällä ulkoatulevat komponentit osaksi kokonaisuutta&lt;/em&gt;. Tästä ajattelumallista käytetään nimitystä &amp;ldquo;Factory&amp;rdquo; eli tehdas. Termostaatin käyttäjä voi vapaasti syöttää haluamansa lämmönmittausmenetelmän sisään termostaattia projektiin lisätessään.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Asuinhuoneisto.js
-
-var termostaattitehdas = require(&#39;Termostaatti&#39;);
-
-var saunanTermostaatti = termostaattitehdas(new SaunaMittari(), new Tuuletus());
-var eteisenTermostaatti = termostaattitehdas(new ElohopeaMittari(), new Tuuletus());
-
-...
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Luonnollisesti tapojen #1 ja #2 välillä trade-off. Tapa 1 mahdollistaa loppukäyttäjän olevan auvoisen tietämätön mistään termostaatin sisäisistä aspekteista. Loppukäyttäjä vain ottaa termostaatin käyttöönsä, luottaen sen toimintaan. Tapa 2 antaa loppukäyttäjälle mahdollisuuden &lt;em&gt;määritellä kustomoituja&lt;/em&gt; termostaatteja. Loppukäyttäjä voi itse rakentaa haluamansa termostaatin ikäänkuin LEGO-palikoita kokoamalla. Jokaisen palikan hän voi valita itse.&lt;/p&gt;
-
-&lt;p&gt;Ero on vastaava kuin Applen läppärin ja itsekootun pöytätietokoneen välillä. Applen läppäri on käytännössä yksi iso musta laatikko, ja sen sisäisten alikomponenttien muuttaminen vaatii Apple-sertifioidun ammattilaisen apua.&lt;/p&gt;
-
-&lt;p&gt;Itsekoottu pöytäkone taas&amp;hellip; riittää, että ruuvaa sivukannen auki, vetää muistikamman irti, asettaa uuden muistikamman tilalle. Noin kahden minuutin juttu.&lt;/p&gt;
 </description>
     </item>
     
