@@ -99,7 +99,7 @@ var katsoja = new Katsoja(esitys);
 
 // jne...
 
-katsoja->kuole();
+katsoja.kuole();
 
 // Muuttuja "katsoja" kerätään roskiin kunhan se menee out-of-scope.
 
