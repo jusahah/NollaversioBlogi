@@ -68,6 +68,47 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p1/">
+        Yksi taulu, useampi objekti
+      </a>
+    </h1>
+
+    <span class="post-date">Mon, Oct 3, 2016</span>
+
+    <p>Tietokantapohjaisissa web-applikaatioissa tulee käyttöön aina välillä kätevä konsepti nimeltä &ldquo;Single table inheritance&rdquo;, eli &ldquo;yhden taulun periytyvyys&rdquo;.</p>
+
+<p>Konsepti mahdollistaa useamman eri datatyypin objektin tallennettavan yhteen tietokantatauluun.</p>
+
+<p>Lähtökohtaisesti useamman eri objektin tallennuksessa samaan tauluun <em>ei ole mitään järkeä</em>. Active Record-pohjaisissa järjestelmissä kukin ns. malliobjekti on kytketty pinnan alla yhteen tauluun, ja jos kaksi objektia kytkeytyy samaan tauluun, täytyy niillä olla samanmoiset attribuutit. Tämä siksi, että kukin tietokantataulu sisältää tietyn määrän attribuutteja (sarakkeita), ja tauluun menevän objektin tulee mukauttaa itsensä noihin attribuutteihin.</p>
+
+<p>Esimerkiksi objektiluokan &ldquo;Hevonen&rdquo; ja &ldquo;Tilisiirto&rdquo; kytkeminen osaksi samaa tietokantataulua kuulostaa aika järjettömältä. Hevonen on elävä eläin, Tilisiirto on abstrakti konsepti liittyen pankkitoimintaan. Kovin paljoa yhteistä ei noilla kahdella objektilla ole.</p>
+
+<blockquote>
+<p>Tilanne on vähän sama kuin jos yrittäisit valmistaa kulkuneuvon, joka liikkuu sekä ilmojen halki että vetten alla sukelluksissa. Ehkä saisit sellaisen aikaan, mutta kovin käytännöllinen tuo vehje ei varmasti ole.</p>
+</blockquote>
+
+<p>Mutta entä jos meillä on jokin abstrakti konsepti, josta on mahdollista tuottaa konkreettisia objekteja?</p>
+
+<p>Esimerkkinä vaikka &ldquo;Kommunikaatio&rdquo;. Kommunikaatio on abstrakti konsepti; se kuvaa motiivin vaihtaa informaatiota, mutta ei määrittele <em>miten</em> informaatiota vaihdetaan.</p>
+
+<p>&ldquo;Puhelin&rdquo; puolestaan on konkreettinen objekti, joka menettelee miten informaatiota vaihdetaan.</p>
+
+<p>Samoin on &ldquo;Savumerkki&rdquo;. Samoin on &ldquo;Valomerkki&rdquo;. Kaikki nuo tarjoavat <em>menetelmän</em> suorittaa käytännön maailmassa konsepti &ldquo;Kommunikaatio&rdquo;.</p>
+
+<p>Kuvitellaan sitten, että meillä on Kommunikaatio-niminen luokka. Tuohon luokkaan on kytketty tietokantataulu &ldquo;kommunikaatiot&rdquo;.</p>
+
+<p><strong>Nyt suuri kysymys</strong>: miten saamme järkevästi kommunikaatiot-tauluun talletettua erilaisia kommunikaatiovälineitä?</p>
+
+<p>Toinen suuri kysymys: miksi haluaisimme tehdä niin? Miksi emme vain loisi uutta tietokantataulua jokaista kommunikaatiovälinettä varten? Esim. &ldquo;Puhelin&rdquo; objektia varten taulu &ldquo;puhelimet&rdquo;. Savumerkkiä varten taulu &ldquo;savumerkit&rdquo;.</p>
+
+<p>Eli: <strong>Miten yhdistämme usean eri luokan yhteen tauluun ja miksi haluamme niin tehdä?</strong></p>
+
+<p>(Esimerkki jatkuu huomenna)</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/disposing-resource/">
         Älä kuole ääneti
       </a>
@@ -151,7 +192,7 @@ Katsoja::~Katsoja() {
 
 <p>Tämä destructorin puute on ongelmallista. Kun roskakuski nappaa turhaksi käyneen objektin, objekti ei voi ilmoittaa viimeisenä äännähdyksenään muulle maailmalle että &ldquo;hei, se on menoa nyt!&rdquo;.</p>
 
-<p>Eritoten Javascript-objekti ei kuolemansa hetkellä ajaa koodia, joka vapauttaa objektin omistamat resurssit (esim. teatterivarauksen).</p>
+<p>Eritoten Javascript-objekti ei kuolemansa hetkellä voi ajaa koodia, joka vapauttaa objektin omistamat resurssit (esim. teatterivarauksen).</p>
 
 <p>Käytännössä tämä tarkoittaa, että koodarin täytyy vastaava logiikka ohjelmoida itse ja huolehtia visusti, että objekti <em>tapetaan eksplisiittisesti</em>; ts. objekti tapetaan ohjelmoijan kirjoittaman koodin toimesta.</p>
 
@@ -173,7 +214,7 @@ var katsoja = new Katsoja(esitys);
 
 // jne...
 
-katsoja-&gt;kuole();
+katsoja.kuole();
 
 // Muuttuja &quot;katsoja&quot; kerätään roskiin kunhan se menee out-of-scope.
 

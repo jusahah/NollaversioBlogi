@@ -6,8 +6,46 @@
     <description>Recent content in Laravels on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Tue, 27 Sep 2016 09:44:12 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 03 Oct 2016 18:12:51 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Yksi taulu, useampi objekti</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p1/</link>
+      <pubDate>Mon, 03 Oct 2016 18:12:51 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p1/</guid>
+      <description>&lt;p&gt;Tietokantapohjaisissa web-applikaatioissa tulee käyttöön aina välillä kätevä konsepti nimeltä &amp;ldquo;Single table inheritance&amp;rdquo;, eli &amp;ldquo;yhden taulun periytyvyys&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Konsepti mahdollistaa useamman eri datatyypin objektin tallennettavan yhteen tietokantatauluun.&lt;/p&gt;
+
+&lt;p&gt;Lähtökohtaisesti useamman eri objektin tallennuksessa samaan tauluun &lt;em&gt;ei ole mitään järkeä&lt;/em&gt;. Active Record-pohjaisissa järjestelmissä kukin ns. malliobjekti on kytketty pinnan alla yhteen tauluun, ja jos kaksi objektia kytkeytyy samaan tauluun, täytyy niillä olla samanmoiset attribuutit. Tämä siksi, että kukin tietokantataulu sisältää tietyn määrän attribuutteja (sarakkeita), ja tauluun menevän objektin tulee mukauttaa itsensä noihin attribuutteihin.&lt;/p&gt;
+
+&lt;p&gt;Esimerkiksi objektiluokan &amp;ldquo;Hevonen&amp;rdquo; ja &amp;ldquo;Tilisiirto&amp;rdquo; kytkeminen osaksi samaa tietokantataulua kuulostaa aika järjettömältä. Hevonen on elävä eläin, Tilisiirto on abstrakti konsepti liittyen pankkitoimintaan. Kovin paljoa yhteistä ei noilla kahdella objektilla ole.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Tilanne on vähän sama kuin jos yrittäisit valmistaa kulkuneuvon, joka liikkuu sekä ilmojen halki että vetten alla sukelluksissa. Ehkä saisit sellaisen aikaan, mutta kovin käytännöllinen tuo vehje ei varmasti ole.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Mutta entä jos meillä on jokin abstrakti konsepti, josta on mahdollista tuottaa konkreettisia objekteja?&lt;/p&gt;
+
+&lt;p&gt;Esimerkkinä vaikka &amp;ldquo;Kommunikaatio&amp;rdquo;. Kommunikaatio on abstrakti konsepti; se kuvaa motiivin vaihtaa informaatiota, mutta ei määrittele &lt;em&gt;miten&lt;/em&gt; informaatiota vaihdetaan.&lt;/p&gt;
+
+&lt;p&gt;&amp;ldquo;Puhelin&amp;rdquo; puolestaan on konkreettinen objekti, joka menettelee miten informaatiota vaihdetaan.&lt;/p&gt;
+
+&lt;p&gt;Samoin on &amp;ldquo;Savumerkki&amp;rdquo;. Samoin on &amp;ldquo;Valomerkki&amp;rdquo;. Kaikki nuo tarjoavat &lt;em&gt;menetelmän&lt;/em&gt; suorittaa käytännön maailmassa konsepti &amp;ldquo;Kommunikaatio&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Kuvitellaan sitten, että meillä on Kommunikaatio-niminen luokka. Tuohon luokkaan on kytketty tietokantataulu &amp;ldquo;kommunikaatiot&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Nyt suuri kysymys&lt;/strong&gt;: miten saamme järkevästi kommunikaatiot-tauluun talletettua erilaisia kommunikaatiovälineitä?&lt;/p&gt;
+
+&lt;p&gt;Toinen suuri kysymys: miksi haluaisimme tehdä niin? Miksi emme vain loisi uutta tietokantataulua jokaista kommunikaatiovälinettä varten? Esim. &amp;ldquo;Puhelin&amp;rdquo; objektia varten taulu &amp;ldquo;puhelimet&amp;rdquo;. Savumerkkiä varten taulu &amp;ldquo;savumerkit&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Eli: &lt;strong&gt;Miten yhdistämme usean eri luokan yhteen tauluun ja miksi haluamme niin tehdä?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;(Esimerkki jatkuu huomenna)&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Laravel jonottaa puolestasi</title>
@@ -1938,168 +1976,6 @@ public function index() {
 &lt;p&gt;Kuten aina, kyseessä on tradeoff. Näkymälaatijalla saadaan vähennettyä koodin duplikaatiota. Mutta huonona puolena on, että tietyn näkymätiedoston käytettävissä oleva data ei enää ole nähtävillä yhdessä koodilokaatiossa.&lt;/p&gt;
 
 &lt;p&gt;Ratkaisussa #1 kaikki näkymälle tarjottava data tuli Controller-tiedostosta. Ratkaisussa #2 osa datasta tulee Controllerista, toinen osa näkymälaatijalta.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Käyttöliittymän testaus (automatisointi)</title>
-      <link>http://www.nollaversio.fi/blog/public/laravel/testing-routes/</link>
-      <pubDate>Wed, 27 Jul 2016 06:11:10 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/laravel/testing-routes/</guid>
-      <description>
-
-&lt;p&gt;Perinteisen web-applikaation peruspointti on tarjota käyttäjilleen mahdollisuus vuorovaikuttaa itsensä (&lt;em&gt;esim. kerätä tänään dataa talteen, ja hyödyntää kerättyä dataa huomenna&lt;/em&gt;) ja/tai toistensa kanssa web-applikaation kautta.&lt;/p&gt;
-
-&lt;p&gt;Jotta tämä vuorovaikutus onnistuisi, täytyy web-applikaation tarjota jonkinmoinen käyttöliittymä.&lt;/p&gt;
-
-&lt;p&gt;Tyypillisessä tietokantapohjaisessa web-sovelluksesta tuo käyttöliittymä on HTML-sivu, joka sisältää linkit applikaation tarjoamiin toiminnallisuuksiin. Linkkejä klikkailemalla voi vuorovaikuttaa applikaation kanssa. Malliesimerkki tälläisestä applikaatiosta on vaikkapa Wikipedia.&lt;/p&gt;
-
-&lt;p&gt;Vuorovaikutus ihmiskäyttäjän kanssa on monen web-sovelluksen keskeisin huolenaihe. Toki on erikseen web-sovellukset, jotka &lt;em&gt;eivät&lt;/em&gt; vuorovaikuta ihmiskäyttäjän kanssa, vaan käyvät tiedonvaihtoa toisen web-sovelluksen kanssa. Malliesimerkki tälläisestä applikaatiosta on osakepörssin rajapinta. Tuo rajapinta käy keskustelua muiden applikaatioiden - mm. uutissivustojen pörssikurssien päivityksestä vastaavien ohjelmien - kanssa.&lt;/p&gt;
-
-&lt;h3 id=&#34;voiko-tietokoneohjelma-simuloida-ihmiskäyttäjää&#34;&gt;Voiko tietokoneohjelma simuloida ihmiskäyttäjää?&lt;/h3&gt;
-
-&lt;p&gt;Koska useimmilla applikaatioilla kommunikaatio ihmiskäyttäjän kanssa on keskiössä, on syytä kyetä varmistamaan, että käyttöliittymä toimii kuin vettä vain. Laravellin tapauksessa tämä varmistus tarkoittaa, että kukin HTML-sivu - joka siis edustaa tiettyä käyttöliittymän osaa - sisältää tarvittavat toiminnot, jotta applikaation käyttö on sujuvaa.&lt;/p&gt;
-
-&lt;p&gt;Mutta miten varmistua siitä, että käyttöliittymä tarjoaa tarvittavat toiminnot? Yksi tapa on silmämääräisesti selata käyttöliittymää. Ihmisaivot tekevät automaattisesti näin saapuessaan esim. Wikipedian etusivulle - luomme ikäänkuin &lt;em&gt;mentaalisen kartan&lt;/em&gt; kaikista applikaation tarjoamista mahdollisuuksista.&lt;/p&gt;
-
-&lt;p&gt;Homman voi tietenkin myös automatisoida, ja se kannattaa automatisoida. &lt;strong&gt;Sen sijaan että silmämääräisesti tarkistaisimme käyttöliittymän, annetaan erillisen tietokoneohjelman tarkistaa käyttöliittymä.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Tätä on automatisoitu käyttöliittymätestaus.&lt;/p&gt;
-
-&lt;h3 id=&#34;mitä-testataan-ja-miten&#34;&gt;Mitä testataan ja miten?&lt;/h3&gt;
-
-&lt;p&gt;Käyttöliittymätestauksessa pääpaino on varmistaa, että applikaation käyttöliittymä tarjoaa tarvittavat toiminnot, jotta applikaation käyttö on sujuvaa.&lt;/p&gt;
-
-&lt;p&gt;Tyypillisen web-applikaation käyttöliittymä koostuu isosta kasasta &lt;em&gt;HTML-sivuja&lt;/em&gt;. Täten web-applikaation kohdalla käyttöliittymätestaus tarkoittaa kutakuinkin HTML-sivujen sisällön testausta. Eli varmistetaan, että kukin HTML-sivu sisältää tarvittavat &lt;em&gt;toiminnot, tiedot ja ohjeet&lt;/em&gt;, jotta vuorovaikutus applikaation kanssa onnistuu odotetusti.&lt;/p&gt;
-
-&lt;p&gt;Kirjoitetaan ensimmäinen testi. Oletetaan, että olemme rakentamassa uutta Wikipediaa. Wikipedian keskiössä on &lt;em&gt;artikkeli&lt;/em&gt;, joten on luontevaa aloittaa ohjelmoimalla tarvittavat toiminnot yksittäisen artikkelin lukemista ja ylläpitoa varten.&lt;/p&gt;
-
-&lt;p&gt;Mitä toimintoja haluamme kytkeä osaksi konseptia nimeltä &lt;em&gt;artikkeli&lt;/em&gt;? Ainakin mahdollisuuden &lt;em&gt;lukea&lt;/em&gt; artikkeli. Lisäksi olisi kiva voida &lt;em&gt;muokata&lt;/em&gt; artikkelia. Aloitetaan näistä kahdesta.&lt;/p&gt;
-
-&lt;p&gt;Entä millainen käyttöliittymän tulee olla, jotta &lt;em&gt;lukeminen&lt;/em&gt; ja &lt;em&gt;muokkaaminen&lt;/em&gt; onnistuvat?&lt;/p&gt;
-
-&lt;p&gt;Lukemista varten tarvitsemme jotain mitä lukea. Eli artikkelin sisällön tulee olla ihmissilmin nähtävillä.&lt;/p&gt;
-
-&lt;p&gt;Muokkausta varten tarvitsemme jonkinlaisen linkin tai nappulan, jonka kautta siirtyä artikkelin muokkaustilaan.&lt;/p&gt;
-
-&lt;p&gt;Testimme näyttää yleisilmeeltään tältä.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-use \Integrated\Extensions\Laravel as IntegrationTest;
-
-class ArtikkeliTesti extends IntegrationTest {
-
-	public function testaaLukuMahdollisuus {
-
-	}
-
-	public function testaaMuokkausMahdollisuus {
-
-
-	}
-	
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Seuraavaksi on syytä miettiä, miten nuo testit suoritetaan. Käyttöliittymätestauksen koko pointti on, että testaus suoritetaan ikäänkuin ihmiskäyttäjä toimisi testaajana. Oikeasti tuon testauksen tekee tietokoneohjelma, mutta tietokoneohjelma simuloi ihmisen toimintaa.&lt;/p&gt;
-
-&lt;p&gt;Paras tapa suorittaa käyttöliittymätestaus on siis toistaa niitä toimintoja, joita oikea ihmiskäyttäjä tekisi mikäli käyttäisi applikaatiota.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// ArtikkeliTesti.php
-
-use \Integrated\Extensions\Laravel as IntegrationTest;
-
-class ArtikkeliTesti extends IntegrationTest {
-
-	public function testaaLukuMahdollisuus {
-			// Simuloidaan ihmiskäyttäjää
-			
-
-			// Kirjoita selaimen osoiteriville tietyn artikkelin www-osoite
-			$this-&amp;gt;visit(&#39;/artikkelit/seppo-raty&#39;);
-
-			// Nyt edessämme pitäisi olla Seppo Rädystä kertova artikkeli
-			$this-&amp;gt;seePageIs(&#39;seppo-raty&#39;);
-
-			// Artikkelin tulisi mainita hänen urheilulajinsa...
-			$this-&amp;gt;see(&#39;keihäänheitto&#39;);
-
-			// ... ja muutama kuolematon sitaatti
-			$this-&amp;gt;see(&#39;Saksa on paska maa&#39;);
-			$this-&amp;gt;see(&#39;Vittuillakseni heilutin&#39;);
-
-			// Jos kaikki ylläolevat ehdot täyttyvät, voimme
-			// luottaa, että kyseessä on Rädyn wikipedia-artikkeli.
-
-	}
-
-	public function testaaMuokkausMahdollisuus {
-			// Simuloidaan ihmiskäyttäjää
-			
-			// Kirjoita selaimen osoiteriville tietyn artikkelin www-osoite
-			$this-&amp;gt;visit(&#39;/artikkelit/seppo-raty&#39;);
-
-			// Emme ole kiinnostuneita artikkelin sisällöstä, mutta
-			// olemme kiinnostuneita muokkausmahdollisuudesta.
-
-			// Varmistetaan, että &amp;quot;Muokkaa&amp;quot;-nappula on olemassa, ja että
-			// sitä klikkaamalla avautuu muokkausnäkymä!
-			$this-&amp;gt;click(&#39;Muokkaa&#39;)-&amp;gt;seePageIs(&#39;/seppo-raty/muokkaa&#39;);
-
-			// Jos ylläolevat ehdot täyttyvät, voimme luottaa,
-			// että muokkaustoiminto on olemassa.
-
-	}
-	
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevat kaksi testiä - luku ja muokkaus - voidaan suorittaa automatisoidusti. Ihmiskäyttäjää ei tarvita. Testiä varten luotu tietokoneohjelma ajaa ylläolevat testit, ja varmistaa, että kaikki oletukset/ehdot täyttyvät. Mikäli jokin ehto ei täyty, asiasta raportoidaan eteenpäin (esim. kehittäjälle).&lt;/p&gt;
-
-&lt;p&gt;Ylläolevan kaltaisilla yksittäisillä testeillä voimme varmistaa pala palalta koko käyttöliittymän toiminnan. Entä jos haluamme testata toiminnon &lt;em&gt;uuden artikkelin luonti&lt;/em&gt;? Se onnistuu näin.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// ArtikkeliTesti.php
-
-// Muut testit kuten ennenkin
-
-public function testaaArtikkelinLuonti() {
-	
-	// Artikkelin luontia varten käyttäjälle näytetään
-	// HTML-lomake, johon artikkelin tiedot täytetään.
-
-	$this-&amp;gt;visit(&#39;/luo-artikkeli&#39;)-&amp;gt;andSee(&#39;artikkeliluonti&#39;);
-
-	// Varmista, että HTML-lomake on olemassa yrittämällä täyttää se...
-	$this
-	-&amp;gt;type(&#39;Nollaversio IT&#39;, &#39;#artikkelin_nimi&#39;) // Kirjoita nimi
-	-&amp;gt;type(&#39;Ihan ok firma.&#39;, &#39;#artikkelin_teksti&#39;) // Kirjoita sisältö
-	-&amp;gt;press(&#39;Luo artikkeli&#39;); // Paina &amp;quot;Submit&amp;quot;-nappulaa
-	-&amp;gt;andSee(&#39;Uusi artikkeli luotu!&#39;) // Varmista luonnin onnistuminen.
-	// Varmista että olemme juuri luodun artikkelin sivulla.
-	-&amp;gt;onPage(&#39;/artikkelit/nollaversio-it&#39;); 
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevan kaltaisilla testeillä voimme testata ilman epäluotettava ihmissilmän tarvetta koko käyttöliittymämme!&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: on syytä huomata, että käyttöliittymätestaus keskittyy &lt;em&gt;olennaisten seikkojen&lt;/em&gt; testaamiseen. Se ei testaa sitä, onko sivun värimaailma &amp;lsquo;ihmissilmää miellyttävä&amp;rsquo;, onko fonttikoko sopiva tai ovatko sivun eri komponentit nätisti rivissä.&lt;/p&gt;
-
-&lt;p&gt;Automatisoitu testaus keskittyy testaamaan aspekteja, jotka ovat a) ylipäätänsä testattavissa ja b) elintärkeitä applikaation toiminnan kannalta.&lt;/p&gt;
-
-&lt;p&gt;Värimaailma &lt;em&gt;ei ole&lt;/em&gt; elintärkeä applikaation toiminnan kannalta, ainakaan Wikipedian tapauksessa. Sen sijaan mahdollisuus muokata artikkelia &lt;em&gt;on&lt;/em&gt; elintärkeä applikaation toiminnan kannalta.&lt;/p&gt;
-
-&lt;p&gt;Jokaisella applikaatiolla on tietenkin omat reunaehtonsa sen suhteen, mitkä aspektit ovat tärkeitä ja mitkä eivät.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>

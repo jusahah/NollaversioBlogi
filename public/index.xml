@@ -6,8 +6,46 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Wed, 28 Sep 2016 10:08:17 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 03 Oct 2016 18:12:51 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Yksi taulu, useampi objekti</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p1/</link>
+      <pubDate>Mon, 03 Oct 2016 18:12:51 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p1/</guid>
+      <description>&lt;p&gt;Tietokantapohjaisissa web-applikaatioissa tulee käyttöön aina välillä kätevä konsepti nimeltä &amp;ldquo;Single table inheritance&amp;rdquo;, eli &amp;ldquo;yhden taulun periytyvyys&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Konsepti mahdollistaa useamman eri datatyypin objektin tallennettavan yhteen tietokantatauluun.&lt;/p&gt;
+
+&lt;p&gt;Lähtökohtaisesti useamman eri objektin tallennuksessa samaan tauluun &lt;em&gt;ei ole mitään järkeä&lt;/em&gt;. Active Record-pohjaisissa järjestelmissä kukin ns. malliobjekti on kytketty pinnan alla yhteen tauluun, ja jos kaksi objektia kytkeytyy samaan tauluun, täytyy niillä olla samanmoiset attribuutit. Tämä siksi, että kukin tietokantataulu sisältää tietyn määrän attribuutteja (sarakkeita), ja tauluun menevän objektin tulee mukauttaa itsensä noihin attribuutteihin.&lt;/p&gt;
+
+&lt;p&gt;Esimerkiksi objektiluokan &amp;ldquo;Hevonen&amp;rdquo; ja &amp;ldquo;Tilisiirto&amp;rdquo; kytkeminen osaksi samaa tietokantataulua kuulostaa aika järjettömältä. Hevonen on elävä eläin, Tilisiirto on abstrakti konsepti liittyen pankkitoimintaan. Kovin paljoa yhteistä ei noilla kahdella objektilla ole.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Tilanne on vähän sama kuin jos yrittäisit valmistaa kulkuneuvon, joka liikkuu sekä ilmojen halki että vetten alla sukelluksissa. Ehkä saisit sellaisen aikaan, mutta kovin käytännöllinen tuo vehje ei varmasti ole.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Mutta entä jos meillä on jokin abstrakti konsepti, josta on mahdollista tuottaa konkreettisia objekteja?&lt;/p&gt;
+
+&lt;p&gt;Esimerkkinä vaikka &amp;ldquo;Kommunikaatio&amp;rdquo;. Kommunikaatio on abstrakti konsepti; se kuvaa motiivin vaihtaa informaatiota, mutta ei määrittele &lt;em&gt;miten&lt;/em&gt; informaatiota vaihdetaan.&lt;/p&gt;
+
+&lt;p&gt;&amp;ldquo;Puhelin&amp;rdquo; puolestaan on konkreettinen objekti, joka menettelee miten informaatiota vaihdetaan.&lt;/p&gt;
+
+&lt;p&gt;Samoin on &amp;ldquo;Savumerkki&amp;rdquo;. Samoin on &amp;ldquo;Valomerkki&amp;rdquo;. Kaikki nuo tarjoavat &lt;em&gt;menetelmän&lt;/em&gt; suorittaa käytännön maailmassa konsepti &amp;ldquo;Kommunikaatio&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Kuvitellaan sitten, että meillä on Kommunikaatio-niminen luokka. Tuohon luokkaan on kytketty tietokantataulu &amp;ldquo;kommunikaatiot&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Nyt suuri kysymys&lt;/strong&gt;: miten saamme järkevästi kommunikaatiot-tauluun talletettua erilaisia kommunikaatiovälineitä?&lt;/p&gt;
+
+&lt;p&gt;Toinen suuri kysymys: miksi haluaisimme tehdä niin? Miksi emme vain loisi uutta tietokantataulua jokaista kommunikaatiovälinettä varten? Esim. &amp;ldquo;Puhelin&amp;rdquo; objektia varten taulu &amp;ldquo;puhelimet&amp;rdquo;. Savumerkkiä varten taulu &amp;ldquo;savumerkit&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Eli: &lt;strong&gt;Miten yhdistämme usean eri luokan yhteen tauluun ja miksi haluamme niin tehdä?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;(Esimerkki jatkuu huomenna)&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Älä kuole ääneti</title>
@@ -91,7 +129,7 @@ Katsoja::~Katsoja() {
 
 &lt;p&gt;Tämä destructorin puute on ongelmallista. Kun roskakuski nappaa turhaksi käyneen objektin, objekti ei voi ilmoittaa viimeisenä äännähdyksenään muulle maailmalle että &amp;ldquo;hei, se on menoa nyt!&amp;rdquo;.&lt;/p&gt;
 
-&lt;p&gt;Eritoten Javascript-objekti ei kuolemansa hetkellä ajaa koodia, joka vapauttaa objektin omistamat resurssit (esim. teatterivarauksen).&lt;/p&gt;
+&lt;p&gt;Eritoten Javascript-objekti ei kuolemansa hetkellä voi ajaa koodia, joka vapauttaa objektin omistamat resurssit (esim. teatterivarauksen).&lt;/p&gt;
 
 &lt;p&gt;Käytännössä tämä tarkoittaa, että koodarin täytyy vastaava logiikka ohjelmoida itse ja huolehtia visusti, että objekti &lt;em&gt;tapetaan eksplisiittisesti&lt;/em&gt;; ts. objekti tapetaan ohjelmoijan kirjoittaman koodin toimesta.&lt;/p&gt;
 
@@ -113,7 +151,7 @@ var katsoja = new Katsoja(esitys);
 
 // jne...
 
-katsoja-&amp;gt;kuole();
+katsoja.kuole();
 
 // Muuttuja &amp;quot;katsoja&amp;quot; kerätään roskiin kunhan se menee out-of-scope.
 
@@ -1501,124 +1539,6 @@ Promise.try(function() {
 
 &lt;blockquote&gt;
 &lt;p&gt;Loppukaneetti: Ihannearkkitehtuurissa myös siirtokohtaisen ajan ylitys muunnettaisiin domain-spesifiin virhetyyppiin. Tällöin emme lupausketjun lopussa nappaisi kiinni geneeristä TimeoutErroria lainkaan, vaan esim. KokonaisPeliAikaYlitetty-virheen.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Ketjutettava rajapinta</title>
-      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/</link>
-      <pubDate>Mon, 22 Aug 2016 03:08:34 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/</guid>
-      <description>&lt;p&gt;Ohjelmoinnin puolella on olemassa kätevä konsepti nimeltä &amp;ldquo;Fluent interface&amp;rdquo;. Paras suomennos tuolle lienee &amp;ldquo;ketjutettava rajapinta&amp;rdquo;, joten käytän sitä.&lt;/p&gt;
-
-&lt;p&gt;Mikä tai millainen on ketjutettava rajapinta? Se on yksinkertaisesti rajapinta, joka mahdollistaa rajapintakutsujen ketjutuksen.&lt;/p&gt;
-
-&lt;p&gt;Otetaan esimerkkinä rajapinnasta, joka &lt;strong&gt;ei&lt;/strong&gt; ole ketjutettava:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Rajapintaluokan &#39;Valot&#39; kautta voi hallita talon valokatkaisijoita
-class Valot {
-
-  // Kukin toggle-metodi sytyttää valot jos ovat pois päältä,
-  // ja sammuttaa valot jos ovat päällä.
-
-  public function toggleVessa() {/*...*/}
-  public function toggleKeittio() {/*...*/}
-  public function toggleOlohuone() {/*...*/}
-  public function toggleMakuuhuone() {/*...*/}
-  public function toggleParveke() {/*...*/}
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-$valot = new Valot();
-
-// Kutsutaan metodeja
-$valot-&amp;gt;toggleKeittio();
-$valot-&amp;gt;toggleVessa();
-$valot-&amp;gt;toggleMakuuhuone();
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Yllä meillä on tavallinen rajapinta. Kutsumme sitä metodi kerrallaan. Koska yksikään metodikutsu ei &lt;em&gt;palauta mitään palautusarvoa&lt;/em&gt; - tai ainakaan emme mitään palautusarvoa ota vastaan - voimme olettaa, että kukin metodikutsu suorittaa jonkin ulkoisen muutoksen (engl. side effect). Jos metodikutsut eivät tuota ulkoisia muutoksia, koko rajapinnan käyttö on yksinkertaisesti turhaa.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Mikäli metodikutsu ei palauta mitään eikä muokkaa yhdenkään ulkoisen tilamuuttujan arvoa, kyseessä on täysin tarpeeton metodikutsu. Sillä KAIKKI metodikutsut tehdään jomman kumman syyn takia; joko ne 1) &lt;em&gt;palauttavat jonkin arvon&lt;/em&gt;, tai ne 2) &lt;em&gt;muokkaavat jotakin ulkoista tilamuuttujaa&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Mitään kolmatta vaihtoehtoa ei ole olemassa, esimerkiksi tulosteen kirjoittaminen käyttäjän nähtäville on versio vaihtoehdosta #2 - siinä tietokoneen näyttöpäätteen tilamuuttujaa (= RAM-keskusmuistin sitä muistialuetta, johon kunkin pikselin tila on tallennettu) muokataan siten, että ihmiskäyttäjä näkee lukea jotain.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Nyt voimme muuntaa ylläolevan koodin &lt;em&gt;fluent interface&lt;/em&gt;:ksi eli ketjutettavaksi rajapinnaksi hyvin yksinkertaisesti.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-class Valot {
-
-  public function toggleVessa() {
-    //...
-    // Palautusarvo on oleellista ketjutuksen kannalta. 
-    // Palauttamalla kutsuttavan objektin voimme samantien kutsua sen
-    // jotain metodia (vaikka tätä toggleVessa-metodia!) heti uudestaan.
-    return $this;
-  }
-  public function toggleKeittio() {
-    //...
-    return $this;
-  }
-  public function toggleOlohuone() {
-    //...
-    return $this;
-  }
-  public function toggleMakuuhuone() {
-    //...
-    return $this;
-  }
-  public function toggleParveke() {
-    //...
-    return $this;
-  }
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-
-$valot = new Valot();
-
-// Kutsutaan metodeja
-$valot-&amp;gt;toggleKeittio()-&amp;gt;toggleVessa()-&amp;gt;toggleMakuuhuone();
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Yltä näemme mitä ketjutus tismalleen tarkoittaa; voimme kunkin metodikutsun palautusarvon &lt;em&gt;kierrättää&lt;/em&gt; ja kutsua sen metodia. Ja koska &lt;strong&gt;kunkin Valot-luokan metodikutsun palautusarvo on Valot-objekti itse&lt;/strong&gt;, ketjutus johtaa identtiseen lopputulemaan alkuperäisen esimerkin kanssa.&lt;/p&gt;
-
-&lt;p&gt;Itseasiassa seuraavat kolme koodipätkää johtavat kaikki identtiseen lopputulemaan:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Tapa 1
-$valot-&amp;gt;toggleKeittio()-&amp;gt;toggleParveke()-&amp;gt;toggleKeittio();
-
-// Tapa 2
-$valot-&amp;gt;toggleKeittio();
-$valot-&amp;gt;toggleParveke();
-$valot-&amp;gt;toggleKeittio();
-
-// Tapa 3
-// Tämä on huonoin tapa mitä tulee koodin selkeyteen, mutta toimii yhtäkaikki.
-$valotKopio1 = $valot-&amp;gt;toggleKeittio();
-$valotKopio2 = $valotKopio1-&amp;gt;toggleParveke();
-$valotKopio3 = $valotKopio2-&amp;gt;toggleKeittio();
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Mitä etua ketjutus sitten tuo? Niin. Ei oikein mitään. Siinä säästää muutaman hassun merkin kun ei tarvitse toistaa &amp;lsquo;$valot&amp;rsquo;-sanaa uudestaan ja uudestaan. Ei kovin merkittävä hyöty.&lt;/p&gt;
-
-&lt;p&gt;Jonkun mielestä ketjutus tekee koodista nätimpää tai helpommin luettavaa. Olen samaa mieltä, mutta kyseessä on ihan puhdas mielipidekysymys.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Huomio! Tässä ketjutettava rajapinta esiteltiin PHP-kielen kautta. Ketjutuksen konsepti ei ole sidonnainen PHP-kieleen, vaan pätee kutakuinkin kaikissa funktiokutsuja tukevissa ohjelmointikielissä.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>

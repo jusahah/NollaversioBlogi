@@ -76,7 +76,7 @@ Mutta Javascriptin puolella konsepti ei toimi, sillä Javascript ei tunne *destr
 
 Tämä destructorin puute on ongelmallista. Kun roskakuski nappaa turhaksi käyneen objektin, objekti ei voi ilmoittaa viimeisenä äännähdyksenään muulle maailmalle että "hei, se on menoa nyt!".
 
-Eritoten Javascript-objekti ei kuolemansa hetkellä ajaa koodia, joka vapauttaa objektin omistamat resurssit (esim. teatterivarauksen).
+Eritoten Javascript-objekti ei kuolemansa hetkellä voi ajaa koodia, joka vapauttaa objektin omistamat resurssit (esim. teatterivarauksen).
 
 Käytännössä tämä tarkoittaa, että koodarin täytyy vastaava logiikka ohjelmoida itse ja huolehtia visusti, että objekti *tapetaan eksplisiittisesti*; ts. objekti tapetaan ohjelmoijan kirjoittaman koodin toimesta. 
 

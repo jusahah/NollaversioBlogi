@@ -146,7 +146,7 @@ Katsoja::~Katsoja() {
 
 <p>Tämä destructorin puute on ongelmallista. Kun roskakuski nappaa turhaksi käyneen objektin, objekti ei voi ilmoittaa viimeisenä äännähdyksenään muulle maailmalle että &ldquo;hei, se on menoa nyt!&rdquo;.</p>
 
-<p>Eritoten Javascript-objekti ei kuolemansa hetkellä ajaa koodia, joka vapauttaa objektin omistamat resurssit (esim. teatterivarauksen).</p>
+<p>Eritoten Javascript-objekti ei kuolemansa hetkellä voi ajaa koodia, joka vapauttaa objektin omistamat resurssit (esim. teatterivarauksen).</p>
 
 <p>Käytännössä tämä tarkoittaa, että koodarin täytyy vastaava logiikka ohjelmoida itse ja huolehtia visusti, että objekti <em>tapetaan eksplisiittisesti</em>; ts. objekti tapetaan ohjelmoijan kirjoittaman koodin toimesta.</p>
 
@@ -168,7 +168,7 @@ var katsoja = new Katsoja(esitys);
 
 // jne...
 
-katsoja-&gt;kuole();
+katsoja.kuole();
 
 // Muuttuja &quot;katsoja&quot; kerätään roskiin kunhan se menee out-of-scope.
 
