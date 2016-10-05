@@ -6,8 +6,100 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Tue, 04 Oct 2016 17:40:46 +0300</lastBuildDate>
+    <lastBuildDate>Wed, 05 Oct 2016 18:05:16 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Laravel ja pehmeä tuho</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/soft-delete/</link>
+      <pubDate>Wed, 05 Oct 2016 18:05:16 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/soft-delete/</guid>
+      <description>
+
+&lt;p&gt;Laravel tarjoaa ohjelmoijan käyttöön konseptin nimeltä &amp;ldquo;soft delete&amp;rdquo;. Suomennan tuo &amp;ldquo;pehmeäksi tuhoksi&amp;rdquo;, koska termi on niin hauska.&lt;/p&gt;
+
+&lt;p&gt;Pehmeä tuho tarkoittaa seuraavaa: kun tietue poistetaan tietokannasta, sitä &lt;em&gt;ei oikeasti poistetakaan&lt;/em&gt;, se vain merkitään näkymättömäksi.&lt;/p&gt;
+
+&lt;p&gt;Vastakohtana on tietenkin &amp;ldquo;kova tuho&amp;rdquo; - eli siis tuikitavallinen poisto-operaatio, jossa tietue ihan aidosti poistetaan tietokannasta.&lt;/p&gt;
+
+&lt;h3 id=&#34;miksi-pehmeä-tuho&#34;&gt;Miksi pehmeä tuho?&lt;/h3&gt;
+
+&lt;p&gt;Herää kysymys, että mitä järkeä koko pehmeän tuhon konseptissa on? Poistamme tietueen, mutta emme poistakaan sitä. Häh? Miksi halusimme alunperinkään poistaa, jos emme sitten halunneetkaan.&lt;/p&gt;
+
+&lt;p&gt;Kaiken ytimessä on ajatus siitä, että &lt;em&gt;applikaation&lt;/em&gt; tasolla tietue on saavuttamattomissa. Applikaatio siis elää käsityksessä, että tietue on ihan oikeasti tuhottu. Samaan aikaan kuitenkin yrityksen muut komponentit - esim. Business Intelligence - haluaa, että tietue on visusti tallessa.&lt;/p&gt;
+
+&lt;p&gt;Tämä eri komponenttien erilainen tarve tietueen olemassaololle johtuu komponenttien eriävistä vaatimuksista:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Applikaation ydinkoodille on ensisijaisen tärkeää, että poistetut tietueet ovat poissa. Eli että ne eivät väärään aikaan yhtäkkiä hyppää silmille.&lt;/p&gt;
+
+&lt;p&gt;Business Intelligence väelle taas on tärkeää, että jos jokin tietue on &lt;em&gt;kerran asuttanut applikaation tietokantaa&lt;/em&gt;, on tuosta tietueesta &lt;em&gt;ikuinen jälki jossain&lt;/em&gt;. Tällä tavoin mitään informaatiota ei huku bittiavaruuteen; jokainen tietue on ikuisesti tallessa.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Oleellista on, että yksi ja sama tietokanta voi pehmeää tuhoa hyväksikäyttäen tarjota soveltuvat toiminnallisuudet sekä &lt;em&gt;applikaatiokoodille&lt;/em&gt; että &lt;em&gt;Business Intelligence väelle&lt;/em&gt;!&lt;/p&gt;
+
+&lt;p&gt;Tämä onnistuu yksinkertaisesti siten, että kaikki applikaatiokoodin haut tietokantaan ajetaan yhdessä kontekstissa, ja kaikki Business Intelligencen haut ajetaan toisessa kontekstissa.&lt;/p&gt;
+
+&lt;p&gt;Yksinkertaisemmin: &lt;strong&gt;applikaatiokoodin haut &lt;em&gt;jättävät huomioimatta pehmeästi tuhotut tietueet&lt;/em&gt;, kun taas Business Intelligence &lt;em&gt;sisällyttää kaikki tietueet&lt;/em&gt;.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;toteutus-laravellissa&#34;&gt;Toteutus Laravellissa&lt;/h3&gt;
+
+&lt;p&gt;Laravellin puolella pehmeän tuhon käyttö on helppoa. Käytännössä käyttöönotossa on vain kaksi vaihetta:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Käytettävään tietokantatauluun lisätään &amp;ldquo;deleted_at&amp;rdquo;-sarake.&lt;/li&gt;
+&lt;li&gt;Käytettävä malli ottaa käyttöön &lt;em&gt;SoftDeletes&lt;/em&gt;-toiminnallisuuden.&lt;/li&gt;
+&lt;li&gt;Käytettävän mallin tulee sisältää &lt;em&gt;dates&lt;/em&gt;-attribuutin.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Kas, näin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+// App\Models\Pankkitili.php
+
+class Pankkitili extends Model
+{
+  // Vaatimus 2.
+  use SoftDeletes;
+  // Vaatimus 3.
+  protected $dates = [&#39;deleted_at&#39;];
+
+  // jne. muut mallin normimetodit
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Vaatimuksen nro 1 täyttämiseksi meidän tulee luoda taulu, jossa on deleted_at-sarake. Esimerkiksi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;
+// Taulu: pankkitilit
+
+
+id | tilinumero | omistaja    | created_at | deleted_at
+-- | ---------- | ----------- | ---------- | ----------
+1  | FI23932118 | 070278-262M | 2016-10-01 | 2016-10-03
+2  | FI88001921 | 261188-771S | 2015-02-27 | NULL
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa taulussa sarake &lt;em&gt;deleted_at&lt;/em&gt; kertoo milloin tietue on &amp;ldquo;tuhottu&amp;rdquo;, eli siis pehmeästi tuhottu.&lt;/p&gt;
+
+&lt;p&gt;Jos sarakkeen arvo on NULL, tietue on vielä olemassa. Tällöin siis sekä Business Intelligence että applikaatiokoodi näkevät tietueen.&lt;/p&gt;
+
+&lt;p&gt;Applikaatiokoodin puolella Laravel huolehtii siitä, että pehmeästi tuhotut mallit eivät tule mukaan hakutuloksiin.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;// Koska vain malli ID #2 on applikaation näkökulmasta olemassa,
+// seuraava haku palauttaa lukumääräksi 1.
+Pankkitili::all()-&amp;gt;count(); // 1
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Soft Delete-toiminnallisuus mahdollistaa helposti &lt;em&gt;append-only&lt;/em&gt;-tyylisen tiedonhallintaratkaisun luomisen. &lt;em&gt;Append-only&lt;/em&gt;-ratkaisussa mitään tietoa ei koskaan poisteta; vanhentunut tieto yksinkertaisesti merkitään jollain ruksilla (&lt;em&gt;deleted_at&lt;/em&gt;), joka kertoo, että tietoa ei pidä sisällytettävän applikaation tietokantahakuihin.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Yksi taulu, useampi objekti (part 2)</title>
@@ -1414,131 +1506,6 @@ class AsetaKieli {
 
 &lt;p&gt;Nyrkkisääntönä on, että koodin muuttujien nimet määritetään englanniksi, koska valtaosa ohjelmoijista käyttää englantia työkielenään. Mikään pakko näin ei ole toimia tietenkään.&lt;/p&gt;
 &lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Laravel injektoi mallin puolestasi</title>
-      <link>http://www.nollaversio.fi/blog/public/laravel/implicit-binding/</link>
-      <pubDate>Wed, 24 Aug 2016 06:36:45 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/laravel/implicit-binding/</guid>
-      <description>
-
-&lt;p&gt;Laravel 5.2 -kehys toi mukanaan uuden ominaisuuden nimeltä &lt;em&gt;implicit model binding&lt;/em&gt;. Suomennos on vaikea; &amp;ldquo;automaattinen mallin injektointi&amp;rdquo; kuvaa mielestäni parhaiten tuota konseptia.&lt;/p&gt;
-
-&lt;p&gt;Sillä konseptin avulla voi pistää Laravellin tekemän raskas työ ja etsimään sopiva malliluokka, luomaan sen pohjalta uusi objekti, ja tarjoamaan objekti ohjelmoijan käyttöön.&lt;/p&gt;
-
-&lt;p&gt;Ero implisiittisen mallin injektoinnin ja ns. tavanomaisen koodiratkaisun välillä on seuraava:&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Vanha tapa (ei injektointia)&lt;/strong&gt;&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-//routes.php
-
-Route::get(&#39;sanomalehdet/{id}&#39;, function($id) {
-  // Luodaan *eksplisiittisesti* Sanomalehti-objekti käyttäen id-parametriä.
-  $lehti = Sanomalehti::findOrFail($id);
-
-  return $lehti-&amp;gt;sarjakuvat();
-
-});
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;strong&gt;Uusi tapa (injektointi käytössä)&lt;/strong&gt;&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-//routes.php
-
-Route::get(&#39;sanomalehdet/{id}&#39;, function(Sanomalehti $lehti) {
-  // Meillä on käytössämme Sanomalehti-luokasta luotu $lehti-objekti.
-  // $lehti luotiin automaattisesti id-parametrin perusteella.	
-
-  return $lehti-&amp;gt;sarjakuvat();
-
-});
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Huomaamme eron: vanhassa ratkaisussa &lt;em&gt;erikseen&lt;/em&gt; haemme objektin tietokannasta &lt;code&gt;Sanomalehti::find($id)&lt;/code&gt;-kutsulla. Uudessa ratkaisussa Laravel-kehys hakee objektin tietokannasta meidän puolestamme.&lt;/p&gt;
-
-&lt;p&gt;Kumpikin ratkaisu toimii loppukäyttäjälle samalla tavalla - kutsumme URL-endpointia tyyliin:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-http://www.lehtiapp.fi/sanomalehdet/1
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Objekti siis molemmissa tapauksissa haetaan tietokannasta - ero on vain siinä kuka hakee.&lt;/p&gt;
-
-&lt;p&gt;Tarkastalleen vaihe vaiheelta mitä oikeasti pinnan alla tapahtuu tuon URL-endpointin kutsun aikana:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;Käyttäjä kirjoittaa URL:n osoiterivilleen.&lt;/li&gt;
-&lt;li&gt;Kutsu saapuu Laravel-applikaation HTTP-rajapintaan.&lt;/li&gt;
-&lt;li&gt;Laravel ohjaa kutsun määrittämäämme &lt;em&gt;Route::get(&amp;lsquo;sanomalehdet/{id}&amp;rsquo;)&lt;/em&gt; callbackiin.&lt;/li&gt;
-&lt;li&gt;Pinnan alla Laravel tutkii tuon callbackin parametrilistan ja havaitsee tutkinnan seurauksena, että callback ottaa parametrikseen $lehti-objektin luokkatyyppiä Sanomalehti.&lt;/li&gt;
-&lt;li&gt;Laravel laskee yksi yhteen ja hoksaa, että URL:n sisällä tullut id-parametri on sama kuin callbackin parametriksi tulevan Sanomalehti-objektin id-attribuutti.&lt;/li&gt;
-&lt;li&gt;Laravel käy hakemassa sopivan Sanomalehti-objektin tietokannasta edelliseen päättelyyn pohjaten. Laravel siis tekee haun tyyliin:&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-Sanomalehti::where(&#39;id&#39;, $id)-&amp;gt;first()
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kaiken tuon Laravel päättelee sen muutaman millisekunnin aikana, joka HTTP-kutsun vastaanottoon kuluu. Laravellilla on aika nopsat hoksottimet.&lt;/p&gt;
-
-&lt;h3 id=&#34;id-parametrin-korvaaminen-toisella-attribuutilla&#34;&gt;ID-parametrin korvaaminen toisella attribuutilla&lt;/h3&gt;
-
-&lt;p&gt;Entä jos haluamme, että voimme osoiteriville kirjoittaa seuraavanlaisen URL-lausekkeen:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-http://www.lehtiapp.fi/sanomalehdet/ristiinalainen
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Koska termi &amp;lsquo;ristiinalainen&amp;rsquo; ei ole id-attribuutti, Laravel-kehys ei löydä oikeaa lehteä sen avulla. Ellemme sitten &lt;em&gt;kerro Laravellille&lt;/em&gt;, että haluamme lehden nimen (esim. &amp;lsquo;ristiinalainen&amp;rsquo;) toimivan hakuattribuuttina.&lt;/p&gt;
-
-&lt;p&gt;Tämä on mahdollista määrittämällä uusi metodi Sanomalehti-malliin:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Sanomalehti.php
-
-class Sanomalehti extends Eloquent {
-	
-	// Määritetään injektointiattribuutti, jota Laravel käyttää 
-	// etsiäkseen oikean objektin tietokannasta.
-	public function getRouteKeyName() {
-		return &#39;nimi&#39;;
-	}
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-//routes.php
-
-Route::get(&#39;sanomalehdet/{nimi}&#39;, function(Sanomalehti $lehti) {
-  // Meillä on käytössämme Sanomalehti-luokasta luotu $lehti-objekti.
-  // $lehti luotiin automaattisesti nimi-parametrin perusteella.	
-
-  return $lehti-&amp;gt;sarjakuvat();
-
-});
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva mahdollistaa meidän kutsuvan HTTP-endpointia tyyliin:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-http://www.lehtiapp.fi/sanomalehdet/ristiinalainen
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tämä on selkeä loppukäyttäjää helpottava parannus verrattuna aiempaan kutsuumme, jossa tietty lehti eriteltiin id-attribuutin avulla. Nyt lehdet eritellään niiden nimen avulla. Loppukäyttäjä ei osaa yhdistää id-numeroa tiettyyn lehteen. Lehden nimi taas heti kertoo mistä lehdestä on kyse.&lt;/p&gt;
 </description>
     </item>
     

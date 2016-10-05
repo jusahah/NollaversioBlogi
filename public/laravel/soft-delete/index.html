@@ -1,0 +1,165 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Laravel ja pehmeä tuho &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Laravel ja pehmeä tuho</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Wed, Oct 5, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Laravel tarjoaa ohjelmoijan käyttöön konseptin nimeltä &ldquo;soft delete&rdquo;. Suomennan tuo &ldquo;pehmeäksi tuhoksi&rdquo;, koska termi on niin hauska.</p>
+
+<p>Pehmeä tuho tarkoittaa seuraavaa: kun tietue poistetaan tietokannasta, sitä <em>ei oikeasti poistetakaan</em>, se vain merkitään näkymättömäksi.</p>
+
+<p>Vastakohtana on tietenkin &ldquo;kova tuho&rdquo; - eli siis tuikitavallinen poisto-operaatio, jossa tietue ihan aidosti poistetaan tietokannasta.</p>
+
+<h3 id="miksi-pehmeä-tuho">Miksi pehmeä tuho?</h3>
+
+<p>Herää kysymys, että mitä järkeä koko pehmeän tuhon konseptissa on? Poistamme tietueen, mutta emme poistakaan sitä. Häh? Miksi halusimme alunperinkään poistaa, jos emme sitten halunneetkaan.</p>
+
+<p>Kaiken ytimessä on ajatus siitä, että <em>applikaation</em> tasolla tietue on saavuttamattomissa. Applikaatio siis elää käsityksessä, että tietue on ihan oikeasti tuhottu. Samaan aikaan kuitenkin yrityksen muut komponentit - esim. Business Intelligence - haluaa, että tietue on visusti tallessa.</p>
+
+<p>Tämä eri komponenttien erilainen tarve tietueen olemassaololle johtuu komponenttien eriävistä vaatimuksista:</p>
+
+<blockquote>
+<p>Applikaation ydinkoodille on ensisijaisen tärkeää, että poistetut tietueet ovat poissa. Eli että ne eivät väärään aikaan yhtäkkiä hyppää silmille.</p>
+
+<p>Business Intelligence väelle taas on tärkeää, että jos jokin tietue on <em>kerran asuttanut applikaation tietokantaa</em>, on tuosta tietueesta <em>ikuinen jälki jossain</em>. Tällä tavoin mitään informaatiota ei huku bittiavaruuteen; jokainen tietue on ikuisesti tallessa.</p>
+</blockquote>
+
+<p>Oleellista on, että yksi ja sama tietokanta voi pehmeää tuhoa hyväksikäyttäen tarjota soveltuvat toiminnallisuudet sekä <em>applikaatiokoodille</em> että <em>Business Intelligence väelle</em>!</p>
+
+<p>Tämä onnistuu yksinkertaisesti siten, että kaikki applikaatiokoodin haut tietokantaan ajetaan yhdessä kontekstissa, ja kaikki Business Intelligencen haut ajetaan toisessa kontekstissa.</p>
+
+<p>Yksinkertaisemmin: <strong>applikaatiokoodin haut <em>jättävät huomioimatta pehmeästi tuhotut tietueet</em>, kun taas Business Intelligence <em>sisällyttää kaikki tietueet</em>.</strong></p>
+
+<h3 id="toteutus-laravellissa">Toteutus Laravellissa</h3>
+
+<p>Laravellin puolella pehmeän tuhon käyttö on helppoa. Käytännössä käyttöönotossa on vain kaksi vaihetta:</p>
+
+<ol>
+<li>Käytettävään tietokantatauluun lisätään &ldquo;deleted_at&rdquo;-sarake.</li>
+<li>Käytettävä malli ottaa käyttöön <em>SoftDeletes</em>-toiminnallisuuden.</li>
+<li>Käytettävän mallin tulee sisältää <em>dates</em>-attribuutin.</li>
+</ol>
+
+<p>Kas, näin:</p>
+
+<pre><code class="language-php">
+// App\Models\Pankkitili.php
+
+class Pankkitili extends Model
+{
+  // Vaatimus 2.
+  use SoftDeletes;
+  // Vaatimus 3.
+  protected $dates = ['deleted_at'];
+
+  // jne. muut mallin normimetodit
+}
+
+</code></pre>
+
+<p>Vaatimuksen nro 1 täyttämiseksi meidän tulee luoda taulu, jossa on deleted_at-sarake. Esimerkiksi:</p>
+
+<pre><code>
+// Taulu: pankkitilit
+
+
+id | tilinumero | omistaja    | created_at | deleted_at
+-- | ---------- | ----------- | ---------- | ----------
+1  | FI23932118 | 070278-262M | 2016-10-01 | 2016-10-03
+2  | FI88001921 | 261188-771S | 2015-02-27 | NULL
+
+</code></pre>
+
+<p>Ylläolevassa taulussa sarake <em>deleted_at</em> kertoo milloin tietue on &ldquo;tuhottu&rdquo;, eli siis pehmeästi tuhottu.</p>
+
+<p>Jos sarakkeen arvo on NULL, tietue on vielä olemassa. Tällöin siis sekä Business Intelligence että applikaatiokoodi näkevät tietueen.</p>
+
+<p>Applikaatiokoodin puolella Laravel huolehtii siitä, että pehmeästi tuhotut mallit eivät tule mukaan hakutuloksiin.</p>
+
+<pre><code class="language-php">// Koska vain malli ID #2 on applikaation näkökulmasta olemassa,
+// seuraava haku palauttaa lukumääräksi 1.
+Pankkitili::all()-&gt;count(); // 1
+
+</code></pre>
+
+<blockquote>
+<p>Soft Delete-toiminnallisuus mahdollistaa helposti <em>append-only</em>-tyylisen tiedonhallintaratkaisun luomisen. <em>Append-only</em>-ratkaisussa mitään tietoa ei koskaan poisteta; vanhentunut tieto yksinkertaisesti merkitään jollain ruksilla (<em>deleted_at</em>), joka kertoo, että tietoa ei pidä sisällytettävän applikaation tietokantahakuihin.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>
