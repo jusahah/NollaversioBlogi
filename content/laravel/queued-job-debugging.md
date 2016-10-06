@@ -9,7 +9,7 @@ Yksi Laravellin monista hienoista ominaisuuksista on kyky jonottaa. Siis laittaa
 
 Laravel tarjoaa kaikki tarvittavat komponentit jonotuksen toteuttamiseksi ns. "out-of-the-box". Kaikki vain toimii.
 
-Itse jonotuksen saloista olen puhunut aiemminkin [http://www.nollaversio.fi/blog/public/laravel/queue-worker/](täällä), mutta yksi hauska twisti jonon kautta ajetulla koodilla on.
+Itse jonotuksen saloista olen puhunut aiemminkin [täällä](http://www.nollaversio.fi/blog/public/laravel/queue-worker/), mutta yksi hauska twisti jonon kautta ajetulla koodilla on.
 
 Se on tämä: *koska jonotettu koodinpätkä ajetaan erillisessä prosessissa, se ei voi palauttaa selaimelle debug-tekstiä ohjelmoijan tarkasteltavaksi*.
 

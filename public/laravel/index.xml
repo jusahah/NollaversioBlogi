@@ -19,7 +19,7 @@
 
 &lt;p&gt;Laravel tarjoaa kaikki tarvittavat komponentit jonotuksen toteuttamiseksi ns. &amp;ldquo;out-of-the-box&amp;rdquo;. Kaikki vain toimii.&lt;/p&gt;
 
-&lt;p&gt;Itse jonotuksen saloista olen puhunut aiemminkin &lt;a href=&#34;täällä&#34;&gt;http://www.nollaversio.fi/blog/public/laravel/queue-worker/&lt;/a&gt;, mutta yksi hauska twisti jonon kautta ajetulla koodilla on.&lt;/p&gt;
+&lt;p&gt;Itse jonotuksen saloista olen puhunut aiemminkin &lt;a href=&#34;http://www.nollaversio.fi/blog/public/laravel/queue-worker/&#34;&gt;täällä&lt;/a&gt;, mutta yksi hauska twisti jonon kautta ajetulla koodilla on.&lt;/p&gt;
 
 &lt;p&gt;Se on tämä: &lt;em&gt;koska jonotettu koodinpätkä ajetaan erillisessä prosessissa, se ei voi palauttaa selaimelle debug-tekstiä ohjelmoijan tarkasteltavaksi&lt;/em&gt;.&lt;/p&gt;
 
