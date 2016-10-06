@@ -68,6 +68,41 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/queued-job-debugging/">
+        Jonotettu työvaihe ja debuggaus
+      </a>
+    </h1>
+
+    <span class="post-date">Thu, Oct 6, 2016</span>
+
+    <p>Yksi Laravellin monista hienoista ominaisuuksista on kyky jonottaa. Siis laittaa työtehtäviä jonoon myöhemmin suoritettavaksi.</p>
+
+<p>Laravel tarjoaa kaikki tarvittavat komponentit jonotuksen toteuttamiseksi ns. &ldquo;out-of-the-box&rdquo;. Kaikki vain toimii.</p>
+
+<p>Itse jonotuksen saloista olen puhunut aiemminkin <a href="täällä">http://www.nollaversio.fi/blog/public/laravel/queue-worker/</a>, mutta yksi hauska twisti jonon kautta ajetulla koodilla on.</p>
+
+<p>Se on tämä: <em>koska jonotettu koodinpätkä ajetaan erillisessä prosessissa, se ei voi palauttaa selaimelle debug-tekstiä ohjelmoijan tarkasteltavaksi</em>.</p>
+
+<p>Kun PHP-koodi ajetaan tavanomaisesti osana selaimelta lähtöisin olevaan kutsua, PHP voi aina palauttaa tarvittavan tekstijonon ohjelmoijan käyttöön. PHP-koodin puolella tämä onnistuu esimerkiksi komennoilla <em>echo</em> tai <em>var_dump</em>.</p>
+
+<p>Tuo palautettu tekstijono printataan selaimen toimesta suoraan näyttöpäätteelle.</p>
+
+<p>Mutta kun PHP-koodi ajetaan <em>jonotetun työvaiheen</em> kautta, ei ole mitään selainta jolle palauttaa mitään! Jonotettu työvaihe ajetaan nimittäin jono-managerin toimesta, joka siis käskyttää erillistä käyttöjärjestelmän prosessia ajamaan PHP-koodin. Tuo jono-manageri ei saa yhteyttä selaimeen.</p>
+
+<p>Joten miten debugata jonotetun työvaiheen sisällä ajettavaa koodia?</p>
+
+<p>En tiedä oikeaa vastausta itsekään. Pitäisi varmaan kysellä. Yksi ok tapa on logata debug-viestejä Laravellin lokiin. Jonotetulla prosessilla on luonnollisesti kyky kirjoittaa lokitiedostoihin, joten tämä onnistuu.</p>
+
+<blockquote>
+<p>Jonotettu työvaihe ajetaan irrallaan perinteisestä <em>selain-&gt;palvelin-&gt;selain</em> -viestienvaihdosta. Tämä on koko jonotuksen ydinpointti (selain saa vastauksen nopeasti, ja raskas työvaihe voidaan jonottaa myöhempään ajankohtaan), mutta sen heikkous on, että debuggaus hiukan monimutkaistuu.</p>
+
+<p>Yksi varteenotettava ratkaisu on debugata kirjoittamalla Laravellin omiin lokitiedostoihin, esim. komennolla <em>\Log::info(&lsquo;debug-viesti&rsquo;);</em></p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://www.nollaversio.fi/blog/public/laravel/soft-delete/">
         Laravel ja pehmeä tuho
       </a>
