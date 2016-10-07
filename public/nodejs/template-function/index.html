@@ -1,0 +1,131 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Lodash: template &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Lodash: template</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Fri, Oct 7, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Javascriptillä populoitavien mallipohjien (template) käyttö on etenkin frontend-koodauksessa varsin yleistä. Tyypillinen tarve mallipohjalle syntyy silloin, kun DOM-puuhun pitäisi lisätä uusi DOM-elementti, ja tuo elementti on rakennettava dynaamisesti.</p>
+
+<blockquote>
+<p>DOM-puu tulee sanoista &ldquo;Document Object Model tree&rdquo;. DOM-puu kaikessa yksinkertaisuudessaan kuvaa hierarkisessa muodossa kaiken sen mitä nettisivu sisältää. Nettisivun tekstit, kuvat, videoelementit kaikki ovat osa tuota puurakennetta.</p>
+</blockquote>
+
+<p>Elementtiä dynaamisesti rakennettaessa oleellista on, että pystymme injektoimaan haluttuun mallipohjaan sopivia tekstinpätkiä. Mallipohja sisältää näitä injektioita varten erikseen määritellyt &ldquo;replace here&rdquo;-kohdat.</p>
+
+<p>Dynaamisen elementin rakentaminen mallipohjan pohjalta on konseptiltaan sama kuin sanaristikon täyttäminen. Ristikkointoilija täyttää ennaltamääriteltyihin laatikoihin kirjaimia. Vihjekuvat ovat aina samat - ne ovat osa mallipohjaa, tässä tapauksessa ristikkoa.</p>
+
+<p>Omalla kohdallani perinteinen tapa toteuttaa HTML-mallipohjien käyttö on ollut turvautua <em>Handlebars</em>-kirjastoon. Tuo kirjasto hoitaa homman asiallisesti. Mutta jokunen aika sitten kävi ilmi, että myös Lodash-kirjasto hoitaa homman.</p>
+
+<p>Ja koska käytän Lodashia muutenkin kovin runsaasti, oli suora motivaatio siirtyä heidän pariin tässäkin asiassa.</p>
+
+<h3 id="template-funktion-käyttö">template()-funktion käyttö</h3>
+
+<p>Lodashin <em>template()</em> apumetodi mahdollistaa tekstijonon tuottamisen <em>toisen tekstijonon pohjalta</em> seuraavaan tyyliin:</p>
+
+<pre><code class="language-javascript">
+var vieras1 = &quot;Jaakko&quot;;
+var vieras2 = &quot;Kalle&quot;;
+
+var pohja = _.template('Hei vain &lt;%= nimi %&gt;');
+
+// Luodaan pohjan perusteella uusia tekstijonoja, joissa 
+// nimi on dynaamisesti korvattu uudella tekstijonolla.
+
+pohja({nimi: vieras1}); // &quot;Hei vain Jaakko&quot;
+pohja({nimi: vieras2}); // &quot;Hei vain Kalle&quot;
+
+</code></pre>
+
+<p>Käyttö on tismalleen noin yksinkertaista. Ylläolevassa esimerkissä mallipohjan käytön hyöty ei ole merkittävä - yhtä hyvin voisimme tehdä seuraavalla tavalla:</p>
+
+<pre><code class="language-javascript">
+// Luodaan kumpikin tervehdys liimamalla tekstijonoja yhteen käsin.
+
+&quot;Hei vain &quot; + vieras1; // &quot;Hei vain Jaakko&quot;
+&quot;Hei vain &quot; + vieras2; // &quot;Hei vain Kalle&quot;
+
+</code></pre>
+
+<p>Tilanne muuttuu, kun mallipohjana toimiva tekstijono on pitkä, ja siihen on tehtävä useita tekstikorvauksia. Tällöin leikkaaminen + liimaaminen käsipelillä vie rutosti aikaa (ohjelmoijan aikaa, ei CPU-aikaa).</p>
+
+<p>Lodashin template-metodi sisältää paljon ominaisuuksia. Se pystyy mm. tunnistamaan HTML-merkistön ja tekemään asianmukaiset merkistökoodaukset (&ldquo;escape&rdquo;).</p>
+
+<p>Lisätietoa löytyy doc-sivuilta: <a href="https://lodash.com/docs/4.16.4#template">https://lodash.com/docs/4.16.4#template</a></p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

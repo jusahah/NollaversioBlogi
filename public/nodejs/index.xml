@@ -6,8 +6,66 @@
     <description>Recent content in Nodejs on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Wed, 28 Sep 2016 10:08:17 +0300</lastBuildDate>
+    <lastBuildDate>Fri, 07 Oct 2016 16:09:02 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/nodejs/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Lodash: template</title>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/template-function/</link>
+      <pubDate>Fri, 07 Oct 2016 16:09:02 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/template-function/</guid>
+      <description>
+
+&lt;p&gt;Javascriptillä populoitavien mallipohjien (template) käyttö on etenkin frontend-koodauksessa varsin yleistä. Tyypillinen tarve mallipohjalle syntyy silloin, kun DOM-puuhun pitäisi lisätä uusi DOM-elementti, ja tuo elementti on rakennettava dynaamisesti.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;DOM-puu tulee sanoista &amp;ldquo;Document Object Model tree&amp;rdquo;. DOM-puu kaikessa yksinkertaisuudessaan kuvaa hierarkisessa muodossa kaiken sen mitä nettisivu sisältää. Nettisivun tekstit, kuvat, videoelementit kaikki ovat osa tuota puurakennetta.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Elementtiä dynaamisesti rakennettaessa oleellista on, että pystymme injektoimaan haluttuun mallipohjaan sopivia tekstinpätkiä. Mallipohja sisältää näitä injektioita varten erikseen määritellyt &amp;ldquo;replace here&amp;rdquo;-kohdat.&lt;/p&gt;
+
+&lt;p&gt;Dynaamisen elementin rakentaminen mallipohjan pohjalta on konseptiltaan sama kuin sanaristikon täyttäminen. Ristikkointoilija täyttää ennaltamääriteltyihin laatikoihin kirjaimia. Vihjekuvat ovat aina samat - ne ovat osa mallipohjaa, tässä tapauksessa ristikkoa.&lt;/p&gt;
+
+&lt;p&gt;Omalla kohdallani perinteinen tapa toteuttaa HTML-mallipohjien käyttö on ollut turvautua &lt;em&gt;Handlebars&lt;/em&gt;-kirjastoon. Tuo kirjasto hoitaa homman asiallisesti. Mutta jokunen aika sitten kävi ilmi, että myös Lodash-kirjasto hoitaa homman.&lt;/p&gt;
+
+&lt;p&gt;Ja koska käytän Lodashia muutenkin kovin runsaasti, oli suora motivaatio siirtyä heidän pariin tässäkin asiassa.&lt;/p&gt;
+
+&lt;h3 id=&#34;template-funktion-käyttö&#34;&gt;template()-funktion käyttö&lt;/h3&gt;
+
+&lt;p&gt;Lodashin &lt;em&gt;template()&lt;/em&gt; apumetodi mahdollistaa tekstijonon tuottamisen &lt;em&gt;toisen tekstijonon pohjalta&lt;/em&gt; seuraavaan tyyliin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var vieras1 = &amp;quot;Jaakko&amp;quot;;
+var vieras2 = &amp;quot;Kalle&amp;quot;;
+
+var pohja = _.template(&#39;Hei vain &amp;lt;%= nimi %&amp;gt;&#39;);
+
+// Luodaan pohjan perusteella uusia tekstijonoja, joissa 
+// nimi on dynaamisesti korvattu uudella tekstijonolla.
+
+pohja({nimi: vieras1}); // &amp;quot;Hei vain Jaakko&amp;quot;
+pohja({nimi: vieras2}); // &amp;quot;Hei vain Kalle&amp;quot;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Käyttö on tismalleen noin yksinkertaista. Ylläolevassa esimerkissä mallipohjan käytön hyöty ei ole merkittävä - yhtä hyvin voisimme tehdä seuraavalla tavalla:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Luodaan kumpikin tervehdys liimamalla tekstijonoja yhteen käsin.
+
+&amp;quot;Hei vain &amp;quot; + vieras1; // &amp;quot;Hei vain Jaakko&amp;quot;
+&amp;quot;Hei vain &amp;quot; + vieras2; // &amp;quot;Hei vain Kalle&amp;quot;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tilanne muuttuu, kun mallipohjana toimiva tekstijono on pitkä, ja siihen on tehtävä useita tekstikorvauksia. Tällöin leikkaaminen + liimaaminen käsipelillä vie rutosti aikaa (ohjelmoijan aikaa, ei CPU-aikaa).&lt;/p&gt;
+
+&lt;p&gt;Lodashin template-metodi sisältää paljon ominaisuuksia. Se pystyy mm. tunnistamaan HTML-merkistön ja tekemään asianmukaiset merkistökoodaukset (&amp;ldquo;escape&amp;rdquo;).&lt;/p&gt;
+
+&lt;p&gt;Lisätietoa löytyy doc-sivuilta: &lt;a href=&#34;https://lodash.com/docs/4.16.4#template&#34;&gt;https://lodash.com/docs/4.16.4#template&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Älä kuole ääneti</title>
@@ -1947,149 +2005,6 @@ function tarkistaEpailyttavatNimiParit(nimet) {
 &lt;p&gt;Tällä tavoin olemme kivasti paketoineet säikeidenhallinnan ikävät sivuseikat lupausta tarjoavat abstraktion taakse. &lt;em&gt;RikosSeurantaApplikaation&lt;/em&gt; ei tarvitse välittää tuon taivaallista säikeiden olemassaolosta - riittää, että se kutsuu tarjottua rajapintaa ja ottaa vastaan &lt;em&gt;lupauksen&lt;/em&gt;.&lt;/p&gt;
 
 &lt;p&gt;Tuo lupaus sitten jonain kauniina aamuna realisoituu todeksi, ja kaikki ovat tyytyväisiä.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Lupausten mahti - pätkä koodiani</title>
-      <link>http://www.nollaversio.fi/blog/public/nodejs/promisechain/</link>
-      <pubDate>Wed, 13 Jul 2016 06:48:47 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/nodejs/promisechain/</guid>
-      <description>&lt;p&gt;Lupaukset (engl. Promise) ovat varsin mahtavia. Siinä missä muuten asynkronoidun funktiokutsun matkapojaksi joutuisi lähettämään callback-funktion, lupaus mahdollistaa koodaustyylin, jossa callback liikkuu &lt;em&gt;varjoissa&lt;/em&gt; - siis pinnan alla. Lupaus on käytännössä pieni wrapperi, kuin lahjapaketti, joka kaitsee isällisellä otteella callbackia.&lt;/p&gt;
-
-&lt;p&gt;Ehkä suurin hyöty lupauksen käytöstä on kuitenkin se, että virhetilanteet tulevat asianmukaisesti hoidetuksi. Lisäksi ne virheet tulevat hoidetuksi oikeassa paikassa - &lt;em&gt;lupausketjun lopussa&lt;/em&gt;. Harva asia on hirveämpää kuin joutua kirjoittamaan &lt;em&gt;varsinaista bisnes-koodia&lt;/em&gt; ja &lt;em&gt;virhetilanteisiin reagoivaa hätäapukoodia&lt;/em&gt; sikin sokin. Lupausten avulla virhekoodi voi elää visuaalisesti kaukana varsinaisesta koodista. Tämä helpottaa koodinlukua.&lt;/p&gt;
-
-&lt;p&gt;Otan esimerkin &lt;em&gt;lupausketjusta&lt;/em&gt;, jossa virheisiin reagoiva koodi on upotettu pahnanpohjimmaiseksi. Esimerkki on suoraan applikaatiostani, joka analysoi PGN-shakkipelitiedoston ja raportoi käyttäjälle takaisin pelaajien tekemät huonot siirrot. Huono siirto tarkoittaa siirtoa, jonka seurauksena vastustajan voittomahdollisuudet paranivat merkittävästi.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Lupausketju
-
-// Lupausketju koostuu kuudesta osavaiheesta, jotka suoritetaan järjestyksessä peräkkäin!
-// Näiden jälkeen on virhetilanteet käsittelevä ekstravaihe.
-
-// #1 PGN-datan separointi eli pelien erottelu toisistaan
-// #2 Jokaisen pelin (map-apufunktio!) muuntaminen kasaksi peliasemia (FEN-muoto)
-// #3 Asemien filteröinti niin, että vain tiettyjen siirtojen asemat ovat mukana
-// #4 Asemien analysointi valittua shakkimoottoria käyttäen.
-// #5 Analysointitulosten paketointi pelikohtaisesti
-// #6 Asemien filteröinti, jätetään vain asemat joissa pelaaja tunaroi
-// #7 Virhetilanteiden hallinta
-
-function processPGN(pgnText) {
-        return Promise.resolve(pgnText)
-        // #1
-        .then(function(pgnText) {
-            return separateGames(pgnText);
-        })
-        // #2
-        .then(function(separatedGames) {
-            return _.map(separatedGames, function(game) {
-                var gameID = uuid.v4(); 
-                // Every position is associated with game id
-                // so we can later know from which game each 
-                // position came from (position.fromgame)
-                return separateIndividualPositions(game, gameID);
-            });
-        })
-        // #3
-        .then(function(allPositions) {
-            // Filter out those not in movenumber range
-            return _.filter(allPositions, function(position) {
-                return position.movenum &amp;gt;= 10 &amp;amp;&amp;amp; position.movenum &amp;lt;= 30;
-            });
-        })
-        // #4
-        .map(analyzePosition, {concurrency: 4} /*Num of parallel engine instances to use?*/)
-        // #5
-        .then(function(results) {
-            // Pack analyzed positions back into games
-            var groupedIntoGames = _.groupBy(results, function(result) { 
-                return result.fromgame;
-            });
-            // Sort positions by movenumber
-            return _.mapValues(groupedIntoGames, function(positions) {
-                return _.sortBy(positions, function(p) { return p.movenum})
-            });
-        })
-        // #6
-        .then(function(groupedIntoGames) {
-            return _.mapValues(groupedIntoGames, function(positions) {
-                if (!positions || positions.length &amp;lt; 2) return [];
-                var currPosition = positions[0];
-
-                return _.compact(_.map(_.tail(positions), function(position) {
-                    var thisEval = parseFloat(position.evaluation);
-                    var evalDiff = Math.abs(thisEval - parseFloat(currPosition.evaluation));
-
-                    var oldFen = currPosition.fen;
-                    var oldBest = currPosition.bestmove;
-                    var oldEval = currPosition.evaluation;
-
-                    // Replace old with the current for next loop run
-                    currPosition = position;
-                    // Evaluation changed &amp;gt; 75 centipawns -&amp;gt; bad move
-                    if (evalDiff &amp;gt; 75) {
-                        // Mistake found
-                        return {
-                            fenBefore: oldFen,
-                            fenAfter: position.fen,
-                            evalBefore: oldEval,
-                            evalAfter: position.evaluation,
-                            movenum: position.movenum,
-                            evalDiff: evalDiff,
-                            playedMove: position.move,
-                            bestMove: oldBest
-                        };
-                    }
-
-                    return null; // Nulls are filtered out later
-
-                    
-                }));
-
-                
-
-
-            });
-        })
-        // #7
-        .catch(function(err) {
-            // Something went wrong, lets bail.
-            console.log(&amp;quot;PGN analysis went wrong&amp;quot;);
-            Log::error(err);
-        })  
-
-
-}
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva koodi voitaisiin helposti vielä muuttaa &lt;em&gt;todella&lt;/em&gt; helppolukuiseen muotoon
-abstraktoimalla varsinainen bisneskoodi.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-function processPGN(pgnText) {
-
-        return Promise.resolve(pgnText)
-        .then(separateGames)
-        .then(separatePositionsForEachGame)
-        .then(filterOutPositionsNotInMoveRange)
-        .map(analyzePosition, {concurrency: 4})
-        .then(packResultsIntoGames)
-        .then(filterOutPositionsWhereNoMistakeWasMade)
-        .catch(handleErrors)    
-}
-
-function separateGames(...) {...}
-function separatePositionsForEachGame(...) {...}
-// jne.
-
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Aika kaunista.&lt;/p&gt;
 </description>
     </item>
     

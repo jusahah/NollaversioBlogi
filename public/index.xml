@@ -6,8 +6,66 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Thu, 06 Oct 2016 18:14:55 +0300</lastBuildDate>
+    <lastBuildDate>Fri, 07 Oct 2016 16:09:02 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Lodash: template</title>
+      <link>http://www.nollaversio.fi/blog/public/nodejs/template-function/</link>
+      <pubDate>Fri, 07 Oct 2016 16:09:02 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/nodejs/template-function/</guid>
+      <description>
+
+&lt;p&gt;Javascriptillä populoitavien mallipohjien (template) käyttö on etenkin frontend-koodauksessa varsin yleistä. Tyypillinen tarve mallipohjalle syntyy silloin, kun DOM-puuhun pitäisi lisätä uusi DOM-elementti, ja tuo elementti on rakennettava dynaamisesti.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;DOM-puu tulee sanoista &amp;ldquo;Document Object Model tree&amp;rdquo;. DOM-puu kaikessa yksinkertaisuudessaan kuvaa hierarkisessa muodossa kaiken sen mitä nettisivu sisältää. Nettisivun tekstit, kuvat, videoelementit kaikki ovat osa tuota puurakennetta.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Elementtiä dynaamisesti rakennettaessa oleellista on, että pystymme injektoimaan haluttuun mallipohjaan sopivia tekstinpätkiä. Mallipohja sisältää näitä injektioita varten erikseen määritellyt &amp;ldquo;replace here&amp;rdquo;-kohdat.&lt;/p&gt;
+
+&lt;p&gt;Dynaamisen elementin rakentaminen mallipohjan pohjalta on konseptiltaan sama kuin sanaristikon täyttäminen. Ristikkointoilija täyttää ennaltamääriteltyihin laatikoihin kirjaimia. Vihjekuvat ovat aina samat - ne ovat osa mallipohjaa, tässä tapauksessa ristikkoa.&lt;/p&gt;
+
+&lt;p&gt;Omalla kohdallani perinteinen tapa toteuttaa HTML-mallipohjien käyttö on ollut turvautua &lt;em&gt;Handlebars&lt;/em&gt;-kirjastoon. Tuo kirjasto hoitaa homman asiallisesti. Mutta jokunen aika sitten kävi ilmi, että myös Lodash-kirjasto hoitaa homman.&lt;/p&gt;
+
+&lt;p&gt;Ja koska käytän Lodashia muutenkin kovin runsaasti, oli suora motivaatio siirtyä heidän pariin tässäkin asiassa.&lt;/p&gt;
+
+&lt;h3 id=&#34;template-funktion-käyttö&#34;&gt;template()-funktion käyttö&lt;/h3&gt;
+
+&lt;p&gt;Lodashin &lt;em&gt;template()&lt;/em&gt; apumetodi mahdollistaa tekstijonon tuottamisen &lt;em&gt;toisen tekstijonon pohjalta&lt;/em&gt; seuraavaan tyyliin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var vieras1 = &amp;quot;Jaakko&amp;quot;;
+var vieras2 = &amp;quot;Kalle&amp;quot;;
+
+var pohja = _.template(&#39;Hei vain &amp;lt;%= nimi %&amp;gt;&#39;);
+
+// Luodaan pohjan perusteella uusia tekstijonoja, joissa 
+// nimi on dynaamisesti korvattu uudella tekstijonolla.
+
+pohja({nimi: vieras1}); // &amp;quot;Hei vain Jaakko&amp;quot;
+pohja({nimi: vieras2}); // &amp;quot;Hei vain Kalle&amp;quot;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Käyttö on tismalleen noin yksinkertaista. Ylläolevassa esimerkissä mallipohjan käytön hyöty ei ole merkittävä - yhtä hyvin voisimme tehdä seuraavalla tavalla:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Luodaan kumpikin tervehdys liimamalla tekstijonoja yhteen käsin.
+
+&amp;quot;Hei vain &amp;quot; + vieras1; // &amp;quot;Hei vain Jaakko&amp;quot;
+&amp;quot;Hei vain &amp;quot; + vieras2; // &amp;quot;Hei vain Kalle&amp;quot;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tilanne muuttuu, kun mallipohjana toimiva tekstijono on pitkä, ja siihen on tehtävä useita tekstikorvauksia. Tällöin leikkaaminen + liimaaminen käsipelillä vie rutosti aikaa (ohjelmoijan aikaa, ei CPU-aikaa).&lt;/p&gt;
+
+&lt;p&gt;Lodashin template-metodi sisältää paljon ominaisuuksia. Se pystyy mm. tunnistamaan HTML-merkistön ja tekemään asianmukaiset merkistökoodaukset (&amp;ldquo;escape&amp;rdquo;).&lt;/p&gt;
+
+&lt;p&gt;Lisätietoa löytyy doc-sivuilta: &lt;a href=&#34;https://lodash.com/docs/4.16.4#template&#34;&gt;https://lodash.com/docs/4.16.4#template&lt;/a&gt;&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Jonotettu työvaihe ja debuggaus</title>
@@ -1331,79 +1389,6 @@ _.chain(asukasLuettelo)
 &lt;p&gt;Loppukaneetti: ylläolevan kutsuketjun lopussa kutsumme apufunktiota &lt;em&gt;value()&lt;/em&gt;. Tämä kutsu on syytä suorittaa vaikka emme tarvitsekaan palautusarvoa mihinkään! Tämä siksi, että Lodash käyttää konseptia nimeltä &lt;em&gt;lazy evaluation&lt;/em&gt; kun se kohtaa tuollaisen kutsuketjun.&lt;/p&gt;
 
 &lt;p&gt;Laiskana miehenä Lodash ei tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Arkkitehtuuri: ohjaa pelaajat eteenpäin</title>
-      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/</link>
-      <pubDate>Fri, 26 Aug 2016 04:30:43 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/</guid>
-      <description>
-
-&lt;p&gt;Esittelen lyhyesti arkkitehtuurin, joka sopii mainiosti Laravel + Node.js -yhteisarkkitehtuureihin.&lt;/p&gt;
-
-&lt;p&gt;Tälläinen yhteisarkkitehtuuri  tyypillisesti jakautuu vastuualueisiin siten, että Node.js hoitaa reaaliaikapuolen ja Laravel hoitaa admin-toiminnot ja pitkäaikaisvarastoinnin. Node.js on erinomainen ratkaisu reaaliaikaisesta tiedonvaihdosta huolehtimiseen. PHP ja Laravel taas loistavat perinteisten ei-reaaliaikaisten web-käyttöliittymien kohdalla. Yhdessä Node.js ja Laravel tekevät ihmeitä.&lt;/p&gt;
-
-&lt;p&gt;Rakensin viime syksynä kokonaisarkkitehtuurin reaaliaikaisten tietovisojen luomiseen ja pelaamiseen. Palvelun kautta pelaajat voivat pelata reaaliajassa toisiaan vastaan tietovisoja. Tuon järjestelmän kokonaisarkkitehtuuri on seuraavalainen:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;&lt;p&gt;Laravel-applikaatio tarjoaa admin-käyttöliittymän, jonka kautta luoda/muokata/hallita tietovisoja.&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Node.js-applikaatio hakee tasaisin väliajoin &lt;em&gt;pian alkavat&lt;/em&gt; tietovisat Laravellista ja hoitaa niiden pyörityksen, mm. socket-yhteydet pelaajiin ja pelilogiikan etenemisen.&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Tietovisan päätyttyä Node.js-puoli kutsuu Laravellin &amp;ldquo;tulospalvelurajapintaa&amp;rdquo;, jonne syöttää tietovisan tulokset pitkäaikaistallennukseen. Tässä jälleen Laravel ja Laravellin erinomainen ORM loistavat. Pelaajat voivat jälkikäteen tarkastella tuloksia Laravellin puolella.&lt;/p&gt;&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Kokonaisarkkitehtuuri perustuu lisäksi vielä ajatukseen, että järjestelmän pyörittämisestä vastaa &lt;em&gt;yksi Laravel-applikaatio&lt;/em&gt; ja &lt;em&gt;useampi Node.js-palvelin&lt;/em&gt;. Miksi näin? Node.js-palvelimen tehtävänä - kuten yllä kuvattiin - on hoitaa kaikki reaaliaikainen tiedonvaihto tietovisan pelaajien suuntaan. Tämä vastuualue vaatii poweria palvelinraudalta - kutakin pelaajaa varten täytyy varata samanaikainen Websocket-yhteys ja viestiliikenne pelaajamäärältään suuressa tietovisassa on suuri.&lt;/p&gt;
-
-&lt;p&gt;Laravel-puoli taas on lähinnä tietovisojen luontia ja tulospalvelun ylläpitoa varten. Kumpikaan näistä ei vaadi millisekuntien latenssia. Lisäksi tietovisoja luo huomattavasti pienempi määrä käyttäjiä kuin niitä pelaa.&lt;/p&gt;
-
-&lt;h3 id=&#34;usea-peliserveri-kuinka-pelaaja-löytää-oikean&#34;&gt;Usea peliserveri - kuinka pelaaja löytää oikean?&lt;/h3&gt;
-
-&lt;p&gt;Kuvitellaan, että meillä on yksi Laravel-palvelin ja viisi Node.js-palvelinta. Kukin tietovisa pyörii yhdellä palvelimella. Tietovisat pyritään jakamaan tasaisesti palvelinten kesken, jotta kuormitus jakautuu mahdollisimman tasaisesti.&lt;/p&gt;
-
-&lt;p&gt;Loppukäyttäjän eli tietovisan osallistujan kannalta viisi palvelinta on hiukka ongelmallista - kuinka loppukäyttäjä tietää mihin palvelimeen ottaa yhteys tietovisan pelaamista varten?&lt;/p&gt;
-
-&lt;p&gt;Ratkaisu on, että pelaaja ottaa &lt;strong&gt;ensin yhteyden Laravel-palvelimeen&lt;/strong&gt;, joka &lt;strong&gt;kertoo pelaajalle hänen valitsemansa tietovisan Node.js-palvelimen IP-osoitteen&lt;/strong&gt;.&lt;/p&gt;
-
-&lt;p&gt;Koska Laravel-palvelimia on kokonaisjärjestelmässä vain yksi kappale, sen osoite on aina tiedossa. Tai paremminkin - tietty domain johtaa suoraan Laravel-applikaatioon.&lt;/p&gt;
-
-&lt;p&gt;Homma toimii siis kutakuinkin näin:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;Ihmiskäyttäjä haluaa pelata tietovisan.&lt;/li&gt;
-&lt;li&gt;Hän menee osoitteeseen &lt;em&gt;www.visamestari.fi&lt;/em&gt;. Tämä osoite ohjaa hänet järjestelmän Laravel-osioon.&lt;/li&gt;
-&lt;li&gt;Laravel-osiosta hän valitsee haluamansa &lt;em&gt;piakkoin alkavan&lt;/em&gt; tietovisan, ja klikkaa &amp;ldquo;Osallistu&amp;rdquo;.&lt;/li&gt;
-&lt;li&gt;Laravel tarkistaa tietokannasta, mille Node.js-palvelimelle tuo tietovisa on &lt;em&gt;allokoitu&lt;/em&gt;, ja palauttaa tuon palvelimen IP-osoitteen.&lt;/li&gt;
-&lt;li&gt;Käyttäjän selain ottaa yhteyden saatuun IP-osoitteeseen, täten ilmoittaen olemassaolostaan Node.js-palvelimelle.&lt;/li&gt;
-&lt;li&gt;Node.js-palvelimen ja käyttäjän välille luodaan Websocket-yhteys reaaliaikaista tiedonvaihtoa varten.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Yllä vaihe #4 edellyttää, että Laravel on etukäteen tallentanut tietokantaansa tietovisan pyörityksestä huolehtivan palvelimen IP-osoitteen. Miten ja missä vaiheessa tämä tallennus tapahtuu?&lt;/p&gt;
-
-&lt;p&gt;Homma menee kutakuinkin näin.&lt;/p&gt;
-
-&lt;p&gt;Jokainen viidestä Node.js-palvelimesta &lt;em&gt;pyytää&lt;/em&gt; tasaisin väliajoin pian alkavia tietovisoja Laravel-palvelimelta. Yksittäisen Node.js-palvelimen kannalta pyyntö etenee seuraavasti:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;&lt;p&gt;Palvelin kysyy Laravellilta &amp;lsquo;onko uusia tietovisoja, joita voisin pyörittää?&amp;rsquo;.&lt;/p&gt;&lt;/li&gt;
-
-&lt;li&gt;&lt;p&gt;Palvelin tarkistaa tietokannasta ja vastaa joko: &amp;lsquo;ei&amp;rsquo; tai &amp;lsquo;kyllä on, tässä tietovisan pyöritykseen vaadittavat tiedot&amp;rsquo;&lt;/p&gt;&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Mitä tapahtuu Laravellin päässä kun Laravel &lt;em&gt;antaa&lt;/em&gt; tietovisan pyörityksen tietyn Node.js-palvelimen kontolle? Laravel tietää IP-osoitteen, josta Node.js-palvelin otti yhteyttä. Joten pyöritysvastuun antamisen yhteydessä Laravel voi tallettaa tuon IP-osoitteen tietokantaan.&lt;/p&gt;
-
-&lt;p&gt;Kun myöhemmin loppukäyttäjä saapuu Laravel-puolella ja valitsee sieltä osallistumisen tuohon tietovisaan, Laravellilla on tietokannassaan tallessa Node.js-palvelimen IP-osoite. Se voi vain palauttaa tuon IP-osoitteen loppukäyttäjälle.&lt;/p&gt;
-
-&lt;p&gt;Node.js:n puolella ohjelmisto vastaanottaa &lt;em&gt;piakkoin alkavat tietovisan&lt;/em&gt; tiedot. Näiden pohjalta se luo Tietovisa-objektin, joka jää odottamaan rekisteröitymisiä. Tietyllä kellonlyömällä Node.js sitten käynnistää tietovisan, lähettäen jokaiselle siihen mennessä rekisteröityneelle käyttäjälle &amp;ldquo;tietovisa alkaa&amp;rdquo;-viestin Websocketin kautta.&lt;/p&gt;
-
-&lt;p&gt;Tietovisan päätyttyä Node.js lähettää tulokset Laravellille. Koska Laravel-palvelimia on kokonaisarkkitehtuurissa vain yksi kappale, ei Node.js-palvelimen tarvitse huolehtia Laravel-palvelimen IP-osoitteen selvittämisestä. Tuo IP-osoite on yksinkertaisesti tallennettu Node.js:n konfiguraatiotiedostoon.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: ylläoleva arkkitehtuuri perustuu pohjimmiltaan ajatukseen, että X määrä työläisiä kysyy tasaisin väliajoin lisätyötä. Työnantajana toimii Laravel-keskuspalvelin. Oleellista on, että &lt;strong&gt;Laravel on täysin passiivinen&lt;/strong&gt;; se ei ikinä ota yhteyttä Node.js-palvelimiin, vaan odottaa sinnikkäästi Node.js-palvelinten yhteydenottoja, ja jakaa työtehtäviä noiden yhteydenottojen pohjalta.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>
