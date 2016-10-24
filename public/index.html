@@ -68,6 +68,101 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/sparse-index/">
+        AWS ja harva indeksi
+      </a>
+    </h1>
+
+    <span class="post-date">Mon, Oct 24, 2016</span>
+
+    
+
+<p>Amazonin Dynamo-tietokantaa käytettäessä törmäsin tänään mielenkiintoiseen patterniin. Tarvitsin taululle indeksin attribuuttia varten, joka harvoin saa yhtään mitään arvoa.</p>
+
+<p>Tälläisessä tapauksessa on ikävää joutua luomaan uusi, täysimittainen indeksitaulu.</p>
+
+<p>Häh, miksi tuo on niin ikävää muka? Koska jos 99% talletettavista objekteista ei hyödy indeksistä lainkaan, niiden roikottaminen mukana indeksitaulussa on tilanhukkaa.</p>
+
+<p>Otetaan konkreettinen esimerkki. Sanotaan huvin vuoksi, että meillä on seuraavanlainen tietokantataulu:</p>
+
+<pre><code>
+| nimi       | ikä | maailmanmestari |
+| ---------- | --- | --------------- |
+| Matti M    | 62  |        -        |
+| Pekka J    | 11  |        -        |    
+| Ismo P     | 16  |        -        | 
+| Kimi R     | 37  |    Formula 1    | 
+
+// jne. jne.
+
+</code></pre>
+
+<p>Ylläoleva taulu sisältää kaikista suomalaisista kolme tietoa; <em>nimi</em>, <em>ikä</em>, ja <em>minkä urheilulajin maailmanmestaruuden henkilö on voittanut</em>.</p>
+
+<p>Sanotaan että nimi-attribuutti muodostaa ns. pääavain-indeksin. Sen tulee siis olla uniikki - täyskaimoja tietokantamme ei salli.</p>
+
+<blockquote>
+<p>Käytännössä emme tietenkään käyttäisi nimeä pääavaimena, vaan pääavain olisi henkilötunnus. En valitettavasti satu tietämään Räikkösen Kimin hetua joten esimerkki toimii paremmin näin.</p>
+</blockquote>
+
+<p>Nyt voimme luoda kaksi indeksitaulua varsinaisen taulun oheen. Yksi indeksi iälle, toinen maailmanmestaruudelle.</p>
+
+<p>Tällä tavoin nopeutamme merkittävästi hakuja, joissa ikää tai maailmanmestaruutta käytetään hakukriteerinä.</p>
+
+<blockquote>
+<p>Esimerkki ikä-attribuuttia hakukriteerinä käyttävästä hausta: <em>palauta kaikki henkilöt, joiden ikä on 60 ja 65 välillä</em></p>
+
+<p>Esimerkki maailmanmestari-attribuuttia käyttävästä hausta: <em>palauta kaikki henkilöt, jotka ovat voittaneet keihäänheiton MM-kultaa</em></p>
+</blockquote>
+
+<p>Kaikki hyvin. On kuitenkin huomattavast, että ikä-indeksitaulu sisältää viisi miljoonaa riviä. Tämä ihan siksi, että alkuperäinen taulu sisältää myös viisi miljoonaa riviä, ja jokainen henkilö tulee indeksoida iän perusteella, jotta ikä-indeksi toimii oikein.</p>
+
+<h3 id="mutta-kuinka-moni-suomalainen-on-voittanut-mm-kultaa-yhtään-missään">Mutta kuinka moni suomalainen on voittanut MM-kultaa yhtään missään?</h3>
+
+<p>Datan indeksointi ikä-attribuutin suhteen on siis varsin järkevä idea.</p>
+
+<p>Jokainen henkilö kun on <em>jonkin ikäinen</em>.</p>
+
+<p>Vaan kuinka moni on voittanut <em>jonkin lajin maailmanmestaruuden</em>?</p>
+
+<p>Ydinkysymys on tämä: kuinka suuri on maailmanmestareiden osuus on verrattuna koko väestöön?</p>
+
+<p>Sanotaan esimerkin vuoksi, että mestareiden lukumäärä on 1000 henkilöä. <em>Eli koko kansasta 0.02%</em>. Tästä herää pieni suorituskyvyllinen ongelma: <strong>jos luomme indeksin <em>maailmanmestari</em>-attribuutille, 99.98% indeksitaulun jäsenistä on siellä ihan turhaan.</strong></p>
+
+<p>He eivät ole voittaneet mestaruutta, joten ei heitä tarvitse indeksoida. Ei ole mitään mitä indeksoida! Sama kuin yrittäisi indeksoida sosiaalidemokraattien itsekunnioitusta.</p>
+
+<p>Tälläinen tuhlaus kuulostaa hirveältä: 0.02% takia 99.98% joutuu kärsimään. Siis kärsimään siinä mielessä, että heille luodaan oma turhanpäiväinen rivi indeksitauluun.</p>
+
+<h3 id="harva-indeksi-jätä-luuserit-pois-alunperinkin">Harva indeksi - jätä luuserit pois alunperinkin</h3>
+
+<p>Harva indeksi tulee apuun. Ydinpointti on tässä: miksi emme loisi <em>maailmanmestari</em>-indeksiä siten, että se sisältää <strong>ainoastaan</strong> maailmanmestarit?</p>
+
+<p>Ajatus on varsin luonteva, ja vain ohjelmistosuunnittelija voi ilakoida sen hoksaamisella. Mutta kuitenkin - harva indeksi on pätevä ratkaisu ongelmaamme.</p>
+
+<blockquote>
+<p>Käytännössä luomme siis &ldquo;eliitti-indeksin&rdquo; - vain maailmanmestarit kelpuutetaan mukaan listaukseen. Indeksi toimii ikäänkuin urheilumaailman &ldquo;Kuka kukin on&rdquo;-oppaana.</p>
+</blockquote>
+
+<p>Harvan indeksin avulla saamme pudotettua 5 miljoonan rivin kokoisen indeksin vaivaiseksi 1000 rivin indeksiksi. Tilaa säästyy valtava määrä.</p>
+
+<h3 id="amazon-tekee-harvan-indeksin-ohjelmoijan-puolesta">Amazon tekee harvan indeksin ohjelmoijan puolesta</h3>
+
+<p>Amazonin DynamoDB:ssä harvan indeksin luonti on helppoa. Jopa niin helppoa, että se tapahtuu täysin automaattisesti järjestelmän toimesta. Ihan totta, kirjaimellisesti ohjelmoijan <em>ei tarvitse tehdä yhtään mitään</em>.</p>
+
+<p>Teknisesti AWS:n toteutus toimii siten, että aina kun uutta objektia lisättäessä tuon objektin indeksoidun attribuutin jättää tyhjäksi, objektia ei indeksoida lainkaan. Henkilötaulun esimerkki yllä on suoraan siirrettävissä DynamoDB:n puolelle - lisätessämme uusia henkilöitä tietokantaan riittää, että jätämme <em>maailmanmestari</em>-kentän tyhjäksi.</p>
+
+<p>Jos emme jätä sitä tyhjäksi, henkilö on voittanut maailmanmestaruuden, ja Amazonin taustajärjestelmä indeksoi hänet oikeaoppisesti.</p>
+
+<p>Kätevää.</p>
+
+<blockquote>
+<p>Miten MySQL toimii indeksoitavan kentän jäädessä tyhjäksi? <a href="http://stackoverflow.com/questions/32217099/mysql-index-for-sparse-table">Tämän linkin</a> mukaan Mysql osaa ottaa asian huomioon jos asettaa kentän eksplisiittisesti arvoon <em>NULL</em>. En muista kokeilleeni asiaa käytännössä.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://www.nollaversio.fi/blog/public/nodejs/template-function/">
         Lodash: template
       </a>

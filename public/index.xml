@@ -6,8 +6,100 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Fri, 07 Oct 2016 16:09:02 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 24 Oct 2016 17:41:19 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>AWS ja harva indeksi</title>
+      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/sparse-index/</link>
+      <pubDate>Mon, 24 Oct 2016 17:41:19 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/sparse-index/</guid>
+      <description>
+
+&lt;p&gt;Amazonin Dynamo-tietokantaa käytettäessä törmäsin tänään mielenkiintoiseen patterniin. Tarvitsin taululle indeksin attribuuttia varten, joka harvoin saa yhtään mitään arvoa.&lt;/p&gt;
+
+&lt;p&gt;Tälläisessä tapauksessa on ikävää joutua luomaan uusi, täysimittainen indeksitaulu.&lt;/p&gt;
+
+&lt;p&gt;Häh, miksi tuo on niin ikävää muka? Koska jos 99% talletettavista objekteista ei hyödy indeksistä lainkaan, niiden roikottaminen mukana indeksitaulussa on tilanhukkaa.&lt;/p&gt;
+
+&lt;p&gt;Otetaan konkreettinen esimerkki. Sanotaan huvin vuoksi, että meillä on seuraavanlainen tietokantataulu:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;
+| nimi       | ikä | maailmanmestari |
+| ---------- | --- | --------------- |
+| Matti M    | 62  |        -        |
+| Pekka J    | 11  |        -        |    
+| Ismo P     | 16  |        -        | 
+| Kimi R     | 37  |    Formula 1    | 
+
+// jne. jne.
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva taulu sisältää kaikista suomalaisista kolme tietoa; &lt;em&gt;nimi&lt;/em&gt;, &lt;em&gt;ikä&lt;/em&gt;, ja &lt;em&gt;minkä urheilulajin maailmanmestaruuden henkilö on voittanut&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Sanotaan että nimi-attribuutti muodostaa ns. pääavain-indeksin. Sen tulee siis olla uniikki - täyskaimoja tietokantamme ei salli.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Käytännössä emme tietenkään käyttäisi nimeä pääavaimena, vaan pääavain olisi henkilötunnus. En valitettavasti satu tietämään Räikkösen Kimin hetua joten esimerkki toimii paremmin näin.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Nyt voimme luoda kaksi indeksitaulua varsinaisen taulun oheen. Yksi indeksi iälle, toinen maailmanmestaruudelle.&lt;/p&gt;
+
+&lt;p&gt;Tällä tavoin nopeutamme merkittävästi hakuja, joissa ikää tai maailmanmestaruutta käytetään hakukriteerinä.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Esimerkki ikä-attribuuttia hakukriteerinä käyttävästä hausta: &lt;em&gt;palauta kaikki henkilöt, joiden ikä on 60 ja 65 välillä&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Esimerkki maailmanmestari-attribuuttia käyttävästä hausta: &lt;em&gt;palauta kaikki henkilöt, jotka ovat voittaneet keihäänheiton MM-kultaa&lt;/em&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Kaikki hyvin. On kuitenkin huomattavast, että ikä-indeksitaulu sisältää viisi miljoonaa riviä. Tämä ihan siksi, että alkuperäinen taulu sisältää myös viisi miljoonaa riviä, ja jokainen henkilö tulee indeksoida iän perusteella, jotta ikä-indeksi toimii oikein.&lt;/p&gt;
+
+&lt;h3 id=&#34;mutta-kuinka-moni-suomalainen-on-voittanut-mm-kultaa-yhtään-missään&#34;&gt;Mutta kuinka moni suomalainen on voittanut MM-kultaa yhtään missään?&lt;/h3&gt;
+
+&lt;p&gt;Datan indeksointi ikä-attribuutin suhteen on siis varsin järkevä idea.&lt;/p&gt;
+
+&lt;p&gt;Jokainen henkilö kun on &lt;em&gt;jonkin ikäinen&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Vaan kuinka moni on voittanut &lt;em&gt;jonkin lajin maailmanmestaruuden&lt;/em&gt;?&lt;/p&gt;
+
+&lt;p&gt;Ydinkysymys on tämä: kuinka suuri on maailmanmestareiden osuus on verrattuna koko väestöön?&lt;/p&gt;
+
+&lt;p&gt;Sanotaan esimerkin vuoksi, että mestareiden lukumäärä on 1000 henkilöä. &lt;em&gt;Eli koko kansasta 0.02%&lt;/em&gt;. Tästä herää pieni suorituskyvyllinen ongelma: &lt;strong&gt;jos luomme indeksin &lt;em&gt;maailmanmestari&lt;/em&gt;-attribuutille, 99.98% indeksitaulun jäsenistä on siellä ihan turhaan.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;He eivät ole voittaneet mestaruutta, joten ei heitä tarvitse indeksoida. Ei ole mitään mitä indeksoida! Sama kuin yrittäisi indeksoida sosiaalidemokraattien itsekunnioitusta.&lt;/p&gt;
+
+&lt;p&gt;Tälläinen tuhlaus kuulostaa hirveältä: 0.02% takia 99.98% joutuu kärsimään. Siis kärsimään siinä mielessä, että heille luodaan oma turhanpäiväinen rivi indeksitauluun.&lt;/p&gt;
+
+&lt;h3 id=&#34;harva-indeksi-jätä-luuserit-pois-alunperinkin&#34;&gt;Harva indeksi - jätä luuserit pois alunperinkin&lt;/h3&gt;
+
+&lt;p&gt;Harva indeksi tulee apuun. Ydinpointti on tässä: miksi emme loisi &lt;em&gt;maailmanmestari&lt;/em&gt;-indeksiä siten, että se sisältää &lt;strong&gt;ainoastaan&lt;/strong&gt; maailmanmestarit?&lt;/p&gt;
+
+&lt;p&gt;Ajatus on varsin luonteva, ja vain ohjelmistosuunnittelija voi ilakoida sen hoksaamisella. Mutta kuitenkin - harva indeksi on pätevä ratkaisu ongelmaamme.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Käytännössä luomme siis &amp;ldquo;eliitti-indeksin&amp;rdquo; - vain maailmanmestarit kelpuutetaan mukaan listaukseen. Indeksi toimii ikäänkuin urheilumaailman &amp;ldquo;Kuka kukin on&amp;rdquo;-oppaana.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Harvan indeksin avulla saamme pudotettua 5 miljoonan rivin kokoisen indeksin vaivaiseksi 1000 rivin indeksiksi. Tilaa säästyy valtava määrä.&lt;/p&gt;
+
+&lt;h3 id=&#34;amazon-tekee-harvan-indeksin-ohjelmoijan-puolesta&#34;&gt;Amazon tekee harvan indeksin ohjelmoijan puolesta&lt;/h3&gt;
+
+&lt;p&gt;Amazonin DynamoDB:ssä harvan indeksin luonti on helppoa. Jopa niin helppoa, että se tapahtuu täysin automaattisesti järjestelmän toimesta. Ihan totta, kirjaimellisesti ohjelmoijan &lt;em&gt;ei tarvitse tehdä yhtään mitään&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Teknisesti AWS:n toteutus toimii siten, että aina kun uutta objektia lisättäessä tuon objektin indeksoidun attribuutin jättää tyhjäksi, objektia ei indeksoida lainkaan. Henkilötaulun esimerkki yllä on suoraan siirrettävissä DynamoDB:n puolelle - lisätessämme uusia henkilöitä tietokantaan riittää, että jätämme &lt;em&gt;maailmanmestari&lt;/em&gt;-kentän tyhjäksi.&lt;/p&gt;
+
+&lt;p&gt;Jos emme jätä sitä tyhjäksi, henkilö on voittanut maailmanmestaruuden, ja Amazonin taustajärjestelmä indeksoi hänet oikeaoppisesti.&lt;/p&gt;
+
+&lt;p&gt;Kätevää.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Miten MySQL toimii indeksoitavan kentän jäädessä tyhjäksi? &lt;a href=&#34;http://stackoverflow.com/questions/32217099/mysql-index-for-sparse-table&#34;&gt;Tämän linkin&lt;/a&gt; mukaan Mysql osaa ottaa asian huomioon jos asettaa kentän eksplisiittisesti arvoon &lt;em&gt;NULL&lt;/em&gt;. En muista kokeilleeni asiaa käytännössä.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Lodash: template</title>
@@ -1325,70 +1417,6 @@ class LaskuEraantynyt extends Notification {
 
 &lt;blockquote&gt;
 &lt;p&gt;Loppukaneetti: Slack-viestin lähettäminen vaatii Guzzle-lisäosaa, joka ottaa yhteyden Slackin HTTP-rajapintaan.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Lodash: toPairs &#43; sortBy</title>
-      <link>http://www.nollaversio.fi/blog/public/nodejs/lodash-object-transform-sort/</link>
-      <pubDate>Mon, 29 Aug 2016 13:39:19 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/nodejs/lodash-object-transform-sort/</guid>
-      <description>&lt;p&gt;Löysin kivan patternin tallentaa objektin attribuuttien keskinäinen järjestys osaksi objektia.&lt;/p&gt;
-
-&lt;p&gt;Sanotaan esimerkkinä, että meillä on &lt;em&gt;asukasluettelo&lt;/em&gt;. Tuo luettelo on objekti, jossa &lt;em&gt;avaimena&lt;/em&gt; toimii asukkaan nimi, ja &lt;em&gt;arvona&lt;/em&gt; asukkaan iän kertova objekti:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var asukasLuettelo = {
-  &#39;Matti&#39; : {ika: 16},
-  &#39;Pekka&#39; : {ika: 28},
-  &#39;Pirjo&#39; : {ika: 35},
-  &#39;Lauri&#39; : {ika: 21},
-  // jne.	
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Haluamme muuntaa asukasluettelon muotoon, jossa jokaisen iän yhteydeen on kirjattu &lt;em&gt;kuinka mones nousevassa ikäjärjestyksessä tuo asukas on&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Eli haluamme lopputuloksen:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var asukasLuettelo = {
-  &#39;Matti&#39; : {ika: 16, jarj: 1},
-  &#39;Pekka&#39; : {ika: 28, jarj: 3},
-  &#39;Pirjo&#39; : {ika: 35, jarj: 4},
-  &#39;Lauri&#39; : {ika: 21, jarj: 2},
-  // jne.	
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kuinka tehdä tuo muutos helposti? Yksinkertainen pätkä ketjutettuja Lodash-funktiokutsuja riittää:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-_.chain(asukasLuettelo)
-// Muunna objekti listaksi.
-.toPairs()
-// Lajittele asukkaat ikäjärjestykseen.
-.sortBy(function(asukasL) { return asukasL[1].ika})
-// Asukkaat nyt ikäjärjestyksessä.
-// Talletetaan kunkin asukkaan kohdalle tieto hänen järj.numerostaan.
-.each(function(asukasL, idx) { asukasL[1].jarj = idx+1})
-// Pakotetaan Lodash evaluoimaan kutsuketju
-.value()
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Koska teemme muutoksen suoraan asukas-objektiin, meidän ei tarvitse tallentaa funktioketjun paluuarvoa mihinkään.&lt;/p&gt;
-
-&lt;p&gt;Nyt jokaisen asukkaan yhteyteen on tallennettu hänen ikäjärjestysnumeronsa.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: ylläolevan kutsuketjun lopussa kutsumme apufunktiota &lt;em&gt;value()&lt;/em&gt;. Tämä kutsu on syytä suorittaa vaikka emme tarvitsekaan palautusarvoa mihinkään! Tämä siksi, että Lodash käyttää konseptia nimeltä &lt;em&gt;lazy evaluation&lt;/em&gt; kun se kohtaa tuollaisen kutsuketjun.&lt;/p&gt;
-
-&lt;p&gt;Laiskana miehenä Lodash ei tee yhtään mitään ennenkuin se näkee value()-kutsun - tuon nähdessään se käy läpi koko kutsuketjun, ajaen tarpeelliset funktiot järjestyksessä loppuun saakka.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>
