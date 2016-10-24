@@ -40,7 +40,7 @@ Tällä tavoin nopeutamme merkittävästi hakuja, joissa ikää tai maailmanmest
 
 > Esimerkki maailmanmestari-attribuuttia käyttävästä hausta: *palauta kaikki henkilöt, jotka ovat voittaneet keihäänheiton MM-kultaa* 
 
-Kaikki hyvin. On kuitenkin huomattavast, että ikä-indeksitaulu sisältää viisi miljoonaa riviä. Tämä ihan siksi, että alkuperäinen taulu sisältää myös viisi miljoonaa riviä, ja jokainen henkilö tulee indeksoida iän perusteella, jotta ikä-indeksi toimii oikein.
+Kaikki hyvin. On kuitenkin huomattava, että ikä-indeksitaulu sisältää viisi miljoonaa riviä. Tämä ihan siksi, että alkuperäinen taulu sisältää myös viisi miljoonaa riviä, ja jokainen henkilö tulee indeksoida iän perusteella, jotta ikä-indeksi toimii oikein.
 
 ### Mutta kuinka moni suomalainen on voittanut MM-kultaa yhtään missään?
 
