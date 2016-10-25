@@ -1,0 +1,209 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Regex ja URL &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Regex ja URL</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Tue, Oct 25, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Tarvitsin tänään Laravel-projektia koodatessani toiminnallisuutta, joka tsekkaa onko annettu tekstijono validi www-osoite.</p>
+
+<p>Laravel itsessään tarjoaa tälläisen tsekkauksen, mutta ikäväksekseni Laravel on varsin tiukkapipoinen: se ei hyväksy osoitetta <em>www.nokia.fi</em>, sillä osoitteen alusta puuttuu &ldquo;http://&ldquo;-alkuliite. Omassa projektissani en halua kiusata käyttäjiä mokoman http-alkuosan kirjoituspakolla, joten jouduin hylkäämään Laravellin tsekkarin.</p>
+
+<p>Netistä löytyi varsin kiva regex (regular expression) hoitamaan URL:n tarkistus:</p>
+
+<pre><code>/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+
+</code></pre>
+
+<p>Niin että mitäs tuo sotku tarkoittaakaan? Itselläni ei ole juuri mitään hajua. Tai ei ollut ennen tätä päivää. Olen aina suosiolla ulkoistanut Regex-lauseiden muodostamisen Stack Overflown kaltaisille nettipalveluille.</p>
+
+<p>Nyt kuitenkin selvitin asiaa, vaikka vain tätä blogipostausta varten. Ja toisaalta onhan se hyvä osata jotain.</p>
+
+<h3 id="miten-tuo-tekstihirviö-tarkistaa-url-osoitteen">Miten tuo tekstihirviö tarkistaa URL-osoitteen?</h3>
+
+<p>Ylläoleva regex tosiaan varmistaa, että sille annettu tekstijono on toimiva www-osoite eli URL. Miten ihmeessä? Tarkastellaan tekstimonsteria pala kerrallaan.</p>
+
+<p>Koko monsteri oli siis:</p>
+
+<pre><code>/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
+
+</code></pre>
+
+<p><strong>Ensimmäinen kenoviiva</strong></p>
+
+<pre><code>/
+</code></pre>
+
+<p>Ensimmäinen kenoviiva avaa regex-ekspressionin.</p>
+
+<p><strong>Http-alkuliitteen tarkistus</strong></p>
+
+<pre><code>^(https?:\/\/)?
+
+</code></pre>
+
+<p>Tässä päästään itse asiaa. Tämä osuus tarkistaa, että URL-osoittessa joko on <em>http://</em>-alkuliite, <em>https://</em>-alkuliite, tai ei alkuliitettä ollenkaan. Jokin noista kolmesta vaihtoehdosta tulee olla voimassa; muussa tapauksessa kyseessä ei ole URL ja regex loppuu siihen.</p>
+
+<p>Hiukka merkistöstä ylläolevan regex-palasen suhteen.</p>
+
+<ol>
+<li>Sulut ympäröivät tarkistettavan konseptin.</li>
+<li>Kysymysmerkki merkitsee, että sitä edeltävä konsepti esiintyy joko <em>kerran</em> tai <em>ei lainkaan</em>. Esimerkiksi <em>s?</em> tarkoittaa, että osuuden <em>http</em> jälkeen tulee kirjain <em>s</em> joko kerran tai ei kertaakaan.</li>
+</ol>
+
+<p>Mennään eteenpäin.</p>
+
+<p><strong>Host-nimen tarkistus</strong></p>
+
+<p>Seuraava palanen tarkistaa, että domainin host-osuus sisältää laillisia merkkejä. Host-osuus on domainissa se nimi, joka tulee ennen maatunnusta. Esimerkiksi domainissa <em>www.nokia.fi</em>, host-nimi on <em>nokia</em>.</p>
+
+<pre><code>([\da-z\.-]+)
+
+</code></pre>
+
+<p>Ylläoleva siis tarkistaa, että host-nimi sisältää numeroita (<em>\d</em>) ja/tai laillisia kirjaimia (<em>a-z</em>). Ääkkösiä ei saa sisältää, sillä <em>a-z</em> sisältää vain englannin kielen kirjaimet.</p>
+
+<p>Lisäksi <em>a-z</em> tarkoittaa, että vain pieniä kirjaimia saa olla mukana. Isot kirjaimet eivät käy.</p>
+
+<p>Tämä jälkeen tulee kohta  &lsquo;<em>\.-</em>&rsquo;, joka tarkoittaa, että host-nimi saa sisältää myös pisteitä ja väliviivoja. Muut merkit eivät ole sallittuja.</p>
+
+<p>Mitä nuo hakasulut tekevät tuossa? En tiedä. Jotain kapturoinnista internet-haun mukaan, mutta en täysin ymmärtänyt mitä kapturoinnilla (siis &ldquo;kiinniotolla&rdquo; suomeksi) tarkoitetaan tässä kontekstissa.</p>
+
+<p>Tärkeä sen sijaan on plus-merkki juuri ennen viimeistä sulkua. Se tarkoittaa, että koko aiempi litanja voi laillisesti toistua yhden tai useamman kerran. Ei siis nolla kertaa - vähintään yksi kerta tarvitaan.</p>
+
+<p>Tämä tarkoittaa, että seuraavat host-nimet ovat laillisia:</p>
+
+<ol>
+<li><em>&lsquo;nokia&rsquo;</em></li>
+<li><em>&lsquo;nokia-puhelin007&rsquo;</em></li>
+<li><em>&lsquo;nokia.puhelin007.ollila&rsquo;</em></li>
+</ol>
+
+<p>Ylläolevat noudattavat sääntöjämme. Sen sijaan seuraavat host-nimet ovat laittomia:</p>
+
+<ol>
+<li><em>&lsquo;Nokia&rsquo;</em> (iso kirjain on laiton!)</li>
+<li><em>&lsquo;huhtamäki&rsquo;</em> (ääkkönen on laiton!)</li>
+<li>&rsquo; &lsquo; (tyhjä merkkijono on laiton!)</li>
+</ol>
+
+<p>Mennään eteenpäin.</p>
+
+<p><strong>Pakollinen piste</strong></p>
+
+<pre><code>\.
+
+</code></pre>
+
+<p>Tämä on hyvin yksinkertainen palanen; vaadimme, että host-nimen jälkeen tulee yksi piste. Tämä piste vastaa pistettä host-nimen ja maatunnuksen välissä, esim. &ldquo;nokia.fi&rdquo;.</p>
+
+<p><strong>Maatunnus min. 2 merkkiä, max. 6 merkkiä</strong></p>
+
+<p>Seuraavana tulee maatunnus, eli siis se <em>com</em>, <em>fi</em>, <em>org</em> tjms.</p>
+
+<pre><code>([a-z\.]{2,6})
+
+</code></pre>
+
+<p>Ylläoleva vaatimus määrittää, että maatunnus voi sisältää vain <em>a-z</em> -kirjaimet. Se siis EI voi sisältää numeroita. Ja sitten tulee mielenkiintoinen: <em>{2,6}</em> tarkoittaa, että maatunnuksen pituus voi olla 2-6 merkkiä.</p>
+
+<p>Eli <em>fi</em> menee alarajalta nipin napin läpi, se kun on kaksi merkkiä. Maatunnus <em>finland</em> ei menisi läpi, koska se on 7 merkkiä pitkä.</p>
+
+<p><strong>Loppuosuus eli mahdolliset URI-päätteet</strong></p>
+
+<p>Loppuosuus on aika sotku.</p>
+
+<pre><code>([\/\w \.-]*)*\/?$/
+
+</code></pre>
+
+<p>Ylläoleva on tarkoitettu varmistamaan, ettei URL-osoitteen hakemistopolku sisällä laittomuuksia. Hakemistopolku on siis se loppuosuus, joka määrittää tarkan resurssin, joka haetaan.</p>
+
+<p>Esimerkiksi URL-tekstijonossa <em>www.nokia.fi/mobiili/ollila.jpg</em>, tuo hakemistopolun osuus on <em>/mobiili/ollila.jpg</em>.</p>
+
+<p>Ylläoleva regex aluksi varmistaa, että loppuosuus alkaa kenoviivalla.</p>
+
+<p>Sen jälkeen tulee merkki <em>\w</em>, joka on mielenkiintoinen. Tuo tarkoittaa, että mikä tahansa alfanumeerinen merkki kelpaa. Eli siis pienet kirjaimet, isot kirjaimet ja numerot, ja vielä erikoismerkki <em>_</em> (alaviiva).</p>
+
+<p>Sitten tulee merkki <em>*</em>. Se tarkoittaa, että koko aiempi litanja - joka on hakasulkujen sisällä - toistuu joko nolla kertaa, yhden kerran tai useammin. Eli siis kuinka monesti tahansa - kaikki käy.</p>
+
+<p>Loppuosuus <em>*\/?$/</em> merkkaa yksinkertaisesti, että syöte päättyy. Dollarimerkki käskyttää regex-moottoria ymmärtämään, että tekstijonon tulisi olla loppu tässä kohtaa.</p>
+
+<p>Aika monimutkaista.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

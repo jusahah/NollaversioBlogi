@@ -55,7 +55,7 @@
 &lt;p&gt;Esimerkki maailmanmestari-attribuuttia käyttävästä hausta: &lt;em&gt;palauta kaikki henkilöt, jotka ovat voittaneet keihäänheiton MM-kultaa&lt;/em&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;p&gt;Kaikki hyvin. On kuitenkin huomattavast, että ikä-indeksitaulu sisältää viisi miljoonaa riviä. Tämä ihan siksi, että alkuperäinen taulu sisältää myös viisi miljoonaa riviä, ja jokainen henkilö tulee indeksoida iän perusteella, jotta ikä-indeksi toimii oikein.&lt;/p&gt;
+&lt;p&gt;Kaikki hyvin. On kuitenkin huomattava, että ikä-indeksitaulu sisältää viisi miljoonaa riviä. Tämä ihan siksi, että alkuperäinen taulu sisältää myös viisi miljoonaa riviä, ja jokainen henkilö tulee indeksoida iän perusteella, jotta ikä-indeksi toimii oikein.&lt;/p&gt;
 
 &lt;h3 id=&#34;mutta-kuinka-moni-suomalainen-on-voittanut-mm-kultaa-yhtään-missään&#34;&gt;Mutta kuinka moni suomalainen on voittanut MM-kultaa yhtään missään?&lt;/h3&gt;
 

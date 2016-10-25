@@ -6,8 +6,144 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Mon, 24 Oct 2016 17:41:19 +0300</lastBuildDate>
+    <lastBuildDate>Tue, 25 Oct 2016 17:01:58 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Regex ja URL</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/regex-url/</link>
+      <pubDate>Tue, 25 Oct 2016 17:01:58 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/regex-url/</guid>
+      <description>
+
+&lt;p&gt;Tarvitsin tänään Laravel-projektia koodatessani toiminnallisuutta, joka tsekkaa onko annettu tekstijono validi www-osoite.&lt;/p&gt;
+
+&lt;p&gt;Laravel itsessään tarjoaa tälläisen tsekkauksen, mutta ikäväksekseni Laravel on varsin tiukkapipoinen: se ei hyväksy osoitetta &lt;em&gt;www.nokia.fi&lt;/em&gt;, sillä osoitteen alusta puuttuu &amp;ldquo;http://&amp;ldquo;-alkuliite. Omassa projektissani en halua kiusata käyttäjiä mokoman http-alkuosan kirjoituspakolla, joten jouduin hylkäämään Laravellin tsekkarin.&lt;/p&gt;
+
+&lt;p&gt;Netistä löytyi varsin kiva regex (regular expression) hoitamaan URL:n tarkistus:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Niin että mitäs tuo sotku tarkoittaakaan? Itselläni ei ole juuri mitään hajua. Tai ei ollut ennen tätä päivää. Olen aina suosiolla ulkoistanut Regex-lauseiden muodostamisen Stack Overflown kaltaisille nettipalveluille.&lt;/p&gt;
+
+&lt;p&gt;Nyt kuitenkin selvitin asiaa, vaikka vain tätä blogipostausta varten. Ja toisaalta onhan se hyvä osata jotain.&lt;/p&gt;
+
+&lt;h3 id=&#34;miten-tuo-tekstihirviö-tarkistaa-url-osoitteen&#34;&gt;Miten tuo tekstihirviö tarkistaa URL-osoitteen?&lt;/h3&gt;
+
+&lt;p&gt;Ylläoleva regex tosiaan varmistaa, että sille annettu tekstijono on toimiva www-osoite eli URL. Miten ihmeessä? Tarkastellaan tekstimonsteria pala kerrallaan.&lt;/p&gt;
+
+&lt;p&gt;Koko monsteri oli siis:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;Ensimmäinen kenoviiva&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;/
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ensimmäinen kenoviiva avaa regex-ekspressionin.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Http-alkuliitteen tarkistus&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;^(https?:\/\/)?
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tässä päästään itse asiaa. Tämä osuus tarkistaa, että URL-osoittessa joko on &lt;em&gt;http://&lt;/em&gt;-alkuliite, &lt;em&gt;https://&lt;/em&gt;-alkuliite, tai ei alkuliitettä ollenkaan. Jokin noista kolmesta vaihtoehdosta tulee olla voimassa; muussa tapauksessa kyseessä ei ole URL ja regex loppuu siihen.&lt;/p&gt;
+
+&lt;p&gt;Hiukka merkistöstä ylläolevan regex-palasen suhteen.&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Sulut ympäröivät tarkistettavan konseptin.&lt;/li&gt;
+&lt;li&gt;Kysymysmerkki merkitsee, että sitä edeltävä konsepti esiintyy joko &lt;em&gt;kerran&lt;/em&gt; tai &lt;em&gt;ei lainkaan&lt;/em&gt;. Esimerkiksi &lt;em&gt;s?&lt;/em&gt; tarkoittaa, että osuuden &lt;em&gt;http&lt;/em&gt; jälkeen tulee kirjain &lt;em&gt;s&lt;/em&gt; joko kerran tai ei kertaakaan.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Mennään eteenpäin.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Host-nimen tarkistus&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Seuraava palanen tarkistaa, että domainin host-osuus sisältää laillisia merkkejä. Host-osuus on domainissa se nimi, joka tulee ennen maatunnusta. Esimerkiksi domainissa &lt;em&gt;www.nokia.fi&lt;/em&gt;, host-nimi on &lt;em&gt;nokia&lt;/em&gt;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;([\da-z\.-]+)
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva siis tarkistaa, että host-nimi sisältää numeroita (&lt;em&gt;\d&lt;/em&gt;) ja/tai laillisia kirjaimia (&lt;em&gt;a-z&lt;/em&gt;). Ääkkösiä ei saa sisältää, sillä &lt;em&gt;a-z&lt;/em&gt; sisältää vain englannin kielen kirjaimet.&lt;/p&gt;
+
+&lt;p&gt;Lisäksi &lt;em&gt;a-z&lt;/em&gt; tarkoittaa, että vain pieniä kirjaimia saa olla mukana. Isot kirjaimet eivät käy.&lt;/p&gt;
+
+&lt;p&gt;Tämä jälkeen tulee kohta  &amp;lsquo;&lt;em&gt;\.-&lt;/em&gt;&amp;rsquo;, joka tarkoittaa, että host-nimi saa sisältää myös pisteitä ja väliviivoja. Muut merkit eivät ole sallittuja.&lt;/p&gt;
+
+&lt;p&gt;Mitä nuo hakasulut tekevät tuossa? En tiedä. Jotain kapturoinnista internet-haun mukaan, mutta en täysin ymmärtänyt mitä kapturoinnilla (siis &amp;ldquo;kiinniotolla&amp;rdquo; suomeksi) tarkoitetaan tässä kontekstissa.&lt;/p&gt;
+
+&lt;p&gt;Tärkeä sen sijaan on plus-merkki juuri ennen viimeistä sulkua. Se tarkoittaa, että koko aiempi litanja voi laillisesti toistua yhden tai useamman kerran. Ei siis nolla kertaa - vähintään yksi kerta tarvitaan.&lt;/p&gt;
+
+&lt;p&gt;Tämä tarkoittaa, että seuraavat host-nimet ovat laillisia:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;em&gt;&amp;lsquo;nokia&amp;rsquo;&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;&amp;lsquo;nokia-puhelin007&amp;rsquo;&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;&amp;lsquo;nokia.puhelin007.ollila&amp;rsquo;&lt;/em&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Ylläolevat noudattavat sääntöjämme. Sen sijaan seuraavat host-nimet ovat laittomia:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;em&gt;&amp;lsquo;Nokia&amp;rsquo;&lt;/em&gt; (iso kirjain on laiton!)&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;&amp;lsquo;huhtamäki&amp;rsquo;&lt;/em&gt; (ääkkönen on laiton!)&lt;/li&gt;
+&lt;li&gt;&amp;rsquo; &amp;lsquo; (tyhjä merkkijono on laiton!)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Mennään eteenpäin.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Pakollinen piste&lt;/strong&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;\.
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tämä on hyvin yksinkertainen palanen; vaadimme, että host-nimen jälkeen tulee yksi piste. Tämä piste vastaa pistettä host-nimen ja maatunnuksen välissä, esim. &amp;ldquo;nokia.fi&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Maatunnus min. 2 merkkiä, max. 6 merkkiä&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Seuraavana tulee maatunnus, eli siis se &lt;em&gt;com&lt;/em&gt;, &lt;em&gt;fi&lt;/em&gt;, &lt;em&gt;org&lt;/em&gt; tjms.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;([a-z\.]{2,6})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva vaatimus määrittää, että maatunnus voi sisältää vain &lt;em&gt;a-z&lt;/em&gt; -kirjaimet. Se siis EI voi sisältää numeroita. Ja sitten tulee mielenkiintoinen: &lt;em&gt;{2,6}&lt;/em&gt; tarkoittaa, että maatunnuksen pituus voi olla 2-6 merkkiä.&lt;/p&gt;
+
+&lt;p&gt;Eli &lt;em&gt;fi&lt;/em&gt; menee alarajalta nipin napin läpi, se kun on kaksi merkkiä. Maatunnus &lt;em&gt;finland&lt;/em&gt; ei menisi läpi, koska se on 7 merkkiä pitkä.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Loppuosuus eli mahdolliset URI-päätteet&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Loppuosuus on aika sotku.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;([\/\w \.-]*)*\/?$/
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva on tarkoitettu varmistamaan, ettei URL-osoitteen hakemistopolku sisällä laittomuuksia. Hakemistopolku on siis se loppuosuus, joka määrittää tarkan resurssin, joka haetaan.&lt;/p&gt;
+
+&lt;p&gt;Esimerkiksi URL-tekstijonossa &lt;em&gt;www.nokia.fi/mobiili/ollila.jpg&lt;/em&gt;, tuo hakemistopolun osuus on &lt;em&gt;/mobiili/ollila.jpg&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Ylläoleva regex aluksi varmistaa, että loppuosuus alkaa kenoviivalla.&lt;/p&gt;
+
+&lt;p&gt;Sen jälkeen tulee merkki &lt;em&gt;\w&lt;/em&gt;, joka on mielenkiintoinen. Tuo tarkoittaa, että mikä tahansa alfanumeerinen merkki kelpaa. Eli siis pienet kirjaimet, isot kirjaimet ja numerot, ja vielä erikoismerkki &lt;em&gt;_&lt;/em&gt; (alaviiva).&lt;/p&gt;
+
+&lt;p&gt;Sitten tulee merkki &lt;em&gt;*&lt;/em&gt;. Se tarkoittaa, että koko aiempi litanja - joka on hakasulkujen sisällä - toistuu joko nolla kertaa, yhden kerran tai useammin. Eli siis kuinka monesti tahansa - kaikki käy.&lt;/p&gt;
+
+&lt;p&gt;Loppuosuus &lt;em&gt;*\/?$/&lt;/em&gt; merkkaa yksinkertaisesti, että syöte päättyy. Dollarimerkki käskyttää regex-moottoria ymmärtämään, että tekstijonon tulisi olla loppu tässä kohtaa.&lt;/p&gt;
+
+&lt;p&gt;Aika monimutkaista.&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>AWS ja harva indeksi</title>
@@ -55,7 +191,7 @@
 &lt;p&gt;Esimerkki maailmanmestari-attribuuttia käyttävästä hausta: &lt;em&gt;palauta kaikki henkilöt, jotka ovat voittaneet keihäänheiton MM-kultaa&lt;/em&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;p&gt;Kaikki hyvin. On kuitenkin huomattavast, että ikä-indeksitaulu sisältää viisi miljoonaa riviä. Tämä ihan siksi, että alkuperäinen taulu sisältää myös viisi miljoonaa riviä, ja jokainen henkilö tulee indeksoida iän perusteella, jotta ikä-indeksi toimii oikein.&lt;/p&gt;
+&lt;p&gt;Kaikki hyvin. On kuitenkin huomattava, että ikä-indeksitaulu sisältää viisi miljoonaa riviä. Tämä ihan siksi, että alkuperäinen taulu sisältää myös viisi miljoonaa riviä, ja jokainen henkilö tulee indeksoida iän perusteella, jotta ikä-indeksi toimii oikein.&lt;/p&gt;
 
 &lt;h3 id=&#34;mutta-kuinka-moni-suomalainen-on-voittanut-mm-kultaa-yhtään-missään&#34;&gt;Mutta kuinka moni suomalainen on voittanut MM-kultaa yhtään missään?&lt;/h3&gt;
 
@@ -1336,87 +1472,6 @@ public class LainausController {
 &lt;p&gt;Loppukaneetti: Controllerista käsin tietokantakutsujen tekeminen on useimpien mielestä kyseenalaista. Höpsis. Jos tietokantakutsu on turvallinen ja yksinkertainen, ei ole mitään syytä lähteä abstraktoimaan sitä sen enempää. Kunhan vain kutsut tietokantaa ja sillä sipuli.&lt;/p&gt;
 
 &lt;p&gt;Muokkausoperaation kohdalla tilanne on toinen. Vaativissa applikaatioissa muokkausoperaatiot voivat olla erittäin monimutkaisia ja sisältää monta askelta. Tällöin on tärkeää, että mahdolliset virhetilanteet käsitellään asianmukaisesti. Muokkausoperaation voi suorittaa Controllerista käsin, mutta applikaation rakenteen kannalta on selkeämpää, että elintärkeä ja mutkikas muokkaus eristetään omaksi apuluokakseen. Tämä eristys myös mahdollistaa, että useampi eri Controller voi uudelleenkäyttää tuota muokkauslogiikkaa mikäli tarve niin vaatii.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Laravel 5.3: ilmoitukset</title>
-      <link>http://www.nollaversio.fi/blog/public/laravel/notifications/</link>
-      <pubDate>Mon, 05 Sep 2016 07:38:13 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/laravel/notifications/</guid>
-      <description>&lt;p&gt;Laravellin uusin versio (5.3) tekee web-ohjelmoinnista taas laittoman helppoa. Ikäänkuin se ei olisi jo sitä ollut.&lt;/p&gt;
-
-&lt;p&gt;Uusi versio tuo mukanaan &lt;em&gt;ilmoituksen&lt;/em&gt; (engl. notification) konseptin, jonka avulla ns. domain-koodista pystyy ampumaan ilmoituksia suoraan domain-objektien suuntaan. Laravel-kehys sitten hoitaa loput.&lt;/p&gt;
-
-&lt;p&gt;Tyypillinen tapa ilmoitttaa jotain on ampua ilmoitus &lt;em&gt;User&lt;/em&gt;-objektin suuntaan. Homma toimii äärimmäisen yksinkertaisesti:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-$matti-&amp;gt;notify(new LaskuEraantynyt());
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva koodi kertoo Matille, että hänen laskunsa on erääntynyt.&lt;/p&gt;
-
-&lt;p&gt;Pinnan alla tapahtuu ylläolevan koodinajon jälkeen vielä hiukka asioita. Ensiksi tarvitsemme &lt;em&gt;User&lt;/em&gt;-luokkaan ($matti on User-luokan objekti) metodin nimeltä &lt;em&gt;routeNotificationForSlack&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Tämä routeNotificationForSlack-metodi määrittelee mihin &amp;ldquo;postilaatikkoon&amp;rdquo; lähetämme laskun erääntymisestä kertovan ilmoituksen. Se &lt;strong&gt;ei&lt;/strong&gt; tee itse ilmoitusta, vaan ainoastaan kertoo mihin tuo ilmoitus ohjataan.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// User.php
-
-public function routeNotificationForSlack() {
-  // Tässä määritetään Matin Slack-tilin endpoint joka vastaanottaa viestit.
-  // Oletetaan että Matti on rekisteröinnin yhteydessä antanut endpoint-URL:n.
-  // Tuo Slack-URL on sitten tallennettu osaksi Matin käyttäjätietoja tietokantaan.
-  return $this-&amp;gt;slack_url;	
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vakiona tukee Slackkia, voimme luoda tuon luokan helposti.&lt;/p&gt;
-
-&lt;p&gt;Tarvitsemme ensinnäkin &lt;em&gt;via&lt;/em&gt;-metodin, joka määrittää mitä ilmoitustapaa käytämme. Voimme käyttää esim. SMS-viestiä tai email-viestiä. Tässä esimerkissä tyydymme Slackin käyttöön.&lt;/p&gt;
-
-&lt;p&gt;Lisäksi tarvitsemme &lt;em&gt;toSlack&lt;/em&gt;-metodin, joka luo Slackia varten uuden viestin. Tätä metodia tarvitsemme ainoastaan lähettäessämme ilmoituksen Slackiin.&lt;/p&gt;
-
-&lt;p&gt;Jos lähettäisimme ilmoituksen emaililla, käyttäisimme metodia &lt;em&gt;toMail&lt;/em&gt;. Koska lähetämme Slackiin, käytämme metodia &lt;em&gt;toSlack&lt;/em&gt;. Suorastaan johdonmukaista.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Notifications/LaskuEraantynyt.php
-
-class LaskuEraantynyt extends Notification {
-
-  public function via($notifiable) {
-    // Laskuilmoitukset lähetetään asiakkaiden Slack-kanaviin.
-    return [&#39;slack&#39;];	
-  }
-
-  public function toSlack($notifiable) {
-    // Kehys kutsuu tätä metodia kun Slack-viestiä luodaan/lähetetään.
-    // SlackMessage on Laravellin sisäinen apuluokka.
-    return (new SlackMessage)-&amp;gt;content(&#39;Maksa heti!&#39;);
-
-  }
-	
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Muuta ei tarvita (paitsi Guzzle, lue loppukaneetti).&lt;/p&gt;
-
-&lt;p&gt;On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;Kutsumme domain-koodissa User-objektin &lt;em&gt;notify&lt;/em&gt;-metodia. Parametrinä sisään pyyhältää uunituore LaskuEraantynyt-objekti.&lt;/li&gt;
-&lt;li&gt;Laravel selvittää LaskuEraantynyt-objektin &lt;em&gt;via&lt;/em&gt;-metodilla, että haluttu viestiväylä on Slack.&lt;/li&gt;
-&lt;li&gt;LaskuEraantynyt-objektin &lt;em&gt;toSlack&lt;/em&gt;-metodi palauttaa SlackMessage-viestiobjektin.&lt;/li&gt;
-&lt;li&gt;SlackMessage-viestiobjekti ohjataan User-objektin &lt;em&gt;routeNotificationForSlack&lt;/em&gt;-metodin palauttamaan URL-osoitteeseen. Teknisesti tuon ohjauksen hoitaa Guzzle, joka kutsuu Slackin rajapintaa HTTP POST-pyynnön turvin.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: Slack-viestin lähettäminen vaatii Guzzle-lisäosaa, joka ottaa yhteyden Slackin HTTP-rajapintaan.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>
