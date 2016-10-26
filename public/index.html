@@ -68,6 +68,137 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="http://www.nollaversio.fi/blog/public/laravel/email-sending-with-delays/">
+        Laravel: viivyttelyn taito
+      </a>
+    </h1>
+
+    <span class="post-date">Wed, Oct 26, 2016</span>
+
+    
+
+<p>Laravel-kehyksen yksi sisäänrakennetuista ominaisuuksista on <em>jono</em>. Laravel mahdollistaa tehtävien puskemisen jonoon, ja suorittamisen erillisessä käyttöjärjestelmän prosessissa.</p>
+
+<p>Tällä tavoin käyttäjän palvelupyyntöä käsittelevä prosessi pääsee helpommalla. Sen ei tarvitse hoitaa kuin tehtävien assignointi, ei itse tehtävien suoritusta.</p>
+
+<blockquote>
+<p>Jonotuksen perusteet löytyvät parhaiten aiemmasta postauksestani <a href="http://www.nollaversio.fi/blog/public/laravel/queue-worker/">täältä</a></p>
+
+<p>Tässä postauksessa keskitymme erityisesti <em>delay()</em>-metodin käyttöön jonotuksen yhteydessä.</p>
+</blockquote>
+
+<p>Lähtökohtaisesti jonoon työnnetyt tehtävät suoritetaan <em>niin pian kuin mahdollista</em>. Useimmiten tämä tarkoittaa, että tehtävä viettää jonossa aikaa vain muutaman sekunnin murto-osan.</p>
+
+<p>On kuitenkin käyttötapauksia, joissa on ihanteellista <em>pakottaa</em> tehtävä jonottamaan vähän pidempään.</p>
+
+<h3 id="ajastetut-tehtävät-jonon-kautta">Ajastetut tehtävät jonon kautta</h3>
+
+<p>Yksi yleinen toimenpide on <em>ajastaa</em> sarja tehtäviä suoritettavaksi myöhempänä ajankohtana. Usein vieläpä nuo tehtävät tulee ajastaa siten, että tehtäväsuoritusten välillä kuluu tietty aika.</p>
+
+<p>Otetaan esimerkki.</p>
+
+<h3 id="lämpötilan-mittaus-tunnin-välein-etukäteen-ajastettuna">Lämpötilan mittaus tunnin välein - etukäteen ajastettuna!</h3>
+
+<p>Oletetaan, että meillä on applikaatio, joka mittaa ulkolämpötilaa. Se miten varsinainen mittaus suoritetaan ei ole oleellista - esimerkin kannalta oleellista on se, miten mittaukset ajastetaan.</p>
+
+<p>On täysin mahdollista mitata lämpötila joka sekunti. Ulkolämpötila ei kuitenkaan mainittavasti nouse/laske sekunnin välein, joten kovin järkevää tuo ei ole. Sen sijaan mitatkaamme lämpötila kerran tunnissa.</p>
+
+<p>Järjestelmän hieno ominaisuus on, että se ei mittaa lämpötiloja omin päin. Sen sijaan käyttäjä joutuu pyytämään lämpötilan mittaussarjan aloittamista. Pyynnön yhteydessä käyttäjä myös ilmoittaa montako mittaustapahtumaa hän haluaa suorittaa. Mittaustapahtumien määrä vastaa tuntien määrää, sillä mittauksia tehdään yksi tunnissa.</p>
+
+<p>Kätevimmin ylläolevan kaltainen toiminnallisuus onnistuu juuri <em>ajastetun jonotuksen avulla</em>.</p>
+
+<pre><code>// App\Execute.php
+
+// Se miten käyttäjältä kysytään mittaustapahtumien määrä ei ole oleellista.
+// Oletetaan että kysyminen on suoritettu *jotenkin*.
+$mittaustenMaara = 10;
+
+// Carbon on erinomainen ajanhallintaan erikoistuva lisäosa!
+$now = Carbon::now();
+
+// Luodaan ja jonotetaan mittaukset
+for($i=0; $i &lt; $mittaustenMaara; $i++){
+  // dispatch siirtää tehtävän jonoon
+  // Huomionarvoista on *delay()*-metodin käyttö. Se 
+  // antaa meille tilaisuuden määrittää ajankohdan
+  // jolloin tehtävä aikaisintaan voidaan suorittaa!
+
+  // Delay-metodin avulla voimme täten siirtää tehtävän suorituksen
+  // haluttuun hetkeen tulevaisuuteen. Kullekin tehtävälle annamme
+  // odotusajaksi kasvavan tuntimäärän $i.
+  dispatch(new MittaaLampotila()-&gt;delay($now-&gt;addHours($i)));   
+}
+
+</code></pre>
+
+<p>Tarvitsemme vielä tuon MittaaLampotila-luokan.</p>
+
+<pre><code>
+// App\Jobs\MittaaLampotila.php
+
+&lt;?php
+
+namespace App\Jobs;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Contracts\Queue\ShouldQueue;
+
+use App\Models\Mittaustulos;
+
+class MittaaLampotila implements ShouldQueue
+{
+    use InteractsWithQueue, Queueable
+
+    /**
+     * Execute the job.
+     *
+     * @param  LampotilaRajapinta
+     * @return void
+     */
+    public function handle(LampotilaRajapinta $rajapinta)
+    {
+    	// $rajapinta tulee DI-konttanerin...kontaaninerin... kautta
+
+    	// Suoritetaan mittaus kutsumalla injektoitua rajapintaa.
+        $celsius = LampotilaRajapinta-&gt;mittaa();
+
+        // Meillä on olemassa 'Mittaustulos' Active Record-malli,
+        // joka hoitaa tuloksen puskemisen tietokantaan.
+        $mittaustulos = new Mittaustulos($celsius);
+        $mittaustulos-&gt;save();
+
+    }
+}
+
+</code></pre>
+
+<p>Kun koko jono on lopulta (esimerkin tapauksessa 9 tunnin kuluttua) tyhjentynyt, tietokanta näyttää appatiarallaa tältä.</p>
+
+<pre><code>
+| celsius    | ajankohta |
+| ---------- | --------- |
+| 12         | 16.00     |
+| 13         | 17.00     |
+| 13         | 18.00     | 
+| 10         | 19.00     | 
+
+// jne. jne.
+
+</code></pre>
+
+<blockquote>
+<p>Laravellin <em>delay()</em>-metodi mahdollistaa helpon tavan siirtää tehtävä kauas tulevaisuuteen. Sen lisäksi, että tehtävä <em>ajetaan erillisessä prosessissa</em> (ns. prosessi-isolaatio), tehtävä ajetaan myös <em>ajallisesti erillään</em> (ns. ajallinen isolaatio).</p>
+
+<p>Toinen hyvä käyttötarkoitus tälle portaalliselle ajastukselle on tehdä kutsuja johonkin rajapintaan. Sanotaan, että meillä on 1000 kpl HTTP-kutsuja tehtävänä. Jos kaikki kutsut ammutaan parin sekunnin sisällä, vastaanottava pää on käärmeissään (koska DoS-hyökkäys).</p>
+
+<p>Jos taas ajastamme kutsut lähtemään aina 10 sekunnin välein, vastaanottaja on tyytyväinen.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="http://www.nollaversio.fi/blog/public/laravel/regex-url/">
         Regex ja URL
       </a>

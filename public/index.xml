@@ -6,8 +6,136 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Tue, 25 Oct 2016 17:01:58 +0300</lastBuildDate>
+    <lastBuildDate>Wed, 26 Oct 2016 17:24:15 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Laravel: viivyttelyn taito</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/email-sending-with-delays/</link>
+      <pubDate>Wed, 26 Oct 2016 17:24:15 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/email-sending-with-delays/</guid>
+      <description>
+
+&lt;p&gt;Laravel-kehyksen yksi sisäänrakennetuista ominaisuuksista on &lt;em&gt;jono&lt;/em&gt;. Laravel mahdollistaa tehtävien puskemisen jonoon, ja suorittamisen erillisessä käyttöjärjestelmän prosessissa.&lt;/p&gt;
+
+&lt;p&gt;Tällä tavoin käyttäjän palvelupyyntöä käsittelevä prosessi pääsee helpommalla. Sen ei tarvitse hoitaa kuin tehtävien assignointi, ei itse tehtävien suoritusta.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Jonotuksen perusteet löytyvät parhaiten aiemmasta postauksestani &lt;a href=&#34;http://www.nollaversio.fi/blog/public/laravel/queue-worker/&#34;&gt;täältä&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Tässä postauksessa keskitymme erityisesti &lt;em&gt;delay()&lt;/em&gt;-metodin käyttöön jonotuksen yhteydessä.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Lähtökohtaisesti jonoon työnnetyt tehtävät suoritetaan &lt;em&gt;niin pian kuin mahdollista&lt;/em&gt;. Useimmiten tämä tarkoittaa, että tehtävä viettää jonossa aikaa vain muutaman sekunnin murto-osan.&lt;/p&gt;
+
+&lt;p&gt;On kuitenkin käyttötapauksia, joissa on ihanteellista &lt;em&gt;pakottaa&lt;/em&gt; tehtävä jonottamaan vähän pidempään.&lt;/p&gt;
+
+&lt;h3 id=&#34;ajastetut-tehtävät-jonon-kautta&#34;&gt;Ajastetut tehtävät jonon kautta&lt;/h3&gt;
+
+&lt;p&gt;Yksi yleinen toimenpide on &lt;em&gt;ajastaa&lt;/em&gt; sarja tehtäviä suoritettavaksi myöhempänä ajankohtana. Usein vieläpä nuo tehtävät tulee ajastaa siten, että tehtäväsuoritusten välillä kuluu tietty aika.&lt;/p&gt;
+
+&lt;p&gt;Otetaan esimerkki.&lt;/p&gt;
+
+&lt;h3 id=&#34;lämpötilan-mittaus-tunnin-välein-etukäteen-ajastettuna&#34;&gt;Lämpötilan mittaus tunnin välein - etukäteen ajastettuna!&lt;/h3&gt;
+
+&lt;p&gt;Oletetaan, että meillä on applikaatio, joka mittaa ulkolämpötilaa. Se miten varsinainen mittaus suoritetaan ei ole oleellista - esimerkin kannalta oleellista on se, miten mittaukset ajastetaan.&lt;/p&gt;
+
+&lt;p&gt;On täysin mahdollista mitata lämpötila joka sekunti. Ulkolämpötila ei kuitenkaan mainittavasti nouse/laske sekunnin välein, joten kovin järkevää tuo ei ole. Sen sijaan mitatkaamme lämpötila kerran tunnissa.&lt;/p&gt;
+
+&lt;p&gt;Järjestelmän hieno ominaisuus on, että se ei mittaa lämpötiloja omin päin. Sen sijaan käyttäjä joutuu pyytämään lämpötilan mittaussarjan aloittamista. Pyynnön yhteydessä käyttäjä myös ilmoittaa montako mittaustapahtumaa hän haluaa suorittaa. Mittaustapahtumien määrä vastaa tuntien määrää, sillä mittauksia tehdään yksi tunnissa.&lt;/p&gt;
+
+&lt;p&gt;Kätevimmin ylläolevan kaltainen toiminnallisuus onnistuu juuri &lt;em&gt;ajastetun jonotuksen avulla&lt;/em&gt;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// App\Execute.php
+
+// Se miten käyttäjältä kysytään mittaustapahtumien määrä ei ole oleellista.
+// Oletetaan että kysyminen on suoritettu *jotenkin*.
+$mittaustenMaara = 10;
+
+// Carbon on erinomainen ajanhallintaan erikoistuva lisäosa!
+$now = Carbon::now();
+
+// Luodaan ja jonotetaan mittaukset
+for($i=0; $i &amp;lt; $mittaustenMaara; $i++){
+  // dispatch siirtää tehtävän jonoon
+  // Huomionarvoista on *delay()*-metodin käyttö. Se 
+  // antaa meille tilaisuuden määrittää ajankohdan
+  // jolloin tehtävä aikaisintaan voidaan suorittaa!
+
+  // Delay-metodin avulla voimme täten siirtää tehtävän suorituksen
+  // haluttuun hetkeen tulevaisuuteen. Kullekin tehtävälle annamme
+  // odotusajaksi kasvavan tuntimäärän $i.
+  dispatch(new MittaaLampotila()-&amp;gt;delay($now-&amp;gt;addHours($i)));   
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tarvitsemme vielä tuon MittaaLampotila-luokan.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;
+// App\Jobs\MittaaLampotila.php
+
+&amp;lt;?php
+
+namespace App\Jobs;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Contracts\Queue\ShouldQueue;
+
+use App\Models\Mittaustulos;
+
+class MittaaLampotila implements ShouldQueue
+{
+    use InteractsWithQueue, Queueable
+
+    /**
+     * Execute the job.
+     *
+     * @param  LampotilaRajapinta
+     * @return void
+     */
+    public function handle(LampotilaRajapinta $rajapinta)
+    {
+    	// $rajapinta tulee DI-konttanerin...kontaaninerin... kautta
+
+    	// Suoritetaan mittaus kutsumalla injektoitua rajapintaa.
+        $celsius = LampotilaRajapinta-&amp;gt;mittaa();
+
+        // Meillä on olemassa &#39;Mittaustulos&#39; Active Record-malli,
+        // joka hoitaa tuloksen puskemisen tietokantaan.
+        $mittaustulos = new Mittaustulos($celsius);
+        $mittaustulos-&amp;gt;save();
+
+    }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kun koko jono on lopulta (esimerkin tapauksessa 9 tunnin kuluttua) tyhjentynyt, tietokanta näyttää appatiarallaa tältä.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;
+| celsius    | ajankohta |
+| ---------- | --------- |
+| 12         | 16.00     |
+| 13         | 17.00     |
+| 13         | 18.00     | 
+| 10         | 19.00     | 
+
+// jne. jne.
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Laravellin &lt;em&gt;delay()&lt;/em&gt;-metodi mahdollistaa helpon tavan siirtää tehtävä kauas tulevaisuuteen. Sen lisäksi, että tehtävä &lt;em&gt;ajetaan erillisessä prosessissa&lt;/em&gt; (ns. prosessi-isolaatio), tehtävä ajetaan myös &lt;em&gt;ajallisesti erillään&lt;/em&gt; (ns. ajallinen isolaatio).&lt;/p&gt;
+
+&lt;p&gt;Toinen hyvä käyttötarkoitus tälle portaalliselle ajastukselle on tehdä kutsuja johonkin rajapintaan. Sanotaan, että meillä on 1000 kpl HTTP-kutsuja tehtävänä. Jos kaikki kutsut ammutaan parin sekunnin sisällä, vastaanottava pää on käärmeissään (koska DoS-hyökkäys).&lt;/p&gt;
+
+&lt;p&gt;Jos taas ajastamme kutsut lähtemään aina 10 sekunnin välein, vastaanottaja on tyytyväinen.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Regex ja URL</title>
@@ -1353,125 +1481,6 @@ tallennaNimi(); // Tallentaa nettilevylle;
 
 &lt;blockquote&gt;
 &lt;p&gt;Asynkronoidun johdonmukaisuuden vaatimus on löysempi kuin synkronoidun johdonmukaisuuden vaatimus. Synkronoidusti johdonmukainen järjestelmä ei voi olla hetkeäkään epäjohdonmukaisessa tilassa (esim. tilassa, jossa kaksi laskeutuvaa lentokonetta suuntaa kohti samaa kiitorataa). Asynkronoidusti johdonmukainen järjestelmä &lt;em&gt;voi olla&lt;/em&gt; hetkellisesti epäjohdonmukaisessa tilassa; riittää, että epäjohdonmukaisuus &lt;em&gt;poistuu&lt;/em&gt; ennenkuin mitään peruuttamatonta vahinkoa ehtii syntymään.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>CQRS ja Laravel</title>
-      <link>http://www.nollaversio.fi/blog/public/laravel/cqrs-in-laravel/</link>
-      <pubDate>Wed, 07 Sep 2016 18:03:38 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/laravel/cqrs-in-laravel/</guid>
-      <description>
-
-&lt;p&gt;CQRS (Command Query Responsibility Separation) on vahva keino selkeyttää vastuunjakoa ohjelma-arkkitehtuurissa.&lt;/p&gt;
-
-&lt;p&gt;Sen perusidea on &lt;em&gt;datan haun&lt;/em&gt; ja &lt;em&gt;datan muokkauksen&lt;/em&gt; erottaminen toisistaan. Tämä tarkoittaa pohjimmiltaan sitä, että tietty operaatio joko hakee dataa tai muokkaa dataa, mutta &lt;strong&gt;ei koskaan molempia yhtaikaa.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Kun operaatio on joko &lt;em&gt;hakubisneksessä&lt;/em&gt; tai &lt;em&gt;muokkausbisneksessä&lt;/em&gt;, mutta ei ikinä molemmissa, voi operaatio optimoida itsensä valitun &amp;ldquo;bisneksen&amp;rdquo; mukaan. Esimerkiksi hakuoperaatio voidaan optimoida käyttämään datalähdettä, jossa data on valmiiksi käsitelty helposti haettavaan muotoon. Muokkausoperaatio puolestaan voi käyttää datalähdettä, jossa data on käsitelty helposti muokattavaan muotoon.&lt;/p&gt;
-
-&lt;p&gt;Useimmiten ylläoleva tarkoittaa, että datasta on kaksi kopiota; yksi hakua varten, toinen muokkausta varten. Kopiot pidetään ajan tasalla toisiinsa nähden esimerkiksi rakentamalla hakukopio puhtaalta pöydältä aina kun muokkauskopioon tulee päivitys (=dataa muokataan).&lt;/p&gt;
-
-&lt;p&gt;CQRS ei itsessään vaadi datakopioiden olemassaoloa. Haku- ja muokkausoperaatioiden erottelu voidaan suorittaa siten, että molemmat operaatiot käyttävät samaa datalähdettä, mutta vaatimukset esim. virhetilanteiden käsittelylle ovat erilaiset.&lt;/p&gt;
-
-&lt;h3 id=&#34;hakuoperaatio-query&#34;&gt;Hakuoperaatio (Query)&lt;/h3&gt;
-
-&lt;p&gt;Hakuoperaation luonteeseen kuuluu, että haku ei voi mennä &lt;em&gt;kriittisellä&lt;/em&gt; tavalla pieleen. Kriittisellä tarkoitan tässä, että jos operaatio epäonnistuu, datalähde ei ole moksiskaan. Operaation epäonnistuminen rajoittuu operaatioon itseensä; ympäröivä järjestelmä ei kärsi vaurioita.&lt;/p&gt;
-
-&lt;p&gt;Miksi näin? Luonnollisesti ihan siksi, että hakuoperaatio - nimensä mukaisesti - &lt;em&gt;hakee&lt;/em&gt; tietoa. Tuo haku joko onnistuu tai epäonnistuu. Riippumatta operaation lopputulemasta, datalähde pysyy intaktina.&lt;/p&gt;
-
-&lt;h3 id=&#34;muokkausoperaatio-command&#34;&gt;Muokkausoperaatio (Command)&lt;/h3&gt;
-
-&lt;p&gt;Muokkausoperaation luonteeseen taas kuuluu, että operaatio muokkaa datalähdettä. Esimerkiksi puhelinnumeron muokkaus Facebookin profiilissa on selkeä muokkausoperaatio; uusi puhelinnumero tulee tallentaa jonnekin. Uuden datan tallennus (tai vanhan muokkaus) on operaatio, joka &lt;em&gt;ei&lt;/em&gt; jätä datalähdettä intaktiin tilaan.&lt;/p&gt;
-
-&lt;h3 id=&#34;mitä-haku-vs-muokkaus-tarkoittaa-koodin-tasolla&#34;&gt;Mitä haku vs. muokkaus tarkoittaa koodin tasolla?&lt;/h3&gt;
-
-&lt;p&gt;Koska hakuoperaatio ei voi edes teoriassa sotkea datalähdettä, tuo operaatio voidaan suorittaa varsin &amp;ldquo;vapaamielisesti&amp;rdquo;. Toisin sanoen vailla huolen häivää.&lt;/p&gt;
-
-&lt;p&gt;Itse tuppaan suorittamaan hakuoperaatiot suoraan Controllerista käsin. Controller on siis perinteisessä web-MVC-arkkitehtuurissa se osanen, joka vastaa sisääntulevan palvelupyynnön käsittelystä ja vastauksen (response) muodostamisesta.&lt;/p&gt;
-
-&lt;p&gt;Ihannearkkitehtuurissa Controller ei ole se paikka, josta tehdään tietokantakutsuja, mutta mikään laki ei estä tietokantakutsuja suorittamasta. Ja koska hakuoperaation kohdalla vaatimukset tietokantakutsuille ovat niin löyhät, voi tuollaisia kutsuja suorittaa huoletta.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Controller/LainausController.php
-
-public class LainausController {
-	
-  public function list() {
-
-    // Tietokantakutsu käyttäen Kirja-mallia.
-    $kirjat = Kirja::all();
-
-
-    return view(&#39;kirjat.lista&#39;, compact(&#39;kirjat&#39;));
-  }
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Muokkausoperaation kohdalla en lähtökohtaisesti tee tietokantakutsuja Controllerista käsin. Miksi? Koska muokkausoperaation epäonnistuminen voi pahimmillaan tuhota koko tietokannan eheyden. Siksi on tärkeää, että muokkausoperaatio suoritetaan johdonmukaisesti ja turvatoimenpiteet huomioiden.&lt;/p&gt;
-
-&lt;p&gt;Turvatoimenpiteellä tarkoitan lähinnä sitä, että moniosainen muokkaus tehdään &lt;em&gt;tietokantatransaktion&lt;/em&gt; sisällä.&lt;/p&gt;
-
-&lt;p&gt;Koska tietty muokkausoperaatio on varsin mahdollista suorittaa useammasta eri Controllerista käsin, on syytä abstraktoida muokkausoperaatio erilliseen apuluokkaan:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Usecases/Lainaakirja.php
-
-public class LainaaKirja {
-	
-  public function suorita(User $user, $koodi) {
-    // Kirjan lainaus muokkaa sekä kirjan tietoja että lainaajan tietoja.
-    // Muokkaukset on syytä tehdä transaktion sisällä jotta ne molemmat
-    // joko onnistuvat tai epäonnistuvat. 
-
-    // Missään tapauksessa ei saa käydä niin, että käyttäjä rekisteröi 
-    // lainauksen, mutta kirja ei rekisteröi lainaajaa.
-
-    $kirja = Kirja::findOrFail($koodi);
-    // Onko kirja saatavilla?
-    if ($kirja-&amp;gt;parhaillaanLainassa()) {
-      throw new KirjaJoLainassa($koodi);
-    }
-
-    // Aloitetaan transaktio.
-    // Huomattavaa on, että joku toinen saattaa 
-    // juuri tässä kohtaa lainata kirjan. Jos näin käy,
-    // transaktio epäonnistuu rivillä &#39;$kirja-&amp;gt;rekisteroiLainaaja($user)&#39;
-    
-    DB::transaction(function () use ($user, $kirja) {
-      // Jos jompi kumpi epäonnistuu, molemmat epäonnistuvat.
-      $user-&amp;gt;rekisteroiLainaus($kirja);
-      $kirja-&amp;gt;rekisteroiLainaaja($user);
-    });
-  }
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Controller/LainausController.php
-
-public class LainausController {
-	
-  public function lainaaKirja($kirjaKoodi) {
-    $user = Auth::user();
-    (new LainaaKirja)-&amp;gt;suorita($user, $kirjaKoodi);
-
-  }
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevassa koodissa Controllerin tehtäväksi jää kutsua apuluokkaa, joka suorittaa varsinaisen muokkausoperaation. Tuo apuluokka yksinkertaisesti enkapsuloi sisäänsä tarvittavan logiikan, jonka avulla lainaus suoritetaan.&lt;/p&gt;
-
-&lt;p&gt;Ero hakuoperaation ja muokkausoperaation välillä on selkeä: &lt;strong&gt;hakuoperaatio suoritetaan suoraan Controllerista käsin, muokkausoperaatio delegoidaan apuluokalle, joka huolehtii tarvittavista lisätoimenpiteistä (kuten transaktion luonti).&lt;/strong&gt;&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: Controllerista käsin tietokantakutsujen tekeminen on useimpien mielestä kyseenalaista. Höpsis. Jos tietokantakutsu on turvallinen ja yksinkertainen, ei ole mitään syytä lähteä abstraktoimaan sitä sen enempää. Kunhan vain kutsut tietokantaa ja sillä sipuli.&lt;/p&gt;
-
-&lt;p&gt;Muokkausoperaation kohdalla tilanne on toinen. Vaativissa applikaatioissa muokkausoperaatiot voivat olla erittäin monimutkaisia ja sisältää monta askelta. Tällöin on tärkeää, että mahdolliset virhetilanteet käsitellään asianmukaisesti. Muokkausoperaation voi suorittaa Controllerista käsin, mutta applikaation rakenteen kannalta on selkeämpää, että elintärkeä ja mutkikas muokkaus eristetään omaksi apuluokakseen. Tämä eristys myös mahdollistaa, että useampi eri Controller voi uudelleenkäyttää tuota muokkauslogiikkaa mikäli tarve niin vaatii.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>
