@@ -33,7 +33,7 @@ Järjestelmän hieno ominaisuus on, että se ei mittaa lämpötiloja omin päin.
 
 Kätevimmin ylläolevan kaltainen toiminnallisuus onnistuu juuri *ajastetun jonotuksen avulla*.
 
-```
+```php
 // App\Execute.php
 
 // Se miten käyttäjältä kysytään mittaustapahtumien määrä ei ole oleellista.
@@ -60,11 +60,9 @@ for($i=0; $i < $mittaustenMaara; $i++){
 
 Tarvitsemme vielä tuon MittaaLampotila-luokan.
 
-```
+```php
 
 // App\Jobs\MittaaLampotila.php
-
-<?php
 
 namespace App\Jobs;
 
@@ -78,12 +76,6 @@ class MittaaLampotila implements ShouldQueue
 {
     use InteractsWithQueue, Queueable
 
-    /**
-     * Execute the job.
-     *
-     * @param  LampotilaRajapinta
-     * @return void
-     */
     public function handle(LampotilaRajapinta $rajapinta)
     {
     	// $rajapinta tulee DI-konttanerin...kontaaninerin... kautta

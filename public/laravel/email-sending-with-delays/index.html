@@ -102,7 +102,7 @@
 
 <p>Kätevimmin ylläolevan kaltainen toiminnallisuus onnistuu juuri <em>ajastetun jonotuksen avulla</em>.</p>
 
-<pre><code>// App\Execute.php
+<pre><code class="language-php">// App\Execute.php
 
 // Se miten käyttäjältä kysytään mittaustapahtumien määrä ei ole oleellista.
 // Oletetaan että kysyminen on suoritettu *jotenkin*.
@@ -128,10 +128,8 @@ for($i=0; $i &lt; $mittaustenMaara; $i++){
 
 <p>Tarvitsemme vielä tuon MittaaLampotila-luokan.</p>
 
-<pre><code>
+<pre><code class="language-php">
 // App\Jobs\MittaaLampotila.php
-
-&lt;?php
 
 namespace App\Jobs;
 
@@ -145,12 +143,6 @@ class MittaaLampotila implements ShouldQueue
 {
     use InteractsWithQueue, Queueable
 
-    /**
-     * Execute the job.
-     *
-     * @param  LampotilaRajapinta
-     * @return void
-     */
     public function handle(LampotilaRajapinta $rajapinta)
     {
     	// $rajapinta tulee DI-konttanerin...kontaaninerin... kautta
