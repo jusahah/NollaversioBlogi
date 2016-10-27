@@ -6,8 +6,317 @@
     <description>Recent content in Arkkitehtuuris on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Mon, 24 Oct 2016 17:41:19 +0300</lastBuildDate>
+    <lastBuildDate>Thu, 27 Oct 2016 16:58:00 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Lambda-pohjainen arkkitehtuuri</title>
+      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/lambda-based-job-execution/</link>
+      <pubDate>Thu, 27 Oct 2016 16:58:00 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/lambda-based-job-execution/</guid>
+      <description>
+
+&lt;p&gt;Amazonilla on palvelu nimeltä AWS Lambda. Tuo palvelu suorittaa datan prosessoinnin pilvipalvelun muodossa.&lt;/p&gt;
+
+&lt;p&gt;Käytännössä se toimii siten, että ulkopuolinen ohjelmisto kutsuu Amazonin rajapintaa. Tuo rajapinta on Amazonin hallintapaneelissa (tms.) kytketty haluttuun Lambda-funktioon. Rajapinnan kutsu tällä tavoin &lt;em&gt;laukaisee&lt;/em&gt; Lambda-funktion suorittamisen.&lt;/p&gt;
+
+&lt;p&gt;Oleellinen myyntiargumentti Lambdan kohdalla on, että loppukäyttäjän ei tarvitse välittää tuon taivaallista palvelinten ylläpidosta. Ei edes virtuaalipalvelinten.&lt;/p&gt;
+
+&lt;p&gt;Loppukäyttäjä vain kutsuu Amazonin rajapintaa, ja Amazon hoitaa loput. Käytännössä Amazon valitsee valtavasta rauta-arsenaalistaan sopivan palvelimen, jonka suoritettavaksi loppukäyttäjän työvaihe annetaan.&lt;/p&gt;
+
+&lt;p&gt;Loppukäyttäjältä - eli web-palveluiden ohjelmoijalta, tyypillisesti - jää täten yksi huolenaihe vähemmän. Hänen ei tarvitse pelätä palvelimen kaatumista jouluyönä kello 3.00, sillä &lt;em&gt;ei ole mitään palvelinta, joka voisi kaatua&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h2 id=&#34;mihin-käyttötarkoituksiin-lambda-soveltuu&#34;&gt;Mihin käyttötarkoituksiin Lambda soveltuu?&lt;/h2&gt;
+
+&lt;p&gt;Lambda-funktio noudattaa &lt;em&gt;fire-and-forget&lt;/em&gt;-mallia. Jokainen Lambda-funktion kutsu on erillinen - yksi kutsu ei pysty jättämään post-it-lappuja toiselle kutsulle muuten kuin tietokannan tai vastaavan &lt;em&gt;ulkoisen&lt;/em&gt; kiintopisteen kautta.&lt;/p&gt;
+
+&lt;p&gt;Tämän rajoitteen (ominaisuuden?) vuoksi Lambda soveltuu huonosti esimerkiksi moninpelipalvelimeksi, sillä moninpelipalvelimen luonteeseen kuuluu, että palvelin ylläpitää pelitilaa yksittäisten siirtojen/kutsujen välillä.&lt;/p&gt;
+
+&lt;p&gt;Lambda ei voi ylläpitää pelitilaa keskusmuistissaan, sillä yksittäisen Lambda-kutsun maksimisuoritus aika on muutamia minuutteja.&lt;/p&gt;
+
+&lt;p&gt;Käytännössä loppukäyttäjä voi ajatella Lambda-palvelua ikäänkuin palvelimena, joka kaatuilee parin minuutin välein. Jos toiminto vaatii yli parin minuutin suoritusajan tai tilamuuttajan ylläpidon, Lambda ei sovellu tarkoitukseen.&lt;/p&gt;
+
+&lt;p&gt;Se mihin Lambda soveltuu erinomaisesti on &lt;em&gt;dataa sisään -&amp;gt; dataa ulos&lt;/em&gt; -tyylisten itsenäisten työvaiheiden suorittamiseen.&lt;/p&gt;
+
+&lt;p&gt;Hyvä esimerkki on vaikkapa tekstidokumentin kääntäminen suomesta englanniksi. Tälläinen operaatio on luonteeltaan itsenäinen; tarkoittaen, että operaatio ottaa vastaan dataa, ajaa tietyn pätkän koodia, ja palauttaa ulos uutta dataa.&lt;/p&gt;
+
+&lt;h3 id=&#34;malliarkkitehtuuri&#34;&gt;Malliarkkitehtuuri&lt;/h3&gt;
+
+&lt;p&gt;Seuraavassa kokonaisvaltainen korkean tason arkkitehtuuri, joka hyödyntää Lambdaa.&lt;/p&gt;
+
+&lt;p&gt;Oletetaan dokumenttien kääntämiseen erikoistunut web-palvelu. Tyypillinen käyttötarkoitus on, että asiakas antaa web-palvelulle kasan asiakirjoja, jotka haluaa käännettäväksi suomesta englanniksi. Web-palvelu kääntää dokumentit omalla ajallaan, ja kun &lt;strong&gt;kaikki&lt;/strong&gt; käännökset ovat valmiita, asiakkaalle lähetetään sähköpostilla tiedoksianto.&lt;/p&gt;
+
+&lt;p&gt;Heti alkuun nähdään, että kokonaisarkkitehtuurissa &lt;em&gt;käännökset suorittava ohjelma&lt;/em&gt; on järkevä eristää &lt;em&gt;dokumentit asiakkaalta vastaanottavasta ohjelmasta&lt;/em&gt;. Ne siis ovat kaksi erillistä palapelin palasta osana kokonaisarkkitehtuuria.&lt;/p&gt;
+
+&lt;h4 id=&#34;käännösohjelma&#34;&gt;Käännösohjelma&lt;/h4&gt;
+
+&lt;p&gt;Käännöksien suorittamisesta vastaava ohjelma ajetaan Amazonin Lambda-palvelussa. Miksi? Koska sen käyttötarkoitus soveltuu mainiosti Lambdan päälle.&lt;/p&gt;
+
+&lt;p&gt;Toinen syy on, että on luontevaa suorittaa käännökset &lt;em&gt;dokumentti kerrallaan&lt;/em&gt;, mutta &lt;em&gt;samanaikaisesti&lt;/em&gt;. Tällä tarkoitan, että yksi Lambda-funktion kutsu ottaa käännettäväkseen tasan yhden dokumentin*, mutta &lt;em&gt;kullakin ajanhetkellä useampi Lambda-funktio tekee käännöstyötään&lt;/em&gt;.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Periaate on sama kuin pankissa - kukin pankkivirkailija palvelee tasan yhtä asiakasta kerrallaan, mutta useita pankkivirkailijoita on yhtäaikaisesti töissä.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Sanotaan esimerkin vuoksi, että asiakas syöttää web-palveluumme 1000 kpl asiakirjoja. Yhden dokumentin kääntäminen tekoälyn turvin vie 10 sekuntia. Tuhannen dokumentin kääntäminen perätysten veisi 1000 * 10 sekuntia, eli noin kolme tuntia.&lt;/p&gt;
+
+&lt;p&gt;Mutta jos ajamme samanaikaisesti 1000 kpl Lambda-funktioita, koko urakka kestää 10 sekuntia.&lt;/p&gt;
+
+&lt;p&gt;Käännösohjelman kannalta valitsemamme &lt;em&gt;samanaikaisesti x määrää dokumentteja kääntävä&lt;/em&gt; palvelumme ei aiheuta ongelmia, sillä kuten mainittua, käännösohjelman koodi vastaanottaa vain yhden dokumentin. Koodia ajetaan tuhannella eri palvelimella samanaikaisesti, mutta koodi ei välitä - se huolehtii vain yhden dokumentin kääntämisestä.&lt;/p&gt;
+
+&lt;p&gt;Samanaikaisuus aiheuttaa hienoisia vaikeuksia arkkitehtuurimme toisessa palasessa, mutta probleemat ovat ratkottavissa.&lt;/p&gt;
+
+&lt;h3 id=&#34;dokumenttien-vastaanotto-ohjelma&#34;&gt;Dokumenttien vastaanotto -ohjelma&lt;/h3&gt;
+
+&lt;p&gt;Vastaanotto-ohjelman tehtävä on ottaa dokumentit käyttäjältä vastaan. Käytännössä tämä tarkoittaa jonkinlaista www-sivua, jossa on lomake, jota käyttäen loppuasiakas lataa dokumentit sisään. Tuhannen asiakirjan upload saattaa toki kestää hetken, mutta ei takerruta siihen (loppuasiakas voi lähettää zip-paketin joka sisältää kaikki asiakirjat).&lt;/p&gt;
+
+&lt;p&gt;Vastaanotto-ohjelma pyörii tuikitavallisella web-palvelimella. Se ei siis pyöri Lambdan päällä ihan siksi, että se joutuu &lt;em&gt;pitämään kirjaa&lt;/em&gt; käännetyistä dokumenteista.&lt;/p&gt;
+
+&lt;p&gt;Käytännössä asiakirjojen vastaanotto loppuasiakkaalta toimii näin:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Web-rajapinta vastaanottaa zip-paketin ja purkaa sen.&lt;/li&gt;
+&lt;li&gt;Kukin asiakirja kirjataan saapuneeksi. Palvelinohjelmisto tällä tavoin tietää, montako asiakirjaa lähetys sisälsi.&lt;/li&gt;
+&lt;li&gt;Kukin asiakirja lähetetään Amazonin rajapintaan.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Amazonin puolella kukin asiakirja kääntyy pikkuhiljaa itsestään. Mutta miten Amazon saa palautettua tulokset takaisin vastaanotto-ohjelmallemme?&lt;/p&gt;
+
+&lt;p&gt;Yksi todella huono tapa olisi se, että vastaanotto-ohjelma lähettää asiakirjan Amazonille HTTP-kutsuna, ja jää odottamaan tuon kutsun vastausta. Ongelmaksi muodostuu se, että jos käännös kestää vaikka 60 sekuntia, HTTP-yhteys Amazonin suuntaan on 60 sekuntia auki. Tämä ei ole ideaaliratkaisu.&lt;/p&gt;
+
+&lt;p&gt;Parempi ratkaisu on, että vastaanotto-ohjelma ampuu asiakirjan Amazonin suuntaan HTTP-kutsulla, ja Amazon vastaa HTTP-kutsuun &lt;em&gt;välittömästi&lt;/em&gt;. Amazonin antama vastaus ei sisällä käännöstä, vaan kuittauksen tyyliin &lt;em&gt;käännöstyö vastaanotettu, ilmoitamme erikseen kun käännös on valmiina&lt;/em&gt;.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Keskustelun voi kuvata näin:&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;(yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Vastaanotto-ohjelma&lt;/strong&gt;: hei Amazon, tässä sinulle työtehtävä&amp;hellip;
+&lt;strong&gt;Amazon&lt;/strong&gt;: selvä pyy, ilmoitan sitten kun on valmista!
+&lt;em&gt;(yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Entä miten Amazon palauttaa vastauksen takaisin vastaanotto-ohjelmalle? Se ottaa itsenäisesti uuden HTTP-yhteyden! Tämä on mahdollista suorittaa suoraan Lambda-funktion sisältä. Keskustelu jatkuu kutakuinkin näin:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;&lt;em&gt;(yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Amazon(Lambda):&lt;/strong&gt; hei kaveri, muistatko antamasi työtehtävän? Tässä tulokset siitä!
+&lt;strong&gt;Vastaanotto-ohjelma:&lt;/strong&gt; kiitos, otan talteen!
+&lt;em&gt;(yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Tässä kohtaa vastaanotto-ohjelma on saanut yhden käännöstuloksen takaisin. Käännöksiä lähti alunperin liikkeelle 1000 kpl, joten tämä yksi on vasta alkua. Käytännössä seuraavat pari minuuttia (tai sinnepäin) vastaanotto-ohjelma saa 999 uutta yhteydenottoa:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;&lt;em&gt;(yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Amazon(Lambda):&lt;/strong&gt; tässä tulokset&amp;hellip;
+&lt;strong&gt;Vastaanotto-ohjelma:&lt;/strong&gt; kiitos, otan talteen!
+&lt;em&gt;(yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;(toinen yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Amazon(Lambda) #2:&lt;/strong&gt; tässä tulokset&amp;hellip;
+&lt;strong&gt;Vastaanotto-ohjelma:&lt;/strong&gt; kiitos, otan talteen!
+&lt;em&gt;(toinen yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;kolmas yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Amazon(Lambda) #3:&lt;/strong&gt; tässä tulokset&amp;hellip;
+&lt;strong&gt;Vastaanotto-ohjelma:&lt;/strong&gt; kiitos, otan talteen!
+&lt;em&gt;(kolmas yhteys sulkeutuu)&lt;/em&gt;
+&amp;hellip;
+&amp;hellip;
+&amp;hellip;
+&lt;em&gt;999s yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Amazon(Lambda) #999:&lt;/strong&gt; tässä tulokset&amp;hellip;
+&lt;strong&gt;Vastaanotto-ohjelma:&lt;/strong&gt; kiitos, otan talteen!
+&lt;em&gt;(999s yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Kun kaikki 1000 käännöstä ovat saapuneet, koko urakka on vihdoin valmis! Mutta ennen sitä on syytä miettiä seuraavaa: Amazonilla saattaa olla kullakin ajan hetkellä &lt;em&gt;usean eri loppuasiakkaan käännösurakat pyörimässä&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Eli edellinen keskustelu olikin VALTAVA yksinkertaistus, sillä siinä oletettiin, että kaikki käännöstulokset kuuluivat yhdelle ja samalla ihmisasiakkaalle. Oikeasti keskustelu näyttää tältä:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;&lt;em&gt;(yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Amazon(Lambda) #3829:&lt;/strong&gt; tässä Matin käännös dokumentti nro 12&amp;hellip;
+&lt;strong&gt;Vastaanotto-ohjelma:&lt;/strong&gt; kiitos, otan talteen!
+&lt;em&gt;(yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;(yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Amazon(Lambda) #115:&lt;/strong&gt; tässä Pirkon käännös dokumentti nro 821&amp;hellip;
+&lt;strong&gt;Vastaanotto-ohjelma:&lt;/strong&gt; kiitos, otan talteen!
+&lt;em&gt;(yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;(yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Amazon(Lambda) #10729:&lt;/strong&gt; tässä Reijon käännös dokumenttiin nro 761&amp;hellip;
+&lt;strong&gt;Vastaanotto-ohjelma:&lt;/strong&gt; kiitos, otan talteen!
+&lt;em&gt;(yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;(yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Amazon(Lambda) #8008:&lt;/strong&gt; tässä Pirkon käännös dokumenttiin nro 822&amp;hellip;
+&lt;strong&gt;Vastaanotto-ohjelma:&lt;/strong&gt; kiitos, otan talteen!
+&lt;em&gt;(yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;//jne. jne&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Yllä näemme toisen tärkeän konseptin; kukin dokumentti on yksilöity järjestysnumerolla. Tämä järjestysnumero mahdollistaa sen, että lähtevä suomenkielinen dokumentti voidaan myöhemmin mätsätä eli yhdistää sisääntulevaan englanninkieliseen käännökseen.&lt;/p&gt;
+
+&lt;p&gt;Tällä tavoin tiedämme, mitkä dokumentit on käännetty ja mitkä ovat vielä prosessoitavana.&lt;/p&gt;
+
+&lt;h3 id=&#34;käännökset-saapuneet-yksi-urakka-valmis&#34;&gt;Käännökset saapuneet, yksi urakka valmis!&lt;/h3&gt;
+
+&lt;p&gt;Kun vastaanotto-ohjelma on saanut kaikki käännökset haltuunsa, se voi vihdoin lähettää tiedon ja käännökset ihmiskäyttäjälle. Ensin 1000 kpl käännöksiä pakataan zip-pakettiin. Sen jälkeen vastaanotto-ohjelma (joka tässä vaiheessa toimii enemmänkin &amp;ldquo;lähetysohjelmana&amp;rdquo;) ottaa yhteyden SMTP-rajapintaan.&lt;/p&gt;
+
+&lt;p&gt;Tuonne rajapintaan pusketaan zip-paketti ja ihmiskäyttäjän email-osoite. SMTP-palvelin hoitaa loput, ja hetken kuluttua ihmiskäyttäjän sähköpostilaatikko kilahtaa.&lt;/p&gt;
+
+&lt;h3 id=&#34;entä-jos-vastaanotto-ohjelma-kaatuu-kesken-käännösten-odottelun&#34;&gt;Entä jos vastaanotto-ohjelma kaatuu kesken käännösten odottelun?&lt;/h3&gt;
+
+&lt;p&gt;Mietitäänpä seuraavaa tilannetta. Matti lähettää 1000 kpl dokumentteja web-palveluumme. Vastaanotto-ohjelma lähettää ne kaikki Amazonin suuntaan. Amazon ehtii kääntämään ja palauttamaan 500 kpl, kunnes jotain menee pieleen: &lt;strong&gt;vastaanotto-ohjelmamme kaatuu.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Näin voi käydä esimerkiksi siinä tapauksessa, että fyysinen palvelin simahtaa pois päältä. Ehkä palvelinsalin siivooja sattui kippaamaan Fairyt tuuletinaukosta sisään.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Muista, että vastaanotto-ohjelma pyörii ihan tavallisella palvelimella. Ainoastaan Amazonin pääty pyörii ulkoistetun pilvipalvelun varassa.&lt;/p&gt;
+
+&lt;p&gt;Jos Amazonin päädyssä yksittäinen palvelin sattuu tekemään itsemurhan, Amazon hoitaa korjaustoimenpiteet osana palvelulupaustaan. Jos vastaanotto-ohjelman päädyssä palvelin posahtaa, se on &lt;strong&gt;ohjelmoijan&lt;/strong&gt; ongelma. Eli siis minun ongelma, joka ylläpidän käännöspalvelua.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Niin tai näin, koko vastaanotto-ohjelman keskusmuistitila nollaantuu palvelimen käynnistyessä uudestaan. Tämä nollaantuminen on hiukan ongelmallista, sillä vastaanotto-ohjelma piti keskusmuistissaan kirjaa dokumenteista, jotka olivat parhaillaan prosessoitavina Amazonin päädyssä.&lt;/p&gt;
+
+&lt;p&gt;Auts. Se siitä kirjanpidosta. Mites nyt suu pannaan?&lt;/p&gt;
+
+&lt;h4 id=&#34;kovalevy-avuksi&#34;&gt;Kovalevy avuksi&lt;/h4&gt;
+
+&lt;p&gt;Ongelmaan on helppo ratkaisu. Sen sijaan, että vastaanotto-ohjelma pitää kirjanpitoa keskusmuistin sijaan kovalevylle. Kovalevyn hyvä puoli on, että palvelimen sipatessa tieto ei katoa mihinkään. Kun palvelin buuttaa itsensä ja vastaanotto-ohjelma palaa linjoille, se voi kovalevyltä tarkistaa kirjanpidon. Ongelma ratkaistu!&lt;/p&gt;
+
+&lt;p&gt;Mutta valitettavasti kirjanpidon pöllähtäminen taivaan tuuliin ei ollut ainoa ongelmamme. Sillä mietipä seuraavaa. Sanotaan, että vastaanotto-ohjelmamme kaatuu kahdeksi minuutiksi (tuon ajan fyysisellä palvelimella kestää buutata itsensä). Tällä välin Amazonin pääty on saanut käännöksen valmiiksi. Miltä keskustelu näyttää?&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;&lt;em&gt;(yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Amazon(Lambda) #3829:&lt;/strong&gt; tässä Matin käännös dokumentti nro 12&amp;hellip;
+&lt;strong&gt;&amp;hellip;&lt;/strong&gt;
+&lt;strong&gt;Amazon(Lambda) #3829:&lt;/strong&gt; haloo, onko ketään kotona&amp;hellip;?
+&lt;strong&gt;&amp;hellip;&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Ongelman ydin on yksinkertainen: vastaanotto-ohjelma on poissa langoilta, joten Amazon ei saa siihen yhteyttä!&lt;/p&gt;
+
+&lt;p&gt;Ongelma on pirullinen ratkaista. Naivi, ihanan sinisilmäinen ratkaisuehdotus on &lt;em&gt;pakottaa&lt;/em&gt; Amazonin Lambda-funktio odottamaan kunnes vastaanotto-ohjelma on taas takaisin elävien kirjoissa.&lt;/p&gt;
+
+&lt;p&gt;Tämä &amp;ldquo;ratkaisu&amp;rdquo; on erittäin huono. Sen surkeuden voi paljastaa yhdellä kysymyksellä: &lt;strong&gt;entä jos vastaanotto-ohjelma ei ehdi palaamaan linjoille ennen Lambda-funktion maksimielinajan ylittymistä?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Tälläisessä tilanteessa käännöstyön tulokset häviävät pysyvästi bittiavaruuteen.&lt;/p&gt;
+
+&lt;h3 id=&#34;kolmas-osapalanen&#34;&gt;Kolmas osapalanen&lt;/h3&gt;
+
+&lt;p&gt;Paras ratkaisu on lisätä kokonaisarkkitehtuuriimme kolmas elementti: &lt;em&gt;käännöstöiden tulokset vastaanottava jono&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tämä jono on esimerkiksi Amazonin SQS jonopalvelu. Jonon ydinidea on, että &lt;em&gt;se ei ole koskaan poissa linjoilta&lt;/em&gt;. Voimme siis luottaa, että Amazonin Lambda saa &lt;em&gt;aina&lt;/em&gt; yhteyden Amazonin jonoon.&lt;/p&gt;
+
+&lt;p&gt;Jonon toinen ydinidea on, että se pitää tuloksia hallussaan siihen asti, kunnes vastaanotto-ohjelma käy ne hakemassa itselleen.&lt;/p&gt;
+
+&lt;p&gt;Tällä tavoin ongelma ratkeaa. Vastaanotto-ohjelman ollessa alhaalla Amazonin pääty lähettää tulokset jonoon. Kun vastaanotto-ohjelma sitten joskus herää kuolleista, se käy hakemassa tulokset tuolta samasta jonosta.&lt;/p&gt;
+
+&lt;p&gt;Itse asiassa jono mahdollistaa vielä paremman yksinkertaistuksen: Amazon Lambda lähettää käännösten tulokset jonoon riippumatta siitä onko vastaanotto-ohjelma elossa vai ei! Tällä tavoin Lambdan ei tarvitse milloinkaan ottaa suoraa yhteyttä vastaanotto-ohjelmaan.&lt;/p&gt;
+
+&lt;p&gt;Tässä uudessa, parannellussa mallissamme keskustelun kulku menee kutakuinkin näin. Käydään keskustelu yhden käännettävän dokumentin näkökulmasta:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;&lt;em&gt;(yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Vastaanotto-ohjelma&lt;/strong&gt;: hei Amazon, tässä sinulle työtehtävä&amp;hellip;
+&lt;strong&gt;Amazon&lt;/strong&gt;: selvä pyy, ilmoitan sitten kun on valmista!
+&lt;em&gt;(yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;(yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Amazon Lambda&lt;/strong&gt;: hei jono, tässäpä tulokset&amp;hellip;
+&lt;strong&gt;Jono&lt;/strong&gt;: kiitos, pistän talteen
+&lt;em&gt;(yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;(yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Vastaanotto-ohjelma&lt;/strong&gt;: hei jono, onko mitään uutta?
+&lt;strong&gt;Jono&lt;/strong&gt;: kyllä on, tässä uudet tulokset!
+&lt;em&gt;(yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;On tärkeä ymmärtää syyt miksi tämä &lt;em&gt;kolmen osapuolen&lt;/em&gt; arkkitehtuuri on valtava parannus alkuperäiseen &lt;em&gt;kahden osapuolen&lt;/em&gt; arkkitehtuuriin verrattuna. Kerrataan siis:&lt;/p&gt;
+
+&lt;p&gt;Alkuperäisessä mallissa vastaanotto-ohjelmalla oli &lt;strong&gt;kaksi(!)&lt;/strong&gt; vastuualuetta mitä tulee tulosten vastaanottamiseen:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Vastaanottaa tulokset (d&amp;rsquo;oh)&lt;/li&gt;
+&lt;li&gt;Pysyä hengissä&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Listan kakkoskohta saattaa kuulostaa hupaisalta, mutta datan katoamisessa bittiavaruuteen ei ole mitään hupaisaa.&lt;/p&gt;
+
+&lt;p&gt;Uudessä, kolmen osapuolen arkkitehtuurissa vastaanotto-ohjelmalla on vain &lt;strong&gt;yksi&lt;/strong&gt; vastuualue:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Hakea tulokset jonosta&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Kyseessä on valtava yksinkertaistus ihan siitä syystä, että palvelinohjelmiston ylläpitäminen 100% luotettavuudella pystyssä on helvetinmoinen haaste. Sen lisäksi että sähköt saattavat katketa, käytännössä kaikki ohjelmistot sisältävät bugeja.&lt;/p&gt;
+
+&lt;p&gt;Hyvä nyrkkisääntö palvelinpuolen koodauksessa onkin seuraava:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Ennemmin tai myöhemmin jokainen palvelinohjelmisto kaatuu bugin seurauksena.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Ja mitä monimutkaisempi ohjelma, sitä todennäköisemmin se pölläyttää savut pihalle. Tässä mielessä yksi vastuualue on parempi kuin kaksi.&lt;/p&gt;
+
+&lt;p&gt;Joko vihdoin olemme kuivilla vesillä kokonaisarkkitehtuurin suhteen?&lt;/p&gt;
+
+&lt;h3 id=&#34;entä-jos-vastaanotto-ohjelma-kaatuu-otettuaan-jonosta-tulokset&#34;&gt;Entä jos vastaanotto-ohjelma kaatuu otettuaan jonosta tulokset?&lt;/h3&gt;
+
+&lt;p&gt;Palvelinohjelmistojen ohjelmointi on saatanallista ongelmanratkontaa. Emme suinkaan ole vielä paratiisin ovilla. Seuraava ratkaistava ongelma on tämä:&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Entä jos vastaanotto-ohjelma kaatuu heti sen jälkeen, kun se on hakenut uusimmat tulokset jonosta?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Se siis hakee uusimmat tulokset jonosta, joka luonnollisesti unohtaa nuo tulokset. Mutta ennenkuin vastaanotto-ohjelma ehtii lähettää tulokset ihmiskäyttäjälle, palvelin kohtaa sähkökatkon.&lt;/p&gt;
+
+&lt;p&gt;Tulokset eivät ole enää jonossa, mutta ne eivät ole enää vastaanotto-ohjelman keskusmuistissakaan - ohjelma kun kaatui. Bittiavaruus ja niin edelleen.&lt;/p&gt;
+
+&lt;h4 id=&#34;ratkaisuehdotus-1&#34;&gt;Ratkaisuehdotus #1&lt;/h4&gt;
+
+&lt;p&gt;No, ratkaisuhan on ilmiselvä? Kun vastaanotto-ohjelma saa tulokset jonosta itselleen, se &lt;em&gt;ensitöikseen tallentaa ne kovalevylle&lt;/em&gt;. Ratkaisu on siis sama kuin aiemmassa ongelmassamme käännöstöiden kirjanpidon suhteen.&lt;/p&gt;
+
+&lt;p&gt;Paitsi että pieleen meni. Sillä entä jos vastaanotto-ohjelma kaatuu &lt;em&gt;juuri ennenkuin&lt;/em&gt; se ehtii kirjata tulokset kovalevylle? Se siitä, bittiavaruus kohtalona jälleen.&lt;/p&gt;
+
+&lt;p&gt;Oikea ratkaisu on hoitaa asia niin, että &lt;em&gt;jono unohtaa tulokset vasta kun sille annetaan lupa&lt;/em&gt;. Keskustelu vastaanotto-ohjelman ja jonon kanssa näyttää tältä:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;&lt;em&gt;(yhteys aukeaa)&lt;/em&gt;
+&lt;strong&gt;Vastaanotto-ohjelma&lt;/strong&gt;: hei jono, onko mitään uutta?
+&lt;strong&gt;Jono&lt;/strong&gt;: kyllä on, tässä uudet tulokset!
+&lt;strong&gt;Vastaanotto-ohjelma&lt;/strong&gt;: ok, kiva, odotapa pojka hetki&amp;hellip;
+&lt;strong&gt;&amp;hellip;&lt;/strong&gt;
+&lt;strong&gt;Vastaanotto-ohjelma&lt;/strong&gt;: nyt voit unohtaa nuo antamasi tulokset!
+&lt;strong&gt;Jono&lt;/strong&gt;: gone and gone! ensi kertaan!
+&lt;em&gt;(yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;(Teknisesti tuota viestinvaihto ei käydä yhden ja saman yhteyden - ei varsinkaan HTTP-yhteyden - sisällä, mutta yksinkertaistus sallittakoon&amp;hellip;)&lt;/p&gt;
+
+&lt;h3 id=&#34;maali&#34;&gt;Maali&lt;/h3&gt;
+
+&lt;p&gt;Nyt olemme saaneet ratkaistua suurimmat ongelmamme. Muutamia vielä jäin, joihin en jaksa puuttua kuin lyhyesti ja summittaisesti:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Entä jos vastaanotto-ohjelma kaatuu juuri kun ihmiskäyttäjä on lähettänyt zip-paketin?&lt;/li&gt;
+&lt;li&gt;Entä jos Amazonin Lambda-funktio jostain syystä ei saa suoritettua käännöstä (kenties teksti on liian sotkuista)? Kelle se ilmoittaa epäonnistumisestaan?&lt;/li&gt;
+&lt;li&gt;Entä jos asteroidi syöksää ihmiskunnan kivikaudelle?&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Nopeat vastaukset:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Vastaanotto-ohjelma ensitöikseen tallentaa zip-paketin kovalevylle.&lt;/li&gt;
+&lt;li&gt;Ehkä Lambdan ei tarvitse ilmoittaa kellekään. Jos käännöstä ei saada tehtyä, sitä ei saada tehtyä, ja sillä selvä. Vastaanotto-ohjelman puolella voi olla jokin aikamääre määriteltynä, jonka sisällä kukin käännöstyö tulee saada valmiiksi. Jos käännös ei valmistu aikamääreen sisällä, se katsotaan epäonnistuneeksi, ja hylätään. Lopullinen, ulos lähtevä zip-paketti on tällöin pienempi kuin sisääntullut zip-paketti.&lt;/li&gt;
+&lt;li&gt;&amp;ldquo;Päivitä Windows 10 uusimpaan versioon&amp;rdquo;.&lt;/li&gt;
+&lt;/ol&gt;
+</description>
+    </item>
     
     <item>
       <title>AWS ja harva indeksi</title>
