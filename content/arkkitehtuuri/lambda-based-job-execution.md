@@ -5,6 +5,8 @@ title = "Lambda-pohjainen arkkitehtuuri"
 
 +++
 
+![Kokonaisarkkitehtuuri Lambdan avulla](/blog/public/img/fml-lambda.png)
+
 Amazonilla on palvelu nimeltä AWS Lambda. Tuo palvelu suorittaa datan prosessoinnin pilvipalvelun muodossa.
 
 Käytännössä se toimii siten, että ulkopuolinen ohjelmisto kutsuu Amazonin rajapintaa. Tuo rajapinta on Amazonin hallintapaneelissa (tms.) kytketty haluttuun Lambda-funktioon. Rajapinnan kutsu tällä tavoin *laukaisee* Lambda-funktion suorittamisen.
@@ -41,7 +43,7 @@ Heti alkuun nähdään, että kokonaisarkkitehtuurissa *käännökset suorittava
 
 Käännöksien suorittamisesta vastaava ohjelma ajetaan Amazonin Lambda-palvelussa. Miksi? Koska sen käyttötarkoitus soveltuu mainiosti Lambdan päälle. 
 
-Toinen syy on, että on luontevaa suorittaa käännökset *dokumentti kerrallaan*, mutta *samanaikaisesti*. Tällä tarkoitan, että yksi Lambda-funktion kutsu ottaa käännettäväkseen tasan yhden dokumentin*, mutta *kullakin ajanhetkellä useampi Lambda-funktio tekee käännöstyötään*. 
+Toinen syy on, että on luontevaa suorittaa käännökset *dokumentti kerrallaan*, mutta *samanaikaisesti*. Tällä tarkoitan, että yksi Lambda-funktion kutsu ottaa käännettäväkseen tasan yhden dokumentin, mutta *kullakin ajanhetkellä useampi Lambda-funktio tekee käännöstyötään*. 
 
 > Periaate on sama kuin pankissa - kukin pankkivirkailija palvelee tasan yhtä asiakasta kerrallaan, mutta useita pankkivirkailijoita on yhtäaikaisesti töissä.
 
@@ -53,7 +55,7 @@ Käännösohjelman kannalta valitsemamme *samanaikaisesti x määrää dokumentt
 
 Samanaikaisuus aiheuttaa hienoisia vaikeuksia arkkitehtuurimme toisessa palasessa, mutta probleemat ovat ratkottavissa.
 
-### Dokumenttien vastaanotto -ohjelma
+#### Dokumenttien vastaanotto -ohjelma
 
 Vastaanotto-ohjelman tehtävä on ottaa dokumentit käyttäjältä vastaan. Käytännössä tämä tarkoittaa jonkinlaista www-sivua, jossa on lomake, jota käyttäen loppuasiakas lataa dokumentit sisään. Tuhannen asiakirjan upload saattaa toki kestää hetken, mutta ei takerruta siihen (loppuasiakas voi lähettää zip-paketin joka sisältää kaikki asiakirjat).
 
@@ -342,6 +344,7 @@ Nopeat vastaukset:
 1. Vastaanotto-ohjelma ensitöikseen tallentaa zip-paketin kovalevylle.
 2. Ehkä Lambdan ei tarvitse ilmoittaa kellekään. Jos käännöstä ei saada tehtyä, sitä ei saada tehtyä, ja sillä selvä. Vastaanotto-ohjelman puolella voi olla jokin aikamääre määriteltynä, jonka sisällä kukin käännöstyö tulee saada valmiiksi. Jos käännös ei valmistu aikamääreen sisällä, se katsotaan epäonnistuneeksi, ja hylätään. Lopullinen, ulos lähtevä zip-paketti on tällöin pienempi kuin sisääntullut zip-paketti.
 3. "Päivitä Windows 10 uusimpaan versioon".
+
 
 
 

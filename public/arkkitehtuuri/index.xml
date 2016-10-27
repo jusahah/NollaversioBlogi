@@ -17,6 +17,8 @@
       <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/lambda-based-job-execution/</guid>
       <description>
 
+&lt;p&gt;&lt;img src=&#34;http://www.nollaversio.fi/blog/public/blog/public/img/fml-lambda.png&#34; alt=&#34;Kokonaisarkkitehtuuri Lambdan avulla&#34; /&gt;&lt;/p&gt;
+
 &lt;p&gt;Amazonilla on palvelu nimeltä AWS Lambda. Tuo palvelu suorittaa datan prosessoinnin pilvipalvelun muodossa.&lt;/p&gt;
 
 &lt;p&gt;Käytännössä se toimii siten, että ulkopuolinen ohjelmisto kutsuu Amazonin rajapintaa. Tuo rajapinta on Amazonin hallintapaneelissa (tms.) kytketty haluttuun Lambda-funktioon. Rajapinnan kutsu tällä tavoin &lt;em&gt;laukaisee&lt;/em&gt; Lambda-funktion suorittamisen.&lt;/p&gt;
@@ -53,7 +55,7 @@
 
 &lt;p&gt;Käännöksien suorittamisesta vastaava ohjelma ajetaan Amazonin Lambda-palvelussa. Miksi? Koska sen käyttötarkoitus soveltuu mainiosti Lambdan päälle.&lt;/p&gt;
 
-&lt;p&gt;Toinen syy on, että on luontevaa suorittaa käännökset &lt;em&gt;dokumentti kerrallaan&lt;/em&gt;, mutta &lt;em&gt;samanaikaisesti&lt;/em&gt;. Tällä tarkoitan, että yksi Lambda-funktion kutsu ottaa käännettäväkseen tasan yhden dokumentin*, mutta &lt;em&gt;kullakin ajanhetkellä useampi Lambda-funktio tekee käännöstyötään&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;Toinen syy on, että on luontevaa suorittaa käännökset &lt;em&gt;dokumentti kerrallaan&lt;/em&gt;, mutta &lt;em&gt;samanaikaisesti&lt;/em&gt;. Tällä tarkoitan, että yksi Lambda-funktion kutsu ottaa käännettäväkseen tasan yhden dokumentin, mutta &lt;em&gt;kullakin ajanhetkellä useampi Lambda-funktio tekee käännöstyötään&lt;/em&gt;.&lt;/p&gt;
 
 &lt;blockquote&gt;
 &lt;p&gt;Periaate on sama kuin pankissa - kukin pankkivirkailija palvelee tasan yhtä asiakasta kerrallaan, mutta useita pankkivirkailijoita on yhtäaikaisesti töissä.&lt;/p&gt;
@@ -67,7 +69,7 @@
 
 &lt;p&gt;Samanaikaisuus aiheuttaa hienoisia vaikeuksia arkkitehtuurimme toisessa palasessa, mutta probleemat ovat ratkottavissa.&lt;/p&gt;
 
-&lt;h3 id=&#34;dokumenttien-vastaanotto-ohjelma&#34;&gt;Dokumenttien vastaanotto -ohjelma&lt;/h3&gt;
+&lt;h4 id=&#34;dokumenttien-vastaanotto-ohjelma&#34;&gt;Dokumenttien vastaanotto -ohjelma&lt;/h4&gt;
 
 &lt;p&gt;Vastaanotto-ohjelman tehtävä on ottaa dokumentit käyttäjältä vastaan. Käytännössä tämä tarkoittaa jonkinlaista www-sivua, jossa on lomake, jota käyttäen loppuasiakas lataa dokumentit sisään. Tuhannen asiakirjan upload saattaa toki kestää hetken, mutta ei takerruta siihen (loppuasiakas voi lähettää zip-paketin joka sisältää kaikki asiakirjat).&lt;/p&gt;
 

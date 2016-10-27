@@ -72,6 +72,8 @@
 				<hr style="margin-top: 12px;">
 			      
 
+<p><img src="/blog/public/img/fml-lambda.png" alt="Kokonaisarkkitehtuuri Lambdan avulla" /></p>
+
 <p>Amazonilla on palvelu nimeltä AWS Lambda. Tuo palvelu suorittaa datan prosessoinnin pilvipalvelun muodossa.</p>
 
 <p>Käytännössä se toimii siten, että ulkopuolinen ohjelmisto kutsuu Amazonin rajapintaa. Tuo rajapinta on Amazonin hallintapaneelissa (tms.) kytketty haluttuun Lambda-funktioon. Rajapinnan kutsu tällä tavoin <em>laukaisee</em> Lambda-funktion suorittamisen.</p>
@@ -108,7 +110,7 @@
 
 <p>Käännöksien suorittamisesta vastaava ohjelma ajetaan Amazonin Lambda-palvelussa. Miksi? Koska sen käyttötarkoitus soveltuu mainiosti Lambdan päälle.</p>
 
-<p>Toinen syy on, että on luontevaa suorittaa käännökset <em>dokumentti kerrallaan</em>, mutta <em>samanaikaisesti</em>. Tällä tarkoitan, että yksi Lambda-funktion kutsu ottaa käännettäväkseen tasan yhden dokumentin*, mutta <em>kullakin ajanhetkellä useampi Lambda-funktio tekee käännöstyötään</em>.</p>
+<p>Toinen syy on, että on luontevaa suorittaa käännökset <em>dokumentti kerrallaan</em>, mutta <em>samanaikaisesti</em>. Tällä tarkoitan, että yksi Lambda-funktion kutsu ottaa käännettäväkseen tasan yhden dokumentin, mutta <em>kullakin ajanhetkellä useampi Lambda-funktio tekee käännöstyötään</em>.</p>
 
 <blockquote>
 <p>Periaate on sama kuin pankissa - kukin pankkivirkailija palvelee tasan yhtä asiakasta kerrallaan, mutta useita pankkivirkailijoita on yhtäaikaisesti töissä.</p>
@@ -122,7 +124,7 @@
 
 <p>Samanaikaisuus aiheuttaa hienoisia vaikeuksia arkkitehtuurimme toisessa palasessa, mutta probleemat ovat ratkottavissa.</p>
 
-<h3 id="dokumenttien-vastaanotto-ohjelma">Dokumenttien vastaanotto -ohjelma</h3>
+<h4 id="dokumenttien-vastaanotto-ohjelma">Dokumenttien vastaanotto -ohjelma</h4>
 
 <p>Vastaanotto-ohjelman tehtävä on ottaa dokumentit käyttäjältä vastaan. Käytännössä tämä tarkoittaa jonkinlaista www-sivua, jossa on lomake, jota käyttäen loppuasiakas lataa dokumentit sisään. Tuhannen asiakirjan upload saattaa toki kestää hetken, mutta ei takerruta siihen (loppuasiakas voi lähettää zip-paketin joka sisältää kaikki asiakirjat).</p>
 
