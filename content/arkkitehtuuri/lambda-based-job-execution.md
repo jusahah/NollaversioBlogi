@@ -220,7 +220,9 @@ Ongelman ydin on yksinkertainen: vastaanotto-ohjelma on poissa langoilta, joten 
 
 Ongelma on pirullinen ratkaista. Naivi, ihanan sinisilmäinen ratkaisuehdotus on *pakottaa* Amazonin Lambda-funktio odottamaan kunnes vastaanotto-ohjelma on taas takaisin elävien kirjoissa.
 
-Tämä "ratkaisu" on erittäin huono. Sen surkeuden voi paljastaa yhdellä kysymyksellä: **entä jos vastaanotto-ohjelma ei ehdi palaamaan linjoille ennen Lambda-funktion maksimielinajan ylittymistä?**
+Tämä "ratkaisu" on erittäin huono. Sen surkeuden voi paljastaa yhdellä kysymyksellä: **entä jos vastaanotto-ohjelma ei ehdi palaamaan linjoille ennen Lambda-funktion elinajan ylittymistä?**
+
+> Muistutetaan mieliimme, että Lambda-kutsulla on maksimiaika, jonka aikana työtehtävä tulee suorittaa. Jos aika ei riitä niin huonompi homma. 
 
 Tälläisessä tilanteessa käännöstyön tulokset häviävät pysyvästi bittiavaruuteen.
 
