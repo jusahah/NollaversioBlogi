@@ -143,7 +143,7 @@ Eli edellinen keskustelu olikin VALTAVA yksinkertaistus, sillä siinä oletettii
 
 >*(yhteys aukeaa)*
 >
->**Amazon(Lambda) #3829:** tässä Matin käännös dokumentti nro 12...
+>**Amazon(Lambda) #3829:** tässä käännös Matin dokumenttiin nro 12...
 >
 >**Vastaanotto-ohjelma:** kiitos, otan talteen!
 >
@@ -153,7 +153,7 @@ Eli edellinen keskustelu olikin VALTAVA yksinkertaistus, sillä siinä oletettii
 >
 >*(yhteys aukeaa)*
 >
->**Amazon(Lambda) #115:** tässä Pirkon käännös dokumentti nro 821...
+>**Amazon(Lambda) #115:** tässä käännös Pirkon dokumenttiin nro 821...
 >
 >**Vastaanotto-ohjelma:** kiitos, otan talteen!
 >
@@ -163,17 +163,7 @@ Eli edellinen keskustelu olikin VALTAVA yksinkertaistus, sillä siinä oletettii
 >
 >*(yhteys aukeaa)*
 >
->**Amazon(Lambda) #10729:** tässä Reijon käännös dokumenttiin nro 761...
->
->**Vastaanotto-ohjelma:** kiitos, otan talteen!
->
->*(yhteys sulkeutuu)*
->
-> --------------------------
->
->*(yhteys aukeaa)*
->
->**Amazon(Lambda) #8008:** tässä Pirkon käännös dokumenttiin nro 822...
+>**Amazon(Lambda) #8008:** tässä käännös Pirkon dokumenttiin nro 822...
 >
 >**Vastaanotto-ohjelma:** kiitos, otan talteen!
 >
