@@ -201,11 +201,11 @@ Auts. Se siitä kirjanpidosta. Mites nyt suu pannaan?
 
 #### Kovalevy avuksi
 
-Ongelmaan on helppo ratkaisu. Sen sijaan, että vastaanotto-ohjelma pitää kirjanpitoa keskusmuistin sijaan kovalevylle. Kovalevyn hyvä puoli on, että palvelimen sipatessa tieto ei katoa mihinkään. Kun palvelin buuttaa itsensä ja vastaanotto-ohjelma palaa linjoille, se voi kovalevyltä tarkistaa kirjanpidon. Ongelma ratkaistu!
+Ongelmaan on helppo ratkaisu. **Vastaanotto-ohjelma pitää kirjanpitoa keskusmuistin sijaan kovalevylle**. Kovalevyn hyvä puoli on, että palvelimen sipatessa tieto ei katoa mihinkään. Kun palvelin buuttaa itsensä ja vastaanotto-ohjelma palaa linjoille, se voi kovalevyltä tarkistaa kirjanpidon. Ongelma ratkaistu!
 
 Mutta valitettavasti kirjanpidon pöllähtäminen taivaan tuuliin ei ollut ainoa ongelmamme. Sillä mietipä seuraavaa. Sanotaan, että vastaanotto-ohjelmamme kaatuu kahdeksi minuutiksi (tuon ajan fyysisellä palvelimella kestää buutata itsensä). Tällä välin Amazonin pääty on saanut käännöksen valmiiksi. Miltä keskustelu näyttää?
 
->*(yhteys aukeaa)*
+>*(yhteyttä muodostetaan...)*
 >
 >**Amazon(Lambda) #3829:** tässä Matin käännös dokumentti nro 12...
 >
