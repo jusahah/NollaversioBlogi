@@ -150,45 +150,71 @@
 <blockquote>
 <p>Keskustelun voi kuvata näin:</p>
 
-<p><em>(yhteys aukeaa)</em>
-<strong>Vastaanotto-ohjelma</strong>: hei Amazon, tässä sinulle työtehtävä&hellip;
-<strong>Amazon</strong>: selvä pyy, ilmoitan sitten kun on valmista!
-<em>(yhteys sulkeutuu)</em></p>
+<p><em>(yhteys aukeaa)</em></p>
+
+<p><strong>Vastaanotto-ohjelma</strong>: hei Amazon, tässä sinulle työtehtävä&hellip;</p>
+
+<p><strong>Amazon</strong>: selvä pyy, ilmoitan sitten kun on valmista!</p>
+
+<p><em>(yhteys sulkeutuu)</em></p>
 </blockquote>
 
 <p>Entä miten Amazon palauttaa vastauksen takaisin vastaanotto-ohjelmalle? Se ottaa itsenäisesti uuden HTTP-yhteyden! Tämä on mahdollista suorittaa suoraan Lambda-funktion sisältä. Keskustelu jatkuu kutakuinkin näin:</p>
 
 <blockquote>
-<p><em>(yhteys aukeaa)</em>
-<strong>Amazon(Lambda):</strong> hei kaveri, muistatko antamasi työtehtävän? Tässä tulokset siitä!
-<strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!
-<em>(yhteys sulkeutuu)</em></p>
+<p><em>(yhteys aukeaa)</em></p>
+
+<p><strong>Amazon(Lambda):</strong> hei kaveri, muistatko antamasi työtehtävän? Tässä tulokset siitä!</p>
+
+<p><strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!</p>
+
+<p><em>(yhteys sulkeutuu)</em></p>
 </blockquote>
 
 <p>Tässä kohtaa vastaanotto-ohjelma on saanut yhden käännöstuloksen takaisin. Käännöksiä lähti alunperin liikkeelle 1000 kpl, joten tämä yksi on vasta alkua. Käytännössä seuraavat pari minuuttia (tai sinnepäin) vastaanotto-ohjelma saa 999 uutta yhteydenottoa:</p>
 
 <blockquote>
-<p><em>(yhteys aukeaa)</em>
-<strong>Amazon(Lambda):</strong> tässä tulokset&hellip;
-<strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!
-<em>(yhteys sulkeutuu)</em></p>
+<p><em>(yhteys aukeaa)</em></p>
 
-<p><em>(toinen yhteys aukeaa)</em>
-<strong>Amazon(Lambda) #2:</strong> tässä tulokset&hellip;
-<strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!
-<em>(toinen yhteys sulkeutuu)</em></p>
+<p><strong>Amazon(Lambda):</strong> tässä tulokset&hellip;</p>
 
-<p><em>kolmas yhteys aukeaa)</em>
-<strong>Amazon(Lambda) #3:</strong> tässä tulokset&hellip;
-<strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!
-<em>(kolmas yhteys sulkeutuu)</em>
-&hellip;
-&hellip;
-&hellip;
-<em>999s yhteys aukeaa)</em>
-<strong>Amazon(Lambda) #999:</strong> tässä tulokset&hellip;
-<strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!
-<em>(999s yhteys sulkeutuu)</em></p>
+<p><strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!</p>
+
+<p><em>(yhteys sulkeutuu)</em></p>
+
+<hr />
+
+<p><em>(toinen yhteys aukeaa)</em></p>
+
+<p><strong>Amazon(Lambda) #2:</strong> tässä tulokset&hellip;</p>
+
+<p><strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!</p>
+
+<p><em>(toinen yhteys sulkeutuu)</em></p>
+
+<hr />
+
+<p><em>kolmas yhteys aukeaa)</em></p>
+
+<p><strong>Amazon(Lambda) #3:</strong> tässä tulokset&hellip;</p>
+
+<p><strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!</p>
+
+<p><em>(kolmas yhteys sulkeutuu)</em></p>
+
+<hr />
+
+<p>&hellip;</p>
+
+<hr />
+
+<p><em>999s yhteys aukeaa)</em></p>
+
+<p><strong>Amazon(Lambda) #999:</strong> tässä tulokset&hellip;</p>
+
+<p><strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!</p>
+
+<p><em>(999s yhteys sulkeutuu)</em></p>
 </blockquote>
 
 <p>Kun kaikki 1000 käännöstä ovat saapuneet, koko urakka on vihdoin valmis! Mutta ennen sitä on syytä miettiä seuraavaa: Amazonilla saattaa olla kullakin ajan hetkellä <em>usean eri loppuasiakkaan käännösurakat pyörimässä</em>.</p>
@@ -196,25 +222,45 @@
 <p>Eli edellinen keskustelu olikin VALTAVA yksinkertaistus, sillä siinä oletettiin, että kaikki käännöstulokset kuuluivat yhdelle ja samalla ihmisasiakkaalle. Oikeasti keskustelu näyttää tältä:</p>
 
 <blockquote>
-<p><em>(yhteys aukeaa)</em>
-<strong>Amazon(Lambda) #3829:</strong> tässä Matin käännös dokumentti nro 12&hellip;
-<strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!
-<em>(yhteys sulkeutuu)</em></p>
+<p><em>(yhteys aukeaa)</em></p>
 
-<p><em>(yhteys aukeaa)</em>
-<strong>Amazon(Lambda) #115:</strong> tässä Pirkon käännös dokumentti nro 821&hellip;
-<strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!
-<em>(yhteys sulkeutuu)</em></p>
+<p><strong>Amazon(Lambda) #3829:</strong> tässä Matin käännös dokumentti nro 12&hellip;</p>
 
-<p><em>(yhteys aukeaa)</em>
-<strong>Amazon(Lambda) #10729:</strong> tässä Reijon käännös dokumenttiin nro 761&hellip;
-<strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!
-<em>(yhteys sulkeutuu)</em></p>
+<p><strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!</p>
 
-<p><em>(yhteys aukeaa)</em>
-<strong>Amazon(Lambda) #8008:</strong> tässä Pirkon käännös dokumenttiin nro 822&hellip;
-<strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!
-<em>(yhteys sulkeutuu)</em></p>
+<p><em>(yhteys sulkeutuu)</em></p>
+
+<hr />
+
+<p><em>(yhteys aukeaa)</em></p>
+
+<p><strong>Amazon(Lambda) #115:</strong> tässä Pirkon käännös dokumentti nro 821&hellip;</p>
+
+<p><strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!</p>
+
+<p><em>(yhteys sulkeutuu)</em></p>
+
+<hr />
+
+<p><em>(yhteys aukeaa)</em></p>
+
+<p><strong>Amazon(Lambda) #10729:</strong> tässä Reijon käännös dokumenttiin nro 761&hellip;</p>
+
+<p><strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!</p>
+
+<p><em>(yhteys sulkeutuu)</em></p>
+
+<hr />
+
+<p><em>(yhteys aukeaa)</em></p>
+
+<p><strong>Amazon(Lambda) #8008:</strong> tässä Pirkon käännös dokumenttiin nro 822&hellip;</p>
+
+<p><strong>Vastaanotto-ohjelma:</strong> kiitos, otan talteen!</p>
+
+<p><em>(yhteys sulkeutuu)</em></p>
+
+<hr />
 
 <p>//jne. jne</p>
 </blockquote>
@@ -252,11 +298,15 @@
 <p>Mutta valitettavasti kirjanpidon pöllähtäminen taivaan tuuliin ei ollut ainoa ongelmamme. Sillä mietipä seuraavaa. Sanotaan, että vastaanotto-ohjelmamme kaatuu kahdeksi minuutiksi (tuon ajan fyysisellä palvelimella kestää buutata itsensä). Tällä välin Amazonin pääty on saanut käännöksen valmiiksi. Miltä keskustelu näyttää?</p>
 
 <blockquote>
-<p><em>(yhteys aukeaa)</em>
-<strong>Amazon(Lambda) #3829:</strong> tässä Matin käännös dokumentti nro 12&hellip;
-<strong>&hellip;</strong>
-<strong>Amazon(Lambda) #3829:</strong> haloo, onko ketään kotona&hellip;?
-<strong>&hellip;</strong></p>
+<p><em>(yhteys aukeaa)</em></p>
+
+<p><strong>Amazon(Lambda) #3829:</strong> tässä Matin käännös dokumentti nro 12&hellip;</p>
+
+<p><strong>&hellip;</strong></p>
+
+<p><strong>Amazon(Lambda) #3829:</strong> haloo, onko ketään kotona&hellip;?</p>
+
+<p><strong>&hellip;</strong></p>
 </blockquote>
 
 <p>Ongelman ydin on yksinkertainen: vastaanotto-ohjelma on poissa langoilta, joten Amazon ei saa siihen yhteyttä!</p>
@@ -282,20 +332,33 @@
 <p>Tässä uudessa, parannellussa mallissamme keskustelun kulku menee kutakuinkin näin. Käydään keskustelu yhden käännettävän dokumentin näkökulmasta:</p>
 
 <blockquote>
-<p><em>(yhteys aukeaa)</em>
-<strong>Vastaanotto-ohjelma</strong>: hei Amazon, tässä sinulle työtehtävä&hellip;
-<strong>Amazon</strong>: selvä pyy, ilmoitan sitten kun on valmista!
-<em>(yhteys sulkeutuu)</em></p>
+<p><em>(yhteys aukeaa)</em></p>
 
-<p><em>(yhteys aukeaa)</em>
-<strong>Amazon Lambda</strong>: hei jono, tässäpä tulokset&hellip;
-<strong>Jono</strong>: kiitos, pistän talteen
-<em>(yhteys sulkeutuu)</em></p>
+<p><strong>Vastaanotto-ohjelma</strong>: hei Amazon, tässä sinulle työtehtävä&hellip;</p>
 
-<p><em>(yhteys aukeaa)</em>
-<strong>Vastaanotto-ohjelma</strong>: hei jono, onko mitään uutta?
-<strong>Jono</strong>: kyllä on, tässä uudet tulokset!
-<em>(yhteys sulkeutuu)</em></p>
+<p><strong>Amazon</strong>: selvä pyy, ilmoitan sitten kun on valmista!</p>
+
+<p><em>(yhteys sulkeutuu)</em></p>
+
+<hr />
+
+<p><em>(yhteys aukeaa)</em></p>
+
+<p><strong>Amazon Lambda</strong>: hei jono, tässäpä tulokset&hellip;</p>
+
+<p><strong>Jono</strong>: kiitos, pistän talteen</p>
+
+<p><em>(yhteys sulkeutuu)</em></p>
+
+<hr />
+
+<p><em>(yhteys aukeaa)</em></p>
+
+<p><strong>Vastaanotto-ohjelma</strong>: hei jono, onko mitään uutta?</p>
+
+<p><strong>Jono</strong>: kyllä on, tässä uudet tulokset!</p>
+
+<p><em>(yhteys sulkeutuu)</em></p>
 </blockquote>
 
 <p>On tärkeä ymmärtää syyt miksi tämä <em>kolmen osapuolen</em> arkkitehtuuri on valtava parannus alkuperäiseen <em>kahden osapuolen</em> arkkitehtuuriin verrattuna. Kerrataan siis:</p>
@@ -343,17 +406,26 @@
 
 <p>Paitsi että pieleen meni. Sillä entä jos vastaanotto-ohjelma kaatuu <em>juuri ennenkuin</em> se ehtii kirjata tulokset kovalevylle? Se siitä, bittiavaruus kohtalona jälleen.</p>
 
+<h4 id="ratkaisuehdotus-2">Ratkaisuehdotus #2</h4>
+
 <p>Oikea ratkaisu on hoitaa asia niin, että <em>jono unohtaa tulokset vasta kun sille annetaan lupa</em>. Keskustelu vastaanotto-ohjelman ja jonon kanssa näyttää tältä:</p>
 
 <blockquote>
-<p><em>(yhteys aukeaa)</em>
-<strong>Vastaanotto-ohjelma</strong>: hei jono, onko mitään uutta?
-<strong>Jono</strong>: kyllä on, tässä uudet tulokset!
-<strong>Vastaanotto-ohjelma</strong>: ok, kiva, odotapa pojka hetki&hellip;
-<strong>&hellip;</strong>
-<strong>Vastaanotto-ohjelma</strong>: nyt voit unohtaa nuo antamasi tulokset!
-<strong>Jono</strong>: gone and gone! ensi kertaan!
-<em>(yhteys sulkeutuu)</em></p>
+<p><em>(yhteys aukeaa)</em></p>
+
+<p><strong>Vastaanotto-ohjelma</strong>: hei jono, onko mitään uutta?</p>
+
+<p><strong>Jono</strong>: kyllä on, tässä uudet tulokset!</p>
+
+<p><strong>Vastaanotto-ohjelma</strong>: ok, kiva, odotapa pojka hetki&hellip;</p>
+
+<p><strong>&hellip;</strong></p>
+
+<p><strong>Vastaanotto-ohjelma</strong>: voit unohtaa nuo antamasi tulokset!</p>
+
+<p><strong>Jono</strong>: gone and gone! ensi kertaan!</p>
+
+<p><em>(yhteys sulkeutuu)</em></p>
 </blockquote>
 
 <p>(Teknisesti tuota viestinvaihto ei käydä yhden ja saman yhteyden - ei varsinkaan HTTP-yhteyden - sisällä, mutta yksinkertaistus sallittakoon&hellip;)</p>

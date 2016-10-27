@@ -73,40 +73,68 @@ Parempi ratkaisu on, että vastaanotto-ohjelma ampuu asiakirjan Amazonin suuntaa
 
 > Keskustelun voi kuvata näin:
 >
+>
+>
 >*(yhteys aukeaa)*
+>
 >**Vastaanotto-ohjelma**: hei Amazon, tässä sinulle työtehtävä...
+>
 >**Amazon**: selvä pyy, ilmoitan sitten kun on valmista! 
+>
 >*(yhteys sulkeutuu)*
 
 Entä miten Amazon palauttaa vastauksen takaisin vastaanotto-ohjelmalle? Se ottaa itsenäisesti uuden HTTP-yhteyden! Tämä on mahdollista suorittaa suoraan Lambda-funktion sisältä. Keskustelu jatkuu kutakuinkin näin:
 
 >*(yhteys aukeaa)*
+>
 >**Amazon(Lambda):** hei kaveri, muistatko antamasi työtehtävän? Tässä tulokset siitä!
+>
 >**Vastaanotto-ohjelma:** kiitos, otan talteen!
+>
 >*(yhteys sulkeutuu)*
 
 Tässä kohtaa vastaanotto-ohjelma on saanut yhden käännöstuloksen takaisin. Käännöksiä lähti alunperin liikkeelle 1000 kpl, joten tämä yksi on vasta alkua. Käytännössä seuraavat pari minuuttia (tai sinnepäin) vastaanotto-ohjelma saa 999 uutta yhteydenottoa:
 
 >*(yhteys aukeaa)*
+>
 >**Amazon(Lambda):** tässä tulokset...
+>
 >**Vastaanotto-ohjelma:** kiitos, otan talteen!
+>
 >*(yhteys sulkeutuu)*
 >
+> --------------------------
+>
 >*(toinen yhteys aukeaa)*
+>
 >**Amazon(Lambda) #2:** tässä tulokset...
+>
 >**Vastaanotto-ohjelma:** kiitos, otan talteen!
+>
 >*(toinen yhteys sulkeutuu)*
 >
+> --------------------------
+>
 >*kolmas yhteys aukeaa)*
+>
 >**Amazon(Lambda) #3:** tässä tulokset...
+>
 >**Vastaanotto-ohjelma:** kiitos, otan talteen!
+>
 >*(kolmas yhteys sulkeutuu)*
->...
->...
->...
+>
+> --------------------------
+>
+> ...
+>
+> --------------------------
+>
 >*999s yhteys aukeaa)*
+>
 >**Amazon(Lambda) #999:** tässä tulokset...
+>
 >**Vastaanotto-ohjelma:** kiitos, otan talteen!
+>
 >*(999s yhteys sulkeutuu)*
 
 Kun kaikki 1000 käännöstä ovat saapuneet, koko urakka on vihdoin valmis! Mutta ennen sitä on syytä miettiä seuraavaa: Amazonilla saattaa olla kullakin ajan hetkellä *usean eri loppuasiakkaan käännösurakat pyörimässä*. 
@@ -114,24 +142,44 @@ Kun kaikki 1000 käännöstä ovat saapuneet, koko urakka on vihdoin valmis! Mut
 Eli edellinen keskustelu olikin VALTAVA yksinkertaistus, sillä siinä oletettiin, että kaikki käännöstulokset kuuluivat yhdelle ja samalla ihmisasiakkaalle. Oikeasti keskustelu näyttää tältä:
 
 >*(yhteys aukeaa)*
+>
 >**Amazon(Lambda) #3829:** tässä Matin käännös dokumentti nro 12...
+>
 >**Vastaanotto-ohjelma:** kiitos, otan talteen!
+>
 >*(yhteys sulkeutuu)*
 >
+> --------------------------
+>
 >*(yhteys aukeaa)*
+>
 >**Amazon(Lambda) #115:** tässä Pirkon käännös dokumentti nro 821...
+>
 >**Vastaanotto-ohjelma:** kiitos, otan talteen!
+>
 >*(yhteys sulkeutuu)*
 >
+> --------------------------
+>
 >*(yhteys aukeaa)*
+>
 >**Amazon(Lambda) #10729:** tässä Reijon käännös dokumenttiin nro 761...
+>
 >**Vastaanotto-ohjelma:** kiitos, otan talteen!
+>
 >*(yhteys sulkeutuu)*
 >
+> --------------------------
+>
 >*(yhteys aukeaa)*
+>
 >**Amazon(Lambda) #8008:** tässä Pirkon käännös dokumenttiin nro 822...
+>
 >**Vastaanotto-ohjelma:** kiitos, otan talteen!
+>
 >*(yhteys sulkeutuu)*
+>
+> --------------------------
 >
 > //jne. jne
 
@@ -166,10 +214,15 @@ Ongelmaan on helppo ratkaisu. Sen sijaan, että vastaanotto-ohjelma pitää kirj
 Mutta valitettavasti kirjanpidon pöllähtäminen taivaan tuuliin ei ollut ainoa ongelmamme. Sillä mietipä seuraavaa. Sanotaan, että vastaanotto-ohjelmamme kaatuu kahdeksi minuutiksi (tuon ajan fyysisellä palvelimella kestää buutata itsensä). Tällä välin Amazonin pääty on saanut käännöksen valmiiksi. Miltä keskustelu näyttää?
 
 >*(yhteys aukeaa)*
+>
 >**Amazon(Lambda) #3829:** tässä Matin käännös dokumentti nro 12...
+>
 >**...**
+>
 >**Amazon(Lambda) #3829:** haloo, onko ketään kotona...?
+>
 >**...**
+>
 
 Ongelman ydin on yksinkertainen: vastaanotto-ohjelma on poissa langoilta, joten Amazon ei saa siihen yhteyttä! 
 
@@ -194,23 +247,33 @@ Itse asiassa jono mahdollistaa vielä paremman yksinkertaistuksen: Amazon Lambda
 Tässä uudessa, parannellussa mallissamme keskustelun kulku menee kutakuinkin näin. Käydään keskustelu yhden käännettävän dokumentin näkökulmasta:
 
 >*(yhteys aukeaa)*
+>
 >**Vastaanotto-ohjelma**: hei Amazon, tässä sinulle työtehtävä...
+>
 >**Amazon**: selvä pyy, ilmoitan sitten kun on valmista! 
+>
 >*(yhteys sulkeutuu)*
 >
->
+> --------------------------
 >
 >*(yhteys aukeaa)*
+>
 >**Amazon Lambda**: hei jono, tässäpä tulokset...
+>
 >**Jono**: kiitos, pistän talteen
+>
 >*(yhteys sulkeutuu)*
 >
->
+> --------------------------
 >
 >*(yhteys aukeaa)*
+>
 >**Vastaanotto-ohjelma**: hei jono, onko mitään uutta?
+>
 >**Jono**: kyllä on, tässä uudet tulokset!
+>
 >*(yhteys sulkeutuu)*
+>
 
 On tärkeä ymmärtää syyt miksi tämä *kolmen osapuolen* arkkitehtuuri on valtava parannus alkuperäiseen *kahden osapuolen* arkkitehtuuriin verrattuna. Kerrataan siis:
 
@@ -251,16 +314,28 @@ No, ratkaisuhan on ilmiselvä? Kun vastaanotto-ohjelma saa tulokset jonosta itse
 
 Paitsi että pieleen meni. Sillä entä jos vastaanotto-ohjelma kaatuu *juuri ennenkuin* se ehtii kirjata tulokset kovalevylle? Se siitä, bittiavaruus kohtalona jälleen.
 
+#### Ratkaisuehdotus #2
+
 Oikea ratkaisu on hoitaa asia niin, että *jono unohtaa tulokset vasta kun sille annetaan lupa*. Keskustelu vastaanotto-ohjelman ja jonon kanssa näyttää tältä:
 
+
 >*(yhteys aukeaa)*
+>
 >**Vastaanotto-ohjelma**: hei jono, onko mitään uutta?
+>
 >**Jono**: kyllä on, tässä uudet tulokset!
+>
 >**Vastaanotto-ohjelma**: ok, kiva, odotapa pojka hetki...
+>
 >**...**
->**Vastaanotto-ohjelma**: nyt voit unohtaa nuo antamasi tulokset!
+>
+>**Vastaanotto-ohjelma**: voit unohtaa nuo antamasi tulokset!
+>
 >**Jono**: gone and gone! ensi kertaan!
+>
 >*(yhteys sulkeutuu)*
+>
+
 
 (Teknisesti tuota viestinvaihto ei käydä yhden ja saman yhteyden - ei varsinkaan HTTP-yhteyden - sisällä, mutta yksinkertaistus sallittakoon...)
 
