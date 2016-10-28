@@ -33,12 +33,12 @@
 
 &lt;p&gt;Hyvä kysymys. Olen itse tarvinnut vastaavaa.&lt;/p&gt;
 
-&lt;p&gt;Miksi tuollainen lokihistoria sisältäen muutokset on hyödyllinen? Selkeä käyttötarkoitus on järjestelmissä, joille vallitseva laki asettaa vaatimuksia. Yksi yleisin vaatimus on, että järjestelmän tulee pitää tarkkaa kirjaa &lt;em&gt;kaikista&lt;/em&gt; järjestelmän sisällä tapahtuvista muutoksista.&lt;/p&gt;
+&lt;p&gt;Miksi tuollainen lokihistoria sisältäen muutokset on hyödyllinen? Selkeä käyttötarkoitus on järjestelmissä, joille vallitseva laki asettaa vaatimuksia. Yksi yleinen vaatimus on, että järjestelmän tulee pitää tarkkaa kirjaa &lt;em&gt;kaikista&lt;/em&gt; järjestelmän sisällä tapahtuvista muutoksista.&lt;/p&gt;
 
 &lt;p&gt;Tälläinen kirjanpito on järkevä hoitaa lokihistorian avulla, jonne kirjaa lyhyen tiedoksiannon jokaisesta muutoksesta.&lt;/p&gt;
 
 &lt;blockquote&gt;
-&lt;p&gt;Esimerkiksi ydinvoimalan turvallisuusjärjestelmässä tuollainen muutos - jonka haluamme kirjata ylös - on yksikön polttoainesauvan liikuttaminen.&lt;/p&gt;
+&lt;p&gt;Otetaan esimerkkinä ydinvoimalan hallintajärjestelmä. Siellä tuollainen muutos - jonka haluamme kirjata ylös - voisi olla reaktorin polttoainesauvan liikuttaminen.&lt;/p&gt;
 
 &lt;p&gt;Kun järjestelmän ylläpitäjä antaa järjestelmälle komennon siirtää polttoainesauvaa kolme senttiä ylöspäin, järjestelmän on syytä kirjata lokitieto asiasta.&lt;/p&gt;
 
@@ -79,6 +79,8 @@ $polttoainesauva-&amp;gt;nostaYlos();
 
 &lt;p&gt;Ydinkysymys: &lt;strong&gt;miten saamme järjestettyä siten, että polttoainesauvan nostosta jää yksiselitteinen lokitieto järjestelmän historiaan?&lt;/strong&gt;&lt;/p&gt;
 
+&lt;p&gt;Annoin vastauksen jo tämän kappaleen alkupuolella. Tutkitaan kuitenkin ensin pari huonoa tapaa hoitaa homma.&lt;/p&gt;
+
 &lt;h3 id=&#34;tapa-1&#34;&gt;Tapa 1&lt;/h3&gt;
 
 &lt;p&gt;Yksi tapa on muokata ylläolevaa koodinkutsua seuraavanlaiseksi:&lt;/p&gt;
@@ -92,7 +94,7 @@ Loki::write(&#39;Polttoainesauva nostettu&#39;);
 
 &lt;p&gt;Ratkaisu on yleisellä tasolla huono, sillä entä jos useampi rajapintafunktio nostelee sauvaa? Tällöin lokikirjauksen tekeminen tulisi muistaa tehdä kaikkialle erikseen!&lt;/p&gt;
 
-&lt;p&gt;Tämä on vaarallista ihan siksi, että ennemmin tai myöhemmin joku puolikätinen yliopisto-ohjelmoija* pöllähtää paikalle ja muokkaa rajapintaa &lt;em&gt;unohtaen&lt;/em&gt; lokikirjauksen lisäyksen!&lt;/p&gt;
+&lt;p&gt;Tämä on vaarallista ihan siksi, että ennemmin tai myöhemmin joku puolikätinen ohjelmoija pöllähtää paikalle ja muokkaa rajapintaa &lt;em&gt;unohtaen&lt;/em&gt; lokikirjauksen lisäyksen!&lt;/p&gt;
 
 &lt;h3 id=&#34;tapa-2&#34;&gt;Tapa 2&lt;/h3&gt;
 
@@ -119,45 +121,48 @@ class Polttoainesauva extends Model {
 
 &lt;p&gt;Nyt voimme olla varmoja, että sauvoja ei nosteta/lasketa ilman lokikirjausta.&lt;/p&gt;
 
-&lt;p&gt;Vai voimmeko? Entä jos puolikätinen yliopisto-ohjelmoija menee typeryyspäissään kirjoittamaan uuden rajapintafunktion tyyliin:&lt;/p&gt;
+&lt;p&gt;Vai voimmeko? Entä jos koodarimme menee typeryyspäissään kirjoittamaan uuden rajapintafunktion tyyliin:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
 function vedenPintaKriittisenAlhaalla() {
-	// Kiireellä sauva pois matalasta vedestä!
-	// (Disclaimer: en tiedä lainkaan toimisiko tälläinen
-	// varotoimenpide oikeassa elämässä...dont try at home!)
-	$polttoainesauva-&amp;gt;asento = &#39;ylös&#39;;
-	$polttoainesauva-&amp;gt;save();
+  // Kiireellä sauva pois matalasta vedestä!
+  // (Disclaimer: en tiedä lainkaan toimisiko tälläinen
+  // varotoimenpide oikeassa elämässä...dont try at home!)
+  $polttoainesauva-&amp;gt;asento = &#39;ylös&#39;;
+  $polttoainesauva-&amp;gt;save();
+
+  // Unohtuiko jotain...?
 }
 
 &lt;/code&gt;&lt;/pre&gt;
 
 &lt;p&gt;Kirjataanko tuossa mitään lokiin? Ei, sillä uusi noviisiohjelmoija meni muuttamaan sauvan asentoa &lt;em&gt;ohitse&lt;/em&gt; meidän nostaYlos-metodimme. Siispä lokikirjausta ei tehty.&lt;/p&gt;
 
-&lt;p&gt;No, noin keskimäärin ydinvoimalat eivät palkkaisi diplomi-insinöörejä, joten ylläolevaa ei pääse tapahtumaan.&lt;/p&gt;
+&lt;p&gt;No, ydinvoimalat eivät palkkaisi diplomi-insinöörejä, joten ylläolevaa ei pääse tapahtumaan. Mutta on hyvä tiedostaa riskit.&lt;/p&gt;
 
-&lt;p&gt;Mutta tuossa lokikirjausten tekemisessä Polttoainesauva-luokkaan on toinenkin ongelma: entä jos meillä on &lt;em&gt;sadoittain&lt;/em&gt; vastaavia malliluokkia ympäri applikaatiotamme?&lt;/p&gt;
+&lt;p&gt;Eikä siinä vielä kaikki. Tuossa lokikirjausten tekemisessä Polttoainesauva-luokkaan on toinenkin ongelma: entä jos meillä on &lt;em&gt;sadoittain&lt;/em&gt; vastaavia malliluokkia ympäri applikaatiotamme?&lt;/p&gt;
 
 &lt;p&gt;Meidän tulisi &lt;em&gt;jokaikiseen&lt;/em&gt; kirjata &lt;em&gt;jokaikisen&lt;/em&gt; tietokantaa muokkaavan metodin kohdalle lokikirjaus! Helvetinmoinen urakka, muuten.&lt;/p&gt;
 
 &lt;h3 id=&#34;tapa-3&#34;&gt;Tapa 3&lt;/h3&gt;
 
-&lt;p&gt;Paras keino on luottaa Trait*-konseptin voimaan.&lt;/p&gt;
+&lt;p&gt;Paras keino on luottaa &lt;a href=&#34;http://php.net/manual/en/language.oop5.traits.php&#34;&gt;Trait&lt;/a&gt;-konseptin* voimaan.&lt;/p&gt;
 
 &lt;p&gt;Lisäämällä kirjaustoiminnot sisältävä Trait kunkin malliluokan oheen, meidän ei tarvitse huolehtia juuri mistään muusta! Laravel-kehys huolehtii siitä, että Traitin sisältämät &lt;em&gt;kuuntelijafunktiot&lt;/em&gt; kutsutaan aina kun tietokantaa muokataan.&lt;/p&gt;
 
-&lt;p&gt;Huono puoli tässäkin on - joudumme edelleen siis muistamaan sisällyttämään tuon Traitin jokaisen malliluokan oheen. Mutta ainakaan meidän ei tarvitse enää huolehtia yksittäisistä metodeista. Yksi lisäys per malliluokka riittää.&lt;/p&gt;
+&lt;p&gt;Huono puoli tässäkin on - meidän tulee edelleen muistaa sisällyttää tuon Trait jokaisen malliluokan oheen. Mutta ainakaan meidän ei tarvitse enää huolehtia yksittäisistä metodeista. Yksi lisäys per malliluokka riittää.&lt;/p&gt;
 
 &lt;p&gt;Ja mikä parasta, &lt;strong&gt;yksi ja sama Trait kelpaa kaikkiin malliluokkiin&lt;/strong&gt;.&lt;/p&gt;
 
 &lt;p&gt;Tämä viimeisin pointti on tärkeä; vaikka meillä olisi tuhat malliluokkaa, yksi Trait edelleen riittäisi.&lt;/p&gt;
 
-&lt;p&gt;Traitin avulla jokainen malliluokan metodi tulee automaattisesti &amp;ldquo;suojelluksi&amp;rdquo; - tarkoittaen, että tietokannan muokkaus mistä ikinä metodista tulee kirjatuksi lokiin.&lt;/p&gt;
+&lt;p&gt;Traitin avulla jokainen malliluokan metodi tulee automaattisesti &amp;ldquo;suojelluksi&amp;rdquo; - tarkoittaen, että &lt;strong&gt;tietokannan muokkaus mistä ikinä metodista tulee kirjatuksi lokiin&lt;/strong&gt;.&lt;/p&gt;
 
 &lt;p&gt;Miltä tuo Trait näyttää? Tältä:&lt;/p&gt;
 
 &lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
 trait Trackable {
+  // Laravel kutsuu tätä metodia osana käynnistys-ajoaan.
   public static function bootTrackable() {
 
     static::creating(function ($model) {
@@ -212,9 +217,7 @@ class Lampomittari extends Model {
 &lt;p&gt;Onko suojaus nyt täydellinen, täysin diplomi-insinööri-proof? Ei. Jos tietokantaa muokataan suoraan SQL-koodilla, lokikirjaus jää edelleen tekemättä. Mutta ainakin ohjelmoijilla on nyt vain yksi elinehto: &lt;strong&gt;älä ohita Laravel-kehyksen omaa tietokanta-abstraktiota.&lt;/strong&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;ul&gt;
-&lt;li&gt;Traitin toiminnasta voit lukea &lt;a href=&#34;http://php.net/manual/en/language.oop5.traits.php&#34;&gt;täältä&lt;/a&gt;. Perusidea on, että traitin sisältö copypastataan sellaisenaan siihen kohtaan koodipohjaa, jossa traitia käytetään (&lt;em&gt;use&lt;/em&gt;).&lt;/li&gt;
-&lt;/ul&gt;
+&lt;p&gt;*Perusidea on, että traitin sisältö copypastataan sellaisenaan siihen kohtaan koodipohjaa, jossa traitia käytetään (&lt;em&gt;use&lt;/em&gt;).&lt;/p&gt;
 </description>
     </item>
     
