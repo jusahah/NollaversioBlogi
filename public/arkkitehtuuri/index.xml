@@ -225,12 +225,12 @@
 
 &lt;h4 id=&#34;kovalevy-avuksi&#34;&gt;Kovalevy avuksi&lt;/h4&gt;
 
-&lt;p&gt;Ongelmaan on helppo ratkaisu. Sen sijaan, että vastaanotto-ohjelma pitää kirjanpitoa keskusmuistin sijaan kovalevylle. Kovalevyn hyvä puoli on, että palvelimen sipatessa tieto ei katoa mihinkään. Kun palvelin buuttaa itsensä ja vastaanotto-ohjelma palaa linjoille, se voi kovalevyltä tarkistaa kirjanpidon. Ongelma ratkaistu!&lt;/p&gt;
+&lt;p&gt;Ongelmaan on helppo ratkaisu. &lt;strong&gt;Vastaanotto-ohjelma pitää kirjanpitoa keskusmuistin sijaan kovalevylle&lt;/strong&gt;. Kovalevyn hyvä puoli on, että palvelimen sipatessa tieto ei katoa mihinkään. Kun palvelin buuttaa itsensä ja vastaanotto-ohjelma palaa linjoille, se voi kovalevyltä tarkistaa kirjanpidon. Ongelma ratkaistu!&lt;/p&gt;
 
 &lt;p&gt;Mutta valitettavasti kirjanpidon pöllähtäminen taivaan tuuliin ei ollut ainoa ongelmamme. Sillä mietipä seuraavaa. Sanotaan, että vastaanotto-ohjelmamme kaatuu kahdeksi minuutiksi (tuon ajan fyysisellä palvelimella kestää buutata itsensä). Tällä välin Amazonin pääty on saanut käännöksen valmiiksi. Miltä keskustelu näyttää?&lt;/p&gt;
 
 &lt;blockquote&gt;
-&lt;p&gt;&lt;em&gt;(yhteys aukeaa)&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;(yhteyttä muodostetaan&amp;hellip;)&lt;/em&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;Amazon(Lambda) #3829:&lt;/strong&gt; tässä Matin käännös dokumentti nro 12&amp;hellip;&lt;/p&gt;
 
@@ -245,7 +245,11 @@
 
 &lt;p&gt;Ongelma on pirullinen ratkaista. Naivi, ihanan sinisilmäinen ratkaisuehdotus on &lt;em&gt;pakottaa&lt;/em&gt; Amazonin Lambda-funktio odottamaan kunnes vastaanotto-ohjelma on taas takaisin elävien kirjoissa.&lt;/p&gt;
 
-&lt;p&gt;Tämä &amp;ldquo;ratkaisu&amp;rdquo; on erittäin huono. Sen surkeuden voi paljastaa yhdellä kysymyksellä: &lt;strong&gt;entä jos vastaanotto-ohjelma ei ehdi palaamaan linjoille ennen Lambda-funktion maksimielinajan ylittymistä?&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Tämä &amp;ldquo;ratkaisu&amp;rdquo; on erittäin huono. Sen surkeuden voi paljastaa yhdellä kysymyksellä: &lt;strong&gt;entä jos vastaanotto-ohjelma ei ehdi palaamaan linjoille ennen Lambda-funktion elinajan ylittymistä?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Muistutetaan mieliimme, että Lambda-kutsulla on maksimiaika, jonka aikana työtehtävä tulee suorittaa. Jos aika ei riitä niin huonompi homma.&lt;/p&gt;
+&lt;/blockquote&gt;
 
 &lt;p&gt;Tälläisessä tilanteessa käännöstyön tulokset häviävät pysyvästi bittiavaruuteen.&lt;/p&gt;
 
@@ -268,7 +272,7 @@
 
 &lt;p&gt;&lt;strong&gt;Vastaanotto-ohjelma&lt;/strong&gt;: hei Amazon, tässä sinulle työtehtävä&amp;hellip;&lt;/p&gt;
 
-&lt;p&gt;&lt;strong&gt;Amazon&lt;/strong&gt;: selvä pyy, ilmoitan sitten kun on valmista!&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Amazon&lt;/strong&gt;: selvä pyy.&lt;/p&gt;
 
 &lt;p&gt;&lt;em&gt;(yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
 
@@ -298,7 +302,7 @@
 &lt;p&gt;Alkuperäisessä mallissa vastaanotto-ohjelmalla oli &lt;strong&gt;kaksi(!)&lt;/strong&gt; vastuualuetta mitä tulee tulosten vastaanottamiseen:&lt;/p&gt;
 
 &lt;ol&gt;
-&lt;li&gt;Vastaanottaa tulokset (d&amp;rsquo;oh)&lt;/li&gt;
+&lt;li&gt;Vastaanottaa tulokset (&amp;ldquo;ai tosiaanko!&amp;rdquo;)&lt;/li&gt;
 &lt;li&gt;Pysyä hengissä&lt;/li&gt;
 &lt;/ol&gt;
 

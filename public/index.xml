@@ -6,8 +6,217 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Thu, 27 Oct 2016 16:58:00 +0300</lastBuildDate>
+    <lastBuildDate>Fri, 28 Oct 2016 21:26:18 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Laravel: seuraa datan muutoksia</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/logging-model-changes/</link>
+      <pubDate>Fri, 28 Oct 2016 21:26:18 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/logging-model-changes/</guid>
+      <description>
+
+&lt;p&gt;Tänään törmäsin mielenkiintoiseen kysymykseen Laravellin englanninkielisellä keskustelupalstalla Laracast.com:ssa.&lt;/p&gt;
+
+&lt;p&gt;Kysymys meni näin:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;I have a classic create() function to create elements, but changes I wish to save in a separate table, like history. There is table: element_changes and also model created named ElementChange, but in my ElementController, how can I tell to save it in a separate table?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Vapaasti suomennettuna siis:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Minulla on tyypillinen luontifunktio, joka luo uusia malleja. Mutta haluaisin erilliseen tietokantatauluun kirjata ylös luontihistorian. Eli kun luon uuden objektin mallin pohjalta (tai &lt;em&gt;muutan&lt;/em&gt; olemassaolevaa mallia), järjestelmä kirjaa lokitiedon asiasta erilliseen tauluun. Kuinka saavuttaa tämä?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Hyvä kysymys. Olen itse tarvinnut vastaavaa.&lt;/p&gt;
+
+&lt;p&gt;Miksi tuollainen lokihistoria sisältäen muutokset on hyödyllinen? Selkeä käyttötarkoitus on järjestelmissä, joille vallitseva laki asettaa vaatimuksia. Yksi yleisin vaatimus on, että järjestelmän tulee pitää tarkkaa kirjaa &lt;em&gt;kaikista&lt;/em&gt; järjestelmän sisällä tapahtuvista muutoksista.&lt;/p&gt;
+
+&lt;p&gt;Tälläinen kirjanpito on järkevä hoitaa lokihistorian avulla, jonne kirjaa lyhyen tiedoksiannon jokaisesta muutoksesta.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Esimerkiksi ydinvoimalan turvallisuusjärjestelmässä tuollainen muutos - jonka haluamme kirjata ylös - on yksikön polttoainesauvan liikuttaminen.&lt;/p&gt;
+
+&lt;p&gt;Kun järjestelmän ylläpitäjä antaa järjestelmälle komennon siirtää polttoainesauvaa kolme senttiä ylöspäin, järjestelmän on syytä kirjata lokitieto asiasta.&lt;/p&gt;
+
+&lt;p&gt;Sillä jos jotain menee pieleen, poliitikot haluavat tietää &lt;em&gt;tismalleen mitä ja miksi meni pieleen&lt;/em&gt;! Lokihistoria auttaa.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&#34;toteutus&#34;&gt;Toteutus&lt;/h3&gt;
+
+&lt;p&gt;Jälleen kerran Laravel tekee lokihistorian pitämisen laittoman helpoksi. Käytännössä homma toimii näin; määrität kullekin &lt;em&gt;malliluokalle&lt;/em&gt; muutaman metodin, joita Laravel-kehys kutsuu aina tietokantaa päivittäessään. Näiden metodien sisällä pusket lokitiedon lokihistoria-tauluun.&lt;/p&gt;
+
+&lt;p&gt;Otetaan hypoteettisena esimerkkinä tuo ydinvoimala.&lt;/p&gt;
+
+&lt;p&gt;Meillä on malliluokka nimeltä &amp;ldquo;Polttoainesauva&amp;rdquo;, joka on tämän näköinen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class Polttoainesauva extends Model {
+	
+  public function nostaYlos() {//...}
+  public function laskeAlas() {//...}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Malliluokkamme on varsin yksinkertainen; sille on määritelty ohjelmoijan toimesta vain kaksi metodia.&lt;/p&gt;
+
+&lt;p&gt;Ensimmäinen metodi nostaa sauvan ylös, toinen laskee sen takaisin alas. Metodien tarkemmat määritykset eivät ole oleellisia.&lt;/p&gt;
+
+&lt;p&gt;Oletamme, että sauvojen asento/sijainti on kunakin hetkellä tallennettuna tietokantaan. Oikeassa maailmassa &amp;ldquo;tietokantana&amp;rdquo; toimisi ydinreaktori, mutta tämä on web-applikaatio, joka simuloi oikeaa maailmaa.&lt;/p&gt;
+
+&lt;p&gt;Jossain kohtaa applikaatiota meillä on seuraava koodinpätkä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+$polttoainesauva-&amp;gt;nostaYlos();
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevaa koodinpätkää voi ydinlaitoksen huoltoteknikko kutsua jonkinlaisen rajapinnan kautta.&lt;/p&gt;
+
+&lt;p&gt;Ydinkysymys: &lt;strong&gt;miten saamme järjestettyä siten, että polttoainesauvan nostosta jää yksiselitteinen lokitieto järjestelmän historiaan?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;tapa-1&#34;&gt;Tapa 1&lt;/h3&gt;
+
+&lt;p&gt;Yksi tapa on muokata ylläolevaa koodinkutsua seuraavanlaiseksi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+$polttoainesauva-&amp;gt;nostaYlos();
+// Kirjaa lokiin
+Loki::write(&#39;Polttoainesauva nostettu&#39;);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ratkaisu on yleisellä tasolla huono, sillä entä jos useampi rajapintafunktio nostelee sauvaa? Tällöin lokikirjauksen tekeminen tulisi muistaa tehdä kaikkialle erikseen!&lt;/p&gt;
+
+&lt;p&gt;Tämä on vaarallista ihan siksi, että ennemmin tai myöhemmin joku puolikätinen yliopisto-ohjelmoija* pöllähtää paikalle ja muokkaa rajapintaa &lt;em&gt;unohtaen&lt;/em&gt; lokikirjauksen lisäyksen!&lt;/p&gt;
+
+&lt;h3 id=&#34;tapa-2&#34;&gt;Tapa 2&lt;/h3&gt;
+
+&lt;p&gt;Huomattavasti parempi tapa on siirtää lokikirjaus suoraan Polttoainesauva-luokan metodien oheen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class Polttoainesauva extends Model {
+	
+  public function nostaYlos() {
+    // Tee nosto
+    Loki::write(&#39;Polttoainesauva nostettu&#39;);
+
+
+  }
+
+  public function laskeAlas() {
+    // Tee lasku
+    Loki::write(&#39;Polttoainesauva laskettu&#39;);  
+
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Nyt voimme olla varmoja, että sauvoja ei nosteta/lasketa ilman lokikirjausta.&lt;/p&gt;
+
+&lt;p&gt;Vai voimmeko? Entä jos puolikätinen yliopisto-ohjelmoija menee typeryyspäissään kirjoittamaan uuden rajapintafunktion tyyliin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+function vedenPintaKriittisenAlhaalla() {
+	// Kiireellä sauva pois matalasta vedestä!
+	// (Disclaimer: en tiedä lainkaan toimisiko tälläinen
+	// varotoimenpide oikeassa elämässä...dont try at home!)
+	$polttoainesauva-&amp;gt;asento = &#39;ylös&#39;;
+	$polttoainesauva-&amp;gt;save();
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kirjataanko tuossa mitään lokiin? Ei, sillä uusi noviisiohjelmoija meni muuttamaan sauvan asentoa &lt;em&gt;ohitse&lt;/em&gt; meidän nostaYlos-metodimme. Siispä lokikirjausta ei tehty.&lt;/p&gt;
+
+&lt;p&gt;No, noin keskimäärin ydinvoimalat eivät palkkaisi diplomi-insinöörejä, joten ylläolevaa ei pääse tapahtumaan.&lt;/p&gt;
+
+&lt;p&gt;Mutta tuossa lokikirjausten tekemisessä Polttoainesauva-luokkaan on toinenkin ongelma: entä jos meillä on &lt;em&gt;sadoittain&lt;/em&gt; vastaavia malliluokkia ympäri applikaatiotamme?&lt;/p&gt;
+
+&lt;p&gt;Meidän tulisi &lt;em&gt;jokaikiseen&lt;/em&gt; kirjata &lt;em&gt;jokaikisen&lt;/em&gt; tietokantaa muokkaavan metodin kohdalle lokikirjaus! Helvetinmoinen urakka, muuten.&lt;/p&gt;
+
+&lt;h3 id=&#34;tapa-3&#34;&gt;Tapa 3&lt;/h3&gt;
+
+&lt;p&gt;Paras keino on luottaa Trait*-konseptin voimaan.&lt;/p&gt;
+
+&lt;p&gt;Lisäämällä kirjaustoiminnot sisältävä Trait kunkin malliluokan oheen, meidän ei tarvitse huolehtia juuri mistään muusta! Laravel-kehys huolehtii siitä, että Traitin sisältämät &lt;em&gt;kuuntelijafunktiot&lt;/em&gt; kutsutaan aina kun tietokantaa muokataan.&lt;/p&gt;
+
+&lt;p&gt;Huono puoli tässäkin on - joudumme edelleen siis muistamaan sisällyttämään tuon Traitin jokaisen malliluokan oheen. Mutta ainakaan meidän ei tarvitse enää huolehtia yksittäisistä metodeista. Yksi lisäys per malliluokka riittää.&lt;/p&gt;
+
+&lt;p&gt;Ja mikä parasta, &lt;strong&gt;yksi ja sama Trait kelpaa kaikkiin malliluokkiin&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tämä viimeisin pointti on tärkeä; vaikka meillä olisi tuhat malliluokkaa, yksi Trait edelleen riittäisi.&lt;/p&gt;
+
+&lt;p&gt;Traitin avulla jokainen malliluokan metodi tulee automaattisesti &amp;ldquo;suojelluksi&amp;rdquo; - tarkoittaen, että tietokannan muokkaus mistä ikinä metodista tulee kirjatuksi lokiin.&lt;/p&gt;
+
+&lt;p&gt;Miltä tuo Trait näyttää? Tältä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+trait Trackable {
+  public static function bootTrackable() {
+
+    static::creating(function ($model) {
+      // Kirjataan tieto objektin luonnista
+      Loki::write(&#39;Luonti: &#39; . get_class($model));
+    });
+
+    static::updating(function ($model) {
+      // Kirjataan tieto objektin muokkauksesta!
+      // HUOM! Emme tiedä millainen muokkaus on kyseessä, 
+      // mutta objekti itse tietää!
+      Loki::write(&#39;Muokkaus: &#39; . get_class($model) . $model-&amp;gt;printData());
+    });
+
+    static::deleting(function ($model) {
+      // Kirjataan tieto objektin kuolemasta!
+      Loki::write(&#39;Kuolema: &#39; . get_class($model));
+    });
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevaa traittia voimme käyttää missä tahansa malliluokassa seuraavasti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class Polttoainesauva extends Model {
+  use Trackable;
+  // jne..
+}
+
+class Reaktori extends Model {
+  use Trackable;
+  // jne..
+}
+
+class Vesiallas extends Model {
+  use Trackable;
+  // jne..
+}
+
+class Lampomittari extends Model {
+  use Trackable;
+  // jne..
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Muuta ei tarvita! Laravel-kehys hoitaa loput. Se pitää huolen, että aina kun tietokantaa muokataan jonkun em. malleista osalta, lokiin kirjataan tieto.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Onko suojaus nyt täydellinen, täysin diplomi-insinööri-proof? Ei. Jos tietokantaa muokataan suoraan SQL-koodilla, lokikirjaus jää edelleen tekemättä. Mutta ainakin ohjelmoijilla on nyt vain yksi elinehto: &lt;strong&gt;älä ohita Laravel-kehyksen omaa tietokanta-abstraktiota.&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Traitin toiminnasta voit lukea &lt;a href=&#34;http://php.net/manual/en/language.oop5.traits.php&#34;&gt;täältä&lt;/a&gt;. Perusidea on, että traitin sisältö copypastataan sellaisenaan siihen kohtaan koodipohjaa, jossa traitia käytetään (&lt;em&gt;use&lt;/em&gt;).&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
     
     <item>
       <title>Lambda-pohjainen arkkitehtuuri</title>
@@ -225,12 +434,12 @@
 
 &lt;h4 id=&#34;kovalevy-avuksi&#34;&gt;Kovalevy avuksi&lt;/h4&gt;
 
-&lt;p&gt;Ongelmaan on helppo ratkaisu. Sen sijaan, että vastaanotto-ohjelma pitää kirjanpitoa keskusmuistin sijaan kovalevylle. Kovalevyn hyvä puoli on, että palvelimen sipatessa tieto ei katoa mihinkään. Kun palvelin buuttaa itsensä ja vastaanotto-ohjelma palaa linjoille, se voi kovalevyltä tarkistaa kirjanpidon. Ongelma ratkaistu!&lt;/p&gt;
+&lt;p&gt;Ongelmaan on helppo ratkaisu. &lt;strong&gt;Vastaanotto-ohjelma pitää kirjanpitoa keskusmuistin sijaan kovalevylle&lt;/strong&gt;. Kovalevyn hyvä puoli on, että palvelimen sipatessa tieto ei katoa mihinkään. Kun palvelin buuttaa itsensä ja vastaanotto-ohjelma palaa linjoille, se voi kovalevyltä tarkistaa kirjanpidon. Ongelma ratkaistu!&lt;/p&gt;
 
 &lt;p&gt;Mutta valitettavasti kirjanpidon pöllähtäminen taivaan tuuliin ei ollut ainoa ongelmamme. Sillä mietipä seuraavaa. Sanotaan, että vastaanotto-ohjelmamme kaatuu kahdeksi minuutiksi (tuon ajan fyysisellä palvelimella kestää buutata itsensä). Tällä välin Amazonin pääty on saanut käännöksen valmiiksi. Miltä keskustelu näyttää?&lt;/p&gt;
 
 &lt;blockquote&gt;
-&lt;p&gt;&lt;em&gt;(yhteys aukeaa)&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;(yhteyttä muodostetaan&amp;hellip;)&lt;/em&gt;&lt;/p&gt;
 
 &lt;p&gt;&lt;strong&gt;Amazon(Lambda) #3829:&lt;/strong&gt; tässä Matin käännös dokumentti nro 12&amp;hellip;&lt;/p&gt;
 
@@ -245,7 +454,11 @@
 
 &lt;p&gt;Ongelma on pirullinen ratkaista. Naivi, ihanan sinisilmäinen ratkaisuehdotus on &lt;em&gt;pakottaa&lt;/em&gt; Amazonin Lambda-funktio odottamaan kunnes vastaanotto-ohjelma on taas takaisin elävien kirjoissa.&lt;/p&gt;
 
-&lt;p&gt;Tämä &amp;ldquo;ratkaisu&amp;rdquo; on erittäin huono. Sen surkeuden voi paljastaa yhdellä kysymyksellä: &lt;strong&gt;entä jos vastaanotto-ohjelma ei ehdi palaamaan linjoille ennen Lambda-funktion maksimielinajan ylittymistä?&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Tämä &amp;ldquo;ratkaisu&amp;rdquo; on erittäin huono. Sen surkeuden voi paljastaa yhdellä kysymyksellä: &lt;strong&gt;entä jos vastaanotto-ohjelma ei ehdi palaamaan linjoille ennen Lambda-funktion elinajan ylittymistä?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Muistutetaan mieliimme, että Lambda-kutsulla on maksimiaika, jonka aikana työtehtävä tulee suorittaa. Jos aika ei riitä niin huonompi homma.&lt;/p&gt;
+&lt;/blockquote&gt;
 
 &lt;p&gt;Tälläisessä tilanteessa käännöstyön tulokset häviävät pysyvästi bittiavaruuteen.&lt;/p&gt;
 
@@ -268,7 +481,7 @@
 
 &lt;p&gt;&lt;strong&gt;Vastaanotto-ohjelma&lt;/strong&gt;: hei Amazon, tässä sinulle työtehtävä&amp;hellip;&lt;/p&gt;
 
-&lt;p&gt;&lt;strong&gt;Amazon&lt;/strong&gt;: selvä pyy, ilmoitan sitten kun on valmista!&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Amazon&lt;/strong&gt;: selvä pyy.&lt;/p&gt;
 
 &lt;p&gt;&lt;em&gt;(yhteys sulkeutuu)&lt;/em&gt;&lt;/p&gt;
 
@@ -298,7 +511,7 @@
 &lt;p&gt;Alkuperäisessä mallissa vastaanotto-ohjelmalla oli &lt;strong&gt;kaksi(!)&lt;/strong&gt; vastuualuetta mitä tulee tulosten vastaanottamiseen:&lt;/p&gt;
 
 &lt;ol&gt;
-&lt;li&gt;Vastaanottaa tulokset (d&amp;rsquo;oh)&lt;/li&gt;
+&lt;li&gt;Vastaanottaa tulokset (&amp;ldquo;ai tosiaanko!&amp;rdquo;)&lt;/li&gt;
 &lt;li&gt;Pysyä hengissä&lt;/li&gt;
 &lt;/ol&gt;
 
@@ -1562,174 +1775,6 @@ class IlmoitaTavaranToimittajille implemets ShouldQueue {
 
 &lt;blockquote&gt;
 &lt;p&gt;Forge on kätevä työkalu Laravel-applikaation pyöritykseen tuotantopalvelimella. Forge itsessään ei tarjoa palvelintilaa tai -ohjelmistoja, vaan se toimii ikäänkuin &lt;em&gt;kapellimestarina&lt;/em&gt;; Forge käskyttää tuotantopalvelinta ja toimii yhteistyössä Githubin rajapinnan kanssa hakeakseen uusimman koodipohjan aina kun sellainen on saatavilla.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Fasaadin feikkaus</title>
-      <link>http://www.nollaversio.fi/blog/public/laravel/facade-faking/</link>
-      <pubDate>Mon, 19 Sep 2016 09:43:34 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/laravel/facade-faking/</guid>
-      <description>
-
-&lt;p&gt;Laravel hyödyntää runsaasti konseptia / design patternia nimeltä &amp;ldquo;Facade&amp;rdquo;. Kehys tarjoaa kehittäjän käyttöön tarttumapinnan moniin aputoiminnallisuuksiin juurikin fasaadien kautta, esim. applikaation oman välimuistin käsittely käy helposti &lt;em&gt;Cache&lt;/em&gt;-fasaadin avulla:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Cache-fasaadi tarjoaa meille globaalin tarttumapinnan 
-// Laravellin omaan välimuistiin.
-$nimi = Cache::get(&#39;pelaajan_nimi&#39;);
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Fasaadin käytössä on myös heikkoutensa. Pääasiallinen heikkous on, että fasaadin kutsuminen on &lt;em&gt;staattinen kutsu&lt;/em&gt;; toisin sanoen, kutsuttava luokka on määritelty suoraan koodiin.&lt;/p&gt;
-
-&lt;p&gt;Toinen vaihtoehtohan on &lt;em&gt;olla määrittämättä&lt;/em&gt; kutsuttavaa luokkaa suoraan koodiin. Miten ihmeessä se on mahdollista? Käyttämällä konseptia nimeltä &lt;em&gt;dependency injection&lt;/em&gt;, eli riippuvuuksien injektointi.&lt;/p&gt;
-
-&lt;p&gt;Vertaa näitä kahta tapaa:&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Fasaadin käyttö&lt;/strong&gt;&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-public function tallennaNimi() {
-  // Cache-fasaadi tarjoaa meille globaalin tarttumapinnan välimuistiin.
-  Cache::set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;strong&gt;Riippuuvuuden injektointi&lt;/strong&gt;&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-public function tallennaNimi(ICache $valimuisti) {
-  // ICache-rajapintaa noudattava objektin ei tarvitse olla Cache-luokasta,
-  // vaan se voi olla *mikä tahansa* objekti joka implementoi ICachen.
-  $valimuisti-&amp;gt;set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kahden ylläolevan esimerkin välinen ero on juurikin siinä, että &lt;strong&gt;ensimmäisessä versiossa kutsumme staattisesti Cache-luokan metodia.&lt;/strong&gt; Jälkimmäisessä puolestaan &lt;strong&gt;kutsumme dynaamisesti sisäänsaadun objektin metodia.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Jälkimmäistä kutsua kutsumme nimeltä &lt;em&gt;polymorphinen&lt;/em&gt; kutsu. Tämä tarkoittaa, että koodia &lt;em&gt;kirjoitettaessa&lt;/em&gt; meillä ei ole varmaa tietoa siitä, mikä pätkä koodia lopulta tulee ajetuksi kun metodikutsu &lt;em&gt;$valimuisti-&amp;gt;set()&lt;/em&gt; suoritetaan.&lt;/p&gt;
-
-&lt;p&gt;Mitä hyötyä tuollaisesta polymorphisesta kutsusta on? Se, että voimme ulkoakäsin määritellä millainen ICache-rajapintaa noudattava objekti halutaan käyttöön.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-public function tallennaNimi(ICache $valimuisti) {
-  // ICache-rajapintaa noudattava objektin ei tarvitse olla Cache-luokasta,
-  // vaan se voi olla *mikä tahansa* objekti joka vain implementoi ICachen.
-  $valimuisti-&amp;gt;set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
-}
-
-// Vaihtoehto #1, Laravellin default-välimuisti
-tallennaNimi(new Cache());
-// Vaihtoehto #2, käytetään lokaalia tekstitiedostoa
-tallennaNimi(new Loki(&#39;pelaajat.txt&#39;));
-// Vaihtoehto #3, käytetään Googlen nettilevyä
-tallennaNimi(new HTTPCache(&#39;http://www.docs.google.com/jrk5u5emsdmk&#39;));
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Riippuvuuden injektointi on siis joustavampi kuin fasaadin käyttö.&lt;/p&gt;
-
-&lt;h3 id=&#34;fasaadin-feikkaus&#34;&gt;Fasaadin feikkaus&lt;/h3&gt;
-
-&lt;p&gt;Mutta.&lt;/p&gt;
-
-&lt;p&gt;Laravel 5.3 kehyksessä fasaadia käyttävän kutsun voi myös muuttaa polymorphiseksi. Muutos vain täytyy tehdä koko applikaatiolle kerrallaan.&lt;/p&gt;
-
-&lt;p&gt;Tärkeä huomio: &lt;em&gt;yksittäistä fasaadikutsua ei voi muuttaa polymorphiseksi, mutta koko fasaadin voi.&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;Tämä tarkoittaa, että kun defaulttina &lt;strong&gt;Cache&lt;/strong&gt;-fasaadi johtaa Laravellin omaan välimuistiin, on mahdollista asettaa &lt;strong&gt;Cache&lt;/strong&gt;-fasaadi johtamaan johonkin muuhun luokkaan. Muutos koskee koko applikaatiota.&lt;/p&gt;
-
-&lt;p&gt;Laravel 5.3 tarjoaa sisäänrakennetun korvausmekanismin. Kullekin fasaadille on määritelty &lt;em&gt;fake&lt;/em&gt;-metodi, joka mahdollistaa korvata fasaadiin kytketty vakioluokka jollain muulla luokalla.&lt;/p&gt;
-
-&lt;p&gt;Otetaan esimerkkinä tuo Cache-fasaadi. Haluamme että Cache-fasaadi tallentaa välimuistitiedot Dropboxiin:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-class Cache extends Facade {
-
-  public static function fake() {
-    // Korvaamme vakiotoiminnot tarjoavat luokan jollain toisella luokalla.
-    // Tässä siis kytketään fasaadi siten, että missä ikinä
-    // käytämmekään *Cache*-fasaadia, se vie meidät 
-    // *NettiLevyValimuisti*-luokan metodeihin.
-    static::swap(new NettiLevyValimuisti(&#39;dropbox.com/j53jySD&#39;));
-  }
-	
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva ei vielä ihan riitä. Meidän täytyy jotenkin ilmaista Laravel-kehykselle, että haluamme tuon swappauksen tehdä, eli haluamme ottaa nettilevyn käyttöön. Ilmoitus tehdään yksinkertaisesti:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Swapataan.
-Cache::fake();
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tästä eteenpäin voimme &lt;em&gt;Cache&lt;/em&gt;-fasaadin kautta tallettaa tietoja suoraan Dropboxiin.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Swapataan.
-Cache::fake();
-
-// Swappaus suoritettu.
-// Pinnan alla HTTP-kutsu lähtee matkaan kohti Dropboxin palvelinta.
-Cache::set(&#39;pelaajan_nimi&#39;, &#39;Jussi&#39;); 
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;h3 id=&#34;milloin-fasaadin-korvaus-milloin-injektointi&#34;&gt;Milloin fasaadin korvaus, milloin injektointi?&lt;/h3&gt;
-
-&lt;p&gt;Yllä näimme kaksi tapaa järjestää rajapintakutsu. Ensimmäinen tapa turvaa fasaadin käyttöön. Toinen tapa turvaa sopivan objektin injektointiin ja sen objektin metodikutsuun.&lt;/p&gt;
-
-&lt;p&gt;On tärkeä huomata, että vaikka fasaadin &amp;ldquo;vakio-ohjaus&amp;rdquo; voidaan pinnan alla korvata kustomoidulla ohjauksella, on injektointi edelleenkin joustavampi tapa. Tämä johtuu siitä, että fasaadin tapauksessa korvaus on aina &lt;strong&gt;globaali&lt;/strong&gt;. Tietty fasaadi johtaa aina tiettyyn implementaatioon.&lt;/p&gt;
-
-&lt;p&gt;Injektointi taas mahdollistaa &lt;strong&gt;lokaalin&lt;/strong&gt; korvauksen. Injektoinnin avulla kukin injektoidun objekti voi johtaa eri toiminnallisuuksiin:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-public function tallennaNimi(ICache $valimuisti) {
-  $valimuisti-&amp;gt;set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
-}
-
-// Eri toiminnallisuuksia voi olla rajaton määrä...
-tallennaNimi(new Cache());
-tallennaNimi(new Loki(&#39;pelaajat.txt&#39;));
-tallennaNimi(new HTTPCache(&#39;http://www.docs.google.com/jrk5u5emsdmk&#39;));
-tallennaNimi(new CDLevy());
-tallennaNimi(new SaviTaulu());
-
-// jne jne...
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Fasaadia käytettäessä korvaus voidaan tehdä vain kerran.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-public function tallennaNimi() {
-  Cache-&amp;gt;set(&#39;pelaajan_nimi&#39;, Auth::user()-&amp;gt;name);	
-}
-
-// Vakiotoiminnallisuuden voi korvata vain kerran.
-
-tallennaNimi(); // Tallentaa vakio-välimuistiin.
-tallennaNimi(); // Tallentaa vakio-välimuistiin.
-tallennaNimi(); // Tallentaa vakio-välimuistiin.
-Cache::fake(); // Suoritetaan korvaus
-tallennaNimi(); // Tallentaa nettilevylle;
-tallennaNimi(); // Tallentaa nettilevylle;
-tallennaNimi(); // Tallentaa nettilevylle;
-// jne jne...
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Injektointi on suositeltava tapa silloin kun on syytä dynaamisesti kesken business-koodin kyetä muuttamaan metodikutsun määränpäätä. Fasaadien käyttö on täysin ok jos tälläistä kykyä ei tarvitse. Testauksen kannalta molemmat ovat ok - testejä ajettaessa riittää, että esimerkiksi välimuisti korvataan feikkivälimuistilla globaalisti.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>

@@ -280,12 +280,12 @@
 
 <h4 id="kovalevy-avuksi">Kovalevy avuksi</h4>
 
-<p>Ongelmaan on helppo ratkaisu. Sen sijaan, että vastaanotto-ohjelma pitää kirjanpitoa keskusmuistin sijaan kovalevylle. Kovalevyn hyvä puoli on, että palvelimen sipatessa tieto ei katoa mihinkään. Kun palvelin buuttaa itsensä ja vastaanotto-ohjelma palaa linjoille, se voi kovalevyltä tarkistaa kirjanpidon. Ongelma ratkaistu!</p>
+<p>Ongelmaan on helppo ratkaisu. <strong>Vastaanotto-ohjelma pitää kirjanpitoa keskusmuistin sijaan kovalevylle</strong>. Kovalevyn hyvä puoli on, että palvelimen sipatessa tieto ei katoa mihinkään. Kun palvelin buuttaa itsensä ja vastaanotto-ohjelma palaa linjoille, se voi kovalevyltä tarkistaa kirjanpidon. Ongelma ratkaistu!</p>
 
 <p>Mutta valitettavasti kirjanpidon pöllähtäminen taivaan tuuliin ei ollut ainoa ongelmamme. Sillä mietipä seuraavaa. Sanotaan, että vastaanotto-ohjelmamme kaatuu kahdeksi minuutiksi (tuon ajan fyysisellä palvelimella kestää buutata itsensä). Tällä välin Amazonin pääty on saanut käännöksen valmiiksi. Miltä keskustelu näyttää?</p>
 
 <blockquote>
-<p><em>(yhteys aukeaa)</em></p>
+<p><em>(yhteyttä muodostetaan&hellip;)</em></p>
 
 <p><strong>Amazon(Lambda) #3829:</strong> tässä Matin käännös dokumentti nro 12&hellip;</p>
 
@@ -300,7 +300,11 @@
 
 <p>Ongelma on pirullinen ratkaista. Naivi, ihanan sinisilmäinen ratkaisuehdotus on <em>pakottaa</em> Amazonin Lambda-funktio odottamaan kunnes vastaanotto-ohjelma on taas takaisin elävien kirjoissa.</p>
 
-<p>Tämä &ldquo;ratkaisu&rdquo; on erittäin huono. Sen surkeuden voi paljastaa yhdellä kysymyksellä: <strong>entä jos vastaanotto-ohjelma ei ehdi palaamaan linjoille ennen Lambda-funktion maksimielinajan ylittymistä?</strong></p>
+<p>Tämä &ldquo;ratkaisu&rdquo; on erittäin huono. Sen surkeuden voi paljastaa yhdellä kysymyksellä: <strong>entä jos vastaanotto-ohjelma ei ehdi palaamaan linjoille ennen Lambda-funktion elinajan ylittymistä?</strong></p>
+
+<blockquote>
+<p>Muistutetaan mieliimme, että Lambda-kutsulla on maksimiaika, jonka aikana työtehtävä tulee suorittaa. Jos aika ei riitä niin huonompi homma.</p>
+</blockquote>
 
 <p>Tälläisessä tilanteessa käännöstyön tulokset häviävät pysyvästi bittiavaruuteen.</p>
 
@@ -323,7 +327,7 @@
 
 <p><strong>Vastaanotto-ohjelma</strong>: hei Amazon, tässä sinulle työtehtävä&hellip;</p>
 
-<p><strong>Amazon</strong>: selvä pyy, ilmoitan sitten kun on valmista!</p>
+<p><strong>Amazon</strong>: selvä pyy.</p>
 
 <p><em>(yhteys sulkeutuu)</em></p>
 
@@ -353,7 +357,7 @@
 <p>Alkuperäisessä mallissa vastaanotto-ohjelmalla oli <strong>kaksi(!)</strong> vastuualuetta mitä tulee tulosten vastaanottamiseen:</p>
 
 <ol>
-<li>Vastaanottaa tulokset (d&rsquo;oh)</li>
+<li>Vastaanottaa tulokset (&ldquo;ai tosiaanko!&rdquo;)</li>
 <li>Pysyä hengissä</li>
 </ol>
 

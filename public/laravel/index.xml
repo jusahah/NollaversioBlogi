@@ -6,8 +6,217 @@
     <description>Recent content in Laravels on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Wed, 26 Oct 2016 17:24:15 +0300</lastBuildDate>
+    <lastBuildDate>Fri, 28 Oct 2016 21:26:18 +0300</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Laravel: seuraa datan muutoksia</title>
+      <link>http://www.nollaversio.fi/blog/public/laravel/logging-model-changes/</link>
+      <pubDate>Fri, 28 Oct 2016 21:26:18 +0300</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/laravel/logging-model-changes/</guid>
+      <description>
+
+&lt;p&gt;Tänään törmäsin mielenkiintoiseen kysymykseen Laravellin englanninkielisellä keskustelupalstalla Laracast.com:ssa.&lt;/p&gt;
+
+&lt;p&gt;Kysymys meni näin:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;I have a classic create() function to create elements, but changes I wish to save in a separate table, like history. There is table: element_changes and also model created named ElementChange, but in my ElementController, how can I tell to save it in a separate table?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Vapaasti suomennettuna siis:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Minulla on tyypillinen luontifunktio, joka luo uusia malleja. Mutta haluaisin erilliseen tietokantatauluun kirjata ylös luontihistorian. Eli kun luon uuden objektin mallin pohjalta (tai &lt;em&gt;muutan&lt;/em&gt; olemassaolevaa mallia), järjestelmä kirjaa lokitiedon asiasta erilliseen tauluun. Kuinka saavuttaa tämä?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Hyvä kysymys. Olen itse tarvinnut vastaavaa.&lt;/p&gt;
+
+&lt;p&gt;Miksi tuollainen lokihistoria sisältäen muutokset on hyödyllinen? Selkeä käyttötarkoitus on järjestelmissä, joille vallitseva laki asettaa vaatimuksia. Yksi yleisin vaatimus on, että järjestelmän tulee pitää tarkkaa kirjaa &lt;em&gt;kaikista&lt;/em&gt; järjestelmän sisällä tapahtuvista muutoksista.&lt;/p&gt;
+
+&lt;p&gt;Tälläinen kirjanpito on järkevä hoitaa lokihistorian avulla, jonne kirjaa lyhyen tiedoksiannon jokaisesta muutoksesta.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Esimerkiksi ydinvoimalan turvallisuusjärjestelmässä tuollainen muutos - jonka haluamme kirjata ylös - on yksikön polttoainesauvan liikuttaminen.&lt;/p&gt;
+
+&lt;p&gt;Kun järjestelmän ylläpitäjä antaa järjestelmälle komennon siirtää polttoainesauvaa kolme senttiä ylöspäin, järjestelmän on syytä kirjata lokitieto asiasta.&lt;/p&gt;
+
+&lt;p&gt;Sillä jos jotain menee pieleen, poliitikot haluavat tietää &lt;em&gt;tismalleen mitä ja miksi meni pieleen&lt;/em&gt;! Lokihistoria auttaa.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&#34;toteutus&#34;&gt;Toteutus&lt;/h3&gt;
+
+&lt;p&gt;Jälleen kerran Laravel tekee lokihistorian pitämisen laittoman helpoksi. Käytännössä homma toimii näin; määrität kullekin &lt;em&gt;malliluokalle&lt;/em&gt; muutaman metodin, joita Laravel-kehys kutsuu aina tietokantaa päivittäessään. Näiden metodien sisällä pusket lokitiedon lokihistoria-tauluun.&lt;/p&gt;
+
+&lt;p&gt;Otetaan hypoteettisena esimerkkinä tuo ydinvoimala.&lt;/p&gt;
+
+&lt;p&gt;Meillä on malliluokka nimeltä &amp;ldquo;Polttoainesauva&amp;rdquo;, joka on tämän näköinen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class Polttoainesauva extends Model {
+	
+  public function nostaYlos() {//...}
+  public function laskeAlas() {//...}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Malliluokkamme on varsin yksinkertainen; sille on määritelty ohjelmoijan toimesta vain kaksi metodia.&lt;/p&gt;
+
+&lt;p&gt;Ensimmäinen metodi nostaa sauvan ylös, toinen laskee sen takaisin alas. Metodien tarkemmat määritykset eivät ole oleellisia.&lt;/p&gt;
+
+&lt;p&gt;Oletamme, että sauvojen asento/sijainti on kunakin hetkellä tallennettuna tietokantaan. Oikeassa maailmassa &amp;ldquo;tietokantana&amp;rdquo; toimisi ydinreaktori, mutta tämä on web-applikaatio, joka simuloi oikeaa maailmaa.&lt;/p&gt;
+
+&lt;p&gt;Jossain kohtaa applikaatiota meillä on seuraava koodinpätkä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+$polttoainesauva-&amp;gt;nostaYlos();
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevaa koodinpätkää voi ydinlaitoksen huoltoteknikko kutsua jonkinlaisen rajapinnan kautta.&lt;/p&gt;
+
+&lt;p&gt;Ydinkysymys: &lt;strong&gt;miten saamme järjestettyä siten, että polttoainesauvan nostosta jää yksiselitteinen lokitieto järjestelmän historiaan?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3 id=&#34;tapa-1&#34;&gt;Tapa 1&lt;/h3&gt;
+
+&lt;p&gt;Yksi tapa on muokata ylläolevaa koodinkutsua seuraavanlaiseksi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+$polttoainesauva-&amp;gt;nostaYlos();
+// Kirjaa lokiin
+Loki::write(&#39;Polttoainesauva nostettu&#39;);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ratkaisu on yleisellä tasolla huono, sillä entä jos useampi rajapintafunktio nostelee sauvaa? Tällöin lokikirjauksen tekeminen tulisi muistaa tehdä kaikkialle erikseen!&lt;/p&gt;
+
+&lt;p&gt;Tämä on vaarallista ihan siksi, että ennemmin tai myöhemmin joku puolikätinen yliopisto-ohjelmoija* pöllähtää paikalle ja muokkaa rajapintaa &lt;em&gt;unohtaen&lt;/em&gt; lokikirjauksen lisäyksen!&lt;/p&gt;
+
+&lt;h3 id=&#34;tapa-2&#34;&gt;Tapa 2&lt;/h3&gt;
+
+&lt;p&gt;Huomattavasti parempi tapa on siirtää lokikirjaus suoraan Polttoainesauva-luokan metodien oheen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class Polttoainesauva extends Model {
+	
+  public function nostaYlos() {
+    // Tee nosto
+    Loki::write(&#39;Polttoainesauva nostettu&#39;);
+
+
+  }
+
+  public function laskeAlas() {
+    // Tee lasku
+    Loki::write(&#39;Polttoainesauva laskettu&#39;);  
+
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Nyt voimme olla varmoja, että sauvoja ei nosteta/lasketa ilman lokikirjausta.&lt;/p&gt;
+
+&lt;p&gt;Vai voimmeko? Entä jos puolikätinen yliopisto-ohjelmoija menee typeryyspäissään kirjoittamaan uuden rajapintafunktion tyyliin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+function vedenPintaKriittisenAlhaalla() {
+	// Kiireellä sauva pois matalasta vedestä!
+	// (Disclaimer: en tiedä lainkaan toimisiko tälläinen
+	// varotoimenpide oikeassa elämässä...dont try at home!)
+	$polttoainesauva-&amp;gt;asento = &#39;ylös&#39;;
+	$polttoainesauva-&amp;gt;save();
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kirjataanko tuossa mitään lokiin? Ei, sillä uusi noviisiohjelmoija meni muuttamaan sauvan asentoa &lt;em&gt;ohitse&lt;/em&gt; meidän nostaYlos-metodimme. Siispä lokikirjausta ei tehty.&lt;/p&gt;
+
+&lt;p&gt;No, noin keskimäärin ydinvoimalat eivät palkkaisi diplomi-insinöörejä, joten ylläolevaa ei pääse tapahtumaan.&lt;/p&gt;
+
+&lt;p&gt;Mutta tuossa lokikirjausten tekemisessä Polttoainesauva-luokkaan on toinenkin ongelma: entä jos meillä on &lt;em&gt;sadoittain&lt;/em&gt; vastaavia malliluokkia ympäri applikaatiotamme?&lt;/p&gt;
+
+&lt;p&gt;Meidän tulisi &lt;em&gt;jokaikiseen&lt;/em&gt; kirjata &lt;em&gt;jokaikisen&lt;/em&gt; tietokantaa muokkaavan metodin kohdalle lokikirjaus! Helvetinmoinen urakka, muuten.&lt;/p&gt;
+
+&lt;h3 id=&#34;tapa-3&#34;&gt;Tapa 3&lt;/h3&gt;
+
+&lt;p&gt;Paras keino on luottaa Trait*-konseptin voimaan.&lt;/p&gt;
+
+&lt;p&gt;Lisäämällä kirjaustoiminnot sisältävä Trait kunkin malliluokan oheen, meidän ei tarvitse huolehtia juuri mistään muusta! Laravel-kehys huolehtii siitä, että Traitin sisältämät &lt;em&gt;kuuntelijafunktiot&lt;/em&gt; kutsutaan aina kun tietokantaa muokataan.&lt;/p&gt;
+
+&lt;p&gt;Huono puoli tässäkin on - joudumme edelleen siis muistamaan sisällyttämään tuon Traitin jokaisen malliluokan oheen. Mutta ainakaan meidän ei tarvitse enää huolehtia yksittäisistä metodeista. Yksi lisäys per malliluokka riittää.&lt;/p&gt;
+
+&lt;p&gt;Ja mikä parasta, &lt;strong&gt;yksi ja sama Trait kelpaa kaikkiin malliluokkiin&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tämä viimeisin pointti on tärkeä; vaikka meillä olisi tuhat malliluokkaa, yksi Trait edelleen riittäisi.&lt;/p&gt;
+
+&lt;p&gt;Traitin avulla jokainen malliluokan metodi tulee automaattisesti &amp;ldquo;suojelluksi&amp;rdquo; - tarkoittaen, että tietokannan muokkaus mistä ikinä metodista tulee kirjatuksi lokiin.&lt;/p&gt;
+
+&lt;p&gt;Miltä tuo Trait näyttää? Tältä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+trait Trackable {
+  public static function bootTrackable() {
+
+    static::creating(function ($model) {
+      // Kirjataan tieto objektin luonnista
+      Loki::write(&#39;Luonti: &#39; . get_class($model));
+    });
+
+    static::updating(function ($model) {
+      // Kirjataan tieto objektin muokkauksesta!
+      // HUOM! Emme tiedä millainen muokkaus on kyseessä, 
+      // mutta objekti itse tietää!
+      Loki::write(&#39;Muokkaus: &#39; . get_class($model) . $model-&amp;gt;printData());
+    });
+
+    static::deleting(function ($model) {
+      // Kirjataan tieto objektin kuolemasta!
+      Loki::write(&#39;Kuolema: &#39; . get_class($model));
+    });
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevaa traittia voimme käyttää missä tahansa malliluokassa seuraavasti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class Polttoainesauva extends Model {
+  use Trackable;
+  // jne..
+}
+
+class Reaktori extends Model {
+  use Trackable;
+  // jne..
+}
+
+class Vesiallas extends Model {
+  use Trackable;
+  // jne..
+}
+
+class Lampomittari extends Model {
+  use Trackable;
+  // jne..
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Muuta ei tarvita! Laravel-kehys hoitaa loput. Se pitää huolen, että aina kun tietokantaa muokataan jonkun em. malleista osalta, lokiin kirjataan tieto.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Onko suojaus nyt täydellinen, täysin diplomi-insinööri-proof? Ei. Jos tietokantaa muokataan suoraan SQL-koodilla, lokikirjaus jää edelleen tekemättä. Mutta ainakin ohjelmoijilla on nyt vain yksi elinehto: &lt;strong&gt;älä ohita Laravel-kehyksen omaa tietokanta-abstraktiota.&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Traitin toiminnasta voit lukea &lt;a href=&#34;http://php.net/manual/en/language.oop5.traits.php&#34;&gt;täältä&lt;/a&gt;. Perusidea on, että traitin sisältö copypastataan sellaisenaan siihen kohtaan koodipohjaa, jossa traitia käytetään (&lt;em&gt;use&lt;/em&gt;).&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
     
     <item>
       <title>Laravel: viivyttelyn taito</title>
@@ -1494,129 +1703,6 @@ class User extends Authenticatable {
 &lt;p&gt;Meidän applikaatiomme ei siis tarvitse huolehtia siitä mitä päätelaitetta Sarasvuo käyttää. Riittää, että kutsumme Slack-endpointia.&lt;/p&gt;
 
 &lt;p&gt;Toimii kuin unelma. Laravel tekee tässäkin tapauksessa koodarin elämästä lähes laittoman helppoa. Ja Slack hoitaa loput.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Require vs Include</title>
-      <link>http://www.nollaversio.fi/blog/public/laravel/require-vs-include/</link>
-      <pubDate>Wed, 17 Aug 2016 03:40:31 +0300</pubDate>
-      
-      <guid>http://www.nollaversio.fi/blog/public/laravel/require-vs-include/</guid>
-      <description>
-
-&lt;p&gt;PHP:ssa on mahdollisuus &lt;em&gt;sisällyttää&lt;/em&gt; yhden tiedoston koodipätkä toisen tiedoston sisälle skriptiä ajettaessa. Tämä sisällytys onnistuu joko &lt;em&gt;require&lt;/em&gt; tai &lt;em&gt;include&lt;/em&gt; komennoilla:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Auto.php
-
-require &#39;Ratti.php&#39;;
-
-class Auto {
-  public function __construct(Ratti $ratti, $autoMerkki) {...}
-  //...
-}
-
-$volvo = new Auto(new Ratti, &#39;Volvo&#39;);
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Ratti.php
-
-class Ratti {
-	//...
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;tai&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Auto.php
-
-include &#39;Ratti.php&#39;;
-
-class Auto {
-  public function __construct(Ratti $ratti, $autoMerkki) {...}
-  //...
-}
-
-$volvo = new Auto(new Ratti, &#39;Volvo&#39;);
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Ratti.php
-
-class Ratti {
-	//...
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Yllä koodiesimerkit eroavat toisistaan vain yhden rivin suhteen; ensimmäinen esimerkki turvautuu PHP:n komentosanaan &lt;em&gt;require&lt;/em&gt;, jälkimmäinen esimerkki käyttää termiä &lt;em&gt;include&lt;/em&gt;. Mitä eroa näillä kahdella on?&lt;/p&gt;
-
-&lt;h3 id=&#34;require-vs-include&#34;&gt;Require vs. include&lt;/h3&gt;
-
-&lt;p&gt;On ensin syytä ymmärtää näiden kahden termin yhtäläisyys; molemmat tuovat ulkoisen tiedoston sisältämän koodin osaksi sitä tiedostoa, jossa termi sijaitsee.&lt;/p&gt;
-
-&lt;p&gt;Ne siis käytännössä &lt;em&gt;copypastaavat&lt;/em&gt; palan koodia tismalleen siihen kohtaan, jossa require/include-termiä käytetään.&lt;/p&gt;
-
-&lt;p&gt;Kahden termin välinen ero on yksikertainen.&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Require vaatii, että copypastattava tiedosto on olemassa.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Include EI vaadi copypastattavan tiedoston olemassaoloa.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Require on siis hiukka tiukkapipoisempi versio include-käskystä. Mutta mitä tarkoittaa &amp;ldquo;vaatia tiedoston olemassaolo&amp;rdquo;?&lt;/p&gt;
-
-&lt;p&gt;Se tarkoittaa yksinkertaisesti sitä, että jos &lt;em&gt;require&lt;/em&gt; yrittää sisällyttää olemattoman tiedoston, PHP-skripti räjähtää käsiin. Teknisesti tarkempi termi tälle posahtamiselle on keskeyttää skriptin suoritus virhekoodilla &amp;ldquo;Fatal error&amp;rdquo;. Yhtäkaikki, asiat menevät päin honkia.&lt;/p&gt;
-
-&lt;p&gt;Jos puolestaan &lt;em&gt;include&lt;/em&gt; yrittää sisällyttää olemattoman tiedoston, PHP-skripti ei räjähdä käsiin, vaan jatkaa suoritustaan kuin mitään ei olisi tapahtunut.&lt;/p&gt;
-
-&lt;p&gt;Tästä kaikesta herää kysymys; jos haluamme sisällyttää yhden kooditiedoston sisältämän koodin osaksi toista tiedostoa, kaipa me vaadimme tuon tiedoston olemassaolon?&lt;/p&gt;
-
-&lt;p&gt;Asia ei aina välttämättä ole näin. Esimerkkinä tilanne, jossa meillä on tietyt vakioasetukset PHP-skriptillemme. Nuo vakioasetukset määritetään koko applikaation elinkaaren ensihetkillä.&lt;/p&gt;
-
-&lt;p&gt;Vakioasetukset voidaan kuitenkin ylikirjoittaa erillisen &lt;em&gt;asetustiedoston&lt;/em&gt; avulla. Jos asetustiedosto on olemassa, sen sisältämä koodi &lt;em&gt;korvaa&lt;/em&gt; vakioasetukset omilla asetuksillaan.&lt;/p&gt;
-
-&lt;p&gt;Jos asetustiedostoa ei ole olemassa, vakioasetukset jäävät voimaan.&lt;/p&gt;
-
-&lt;p&gt;Ylläolevan esimerkin mukaisen rakenteen voi toteuttaa &lt;em&gt;include&lt;/em&gt;-käskyllä näin:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// applikaatio.php
-
-// Vakioasetukset
-$tcpPortti = &amp;quot;8080&amp;quot;;
-$tcpTimeout = 5000;
-
-// Tuodaan sisään korvaavat asetukset sisältävä tiedosto
-// HUOM! Jos tiedosto ei ole olemassa, mitään ei tapahdu
-// ja vakioasetukset jäävät voimaan!
-include &amp;quot;kayttajan_asetukset.php&amp;quot;;
-
-// ... rakenna applikaatio yms. käyttäen yllämääriteltyjä asetuksia
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// kayttajan_asetukset.php
-
-// Käyttäjän erilliset, korvaavat asetukset
-$tcpPortti = &amp;quot;3000&amp;quot;;
-$tcpTimeout = 12000;
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Jos &lt;em&gt;kayttajan_asetukset.php&lt;/em&gt;-tiedostoa ei ole olemassa, vakioasetukset jäävät voimaan. Jos tuo tiedosto on olemassa, käyttäjän omat asetukset korvaavat (muuttujat alustetaan uusiin arvoihin!) vakioasetukset.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Include-käsky on toimiva tapauksissa, joissa sisällytettävä koodi &lt;em&gt;tuo valinnaisia lisäominaisuuksia&lt;/em&gt; ympäröivän koodin käyttöön.&lt;/p&gt;
-
-&lt;p&gt;Require-käsky on asianmukainen tapauksissa, joissa sisällytettävä koodi on elintärkeä applikaation toiminnan kannalta, ja tiedoston puuttuminen on syytä nähdä virhetilanteena.&lt;/p&gt;
-&lt;/blockquote&gt;
 </description>
     </item>
     

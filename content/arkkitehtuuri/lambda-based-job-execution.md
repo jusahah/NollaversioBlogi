@@ -244,7 +244,7 @@ Tässä uudessa, parannellussa mallissamme keskustelun kulku menee kutakuinkin n
 >
 >**Vastaanotto-ohjelma**: hei Amazon, tässä sinulle työtehtävä...
 >
->**Amazon**: selvä pyy, ilmoitan sitten kun on valmista! 
+>**Amazon**: selvä pyy.
 >
 >*(yhteys sulkeutuu)*
 >
@@ -273,7 +273,7 @@ On tärkeä ymmärtää syyt miksi tämä *kolmen osapuolen* arkkitehtuuri on va
 
 Alkuperäisessä mallissa vastaanotto-ohjelmalla oli **kaksi(!)** vastuualuetta mitä tulee tulosten vastaanottamiseen:
 
-1. Vastaanottaa tulokset (d'oh)
+1. Vastaanottaa tulokset ("ai tosiaanko!")
 2. Pysyä hengissä
 
 Listan kakkoskohta saattaa kuulostaa hupaisalta, mutta datan katoamisessa bittiavaruuteen ei ole mitään hupaisaa.

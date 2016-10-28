@@ -1,0 +1,282 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Laravel: seuraa datan muutoksia &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Laravel: seuraa datan muutoksia</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Fri, Oct 28, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Tänään törmäsin mielenkiintoiseen kysymykseen Laravellin englanninkielisellä keskustelupalstalla Laracast.com:ssa.</p>
+
+<p>Kysymys meni näin:</p>
+
+<blockquote>
+<p>I have a classic create() function to create elements, but changes I wish to save in a separate table, like history. There is table: element_changes and also model created named ElementChange, but in my ElementController, how can I tell to save it in a separate table?</p>
+</blockquote>
+
+<p>Vapaasti suomennettuna siis:</p>
+
+<blockquote>
+<p>Minulla on tyypillinen luontifunktio, joka luo uusia malleja. Mutta haluaisin erilliseen tietokantatauluun kirjata ylös luontihistorian. Eli kun luon uuden objektin mallin pohjalta (tai <em>muutan</em> olemassaolevaa mallia), järjestelmä kirjaa lokitiedon asiasta erilliseen tauluun. Kuinka saavuttaa tämä?</p>
+</blockquote>
+
+<p>Hyvä kysymys. Olen itse tarvinnut vastaavaa.</p>
+
+<p>Miksi tuollainen lokihistoria sisältäen muutokset on hyödyllinen? Selkeä käyttötarkoitus on järjestelmissä, joille vallitseva laki asettaa vaatimuksia. Yksi yleisin vaatimus on, että järjestelmän tulee pitää tarkkaa kirjaa <em>kaikista</em> järjestelmän sisällä tapahtuvista muutoksista.</p>
+
+<p>Tälläinen kirjanpito on järkevä hoitaa lokihistorian avulla, jonne kirjaa lyhyen tiedoksiannon jokaisesta muutoksesta.</p>
+
+<blockquote>
+<p>Esimerkiksi ydinvoimalan turvallisuusjärjestelmässä tuollainen muutos - jonka haluamme kirjata ylös - on yksikön polttoainesauvan liikuttaminen.</p>
+
+<p>Kun järjestelmän ylläpitäjä antaa järjestelmälle komennon siirtää polttoainesauvaa kolme senttiä ylöspäin, järjestelmän on syytä kirjata lokitieto asiasta.</p>
+
+<p>Sillä jos jotain menee pieleen, poliitikot haluavat tietää <em>tismalleen mitä ja miksi meni pieleen</em>! Lokihistoria auttaa.</p>
+</blockquote>
+
+<h3 id="toteutus">Toteutus</h3>
+
+<p>Jälleen kerran Laravel tekee lokihistorian pitämisen laittoman helpoksi. Käytännössä homma toimii näin; määrität kullekin <em>malliluokalle</em> muutaman metodin, joita Laravel-kehys kutsuu aina tietokantaa päivittäessään. Näiden metodien sisällä pusket lokitiedon lokihistoria-tauluun.</p>
+
+<p>Otetaan hypoteettisena esimerkkinä tuo ydinvoimala.</p>
+
+<p>Meillä on malliluokka nimeltä &ldquo;Polttoainesauva&rdquo;, joka on tämän näköinen:</p>
+
+<pre><code class="language-php">
+class Polttoainesauva extends Model {
+	
+  public function nostaYlos() {//...}
+  public function laskeAlas() {//...}
+}
+
+</code></pre>
+
+<p>Malliluokkamme on varsin yksinkertainen; sille on määritelty ohjelmoijan toimesta vain kaksi metodia.</p>
+
+<p>Ensimmäinen metodi nostaa sauvan ylös, toinen laskee sen takaisin alas. Metodien tarkemmat määritykset eivät ole oleellisia.</p>
+
+<p>Oletamme, että sauvojen asento/sijainti on kunakin hetkellä tallennettuna tietokantaan. Oikeassa maailmassa &ldquo;tietokantana&rdquo; toimisi ydinreaktori, mutta tämä on web-applikaatio, joka simuloi oikeaa maailmaa.</p>
+
+<p>Jossain kohtaa applikaatiota meillä on seuraava koodinpätkä:</p>
+
+<pre><code class="language-php">
+$polttoainesauva-&gt;nostaYlos();
+
+</code></pre>
+
+<p>Ylläolevaa koodinpätkää voi ydinlaitoksen huoltoteknikko kutsua jonkinlaisen rajapinnan kautta.</p>
+
+<p>Ydinkysymys: <strong>miten saamme järjestettyä siten, että polttoainesauvan nostosta jää yksiselitteinen lokitieto järjestelmän historiaan?</strong></p>
+
+<h3 id="tapa-1">Tapa 1</h3>
+
+<p>Yksi tapa on muokata ylläolevaa koodinkutsua seuraavanlaiseksi:</p>
+
+<pre><code class="language-php">
+$polttoainesauva-&gt;nostaYlos();
+// Kirjaa lokiin
+Loki::write('Polttoainesauva nostettu');
+
+</code></pre>
+
+<p>Ratkaisu on yleisellä tasolla huono, sillä entä jos useampi rajapintafunktio nostelee sauvaa? Tällöin lokikirjauksen tekeminen tulisi muistaa tehdä kaikkialle erikseen!</p>
+
+<p>Tämä on vaarallista ihan siksi, että ennemmin tai myöhemmin joku puolikätinen yliopisto-ohjelmoija* pöllähtää paikalle ja muokkaa rajapintaa <em>unohtaen</em> lokikirjauksen lisäyksen!</p>
+
+<h3 id="tapa-2">Tapa 2</h3>
+
+<p>Huomattavasti parempi tapa on siirtää lokikirjaus suoraan Polttoainesauva-luokan metodien oheen:</p>
+
+<pre><code class="language-php">
+class Polttoainesauva extends Model {
+	
+  public function nostaYlos() {
+    // Tee nosto
+    Loki::write('Polttoainesauva nostettu');
+
+
+  }
+
+  public function laskeAlas() {
+    // Tee lasku
+    Loki::write('Polttoainesauva laskettu');  
+
+  }
+}
+
+</code></pre>
+
+<p>Nyt voimme olla varmoja, että sauvoja ei nosteta/lasketa ilman lokikirjausta.</p>
+
+<p>Vai voimmeko? Entä jos puolikätinen yliopisto-ohjelmoija menee typeryyspäissään kirjoittamaan uuden rajapintafunktion tyyliin:</p>
+
+<pre><code class="language-php">
+function vedenPintaKriittisenAlhaalla() {
+	// Kiireellä sauva pois matalasta vedestä!
+	// (Disclaimer: en tiedä lainkaan toimisiko tälläinen
+	// varotoimenpide oikeassa elämässä...dont try at home!)
+	$polttoainesauva-&gt;asento = 'ylös';
+	$polttoainesauva-&gt;save();
+}
+
+</code></pre>
+
+<p>Kirjataanko tuossa mitään lokiin? Ei, sillä uusi noviisiohjelmoija meni muuttamaan sauvan asentoa <em>ohitse</em> meidän nostaYlos-metodimme. Siispä lokikirjausta ei tehty.</p>
+
+<p>No, noin keskimäärin ydinvoimalat eivät palkkaisi diplomi-insinöörejä, joten ylläolevaa ei pääse tapahtumaan.</p>
+
+<p>Mutta tuossa lokikirjausten tekemisessä Polttoainesauva-luokkaan on toinenkin ongelma: entä jos meillä on <em>sadoittain</em> vastaavia malliluokkia ympäri applikaatiotamme?</p>
+
+<p>Meidän tulisi <em>jokaikiseen</em> kirjata <em>jokaikisen</em> tietokantaa muokkaavan metodin kohdalle lokikirjaus! Helvetinmoinen urakka, muuten.</p>
+
+<h3 id="tapa-3">Tapa 3</h3>
+
+<p>Paras keino on luottaa Trait*-konseptin voimaan.</p>
+
+<p>Lisäämällä kirjaustoiminnot sisältävä Trait kunkin malliluokan oheen, meidän ei tarvitse huolehtia juuri mistään muusta! Laravel-kehys huolehtii siitä, että Traitin sisältämät <em>kuuntelijafunktiot</em> kutsutaan aina kun tietokantaa muokataan.</p>
+
+<p>Huono puoli tässäkin on - joudumme edelleen siis muistamaan sisällyttämään tuon Traitin jokaisen malliluokan oheen. Mutta ainakaan meidän ei tarvitse enää huolehtia yksittäisistä metodeista. Yksi lisäys per malliluokka riittää.</p>
+
+<p>Ja mikä parasta, <strong>yksi ja sama Trait kelpaa kaikkiin malliluokkiin</strong>.</p>
+
+<p>Tämä viimeisin pointti on tärkeä; vaikka meillä olisi tuhat malliluokkaa, yksi Trait edelleen riittäisi.</p>
+
+<p>Traitin avulla jokainen malliluokan metodi tulee automaattisesti &ldquo;suojelluksi&rdquo; - tarkoittaen, että tietokannan muokkaus mistä ikinä metodista tulee kirjatuksi lokiin.</p>
+
+<p>Miltä tuo Trait näyttää? Tältä:</p>
+
+<pre><code class="language-php">
+trait Trackable {
+  public static function bootTrackable() {
+
+    static::creating(function ($model) {
+      // Kirjataan tieto objektin luonnista
+      Loki::write('Luonti: ' . get_class($model));
+    });
+
+    static::updating(function ($model) {
+      // Kirjataan tieto objektin muokkauksesta!
+      // HUOM! Emme tiedä millainen muokkaus on kyseessä, 
+      // mutta objekti itse tietää!
+      Loki::write('Muokkaus: ' . get_class($model) . $model-&gt;printData());
+    });
+
+    static::deleting(function ($model) {
+      // Kirjataan tieto objektin kuolemasta!
+      Loki::write('Kuolema: ' . get_class($model));
+    });
+  }
+}
+
+</code></pre>
+
+<p>Ylläolevaa traittia voimme käyttää missä tahansa malliluokassa seuraavasti:</p>
+
+<pre><code class="language-php">
+class Polttoainesauva extends Model {
+  use Trackable;
+  // jne..
+}
+
+class Reaktori extends Model {
+  use Trackable;
+  // jne..
+}
+
+class Vesiallas extends Model {
+  use Trackable;
+  // jne..
+}
+
+class Lampomittari extends Model {
+  use Trackable;
+  // jne..
+}
+
+</code></pre>
+
+<p>Muuta ei tarvita! Laravel-kehys hoitaa loput. Se pitää huolen, että aina kun tietokantaa muokataan jonkun em. malleista osalta, lokiin kirjataan tieto.</p>
+
+<blockquote>
+<p>Onko suojaus nyt täydellinen, täysin diplomi-insinööri-proof? Ei. Jos tietokantaa muokataan suoraan SQL-koodilla, lokikirjaus jää edelleen tekemättä. Mutta ainakin ohjelmoijilla on nyt vain yksi elinehto: <strong>älä ohita Laravel-kehyksen omaa tietokanta-abstraktiota.</strong></p>
+</blockquote>
+
+<ul>
+<li>Traitin toiminnasta voit lukea <a href="http://php.net/manual/en/language.oop5.traits.php">täältä</a>. Perusidea on, että traitin sisältö copypastataan sellaisenaan siihen kohtaan koodipohjaa, jossa traitia käytetään (<em>use</em>).</li>
+</ul>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>
