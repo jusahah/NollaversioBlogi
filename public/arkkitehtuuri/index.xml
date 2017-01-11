@@ -6,8 +6,149 @@
     <description>Recent content in Arkkitehtuuris on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Thu, 27 Oct 2016 16:58:00 +0300</lastBuildDate>
+    <lastBuildDate>Wed, 11 Jan 2017 19:03:44 +0200</lastBuildDate>
     <atom:link href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Amazonin kartoitus #1: Polly</title>
+      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/amazon-polly/</link>
+      <pubDate>Wed, 11 Jan 2017 19:03:44 +0200</pubDate>
+      
+      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/amazon-polly/</guid>
+      <description>
+
+&lt;blockquote&gt;
+&lt;p&gt;Tämä bloggaus aloittaa Nollaversio IT:n blogiin uuden artikkelisarjan, jossa käyn lävitse yksi kerrallaan Amazon AWS-ekosysteemin tarjoamia palveluita. Keskityn artikkelisarjassa palveluiden hyödyntämiseen osana web-palveluiden rakentamista.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h1 id=&#34;amazon-polly&#34;&gt;Amazon Polly&lt;/h1&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://aws.amazon.com/polly/&#34;&gt;Amazon Polly&lt;/a&gt; on yksi AWS-tuoteperheen uusimmista lisäyksistä. Polly täyttää varsin konkreettisen tarpeen; &lt;em&gt;se mahdollistaa tekstin kääntämisen puheeksi&lt;/em&gt;.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Pollyn vastapari AWS-perheessä on &lt;a href=&#34;https://aws.amazon.com/lex/&#34;&gt;Amazon Lex&lt;/a&gt;, joka kääntää puheen tekstiksi. Tutustutaan Lexiin myöhemmin.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Polly siis ottaa vastaan tekstiä ja puhuu suunsa puhtaaksi - aivan kuten tavallinen ihminen lukisi pätkän tekstiä mikrofoniin. Pollyn tapauksessa puhumisen hoitaa tietokone-algoritmi. Algoritmipuhe tuottaa äänitiedoston, esim. mp3-tiedoston.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Polly on suoranainen kielivirtuoosi. Se höpöttää englannin lisäksi ainakin ruotsia, venäjää ja saksaa. &lt;strong&gt;Valitettavasti suomi ei ole joukossa mukana, ainakaan vielä.&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&#34;soveltuvuus&#34;&gt;Soveltuvuus&lt;/h3&gt;
+
+&lt;p&gt;Pollyn kaltaisen palvelun sisällyttäminen osaksi web-applikaatiota vaatii hiukka järkeilyä.&lt;/p&gt;
+
+&lt;p&gt;Mitä lisäarvoa puhuttu puhe tuottaa verrattuna näyttöpäätteeltä luettuun tekstiin? Valtaosassa web-applikaatioita ei yhtään mitään - kirjoitettu teksti on helppokäyttöisempää kuin luettu puhe.&lt;/p&gt;
+
+&lt;p&gt;Yksi selkeä käyttötarkoitus on applikaatioissa, joissa käyttäjä ei ole näyttöpäätteen äärellä jatkuvasti. Applikaatio voi tällöin muuntaa esim. sisääntulevan viestin puheeksi, joka soitetaan käyttäjän kaiuttimista. Tällä tavoin viesti saadaan ihmiskäyttäjälle perille vaikka hän ei olisi läsnä näyttöpäätteen äärellä. Riittää, että hän on kaiuttimien äänen kantaman saavutettavissa.&lt;/p&gt;
+
+&lt;p&gt;Tämä ensimmäinen käyttötarkoitus perustuu ajatukseen siitä, että ääniviestiä on vaikeampi olla huomaamatta kuin visuaalista viestiä.&lt;/p&gt;
+
+&lt;p&gt;Toinen käyttötarkoitus on muuntaa tekstidokumentteja puheeksi esim. matkakuuntelua varten.&lt;/p&gt;
+
+&lt;p&gt;Ilmiselvä käyttötarve on esim. kirjan muuntaminen mp3-muotoon ja audiomuodossa matkalle mukaan ottaminen.&lt;/p&gt;
+
+&lt;p&gt;Toinen, vähemmän ilmiselvä käyttöpotentiaali, löytyy sähköpostiviestien käsittelystä. Auton ratissa on mahdoton käyttää silmiä sähköpostiviestien yms. dokumenttien lukemiseen. Tämä on fakta, jota moni on yrittänyt uhmata henkensä hinnalla.&lt;/p&gt;
+
+&lt;p&gt;Mutta entä jos sisääntuleva sähköpostiviesti luettaisiin ääneen auton kaiuttimista?&lt;/p&gt;
+
+&lt;p&gt;Arkkitehtuuri voisi toimia seuraavasti.&lt;/p&gt;
+
+&lt;h3 id=&#34;malli-arkkitehtuuri-sähköpostit-auton-kaiuttimista&#34;&gt;Malli-arkkitehtuuri: sähköpostit auton kaiuttimista.&lt;/h3&gt;
+
+&lt;p&gt;Arkkitehtuurin hardware vaatii älypuhelimen 3G- ja Bluetooth-yhteyksillä sekä autosoittimen Bluetooth-yhteydellä. Lähes kaikki modernit älypuhelimet tukevat 3G + Bluetooth -yhdistelmää, ja valtaosa uusista autoista sisältää Bluetooth-soittimien sisäänrakennettuna auton audiojärjestelmään.&lt;/p&gt;
+
+&lt;p&gt;Automatkan alkaessa kuski avaa applikaation (joko web-appi tai mobiiliappi) &amp;ldquo;EmailitPuheeksi&amp;rdquo;. Applikaatiosta hän valitsee audiokytkennän auton audiojärjestelmään.&lt;/p&gt;
+
+&lt;p&gt;Applikaatio kysyy käyttäjän sähköpostitilin tietoja. Tiedot syötettyään applikaatio jää kuuntelemaan sähköpostiliikennettä; aina kun email lävähtää käyttäjän sähköpostilaatikkoon, EmailitPuheeksi-appi saa siitä kopion käyttöönsä.&lt;/p&gt;
+
+&lt;p&gt;Tämän email-kopion applikaatiomme lähettää Amazonin rajapintaan. Amazon herättää Pollyn kauneusunilta, ja käännös &amp;ldquo;teksti -&amp;gt; puhe&amp;rdquo; suoritetaan. Käännöksen suoritus saattaa kestää useita sekunteja, joten Amazon ampuu käännetyn email-puhetiedoston AWS:n omaan jonopalveluun.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Amazonin ei tarvitse toimia oikean ihmisen tavoin, eli lukea tekstiä sana kerrallaan. Koska puheenmuodostus tapahtuu algoritmisesti, on puhe mahdollista tuottaa &lt;em&gt;paralleelisti&lt;/em&gt; - alkuperäinen teksti pätkikään osiin ja kukin osa käännetään puheeksi erikseen.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Jonopalvelusta applikaatiomme sitten käy nappaamassa puhetiedoston, ja sen saatuaan soittaa tiedoston. Koska applikaation ääni-output on kytketty auton audiojärjestelmään, sähköposti luetaan ääneen auton kaiuttimista.&lt;/p&gt;
+
+&lt;h3 id=&#34;koodiesimerkki&#34;&gt;Koodiesimerkki&lt;/h3&gt;
+
+&lt;p&gt;Pollyn käyttö on helppoa. AWS tarjoaa rajapintapalvelunsa API Gatewayn liitettäväksi Pollyn kylkeen; tällöin HTTP-pyyntö voidaan lähettää rajapintaan, joka sitten parsii siitä tarvittavat tiedot (hyödyntäen &lt;em&gt;AWS Lambda&lt;/em&gt;-funktiota!) ja lähettää ne Pollyn luettavaksi.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Polly edustaa teknologisen kehityksen terävintä kärkeä. Lambdan hyödyntäminen Pollyn käytössä edustaa tuon kehityksen terävimmän kärjen ylintä atomia. Vielä kuukausi sitten - joulukuussa 2016 - Lambdaa ei oltu päivitetty sisältämään rajapintatoimintoja Pollyn suuntaan. Nyt (11.01.17) päivitys on tehty, joskin sen deploymentti läpi AWS valtavan infrastruktuurin on vielä kesken. Lisätietoja &lt;a href=&#34;https://forums.aws.amazon.com/thread.jspa?threadID=244156&#34;&gt;täältä.&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Polly on sen verran uusi palvelu, että netistä ei löydy käytännössä lainkaan esimerkkejä sen käytöstä. Mutta joltain tämänkaltaiselta se näyttää:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Tuodaan HTTP-kirjasto käyttöön
+var request = require(&#39;request&#39;);
+// Tuodaan jokin soitin, ei tarkemmin määritelty.
+var soitin = require(&#39;mp3soitin&#39;);
+
+// Kaikki authentikaatio on skipattu.
+
+// Tämä käännetään äänitiedostoksi Pollyn avulla.
+var text = &amp;quot;Translate this!&amp;quot;;
+
+var options = {
+  uri: &#39;http://aws.polly.com/v1/speech&#39;,
+  method: &#39;POST&#39;,
+  json: {
+   	&amp;quot;OutputFormat&amp;quot;: &amp;quot;mp3&amp;quot;,
+   	&amp;quot;Text&amp;quot;: text,
+   	&amp;quot;TextType&amp;quot;: &amp;quot;text&amp;quot;,
+   	&amp;quot;VoiceId&amp;quot;: &amp;quot;Emma&amp;quot;
+  }
+};
+
+// Tehdään kutsu AWS:n Polly-rajapintaan.
+
+request(options, function (error, response, body) {
+  // Virheiden tarkistus tähän..
+
+  // Napataan audio.
+  var audio = response.AudioStream;
+
+  // Lähetetään audio johonkin soittimeen
+  soitin.play(audio);
+
+});
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Amazonin suuntaan lähtevän HTTP POST-kutsun tärkein osa on tämä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+ {
+   	&amp;quot;OutputFormat&amp;quot;: &amp;quot;mp3&amp;quot;,
+   	&amp;quot;Text&amp;quot;: text,
+   	&amp;quot;TextType&amp;quot;: &amp;quot;text&amp;quot;,
+   	&amp;quot;VoiceId&amp;quot;: &amp;quot;Emma&amp;quot;
+  }
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tuossa objektissa määritämme mm. luettavan tekstin, lukijaäänen (ihana Emma, jolla on brittiaksentti) ja ääniformaatin. Muitakin asetuksia on laitettavissa, mm. samplaus-rate.&lt;/p&gt;
+
+&lt;h3 id=&#34;hinta&#34;&gt;Hinta&lt;/h3&gt;
+
+&lt;p&gt;Polly on hinnoiteltu - kuten käytännössä kaikki AWS:n palvelut - naurettavan halvaksi.&lt;/p&gt;
+
+&lt;p&gt;Esimerkiksi 24 tunnin kestoinen puhe maksaa neljä dollaria.&lt;/p&gt;
+
+&lt;p&gt;Tuntipalkkaa Polly perii siis huimat n. 20 senttiä. Mikä pahinta, Polly-parka kituuttaa nollasopimuksella; kk-maksuja ei ole lainkaan ja kaikki veloitus menee suoraan käytön mukaan.&lt;/p&gt;
+
+&lt;h3 id=&#34;summarum&#34;&gt;Summarum&lt;/h3&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Amazon Polly tarjoaa tekstin kääntämisen puheeksi mukavan kivuttomasti. Palvelu on upouusi, joten käyttökokemukset siitä ovat vähissä. Edelläkävijälle palvelu tarjoaa spesifiin käyttötarpeeseen optimaalisen täsmäratkaisun, joka yksinkertaisesti toimii. Tai ainakin lupaa toimivansa.&lt;/p&gt;
+
+&lt;p&gt;Huonona puolena on, että - vielä toistaiseksi - suomen kieltä ei ole mukana.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Lambda-pohjainen arkkitehtuuri</title>

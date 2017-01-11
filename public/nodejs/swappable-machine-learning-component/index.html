@@ -1,0 +1,304 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Koneoppimiseen erikoistunut komponentti &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Koneoppimiseen erikoistunut komponentti</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Thu, Jul 14, 2016</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Koneoppiminen (engl. Machine learning) on kovaa kamaa. Vaan kuinka hyödyntää koneoppimista ihan ihkaoikeassa koodipohjassa? Kuinka rakentaa applikaatio, joka <em>oppii</em>?</p>
+
+<p>Otetaan esimerkki.</p>
+
+<h3 id="turistinähtävyys-luokitin">Turistinähtävyys-luokitin</h3>
+
+<p>Suomen ulkoministeriö on tehnyt tilauksen. He haluavat järjestelmän, joka kykenee turistipuodista ostetun postikortin kuvasta päättelemään mikä nähtävyys on kyseessä. Onko siinä Stockmannin kello? Vaiko Tuomiokirkko? Linnanmäen maailmanpyörä? Kenties Kolera-allas?</p>
+
+<p>Järjestelmä on tarkoitus ottaa käyttöön Postin ulkomaanlähetysten osastolla. Joka kerta kun Suomesta lähetetään turistipostikortti ulkomaille, järjestelmä selvittää mitä turistinähtävyyttä kortin kansikuva kuvaa.</p>
+
+<p>Tällä tavoin Suomen valtio saa ensiluokkaista tietoa siitä, mikä nähtävyys on eniten ulkomaalaisten turistien mieleen.</p>
+
+<h3 id="toteutus">Toteutus</h3>
+
+<p>Oletetaan, että Posti on hankkinut neliväriskannerin, jonka läpi jokainen ulkomaille matkaava postikortti kulkee. Tuo skanneri lähettää kopion postikortin kansikuvasta suoraan järjestelmäämme.</p>
+
+<p>Ainoaksi haasteeksi jää täten järjestelmämme puolella selvittää, mitä nähtävyyttä kortti kuvaa.</p>
+
+<p>Lähdetään liikkeelle yksinkertaisesti. Oletetaan, että meillä on funktio, jota Postin skanneri kutsuu aina kun postikortti on skannattu:</p>
+
+<pre><code class="language-javascript">
+// TuristinahtavyysLuokitin.js
+
+module.exports = function(scannedImage) {
+	// Koodia tänne
+}
+
+</code></pre>
+
+<p>Se miten kuva saadaan Postin järjestelmästä tuotua meidän järjestelmään on suht irrelevanttia. Yksinkertainen ratkaisu on HTTP-rajapinta, joka määrittää HTTP-päätepisteen. Postin skanneri voi sitten tehdä vaikka POST-pyynnön tuohon päätepisteeseen, lähettäen kuvadatan siinä samalla.</p>
+
+<pre><code class="language-javascript">
+// TuristinahtavyysRajapinta.js
+
+var luokitin = require('TuristinahtavyysLuokitin');
+var Hapi = require('hapi');
+
+var server = new Hapi.Server();
+server.connection({ port: 80 }); // Vaatii sudo-oikeudet
+
+server.route({
+    method: 'POST',
+    path: '/scannedimages',
+    handler: function (request, reply) {
+        // Hanki kuvadata request-objektista jotenkin
+        var korttiKuva = getScannedImage(request);
+
+       // Lähetä kuva luokittimeen
+       luokitin(korttiKuva);
+
+       // Ilmoita Postille että kaikki meni hyvin.
+       reply(&quot;Kuva vastaanotettu, kiitosta vain.&quot;);
+
+    }
+});
+
+</code></pre>
+
+<p>Mitä Turistinähtävyys-luokittimen tulisi tehdä kuvalla?</p>
+
+<p>Ihan ensinnäkin meidän pitäisi jotenkin kyetä <em>tarkastelemaan</em> kuvaa. Ihmissilmällä tuo tarkastelu on helppoa. Mutta mites tietokoneen kannalta?</p>
+
+<p>Mistä ihmeestä lähdemme edes liikkeelle?</p>
+
+<p>Mitä jos tutkisimme kuvan pikseli pikseliltä ja laskisimme tutkiskelun perusteella joitain tilastoja kuvaan liittyen. Siinä voisi olla järkeä.</p>
+
+<p>Voimme esimerkiksi tsekata sisältääkö kuva merkittävän määrän sinisen värisävyn pikseleitä. Jos sisältää, niin todennäköisesti kuvassa on meri tai taivas. Jos siniset pikselit ovat pääasiassa kuvan ylälaidassa, lienee kyseessä taivas. Jos alalaidassa, lienee meri.</p>
+
+<p>Varmoja emme tietenkään voi olla. Eikä tarvitsekaan. Koneoppiminen perustuu todennäköisyyksiin.</p>
+
+<p>Yksinkertaistetaan ongelmaa hiukan. Oletetaan naiviuspäissämme, että japsituristit ostavat vain postikortteja, joissa on joko a) Stockmannin tai b) Kiasman kuva. Tällä tavalla saamme rajattua vaihtoehdot kahteen.</p>
+
+<p>Mielessämme meillä on kuvat sekä Stockmannin että Kiasman. Mikä näitä kahta erottaa? No, Stockmann on rakennettu paljon aiemmin.</p>
+
+<p>Voiko rakennusvuotta päätellä kuvasta? Ei. Rakennusvuoden eroavaisuus on järjestelmämme kannalta turha.</p>
+
+<p>Toinen erottava asia on, että Kiasman pintamateriaali on valkoista. Stockmannin pintamateriaali on tumman ruskea.</p>
+
+<p>Eikun siis toimeen:</p>
+
+<pre><code class="language-javascript">
+// TuristinahtavyysLuokitin.js
+
+module.exports = function(scannedImage) {
+	if (kuvanKeskimaarainenVaaleus(scannedImage) &gt; 150) {
+		return 'Kiasma';
+	} else {
+		return 'Stockmann';
+	}
+}
+
+function kuvanKeskimaarainenVaaleus(image) {
+	var pikselit = image.getPixels();
+
+	// Pikseleiden valoisuuksien summa
+	var summa = _.reduce(pikselit, function(s, pikseli) {
+		return s + pikseli.brightness; // Brightness 0 -&gt; 255
+	}, 0);
+
+	// Keskiarvo
+	return summa / pikselit.length; 
+}
+
+</code></pre>
+
+<p>Avot - meillä on nyt hyvin alkeellinen tapa erotella Stockmann-postikortit Kiasma-korteista.</p>
+
+<p>Painotus sanalla &ldquo;alkeellinen&rdquo;. Luokittimemme ei valitettavasti osaa huomioida sitä, että aurinkoisena päivänä valokuvan väriskaala on erilainen kuin pilvisenä päivänä.</p>
+
+<p>Puhumattakaan siitä, että jos otamme kuvan talvella, luokittimemme luulee kaikkia rakennuksia Kiasmaksi. Luminen maisema tekee kuvasta niin valkean, että pieni pläntti tummanruskeaa Stockmannin julkisivua ei riitä.</p>
+
+<p>Ja tästä pääsemmekin pirulliseen ongelmaan. Kiasmasta on niin kovin monenlaisia postikorttikuvia. Yksi on otettu yöllä, toinen Hotelli Tornin huipulta, kolmas sammakkoperspektiivistä, neljäs helikopterista.</p>
+
+<p>Miten ihmeessä valokuvan värimaailmaa tutkiva luokittimemme pystyy ottamaan kaikki mahdolliset kuvakulmat, kuvausetäisyydet ja valaistusolosuhteet huomioon?</p>
+
+<p>Ei mitenkään. Ei yksinkertaisesti ole mahdollista. Luokittimemme on liian suppea - se perustaa päätöksensä liian rajattuun tietoaineistoon.</p>
+
+<p>Tilanne on tismalleen sama kuin jos sinä valitsisit aviovaimon yksinomaan hänen vasemman jalan pottuvarpaan nähtyäsi. Pottuvarvas voi olla vaikka kuinka sutjakka, mutta leidi itse saattaa olla kärttyinen haahka.</p>
+
+<p>Tietoa ei yksinkertaisesti ole tarpeeksi.</p>
+
+<p>Joten korjataan ongelma - hankitaan lisää tietoa! Luokittimemme ei suinkaan ole pakotettu tyytymään valokuvan värimaailman tutkimiseen.</p>
+
+<p>Entä jos luokittimemme tutkisi valokuvasta myös rakennuksen muotoa? Kokeillaan jotain uhkarohkeaa.</p>
+
+<pre><code class="language-javascript">
+// TuristinahtavyysLuokitin.js
+
+module.exports = function(scannedImage) {
+	var vaaleus = kuvanKeskimaarainenVaaleus(scannedImage);
+	var muoto   = kuvanRakennuksenLaatikkomaisuus(scannedImage);
+
+	return stockmannVaiKiasma(vaaleus, muoto);
+}
+
+function kuvanKeskimaarainenVaaleus(image) {
+	var pikselit = image.getPixels();
+
+	// Pikseleiden valoisuuksien summa
+	var summa = _.reduce(pikselit, function(s, pikseli) {
+		return s + pikseli.brightness; // Brightness 0 -&gt; 255
+	}, 0);
+
+	// Keskiarvo
+	return summa / pikselit.length; 
+}
+
+function kuvanRakennuksenLaatikkomaisuus(image) {
+	// Oletetaan, että kuvan yläreuna on taivasta
+
+	var taivasVaaleus = image.getPixel(0,0).brightness;
+
+	// Ammutaan vertikaalinen säde kuvan yläreunasta 
+	// alareunaa kohti ja tsekataan missä kohtaa kuvaa
+	// säde törmää ensimmäiseen &quot;ei-taivas&quot;-pikseliin.
+	// Kun näin tapahtuu, oletetaan rohkeasti että kyseessä 
+	// on rakennuksen katto (eikä esim. harhaileva varis).
+
+	// Tehdään ylläoleva jokaiselle yläreunan pikselille
+
+	var pikseliSateetMaara = image.getWidth();
+	var taivasKattoEtaisyydet = [];
+
+	_.times(pikseliSateetMaara, function(etaisyysVasenReuna) {
+		var sateenPituus = ammuSadeAlas(etaisyysVasenReuna, taivasVaaleus, image);
+		taivasKattoEtaisyydet.push(sateenPituus);
+	});
+
+	// Nyt meillä on etäisyydet kuvan yläreunasta kattoon koko kuvan matkalta.
+	// Jos talo on laatikkomainen, nuo etäisyydet ovat lineaarisessa suhteessa toisiinsa.
+	// Jos talo on epämuodostuneen näköinen, lineaarista suhdetta ei ole 
+	// Näin esim. silloin jos katto tekee kumpuja kuten Tuomiokirkon suhteen.
+
+	if (merkittavaLineaarisuus(taivasKattoEtaisyydet)) {
+		return 'Stockmann';
+	} else {
+		return 'Tuomiokirkko';
+	}
+
+}
+
+// Apufunktio laskemaan säteen pituus
+function ammuSadeAlas(etaisyysVasenReuna, vaaleusRaja, kuva) {
+	
+	var kuvanKorkeus = kuva.getHeight();
+
+	_.times(kuvanKorkeus, function(etaisyysYlareunaan) {
+		var pikseli = kuva.getPixel(etaisyysVasenReuna, etaisyysYlareunaan);
+
+		// Kaikki taivaan pikselit eivät ole tismalleen mallipikselimme
+		// kaltaisia, joten ota pieni virhemarginaali huomioon!
+		if (pikseli.brightness &lt; (vaaleusRaja - 25)) {
+			return etaisyysYlareunaan;
+		}
+	});
+
+	// Säde osui alareunaan asti -&gt; koko matkan ajan oli taivasta!
+	return kuvanKorkeus;
+}
+
+function merkittavaLineaarisuus(luvut) {
+	
+	// Onko parametrin lukujen välillä lineaarinen riippuvuus?
+	// Tai edes &quot;jokseenkin&quot; lineaarinen riippuvuus...
+
+	// Selvitä asia jotenkin (muutos peräkkäisten lukujen välillä aina sama?)
+	return lineaarisuudenAste;
+}
+
+</code></pre>
+
+<p>Noin. Nyt hieno luokittimemme ottaa kaksi eri ominaisuutta valokuvasta huomioon. Värimaailman ja kuvassa olevan rakennuksen muodon.</p>
+
+<h3 id="ja-sitten-itse-aiheeseen-koneoppiminen">Ja sitten itse aiheeseen - koneoppiminen</h3>
+
+<p>Kaikki edellä oli johdantoa, jolla ei ollut koneoppimisen kanssa juuri mitään tekemistä. Kunhan vain edellä totesimme, että perinteinen ongelmanratkaisu ei sovellu. Emme pysty luomaan kaikenkattavaa algoritmia, joka pystyisi valokuvasta kuin valokuvasta erottamaan Stockmannin Kiasmasta.</p>
+
+<p>Se, että me emme siihen pysty ei tietenkään tarkoita, etteikö <em>joku muu</em> siihen pystyisi.</p>
+
+<p>Kuka tuo kuuluisa joku muu on? Tietokone itse.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

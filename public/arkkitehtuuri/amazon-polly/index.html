@@ -1,0 +1,214 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Amazonin kartoitus #1: Polly &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Amazonin kartoitus #1: Polly</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Wed, Jan 11, 2017</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<blockquote>
+<p>Tämä bloggaus aloittaa Nollaversio IT:n blogiin uuden artikkelisarjan, jossa käyn lävitse yksi kerrallaan Amazon AWS-ekosysteemin tarjoamia palveluita. Keskityn artikkelisarjassa palveluiden hyödyntämiseen osana web-palveluiden rakentamista.</p>
+</blockquote>
+
+<h1 id="amazon-polly">Amazon Polly</h1>
+
+<p><a href="https://aws.amazon.com/polly/">Amazon Polly</a> on yksi AWS-tuoteperheen uusimmista lisäyksistä. Polly täyttää varsin konkreettisen tarpeen; <em>se mahdollistaa tekstin kääntämisen puheeksi</em>.</p>
+
+<blockquote>
+<p>Pollyn vastapari AWS-perheessä on <a href="https://aws.amazon.com/lex/">Amazon Lex</a>, joka kääntää puheen tekstiksi. Tutustutaan Lexiin myöhemmin.</p>
+</blockquote>
+
+<p>Polly siis ottaa vastaan tekstiä ja puhuu suunsa puhtaaksi - aivan kuten tavallinen ihminen lukisi pätkän tekstiä mikrofoniin. Pollyn tapauksessa puhumisen hoitaa tietokone-algoritmi. Algoritmipuhe tuottaa äänitiedoston, esim. mp3-tiedoston.</p>
+
+<blockquote>
+<p>Polly on suoranainen kielivirtuoosi. Se höpöttää englannin lisäksi ainakin ruotsia, venäjää ja saksaa. <strong>Valitettavasti suomi ei ole joukossa mukana, ainakaan vielä.</strong></p>
+</blockquote>
+
+<h3 id="soveltuvuus">Soveltuvuus</h3>
+
+<p>Pollyn kaltaisen palvelun sisällyttäminen osaksi web-applikaatiota vaatii hiukka järkeilyä.</p>
+
+<p>Mitä lisäarvoa puhuttu puhe tuottaa verrattuna näyttöpäätteeltä luettuun tekstiin? Valtaosassa web-applikaatioita ei yhtään mitään - kirjoitettu teksti on helppokäyttöisempää kuin luettu puhe.</p>
+
+<p>Yksi selkeä käyttötarkoitus on applikaatioissa, joissa käyttäjä ei ole näyttöpäätteen äärellä jatkuvasti. Applikaatio voi tällöin muuntaa esim. sisääntulevan viestin puheeksi, joka soitetaan käyttäjän kaiuttimista. Tällä tavoin viesti saadaan ihmiskäyttäjälle perille vaikka hän ei olisi läsnä näyttöpäätteen äärellä. Riittää, että hän on kaiuttimien äänen kantaman saavutettavissa.</p>
+
+<p>Tämä ensimmäinen käyttötarkoitus perustuu ajatukseen siitä, että ääniviestiä on vaikeampi olla huomaamatta kuin visuaalista viestiä.</p>
+
+<p>Toinen käyttötarkoitus on muuntaa tekstidokumentteja puheeksi esim. matkakuuntelua varten.</p>
+
+<p>Ilmiselvä käyttötarve on esim. kirjan muuntaminen mp3-muotoon ja audiomuodossa matkalle mukaan ottaminen.</p>
+
+<p>Toinen, vähemmän ilmiselvä käyttöpotentiaali, löytyy sähköpostiviestien käsittelystä. Auton ratissa on mahdoton käyttää silmiä sähköpostiviestien yms. dokumenttien lukemiseen. Tämä on fakta, jota moni on yrittänyt uhmata henkensä hinnalla.</p>
+
+<p>Mutta entä jos sisääntuleva sähköpostiviesti luettaisiin ääneen auton kaiuttimista?</p>
+
+<p>Arkkitehtuuri voisi toimia seuraavasti.</p>
+
+<h3 id="malli-arkkitehtuuri-sähköpostit-auton-kaiuttimista">Malli-arkkitehtuuri: sähköpostit auton kaiuttimista.</h3>
+
+<p>Arkkitehtuurin hardware vaatii älypuhelimen 3G- ja Bluetooth-yhteyksillä sekä autosoittimen Bluetooth-yhteydellä. Lähes kaikki modernit älypuhelimet tukevat 3G + Bluetooth -yhdistelmää, ja valtaosa uusista autoista sisältää Bluetooth-soittimien sisäänrakennettuna auton audiojärjestelmään.</p>
+
+<p>Automatkan alkaessa kuski avaa applikaation (joko web-appi tai mobiiliappi) &ldquo;EmailitPuheeksi&rdquo;. Applikaatiosta hän valitsee audiokytkennän auton audiojärjestelmään.</p>
+
+<p>Applikaatio kysyy käyttäjän sähköpostitilin tietoja. Tiedot syötettyään applikaatio jää kuuntelemaan sähköpostiliikennettä; aina kun email lävähtää käyttäjän sähköpostilaatikkoon, EmailitPuheeksi-appi saa siitä kopion käyttöönsä.</p>
+
+<p>Tämän email-kopion applikaatiomme lähettää Amazonin rajapintaan. Amazon herättää Pollyn kauneusunilta, ja käännös &ldquo;teksti -&gt; puhe&rdquo; suoritetaan. Käännöksen suoritus saattaa kestää useita sekunteja, joten Amazon ampuu käännetyn email-puhetiedoston AWS:n omaan jonopalveluun.</p>
+
+<blockquote>
+<p>Amazonin ei tarvitse toimia oikean ihmisen tavoin, eli lukea tekstiä sana kerrallaan. Koska puheenmuodostus tapahtuu algoritmisesti, on puhe mahdollista tuottaa <em>paralleelisti</em> - alkuperäinen teksti pätkikään osiin ja kukin osa käännetään puheeksi erikseen.</p>
+</blockquote>
+
+<p>Jonopalvelusta applikaatiomme sitten käy nappaamassa puhetiedoston, ja sen saatuaan soittaa tiedoston. Koska applikaation ääni-output on kytketty auton audiojärjestelmään, sähköposti luetaan ääneen auton kaiuttimista.</p>
+
+<h3 id="koodiesimerkki">Koodiesimerkki</h3>
+
+<p>Pollyn käyttö on helppoa. AWS tarjoaa rajapintapalvelunsa API Gatewayn liitettäväksi Pollyn kylkeen; tällöin HTTP-pyyntö voidaan lähettää rajapintaan, joka sitten parsii siitä tarvittavat tiedot (hyödyntäen <em>AWS Lambda</em>-funktiota!) ja lähettää ne Pollyn luettavaksi.</p>
+
+<blockquote>
+<p>Polly edustaa teknologisen kehityksen terävintä kärkeä. Lambdan hyödyntäminen Pollyn käytössä edustaa tuon kehityksen terävimmän kärjen ylintä atomia. Vielä kuukausi sitten - joulukuussa 2016 - Lambdaa ei oltu päivitetty sisältämään rajapintatoimintoja Pollyn suuntaan. Nyt (11.01.17) päivitys on tehty, joskin sen deploymentti läpi AWS valtavan infrastruktuurin on vielä kesken. Lisätietoja <a href="https://forums.aws.amazon.com/thread.jspa?threadID=244156">täältä.</a></p>
+</blockquote>
+
+<p>Polly on sen verran uusi palvelu, että netistä ei löydy käytännössä lainkaan esimerkkejä sen käytöstä. Mutta joltain tämänkaltaiselta se näyttää:</p>
+
+<pre><code class="language-javascript">
+// Tuodaan HTTP-kirjasto käyttöön
+var request = require('request');
+// Tuodaan jokin soitin, ei tarkemmin määritelty.
+var soitin = require('mp3soitin');
+
+// Kaikki authentikaatio on skipattu.
+
+// Tämä käännetään äänitiedostoksi Pollyn avulla.
+var text = &quot;Translate this!&quot;;
+
+var options = {
+  uri: 'http://aws.polly.com/v1/speech',
+  method: 'POST',
+  json: {
+   	&quot;OutputFormat&quot;: &quot;mp3&quot;,
+   	&quot;Text&quot;: text,
+   	&quot;TextType&quot;: &quot;text&quot;,
+   	&quot;VoiceId&quot;: &quot;Emma&quot;
+  }
+};
+
+// Tehdään kutsu AWS:n Polly-rajapintaan.
+
+request(options, function (error, response, body) {
+  // Virheiden tarkistus tähän..
+
+  // Napataan audio.
+  var audio = response.AudioStream;
+
+  // Lähetetään audio johonkin soittimeen
+  soitin.play(audio);
+
+});
+
+</code></pre>
+
+<p>Amazonin suuntaan lähtevän HTTP POST-kutsun tärkein osa on tämä:</p>
+
+<pre><code class="language-javascript">
+ {
+   	&quot;OutputFormat&quot;: &quot;mp3&quot;,
+   	&quot;Text&quot;: text,
+   	&quot;TextType&quot;: &quot;text&quot;,
+   	&quot;VoiceId&quot;: &quot;Emma&quot;
+  }
+
+</code></pre>
+
+<p>Tuossa objektissa määritämme mm. luettavan tekstin, lukijaäänen (ihana Emma, jolla on brittiaksentti) ja ääniformaatin. Muitakin asetuksia on laitettavissa, mm. samplaus-rate.</p>
+
+<h3 id="hinta">Hinta</h3>
+
+<p>Polly on hinnoiteltu - kuten käytännössä kaikki AWS:n palvelut - naurettavan halvaksi.</p>
+
+<p>Esimerkiksi 24 tunnin kestoinen puhe maksaa neljä dollaria.</p>
+
+<p>Tuntipalkkaa Polly perii siis huimat n. 20 senttiä. Mikä pahinta, Polly-parka kituuttaa nollasopimuksella; kk-maksuja ei ole lainkaan ja kaikki veloitus menee suoraan käytön mukaan.</p>
+
+<h3 id="summarum">Summarum</h3>
+
+<blockquote>
+<p>Amazon Polly tarjoaa tekstin kääntämisen puheeksi mukavan kivuttomasti. Palvelu on upouusi, joten käyttökokemukset siitä ovat vähissä. Edelläkävijälle palvelu tarjoaa spesifiin käyttötarpeeseen optimaalisen täsmäratkaisun, joka yksinkertaisesti toimii. Tai ainakin lupaa toimivansa.</p>
+
+<p>Huonona puolena on, että - vielä toistaiseksi - suomen kieltä ei ole mukana.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>
