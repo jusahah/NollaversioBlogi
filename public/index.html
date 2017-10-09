@@ -11,9 +11,9 @@
   <title> Nollaversio IT &middot; Nollaversio IT </title>
 
   
-  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/poole.css">
-  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/syntax.css">
-  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hyde.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
 
   
@@ -21,8 +21,8 @@
   <link rel="shortcut icon" href="/favicon.png">
 
   
-  <link href="http://www.nollaversio.fi/blog/public/index.xml" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
-  <link rel="stylesheet" href="http://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <link href="https://www.nollaversio.fi/blog/public/index.xml" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hybrid.css">
   <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
   <script>hljs.initHighlightingOnLoad();</script>
   
@@ -34,7 +34,7 @@
 <div class="sidebar">
   <div class="container sidebar-sticky">
     <div class="sidebar-about">
-      <a href="http://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <a href="https://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
       <p class="lead">
        Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
       </p>
@@ -46,13 +46,13 @@
       
       
 
-        <li><a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+        <li><a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
       
 
-        <li><a href="http://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+        <li><a href="https://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
       
 
-        <li><a href="http://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+        <li><a href="https://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
       
 
     </ul>
@@ -68,7 +68,56 @@
       
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/amazon-polly/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/one-token2/">
+        Yksi tunniste, monta käyttöä
+      </a>
+    </h1>
+
+    <span class="post-date">Sun, Oct 8, 2017</span>
+
+    
+
+<p>Yksi erinomainen tapa kytkeä front-end applikaatio rajapintaan, joka vaatii kirjautumisen/tunnistautumisen, on käyttää nk. API Tokenia.</p>
+
+<blockquote>
+<p>API Token on vähän vastaava asia kuin ranneke kesäfestivaaleilla. Kun festivaalien vierailija ensi kertaa astuu festivaalialueelle, häneltä kysytään lippua, mahdollisesti myös henkilökorttia. Lipun antaessaan vierailijalle lätkäistään käteen ranneke. Jos vierailija myöhemmin poistuu festivaalialueelta, hän voi palata sinne takaisin ranneketta (API Token) näyttämällä. Jos rannekkeessa on RFID-siru, rannekkeella voidaan yksilöidä kävijä helposti. Myös API Token yksilöi käyttäjänsä. Käyttäjän tarkka yksilöinti on valinnainen &ldquo;lisäpalvelu&rdquo;; joissain käyttötarkoituksissa riittää tietää, että kävijällä on <em>oikeus nähdä tiedot</em> ilman tarvetta tietää <em>kuka haluaa tiedot nähdä</em>. Useimmiten API Token kuitenkin yksilöi käyttäjän.</p>
+</blockquote>
+
+<p>API Tokenin saa antamalla rajapinnalle validin tunnus+salasana-yhdistelmän. Tällä tavoin rajapinta tietää, että API Token vastaanottava taho on ihan oikea poika palveluun rekisteröitynyt käyttäjä.</p>
+
+<p>API Token on yleensä voimassa siihen asti, kunnes käyttäjä erikseen kirjautuu ulos palvelusta (rajapinnasta). Vaihtoehtoisesti tunniste voi olla voimassa vain tietyn ajan.</p>
+
+<p>Tyypillisessä arkkitehtuurissa rajapinnasta saatu API Token talletetaan käyttäjän tietokoneen kovalevylle talteen. Tällä tavoin käyttäjä pysyy automaattisesti kirjautuneena rajapintaan, vaikka sulkisi tietokoneen välillä.</p>
+
+<blockquote>
+<p>Automaattisesti kirjautuneena pysyminen tässä kohtaa tarkoittaa, että frontend-applikaatio hoitaa kovalevyltä ladatun API Token avulla tunnistautumisen; ihmiskäyttäjän ei tarvitse syöttää salasanaa. Oikeasti käyttäjä ei pysy kirjautuneena yhtään mihinkään. Pinnan alla joka ikisen rajapintakutsun yhteydessä kirjautuminen suoritetaan uusiksi juurikin API Tokenin avulla. Ihmiskäyttäjä ei tätä prosessia näe.</p>
+</blockquote>
+
+<p>API Tokenin ominaisuuksiin myös kuuluu useimmiten, että jos käyttäjä tarjoaa validin tunnus+salasana-yhdistelmän vaikka hänellä on (tai pitäisi olla!) hallussaan API Token, rajapinta generoi uuden API Tokenin. Vanha API Token lentää roskakoriin. Näin on pakko olla; muuten käyttäjä hävittäessään API Tokeninsa ei enää koskaan pääsisi sisälle rajapintaan. Ja kuinka API Token voi hävitä? Esimerkiksi tyhjentämällä web-selaimen välimuistin.</p>
+
+<p>Tämä malli toimii erinomaisesti. Jos kovalevyltä ei API Tokenia löydy, käyttäjän on pakko syöttää salasana. Salasanan (mieluiten oikean) syötettyään käyttäjä saa API Tokenin, jonka voi tallettaa kovalevylleen.</p>
+
+<p>Useimpien web-applikaatioiden yhteydessä &lsquo;kovalevy&rsquo; on synonyymi web-selaimen localStorage:lle.</p>
+
+<h2 id="yksi-monen-puolesta">Yksi monen puolesta</h2>
+
+<p>Mutta entä jos yhtä rajapintaa käyttää kaksi erillistä web-applikaatiota? Tälläinen tilanne syntyy herkästi nk. micro service -arkkitehtuurissa sovellettuna fronttipuolelle. Yksi rajapinta tarjoaa palvelut monelle web-applikaatiolle, jotka yhdessä muodostavat tuoteperheen.</p>
+
+<p>Esimerkkinä vaikkapa applikaatiokokonaisuus, jossa yksi web-app huolehtii lomakedatan käsittelystä, ja toinen web-app huolehtii lomakkeiden luonnista (lomake-editori). Molemmat web-appit ovat osa samaa kokonaisuutta, jota kutsuttakoon vaikka &ldquo;liidien hallinnaksi&rdquo;.</p>
+
+<p>Kutsutaan applikaatioita vaikka nimillä &ldquo;Lotus Lomakekäsittely&rdquo; ja &ldquo;Lotus Lomake-editori&rdquo;.</p>
+
+<p>On luontevaa, että applikaatiokokonaisuuden tilaava taho saa käyttöön yhdet admin-tunnukset, joilla kirjautua molempiin applikaatioihin sisään.</p>
+
+<p>Mutta jos orjallisesti seuraamme yllä kuvattua API Tokenin käyttömallia, olemme pian dilemman edessä.</p>
+
+<p>(jatkuu huomenna&hellip;)</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/amazon-polly/">
         Amazonin kartoitus #1: Polly
       </a>
     </h1>
@@ -212,7 +261,7 @@ request(options, function (error, response, body) {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/logging-model-changes/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/logging-model-changes/">
         Laravel: seuraa datan muutoksia
       </a>
     </h1>
@@ -427,7 +476,7 @@ class Lampomittari extends Model {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/lambda-based-job-execution/">
+      <a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/lambda-based-job-execution/">
         Lambda-pohjainen arkkitehtuuri
       </a>
     </h1>
@@ -807,7 +856,7 @@ class Lampomittari extends Model {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/email-sending-with-delays/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/email-sending-with-delays/">
         Laravel: viivyttelyn taito
       </a>
     </h1>
@@ -930,7 +979,7 @@ class MittaaLampotila implements ShouldQueue
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/regex-url/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/regex-url/">
         Regex ja URL
       </a>
     </h1>
@@ -1069,7 +1118,7 @@ class MittaaLampotila implements ShouldQueue
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/sparse-index/">
+      <a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/sparse-index/">
         AWS ja harva indeksi
       </a>
     </h1>
@@ -1164,7 +1213,54 @@ class MittaaLampotila implements ShouldQueue
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/template-function/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/one-token/">
+        Yksi tunniste, monta käyttöä
+      </a>
+    </h1>
+
+    <span class="post-date">Sat, Oct 8, 2016</span>
+
+    <p>Yksi erinomainen tapa kytkeä front-end applikaatio rajapintaan, joka vaatii kirjautumisen/tunnistautumisen, on käyttää nk. API Tokenia.</p>
+
+<blockquote>
+<p>API Token on vähän vastaava asia kuin ranneke kesäfestivaaleilla. Kun festivaalien vierailija ensi kertaa astuu festivaalialueelle, häneltä kysytään lippua, mahdollisesti myös henkilökorttia. Lipun antaessaan vierailijalle lätkäistään käteen ranneke. Jos vierailija myöhemmin poistuu festivaalialueelta, hän voi palata sinne takaisin ranneketta (API Token) näyttämällä. Jos rannekkeessa on RFID-siru, rannekkeella voidaan yksilöidä kävijä helposti. Myös API Token yksilöi käyttäjänsä. Käyttäjän tarkka yksilöinti on valinnainen &ldquo;lisäpalvelu&rdquo;; joissain käyttötarkoituksissa riittää tietää, että kävijällä on <em>oikeus nähdä tiedot</em> ilman tarvetta tietää <em>kuka haluaa tiedot nähdä</em>. Useimmiten API Token kuitenkin yksilöi käyttäjän.</p>
+</blockquote>
+
+<p>API Tokenin saa antamalla rajapinnalle validin tunnus+salasana-yhdistelmän. Tällä tavoin rajapinta tietää, että API Token vastaanottava taho on ihan oikea poika palveluun rekisteröitynyt käyttäjä.</p>
+
+<p>API Token on yleensä voimassa siihen asti, kunnes käyttäjä erikseen kirjautuu ulos palvelusta (rajapinnasta). Vaihtoehtoisesti tunniste voi olla voimassa vain tietyn ajan.</p>
+
+<p>Tyypillisessä arkkitehtuurissa rajapinnasta saatu API Token talletetaan käyttäjän tietokoneen kovalevylle talteen. Tällä tavoin käyttäjä pysyy automaattisesti kirjautuneena rajapintaan, vaikka sulkisi tietokoneen välillä.</p>
+
+<blockquote>
+<p>Automaattisesti kirjautuneena pysyminen tässä kohtaa tarkoittaa, että frontend-applikaatio hoitaa kovalevyltä ladatun API Token avulla tunnistautumisen; ihmiskäyttäjän ei tarvitse syöttää salasanaa. Oikeasti käyttäjä ei pysy kirjautuneena yhtään mihinkään. Pinnan alla joka ikisen rajapintakutsun yhteydessä kirjautuminen suoritetaan uusiksi juurikin API Tokenin avulla. Ihmiskäyttäjä ei tätä prosessia näe.</p>
+</blockquote>
+
+<p>API Tokenin ominaisuuksiin myös kuuluu useimmiten, että jos käyttäjä tarjoaa validin tunnus+salasana-yhdistelmän vaikka hänellä on (tai pitäisi olla!) hallussaan API Token, rajapinta generoi uuden API Tokenin. Vanha API Token lentää roskakoriin. Näin on pakko olla; muuten käyttäjä hävittäessään API Tokeninsa ei enää koskaan pääsisi sisälle rajapintaan. Ja kuinka API Token voi hävitä? Esimerkiksi tyhjentämällä web-selaimen välimuistin.</p>
+
+<p>Tämä malli toimii erinomaisesti. Jos kovalevyltä ei API Tokenia löydy, käyttäjän on pakko syöttää salasana. Salasanan (mieluiten oikean) syötettyään käyttäjä saa API Tokenin, jonka voi tallettaa kovalevylleen.</p>
+
+<p>Useimpien web-applikaatioiden yhteydessä &lsquo;kovalevy&rsquo; on synonyymi web-selaimen localStorage:lle.</p>
+
+<p>##Yksi monen puolesta</p>
+
+<p>Mutta entä jos yhtä rajapintaa käyttää kaksi erillistä web-applikaatiota? Tälläinen tilanne syntyy herkästi nk. micro service -arkkitehtuurissa sovellettuna fronttipuolelle. Yksi rajapinta tarjoaa palvelut monelle web-applikaatiolle, jotka yhdessä muodostavat tuoteperheen.</p>
+
+<p>Esimerkkinä vaikkapa applikaatiokokonaisuus, jossa yksi web-app huolehtii lomakedatan käsittelystä, ja toinen web-app huolehtii lomakkeiden luonnista (lomake-editori). Molemmat web-appit ovat osa samaa kokonaisuutta, jota kutsuttakoon vaikka &ldquo;liidien hallinnaksi&rdquo;.</p>
+
+<p>Kutsutaan applikaatioita vaikka nimillä &ldquo;Lotus Lomakekäsittely&rdquo; ja &ldquo;Lotus Lomake-editori&rdquo;.</p>
+
+<p>On luontevaa, että applikaatiokokonaisuuden tilaava taho saa käyttöön yhdet admin-tunnukset, joilla kirjautua molempiin applikaatioihin sisään.</p>
+
+<p>Mutta jos orjallisesti seuraamme yllä kuvattua API Tokenin käyttömallia, olemme pian dilemman edessä.</p>
+
+<p>(jatkuu huomenna&hellip;)</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/template-function/">
         Lodash: template
       </a>
     </h1>
@@ -1225,7 +1321,7 @@ pohja({nimi: vieras2}); // &quot;Hei vain Kalle&quot;
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/queued-job-debugging/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/queued-job-debugging/">
         Jonotettu työvaihe ja debuggaus
       </a>
     </h1>
@@ -1260,7 +1356,7 @@ pohja({nimi: vieras2}); // &quot;Hei vain Kalle&quot;
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/soft-delete/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/soft-delete/">
         Laravel ja pehmeä tuho
       </a>
     </h1>
@@ -1355,7 +1451,7 @@ Pankkitili::all()-&gt;count(); // 1
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p2/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p2/">
         Yksi taulu, useampi objekti (part 2)
       </a>
     </h1>
@@ -1488,7 +1584,7 @@ $kommunikaatiot-&gt;each(function($komm) {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p1/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p1/">
         Yksi taulu, useampi objekti
       </a>
     </h1>
@@ -1529,7 +1625,7 @@ $kommunikaatiot-&gt;each(function($komm) {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/disposing-resource/">
+      <a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/disposing-resource/">
         Älä kuole ääneti
       </a>
     </h1>
@@ -1658,7 +1754,7 @@ katsoja.kuole();
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/disposing-resource/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/disposing-resource/">
         Älä kuole ääneti
       </a>
     </h1>
@@ -1781,7 +1877,7 @@ katsoja-&gt;kuole();
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/queue-worker/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/queue-worker/">
         Laravel jonottaa puolestasi
       </a>
     </h1>
@@ -1917,7 +2013,7 @@ class IlmoitaTavaranToimittajille implemets ShouldQueue {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/dirty-flag/">
+      <a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/dirty-flag/">
         Likainen lippu - vältä turhaa työtä
       </a>
     </h1>
@@ -1975,7 +2071,7 @@ class IlmoitaTavaranToimittajille implemets ShouldQueue {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/forge-continuous-delivery/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/forge-continuous-delivery/">
         Forge ja koodin käyttöönotto
       </a>
     </h1>
@@ -2030,7 +2126,7 @@ class IlmoitaTavaranToimittajille implemets ShouldQueue {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/facade-faking/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/facade-faking/">
         Fasaadin feikkaus
       </a>
     </h1>
@@ -2201,7 +2297,7 @@ tallennaNimi(); // Tallentaa nettilevylle;
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/aggregate-consistency/">
+      <a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/aggregate-consistency/">
         Sisäinen eheys vs. ulkoinen eheys
       </a>
     </h1>
@@ -2320,7 +2416,7 @@ tallennaNimi(); // Tallentaa nettilevylle;
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/cqrs-in-laravel/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/cqrs-in-laravel/">
         CQRS ja Laravel
       </a>
     </h1>
@@ -2442,7 +2538,7 @@ public class LainausController {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/notifications/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/notifications/">
         Laravel 5.3: ilmoitukset
       </a>
     </h1>
@@ -2526,7 +2622,7 @@ class LaskuEraantynyt extends Notification {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/lodash-object-transform-sort/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/lodash-object-transform-sort/">
         Lodash: toPairs &#43; sortBy
       </a>
     </h1>
@@ -2593,7 +2689,7 @@ _.chain(asukasLuettelo)
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/">
+      <a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/">
         Arkkitehtuuri: ohjaa pelaajat eteenpäin
       </a>
     </h1>
@@ -2669,7 +2765,7 @@ _.chain(asukasLuettelo)
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/language-selection/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/language-selection/">
         Monikielisyys Laravel-kehyksen turvin
       </a>
     </h1>
@@ -2805,7 +2901,7 @@ class AsetaKieli {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/implicit-binding/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/implicit-binding/">
         Laravel injektoi mallin puolestasi
       </a>
     </h1>
@@ -2933,7 +3029,7 @@ http://www.lehtiapp.fi/sanomalehdet/ristiinalainen
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/catch-and-translate/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/catch-and-translate/">
         Bluebird: Catch &#43; Translate
       </a>
     </h1>
@@ -3067,7 +3163,7 @@ Promise.try(function() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/">
+      <a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/">
         Ketjutettava rajapinta
       </a>
     </h1>
@@ -3188,7 +3284,7 @@ $valotKopio3 = $valotKopio2-&gt;toggleKeittio();
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/slack-and-laravel/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/slack-and-laravel/">
         Slack and Laravel
       </a>
     </h1>
@@ -3320,7 +3416,7 @@ class User extends Authenticatable {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/console-log-coloring/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/console-log-coloring/">
         Konsolitulosteen väritys
       </a>
     </h1>
@@ -3408,7 +3504,7 @@ setInterval(function() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/require-vs-include/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/require-vs-include/">
         Require vs Include
       </a>
     </h1>
@@ -3534,7 +3630,7 @@ $tcpTimeout = 12000;
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/testing-with-db-transactions/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/testing-with-db-transactions/">
         Yksikkötestaus ja tietokanta-transaktio
       </a>
     </h1>
@@ -3668,7 +3764,7 @@ class LentokenttaTesti extends TestCase {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/email-laravel/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/email-laravel/">
         Emailin lähetys Laravellista
       </a>
     </h1>
@@ -3842,7 +3938,7 @@ public function valitseVoittaja(array $osallistujat) {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/">
+      <a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/">
         Poikkeuksen väärinkäyttö?
       </a>
     </h1>
@@ -4010,7 +4106,7 @@ function etsiArvoBinaaripuusta(puu, arvo) {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/mocha-testing/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/mocha-testing/">
         Asynkronoidun koodin testaus (Mocha)
       </a>
     </h1>
@@ -4130,7 +4226,7 @@ describe('Matikka', function() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/promise-mapseries/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/promise-mapseries/">
         Rekursiivinen lupausketju ajurina? (osa 2)
       </a>
     </h1>
@@ -4327,7 +4423,7 @@ laajennukset['aikaKuluiUmpeen'] = function() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/csrf/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/csrf/">
         Kuinka CSRF toimii?
       </a>
     </h1>
@@ -4476,7 +4572,7 @@ Käytännössä web-applikaatio siis lähettää lomakesivun mukana CSRF-tunnist
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/">
         Kolme tapaa lukea tiedosto (Node.js)
       </a>
     </h1>
@@ -4581,7 +4677,7 @@ readStream.on('data', function(chunk) {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/es7-async-await/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/es7-async-await/">
         Async ja Await
       </a>
     </h1>
@@ -4791,7 +4887,7 @@ ostaVerkkokaupasta('Nollaversio IT', Nordea, OP, 'Poravasara')
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/view-model-bliss/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/view-model-bliss/">
         Näkymämalli (view model) helpottaa elämää
       </a>
     </h1>
@@ -5006,7 +5102,7 @@ $pankkitili-&gt;present()-&gt;metodi();
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/view-composer/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/view-composer/">
         Datan lähetys näkymään
       </a>
     </h1>
@@ -5219,7 +5315,7 @@ public function index() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/zip-unzip/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/zip-unzip/">
         Työkalupakin kätköistä - zip() ja unzip()
       </a>
     </h1>
@@ -5319,7 +5415,7 @@ var lampotilatPaivittain = _.unzip(mittaustulokset);
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/">
+      <a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/">
         Neljä lähestymistapaa toiminnallisuuksien abstraktointiin
       </a>
     </h1>
@@ -5610,7 +5706,7 @@ $.ajax({
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/promise-workflow-manager/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/promise-workflow-manager/">
         Rekursiivinen lupausketju ajurina? (osa 1)
       </a>
     </h1>
@@ -5772,7 +5868,7 @@ function p1Siirto() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/lodash-chain/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/lodash-chain/">
         Chain() -metodi ketjuttaa funktiokutsut
       </a>
     </h1>
@@ -5920,7 +6016,7 @@ console.log(tulo); // 8
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/testing-routes/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/testing-routes/">
         Käyttöliittymän testaus (automatisointi)
       </a>
     </h1>
@@ -6085,7 +6181,7 @@ public function testaaArtikkelinLuonti() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/reservation-pattern/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/reservation-pattern/">
         Varausten hallinta tietokannan tasolla
       </a>
     </h1>
@@ -6312,7 +6408,7 @@ public function vapaatKuonot() {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/promise-filter/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/promise-filter/">
         Filteröi epäonnistujat pois (reflect &#43; filter)
       </a>
     </h1>
@@ -6513,7 +6609,7 @@ omat virheensä kiinni.</em></p>
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/start-checklist/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/start-checklist/">
         Muistilista uutta Laravel-projektia aloittaessa
       </a>
     </h1>
@@ -6583,7 +6679,7 @@ omat virheensä kiinni.</em></p>
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/usecase-bliss/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/usecase-bliss/">
         Usecase-arkkitehtuurin vahvuus
       </a>
     </h1>
@@ -6879,7 +6975,7 @@ protected function validateSiirtoRequest(Request $request)
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/protecting-routes/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/protecting-routes/">
         Suojaa tuloväylät - mutta miten?
       </a>
     </h1>
@@ -7064,7 +7160,7 @@ toimii nimensä mukaisesti - se suojaa kaikki muut väylät paitsi erikseen <em>
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/promise-tap/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/promise-tap/">
         Lupausketju liukuhihnana - then vs. tap
       </a>
     </h1>
@@ -7216,7 +7312,7 @@ module.exports = function(sisaantulevaData) {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/">
         Raskas koodi erillisessä säikeessä? Lupaus auttaa.
       </a>
     </h1>
@@ -7392,7 +7488,7 @@ function tarkistaEpailyttavatNimiParit(nimet) {
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/promisechain/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/promisechain/">
         Lupausten mahti - pätkä koodiani
       </a>
     </h1>
@@ -7538,7 +7634,7 @@ function separatePositionsForEachGame(...) {...}
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/">
         Nodejs - riippuvuuksien injektointi
       </a>
     </h1>
@@ -7768,7 +7864,7 @@ var eteisenTermostaatti = termostaattitehdas(new ElohopeaMittari(), new Tuuletus
   
   <div class="post">
     <h1 class="post-title">
-      <a href="http://www.nollaversio.fi/blog/public/laravel/vinkit1/">
+      <a href="https://www.nollaversio.fi/blog/public/laravel/vinkit1/">
         Laravel vinkit #1
       </a>
     </h1>

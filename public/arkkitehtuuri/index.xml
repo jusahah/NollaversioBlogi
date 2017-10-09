@@ -2,19 +2,19 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Arkkitehtuuris on Nollaversio IT</title>
-    <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/</link>
+    <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/</link>
     <description>Recent content in Arkkitehtuuris on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
     <lastBuildDate>Wed, 11 Jan 2017 19:03:44 +0200</lastBuildDate>
-    <atom:link href="http://www.nollaversio.fi/blog/public/arkkitehtuuri/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Amazonin kartoitus #1: Polly</title>
-      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/amazon-polly/</link>
+      <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/amazon-polly/</link>
       <pubDate>Wed, 11 Jan 2017 19:03:44 +0200</pubDate>
       
-      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/amazon-polly/</guid>
+      <guid>https://www.nollaversio.fi/blog/public/arkkitehtuuri/amazon-polly/</guid>
       <description>
 
 &lt;blockquote&gt;
@@ -152,13 +152,13 @@ request(options, function (error, response, body) {
     
     <item>
       <title>Lambda-pohjainen arkkitehtuuri</title>
-      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/lambda-based-job-execution/</link>
+      <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/lambda-based-job-execution/</link>
       <pubDate>Thu, 27 Oct 2016 16:58:00 +0300</pubDate>
       
-      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/lambda-based-job-execution/</guid>
+      <guid>https://www.nollaversio.fi/blog/public/arkkitehtuuri/lambda-based-job-execution/</guid>
       <description>
 
-&lt;p&gt;&lt;img src=&#34;http://www.nollaversio.fi/blog/public/blog/public/img/fml-lambda.png&#34; alt=&#34;Kokonaisarkkitehtuuri Lambdan avulla&#34; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://www.nollaversio.fi/blog/public/blog/public/img/fml-lambda.png&#34; alt=&#34;Kokonaisarkkitehtuuri Lambdan avulla&#34; /&gt;&lt;/p&gt;
 
 &lt;p&gt;Amazonilla on palvelu nimeltä AWS Lambda. Tuo palvelu suorittaa datan prosessoinnin pilvipalvelun muodossa.&lt;/p&gt;
 
@@ -529,10 +529,10 @@ request(options, function (error, response, body) {
     
     <item>
       <title>AWS ja harva indeksi</title>
-      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/sparse-index/</link>
+      <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/sparse-index/</link>
       <pubDate>Mon, 24 Oct 2016 17:41:19 +0300</pubDate>
       
-      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/sparse-index/</guid>
+      <guid>https://www.nollaversio.fi/blog/public/arkkitehtuuri/sparse-index/</guid>
       <description>
 
 &lt;p&gt;Amazonin Dynamo-tietokantaa käytettäessä törmäsin tänään mielenkiintoiseen patterniin. Tarvitsin taululle indeksin attribuuttia varten, joka harvoin saa yhtään mitään arvoa.&lt;/p&gt;
@@ -621,10 +621,10 @@ request(options, function (error, response, body) {
     
     <item>
       <title>Älä kuole ääneti</title>
-      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/disposing-resource/</link>
+      <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/disposing-resource/</link>
       <pubDate>Wed, 28 Sep 2016 10:08:17 +0300</pubDate>
       
-      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/disposing-resource/</guid>
+      <guid>https://www.nollaversio.fi/blog/public/arkkitehtuuri/disposing-resource/</guid>
       <description>
 
 &lt;p&gt;Monet ohjelmointikielet sisältävät tärkeän konseptin nimeltä *garbage collection&amp;rdquo;, suomeksi siis roskienkeruu. Tuo konsepti tarkoittaa yksinkertaisesti sitä, että ohjelmointiympäristö automaattisesti huolehtii ohjelman ajon aikana luotujen &lt;em&gt;objektien&lt;/em&gt; tuhoamisesta.&lt;/p&gt;
@@ -747,10 +747,10 @@ katsoja.kuole();
     
     <item>
       <title>Likainen lippu - vältä turhaa työtä</title>
-      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/dirty-flag/</link>
+      <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/dirty-flag/</link>
       <pubDate>Mon, 26 Sep 2016 10:22:11 +0300</pubDate>
       
-      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/dirty-flag/</guid>
+      <guid>https://www.nollaversio.fi/blog/public/arkkitehtuuri/dirty-flag/</guid>
       <description>&lt;p&gt;Törmäsin patterniin nimeltä &amp;ldquo;dirty flag&amp;rdquo;. Tuo patterni on ollut käytössä itselläni useissa applikaatioissa, mutta vasta nyt tajusin että sille on annettu tarkka nimikin.&lt;/p&gt;
 
 &lt;p&gt;Minkä ongelman dirty flag ratkoo?&lt;/p&gt;
@@ -802,10 +802,10 @@ katsoja.kuole();
     
     <item>
       <title>Sisäinen eheys vs. ulkoinen eheys</title>
-      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/aggregate-consistency/</link>
+      <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/aggregate-consistency/</link>
       <pubDate>Mon, 12 Sep 2016 08:10:14 +0300</pubDate>
       
-      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/aggregate-consistency/</guid>
+      <guid>https://www.nollaversio.fi/blog/public/arkkitehtuuri/aggregate-consistency/</guid>
       <description>
 
 &lt;p&gt;Sain yhden perustavanlaatuisimmista oivalluksistani liittyen Domain-Driven Designiin pdf-dokumentista &lt;em&gt;Domain-Driven Design Reference: Definitions and Pattern Summaries&lt;/em&gt;. Tuossa Eric Evansin (se &amp;ldquo;sinisen kirjan&amp;rdquo; guru) rustaamassa dokkarissa on elintärkeä lause piilotettuna tekstin joukkoon:&lt;/p&gt;
@@ -918,10 +918,10 @@ katsoja.kuole();
     
     <item>
       <title>Arkkitehtuuri: ohjaa pelaajat eteenpäin</title>
-      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/</link>
+      <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/</link>
       <pubDate>Fri, 26 Aug 2016 04:30:43 +0300</pubDate>
       
-      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/</guid>
+      <guid>https://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/</guid>
       <description>
 
 &lt;p&gt;Esittelen lyhyesti arkkitehtuurin, joka sopii mainiosti Laravel + Node.js -yhteisarkkitehtuureihin.&lt;/p&gt;
@@ -991,10 +991,10 @@ katsoja.kuole();
     
     <item>
       <title>Ketjutettava rajapinta</title>
-      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/</link>
+      <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/</link>
       <pubDate>Mon, 22 Aug 2016 03:08:34 +0300</pubDate>
       
-      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/</guid>
+      <guid>https://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/</guid>
       <description>&lt;p&gt;Ohjelmoinnin puolella on olemassa kätevä konsepti nimeltä &amp;ldquo;Fluent interface&amp;rdquo;. Paras suomennos tuolle lienee &amp;ldquo;ketjutettava rajapinta&amp;rdquo;, joten käytän sitä.&lt;/p&gt;
 
 &lt;p&gt;Mikä tai millainen on ketjutettava rajapinta? Se on yksinkertaisesti rajapinta, joka mahdollistaa rajapintakutsujen ketjutuksen.&lt;/p&gt;
@@ -1109,10 +1109,10 @@ $valotKopio3 = $valotKopio2-&amp;gt;toggleKeittio();
     
     <item>
       <title>Poikkeuksen väärinkäyttö?</title>
-      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</link>
+      <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</link>
       <pubDate>Fri, 12 Aug 2016 06:46:20 +0300</pubDate>
       
-      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</guid>
+      <guid>https://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</guid>
       <description>
 
 &lt;p&gt;Yksi suht usein tarvittava algoritmi on tietyn arvon etsiminen binaaripuusta. Etsinnän voi suorittaa esimerkiksi näin:&lt;/p&gt;
@@ -1274,10 +1274,10 @@ function etsiArvoBinaaripuusta(puu, arvo) {
     
     <item>
       <title>Neljä lähestymistapaa toiminnallisuuksien abstraktointiin</title>
-      <link>http://www.nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/</link>
+      <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/</link>
       <pubDate>Mon, 01 Aug 2016 13:50:30 +0300</pubDate>
       
-      <guid>http://www.nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/</guid>
+      <guid>https://www.nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/</guid>
       <description>
 
 &lt;p&gt;Aloitetaan heti esimerkillä. Tehtävämme on luoda pieni skripti, joka käy hakemassa dataa (listan numeroita) palvelimelta, käsittelee tuon datan ja näyttää käsittelyn tulokset ihmiskäyttäjälle.&lt;/p&gt;

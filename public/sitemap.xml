@@ -2,277 +2,287 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/</loc>
+    <lastmod>2017-10-08T08:19:43+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/one-token2/</loc>
+    <lastmod>2017-10-08T08:19:43+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.nollaversio.fi/blog/public/arkkitehtuuri/amazon-polly/</loc>
     <lastmod>2017-01-11T19:03:44+02:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/arkkitehtuuri/amazon-polly/</loc>
-    <lastmod>2017-01-11T19:03:44+02:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/logging-model-changes/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/logging-model-changes/</loc>
     <lastmod>2016-10-28T21:26:18+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/arkkitehtuuri/lambda-based-job-execution/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/arkkitehtuuri/lambda-based-job-execution/</loc>
     <lastmod>2016-10-27T16:58:00+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/email-sending-with-delays/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/email-sending-with-delays/</loc>
     <lastmod>2016-10-26T17:24:15+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/regex-url/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/regex-url/</loc>
     <lastmod>2016-10-25T17:01:58+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/arkkitehtuuri/sparse-index/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/arkkitehtuuri/sparse-index/</loc>
     <lastmod>2016-10-24T17:41:19+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/template-function/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/one-token/</loc>
+    <lastmod>2016-10-08T10:03:38+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/template-function/</loc>
     <lastmod>2016-10-07T16:09:02+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/queued-job-debugging/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/queued-job-debugging/</loc>
     <lastmod>2016-10-06T18:14:55+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/soft-delete/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/soft-delete/</loc>
     <lastmod>2016-10-05T18:05:16+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p2/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p2/</loc>
     <lastmod>2016-10-04T17:40:46+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p1/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p1/</loc>
     <lastmod>2016-10-03T18:12:51+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/arkkitehtuuri/disposing-resource/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/arkkitehtuuri/disposing-resource/</loc>
     <lastmod>2016-09-28T10:08:17+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/disposing-resource/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/disposing-resource/</loc>
     <lastmod>2016-09-28T10:08:17+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/queue-worker/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/queue-worker/</loc>
     <lastmod>2016-09-27T09:44:12+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/arkkitehtuuri/dirty-flag/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/arkkitehtuuri/dirty-flag/</loc>
     <lastmod>2016-09-26T10:22:11+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/forge-continuous-delivery/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/forge-continuous-delivery/</loc>
     <lastmod>2016-09-20T07:50:09+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/facade-faking/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/facade-faking/</loc>
     <lastmod>2016-09-19T09:43:34+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/arkkitehtuuri/aggregate-consistency/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/arkkitehtuuri/aggregate-consistency/</loc>
     <lastmod>2016-09-12T08:10:14+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/cqrs-in-laravel/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/cqrs-in-laravel/</loc>
     <lastmod>2016-09-07T18:03:38+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/notifications/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/notifications/</loc>
     <lastmod>2016-09-05T07:38:13+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/lodash-object-transform-sort/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/lodash-object-transform-sort/</loc>
     <lastmod>2016-08-29T13:39:19+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/arkkitehtuuri/allocate-to-server/</loc>
     <lastmod>2016-08-26T04:30:43+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/language-selection/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/language-selection/</loc>
     <lastmod>2016-08-25T06:22:35+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/implicit-binding/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/implicit-binding/</loc>
     <lastmod>2016-08-24T06:36:45+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/catch-and-translate/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/catch-and-translate/</loc>
     <lastmod>2016-08-23T06:53:16+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/arkkitehtuuri/fluent-interface/</loc>
     <lastmod>2016-08-22T03:08:34+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/slack-and-laravel/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/slack-and-laravel/</loc>
     <lastmod>2016-08-19T06:26:46+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/console-log-coloring/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/console-log-coloring/</loc>
     <lastmod>2016-08-18T05:47:59+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/require-vs-include/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/require-vs-include/</loc>
     <lastmod>2016-08-17T03:40:31+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/testing-with-db-transactions/</loc>
     <lastmod>2016-08-16T06:37:20+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/email-laravel/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/email-laravel/</loc>
     <lastmod>2016-08-15T06:15:21+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/arkkitehtuuri/exception-retasking/</loc>
     <lastmod>2016-08-12T06:46:20+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/mocha-testing/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/mocha-testing/</loc>
     <lastmod>2016-08-11T06:38:25+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/promise-mapseries/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/promise-mapseries/</loc>
     <lastmod>2016-08-10T03:08:44+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/csrf/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/csrf/</loc>
     <lastmod>2016-08-09T06:07:23+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/three-ways-to-read-file/</loc>
     <lastmod>2016-08-08T06:45:45+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/es7-async-await/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/es7-async-await/</loc>
     <lastmod>2016-08-05T06:02:06+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/view-model-bliss/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/view-model-bliss/</loc>
     <lastmod>2016-08-04T04:12:30+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/view-composer/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/view-composer/</loc>
     <lastmod>2016-08-03T03:49:47+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/zip-unzip/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/zip-unzip/</loc>
     <lastmod>2016-08-02T11:10:16+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/arkkitehtuuri/separation-is-key/</loc>
     <lastmod>2016-08-01T13:50:30+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/promise-workflow-manager/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/promise-workflow-manager/</loc>
     <lastmod>2016-07-29T21:33:50+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/lodash-chain/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/lodash-chain/</loc>
     <lastmod>2016-07-28T06:39:21+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/testing-routes/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/testing-routes/</loc>
     <lastmod>2016-07-27T06:11:10+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/reservation-pattern/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/reservation-pattern/</loc>
     <lastmod>2016-07-26T11:32:03+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/promise-filter/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/promise-filter/</loc>
     <lastmod>2016-07-25T17:28:05+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/start-checklist/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/start-checklist/</loc>
     <lastmod>2016-07-22T16:14:13+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/usecase-bliss/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/usecase-bliss/</loc>
     <lastmod>2016-07-22T14:44:27+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/protecting-routes/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/protecting-routes/</loc>
     <lastmod>2016-07-20T20:42:23+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/promise-tap/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/promise-tap/</loc>
     <lastmod>2016-07-18T18:02:21+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</loc>
     <lastmod>2016-07-18T17:11:43+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/promisechain/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/promisechain/</loc>
     <lastmod>2016-07-13T06:48:47+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/nodejs/nodejs-dep-injection/</loc>
     <lastmod>2016-07-11T06:35:00+03:00</lastmod>
   </url>
   
   <url>
-    <loc>http://www.nollaversio.fi/blog/public/laravel/vinkit1/</loc>
+    <loc>https://www.nollaversio.fi/blog/public/laravel/vinkit1/</loc>
     <lastmod>2016-07-06T06:28:46+03:00</lastmod>
   </url>
   
