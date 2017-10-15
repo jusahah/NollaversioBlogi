@@ -17,27 +17,29 @@
       <guid>https://www.nollaversio.fi/blog/public/laravel/one-token2/</guid>
       <description>
 
-&lt;p&gt;Yksi erinomainen tapa kytkeä front-end applikaatio rajapintaan, joka vaatii kirjautumisen/tunnistautumisen, on käyttää nk. API Tokenia.&lt;/p&gt;
+&lt;p&gt;Yksi erinomainen tapa kytkeä front-end applikaatio rajapintaan, joka vaatii kirjautumisen/tunnistautumisen, on käyttää nk. API-avainta.&lt;/p&gt;
 
 &lt;blockquote&gt;
-&lt;p&gt;API Token on vähän vastaava asia kuin ranneke kesäfestivaaleilla. Kun festivaalien vierailija ensi kertaa astuu festivaalialueelle, häneltä kysytään lippua, mahdollisesti myös henkilökorttia. Lipun antaessaan vierailijalle lätkäistään käteen ranneke. Jos vierailija myöhemmin poistuu festivaalialueelta, hän voi palata sinne takaisin ranneketta (API Token) näyttämällä. Jos rannekkeessa on RFID-siru, rannekkeella voidaan yksilöidä kävijä helposti. Myös API Token yksilöi käyttäjänsä. Käyttäjän tarkka yksilöinti on valinnainen &amp;ldquo;lisäpalvelu&amp;rdquo;; joissain käyttötarkoituksissa riittää tietää, että kävijällä on &lt;em&gt;oikeus nähdä tiedot&lt;/em&gt; ilman tarvetta tietää &lt;em&gt;kuka haluaa tiedot nähdä&lt;/em&gt;. Useimmiten API Token kuitenkin yksilöi käyttäjän.&lt;/p&gt;
+&lt;p&gt;API-avain on vähän vastaava asia kuin ranneke kesäfestivaaleilla. Kun festivaalien vierailija ensi kertaa astuu festivaalialueelle, häneltä kysytään lippua, mahdollisesti myös henkilökorttia. Lipun antaessaan vierailijalle lätkäistään käteen ranneke. Jos vierailija myöhemmin poistuu festivaalialueelta, hän voi palata sinne takaisin ranneketta (API-avaimen) näyttämällä. Jos rannekkeessa on RFID-siru, rannekkeella voidaan yksilöidä kävijä helposti. Myös API-avain yksilöi käyttäjänsä. Käyttäjän tarkka yksilöinti on valinnainen &amp;ldquo;lisäpalvelu&amp;rdquo;; joissain käyttötarkoituksissa riittää tietää, että kävijällä on &lt;em&gt;oikeus nähdä tiedot&lt;/em&gt; ilman tarvetta tietää &lt;em&gt;kuka haluaa tiedot nähdä&lt;/em&gt;. Useimmiten API-avain kuitenkin yksilöi käyttäjän.&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;p&gt;API Tokenin saa antamalla rajapinnalle validin tunnus+salasana-yhdistelmän. Tällä tavoin rajapinta tietää, että API Token vastaanottava taho on ihan oikea poika palveluun rekisteröitynyt käyttäjä.&lt;/p&gt;
+&lt;p&gt;API-avaimen saa antamalla rajapinnalle validin tunnus+salasana-yhdistelmän. Tällä tavoin rajapinta tietää, että API-avaimen vastaanottava taho on ihan oikea &lt;del&gt;poika&lt;/del&gt; palveluun rekisteröitynyt käyttäjä.&lt;/p&gt;
 
-&lt;p&gt;API Token on yleensä voimassa siihen asti, kunnes käyttäjä erikseen kirjautuu ulos palvelusta (rajapinnasta). Vaihtoehtoisesti tunniste voi olla voimassa vain tietyn ajan.&lt;/p&gt;
+&lt;p&gt;API-avain on yleensä voimassa siihen asti, kunnes käyttäjä erikseen kirjautuu ulos palvelusta (rajapinnasta). Vaihtoehtoisesti tunniste voi olla voimassa vain tietyn ajan.&lt;/p&gt;
 
-&lt;p&gt;Tyypillisessä arkkitehtuurissa rajapinnasta saatu API Token talletetaan käyttäjän tietokoneen kovalevylle talteen. Tällä tavoin käyttäjä pysyy automaattisesti kirjautuneena rajapintaan, vaikka sulkisi tietokoneen välillä.&lt;/p&gt;
+&lt;p&gt;Tyypillisessä arkkitehtuurissa rajapinnasta saatu API-avain talletetaan käyttäjän tietokoneen kovalevylle talteen. Tällä tavoin käyttäjä pysyy automaattisesti kirjautuneena rajapintaan, vaikka sulkisi tietokoneen välillä.&lt;/p&gt;
 
 &lt;blockquote&gt;
-&lt;p&gt;Automaattisesti kirjautuneena pysyminen tässä kohtaa tarkoittaa, että frontend-applikaatio hoitaa kovalevyltä ladatun API Token avulla tunnistautumisen; ihmiskäyttäjän ei tarvitse syöttää salasanaa. Oikeasti käyttäjä ei pysy kirjautuneena yhtään mihinkään. Pinnan alla joka ikisen rajapintakutsun yhteydessä kirjautuminen suoritetaan uusiksi juurikin API Tokenin avulla. Ihmiskäyttäjä ei tätä prosessia näe.&lt;/p&gt;
+&lt;p&gt;Automaattisesti kirjautuneena pysyminen tässä kohtaa tarkoittaa, että frontend-applikaatio hoitaa kovalevyltä ladatun API-avaimen avulla tunnistautumisen; ihmiskäyttäjän ei tarvitse syöttää salasanaa. Oikeasti käyttäjä ei pysy kirjautuneena yhtään mihinkään. Pinnan alla joka ikisen rajapintakutsun yhteydessä kirjautuminen suoritetaan uusiksi juurikin API-avaimen avulla. Ihmiskäyttäjä ei tätä prosessia näe.&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;p&gt;API Tokenin ominaisuuksiin myös kuuluu useimmiten, että jos käyttäjä tarjoaa validin tunnus+salasana-yhdistelmän vaikka hänellä on (tai pitäisi olla!) hallussaan API Token, rajapinta generoi uuden API Tokenin. Vanha API Token lentää roskakoriin. Näin on pakko olla; muuten käyttäjä hävittäessään API Tokeninsa ei enää koskaan pääsisi sisälle rajapintaan. Ja kuinka API Token voi hävitä? Esimerkiksi tyhjentämällä web-selaimen välimuistin.&lt;/p&gt;
+&lt;p&gt;API-avaimen ominaisuuksiin myös kuuluu useimmiten, että jos käyttäjä tarjoaa validin tunnus+salasana-yhdistelmän vaikka hänellä on (tai pitäisi olla!) hallussaan API-avain, rajapinta generoi uuden API-avaimen. Vanha API-avain lentää roskakoriin.&lt;/p&gt;
 
-&lt;p&gt;Tämä malli toimii erinomaisesti. Jos kovalevyltä ei API Tokenia löydy, käyttäjän on pakko syöttää salasana. Salasanan (mieluiten oikean) syötettyään käyttäjä saa API Tokenin, jonka voi tallettaa kovalevylleen.&lt;/p&gt;
+&lt;p&gt;Tämä malli toimii erinomaisesti. Jos kovalevyltä ei API-avainta löydy, käyttäjän on pakko syöttää salasana. Salasanan (mieluiten oikean) syötettyään käyttäjä saa API-avaimen, jonka voi tallettaa kovalevylleen.&lt;/p&gt;
 
+&lt;blockquote&gt;
 &lt;p&gt;Useimpien web-applikaatioiden yhteydessä &amp;lsquo;kovalevy&amp;rsquo; on synonyymi web-selaimen localStorage:lle.&lt;/p&gt;
+&lt;/blockquote&gt;
 
 &lt;h2 id=&#34;yksi-monen-puolesta&#34;&gt;Yksi monen puolesta&lt;/h2&gt;
 
@@ -49,9 +51,77 @@
 
 &lt;p&gt;On luontevaa, että applikaatiokokonaisuuden tilaava taho saa käyttöön yhdet admin-tunnukset, joilla kirjautua molempiin applikaatioihin sisään.&lt;/p&gt;
 
-&lt;p&gt;Mutta jos orjallisesti seuraamme yllä kuvattua API Tokenin käyttömallia, olemme pian dilemman edessä.&lt;/p&gt;
+&lt;p&gt;Mutta jos orjallisesti seuraamme yllä kuvattua API-avaimen käyttömallia, olemme pian dilemman edessä.&lt;/p&gt;
 
-&lt;p&gt;(jatkuu huomenna&amp;hellip;)&lt;/p&gt;
+&lt;h2 id=&#34;dilemma&#34;&gt;Dilemma&lt;/h2&gt;
+
+&lt;p&gt;Ongelmaksi muodostuu kysymys siitä, minne tallennamme käyttäjän API-avaimen? Se siis tallennetaan käyttäjän laitteelle. Mutta kumman applikaation alaisuuteen?&lt;/p&gt;
+
+&lt;p&gt;Jos tallennamme API-avaimen &lt;em&gt;Lotus Lomakekäsittelyn&lt;/em&gt; alaisuuteen, &lt;em&gt;Lomake-editori&lt;/em&gt; ei pääse siihen käsiksi.&lt;/p&gt;
+
+&lt;p&gt;Jos tallennamme API-avaimen &lt;em&gt;Lotus Lomake-editorin&lt;/em&gt; alaisuuteen, &lt;em&gt;Lomakekäsittely&lt;/em&gt; ei pääse siihen käsiksi.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Syy siihen mikseivät eri web-applikaatiot (teknisesti eri &lt;strong&gt;web-domainien&lt;/strong&gt; alaisuudessa elävät verkkosivut) näe toistensa API-avaimia on tietoturva. Rajoitus estää yhtä web-applikaatio näkemästä dataa, jota joku toinen web-applikaatio tallentanut käyttäjänsä päätelaitteelle.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Tässä kohtaa saattaa nousta ihmetys, että miksi molempien tarvitseekaan päästä yhteen ja samaan API-avaimeen käsiksi? Kuten aiemmin jo mainittua, uuden API-avaimen saa rajapinnasta pyytämällä.&lt;/p&gt;
+
+&lt;p&gt;Ongelman ydin on siinä, että kun &lt;em&gt;Lomake-editori&lt;/em&gt; pyytää uuden API-avaimen, rajapinta resetoi nykyisen API-avaimen. &lt;em&gt;Lomake-editori&lt;/em&gt; ei ole moksiskaan; se halusi uuden tokenin ja sai sen.&lt;/p&gt;
+
+&lt;p&gt;Mutta &lt;em&gt;Lotus Lomakekäsittelylle&lt;/em&gt; tilanne on pirullisempi. Sen API-avain on nyt &lt;strong&gt;väärä&lt;/strong&gt;. Siis vanhentunut. Vielä hetki sitten sillä oli hallussaan täysin käyttökelpoinen API-avain. Mutta sitten &lt;em&gt;Lomake-editori&lt;/em&gt; meni pyytämään itselleen uutta avainta, ja näin toimiessaan rajapinta resetoi ja generoi uuden API-avaimen.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Lotus Lomakekäsittelyn&lt;/em&gt; avain on siis väärä, joten mitä se tekee? Se tietenkin hakee itse uuden API-avaimen rajapinnasta. Näin toimiessaan Lotus Lomakekäsittely puolestaan aiheuttaa invalidoinnin &lt;em&gt;Lotus Lomake-editorin&lt;/em&gt; juuri saadulle API-avaimelle.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Lotus Lomakekäsittelyn ja Lotus Lomake-editorin siirtyvät pelaamaan &lt;strong&gt;API-pingistä&lt;/strong&gt;. Kumpikin vuorollaan invalidoi toisen API-avaimen. Ikuinen noidankehä on valmis.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Mikä avuksi?&lt;/p&gt;
+
+&lt;h2 id=&#34;ratkaisut&#34;&gt;Ratkaisut&lt;/h2&gt;
+
+&lt;p&gt;Ongelmaan on monta ratkaisua.&lt;/p&gt;
+
+&lt;h3 id=&#34;ratkaisu-1&#34;&gt;Ratkaisu 1&lt;/h3&gt;
+
+&lt;p&gt;Yksi ilmiselvä ratkaisu on välttää ongelma kokonaan laittamalla eri applikaatiot saman domainin alle. Jos sekä Lotus Lomake-editori että Lotus Lomakekäsittely elävät samassa valtakunnassa, ne voivat jakaa yhden ja saman API-avaimen. Tällöin jokainen API-avain on &lt;em&gt;yhteinen&lt;/em&gt;. Yksi osapuoli hakee, ja palatessaan kiltisti jakaa saadun aarteen toisen osapuolen kanssa.&lt;/p&gt;
+
+&lt;p&gt;Ratkaisun ongelma on siinä, että mikäli web-applikaatioiden lähdekoodi elää eri palvelimilla, voi olla ikävän työlästä saada ne saman domainin alaisuuteen.&lt;/p&gt;
+
+&lt;h3 id=&#34;ratkaisu-2&#34;&gt;Ratkaisu 2&lt;/h3&gt;
+
+&lt;p&gt;Toinen ratkaisu on tallentaa rajapintaan useampi API-avain. Jos API-avaimia on yksi per applikaatio, ei eri applikaatioiden tarvitse keskenään tapella avaimen herruudesta. Tämä on varsin OK vaihtoehto, mutta loogisesti hiukka luonnottoman tuntuinen. Jos eri web-applikaatioiden käyttöoikeus on selkeästi yhden käyttäjätilin (admin) alaisuudessa, niin loogista olisi, että yksi API-avain kävisi kaikkialle.&lt;/p&gt;
+
+&lt;p&gt;Toinen ongelma on, että jos admin haluaa kirjautua kaikista tuoteperheen applikaatioista ulos, hänen täytyy käydä suorittamassa kirjautumiset yksitellen. Ellei sitten rajapinta sisällä toiminnallisuutta, jolla kaikki API-avaimet voi resetoida kerralla. Niin tai näin, menetelmä tuntuu fundamentaalisesti väärältä.&lt;/p&gt;
+
+&lt;h3 id=&#34;ratkaisu-3-paras&#34;&gt;Ratkaisu 3 (paras?)&lt;/h3&gt;
+
+&lt;p&gt;Kolmas ratkaisu on luoda isäntä-renki -hierarkia eri web-applikaatioiden välille. Yksi applikaatio on isäntä, muut renkejä.&lt;/p&gt;
+
+&lt;p&gt;Pointti on, että ainoastaan isäntä-applikaatio voi resetoida olemassaolevan API-avaimen. Renki-applikaatiot voivat hakea API-avaimen, mutta eivät resetoida. Tämä ratkoo aiemmin mainitun noidankehän. Kun Lotus Lomakekäsittely (&amp;ldquo;isäntä&amp;rdquo;) hakee uuden API-avaimen, se samalla resetoi Lotus Lomake-editorin käyttämän API-avaimen. Tämän seurauksena Lomake-editori hakee uuden avaimen. Mutta Lomake-editorin haku ei generoi uutta API-avainta. Rajapinta yksinkertaisesti palauttaa aiemmin isäntä-applikaation toimesta generoidun avaimen. Noidankehän katkeaa; molemmat applikaatiot käyttävät samaa, käyttökelpoista avainta.&lt;/p&gt;
+
+&lt;p&gt;Ratkaisu kolme on mielestäni paras käyttötarkoituksiin, joissa valtaosan ajasta käytetään yhtä applikaatio (isäntä), mutta aina välillä on tarve käydä tekemässä jotain avustavia toimenpiteitä tuoteperheen muissa applikaatioissa (rengit).&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;h3 id=&#34;loppukaneetti&#34;&gt;Loppukaneetti&lt;/h3&gt;
+
+&lt;p&gt;Noheva lukija saattaa nyt miettiä, että eikö koko ruljanssin voisi välttää yksinkertaisesti pitämällä API-avain &lt;strong&gt;aina samana&lt;/strong&gt;. Tällöin ei tarvita isäntä-renki -hierarkiaa, sillä kaikki web-applikaatiot ovat renkejä; yksikään ei voi pyytää rajapintaa generoimaan uutta API-avainta.&lt;/p&gt;
+
+&lt;p&gt;Yksi ongelma on, että mitä uloskirjautuminen tarkoittaa tapauksessa, jossa API-avain on ikuinen ja koskematon? Uudelleen generoitavan API-avaimen tapauksessa uloskirjautuminen tuhoaa sen hetkisen API-avaimen. Uloskirjautumisen aikana käyttäjällä ei ole lainkaan API-avainta. Kun seuraavan kerran käyttäjä haluaa kirjautua sisään, hänen on pakko syöttää tunnus+salasana.&lt;/p&gt;
+
+&lt;p&gt;Tämä on eri tilanne kuin aiemmin mainitussa kahden web-applikaation noidankehässä. API-noidankehässä yksi applikaatio tuhoaa API-avaimen, mutta rajapinta generoi samantien uuden avaimen. Konseptuaalisesti käyttäjällä on siis joka hetkellä aktiivinen API-avain olemassa.&lt;/p&gt;
+
+&lt;p&gt;Mutta jos API-avainta ei koskaan tuhottaisi, niin miten käyttäjä voisi koskaan kirjautua ulos?&lt;/p&gt;
+
+&lt;p&gt;Toinen, huomattavasti vakavampi ongelma tässä skenaariossa on, että jos API-avain edes yhden kerran päätyy vääriin käsiin, admin-tunnarit ovat pysyvästi mennyttä. Niihin ei voi enää luottaa. Tämä on valtava tietoturvariski. Siksi API-avaimet resetoidaan jokaisen uloskirjautumisen yhteydessä. Jos hakkeri saa sinun API-avaimen käsiins, riittää että menet pää yhtenä jalkana web-applikaation kirjautumissivulle syöttämään oman tunnus+salasana -yhdistelmän. Yhdistelmän syöttäminen regeneroi uuden API-avaimen, samalla tuhoten hakkerin haltuunsa saaman avaimen.&lt;/p&gt;
+
+&lt;h3 id=&#34;loppukaneetti-2&#34;&gt;Loppukaneetti 2&lt;/h3&gt;
+
+&lt;p&gt;API-avainten käyttö on joidenkin mielestä täysin väärin. He suosivat hienompia lähestymistapoja, kuten OAuth. Samat tahot kuluttavat moottoritiet piloille laittamalla nastat alle heti kun ensimmäinen koivunlehti varisee konepellille.&lt;/p&gt;
+
+&lt;p&gt;API-avain on yksinkertaisuudessaan ylivertainen ratkaisu, ja maalaisjärkeä käyttämällä varsin tietoturvallinen. Tärkein elementti API-avaimen ja tietoturvan kannalta on SSL-yhteyden käyttö web-applikaation ja rajapinnan välisessä yhteydenpidossa.&lt;/p&gt;
+&lt;/blockquote&gt;
 </description>
     </item>
     
