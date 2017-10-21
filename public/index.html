@@ -68,6 +68,77 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/tree-or-graph/">
+        Onko ohjelmasi puu vai graafi?
+      </a>
+    </h1>
+
+    <span class="post-date">Sun, Oct 15, 2017</span>
+
+    <p>Tässä kätevä ajatusmalli: ennenkuin ohjelmoit riviäkään koodia, päätä onko ohjelmasi (tai ohjelmasi osa!) puu vai graafi!</p>
+
+<p>Ai mikä ihmeen &ldquo;puu vai graafi&rdquo;?</p>
+
+<p>Puumalli ja graafi ovat tapoja organisoida objektit, joilla on liitoksia muihin objekteihin. Puumallin spesialiteetti on, että objektit on organisoitu kuusipuun näköiseksi struktuuriksi. Kuusipuun keskiossä on runko, josta lähtee oksia. Jokainen oksa haarautuun pienempiin oksiin, ja jokainen pienempi oksa haarautuu vielä pienempiin oksiin.</p>
+
+<p>Puumallin ydinominaisuus on, että jokaisella <em>lapsi-oksalla</em> on tasan yksi <em>äiti-oksa</em>. Oikeassakin kuusipuussa jokainen uusi oksa haarautuu tasan yhdestä oksasta.</p>
+
+<p>Graafi puolestaan organisoi objektit vailla em. <em>äiti-lapsi</em>-hierarkiaa. Esimerkiksi Helsingin tieristeykset noudattavat graafi-mallia. Kuhunkin risteykseen yhtyy useampi tie, ja yksikään risteys ei ole <em>äiti</em> jollekin toiselle risteykselle.</p>
+
+<p>Ohjelmoinnissa näiden kahden mallin ero näkyy esim. Laravellin Model-layerin ja Vuen view-layerin välissä.</p>
+
+<blockquote>
+<p>Laravel ja Vue ovat vain esimerkkiteknologioita. Fundamentaalisemmin voisi sanoa, että ero näkyy domain-driven-design -periaatteen mukaisen Domain-layerin ja XML-pohjaisen elementtihierarkian välillä.</p>
+</blockquote>
+
+<p>Laravellin Model-layer saattaa näyttää esim. tältä.</p>
+
+<p>[Kuva tähän]</p>
+
+<p>Vuen view-layer puolestaan saattaa näyttää tältä.</p>
+
+<p>[Kuva tähän]</p>
+
+<p>Ylläolevat kaksi erilaista tapaa strukturoida applikaatio vaativat erilaiset ratkaisut. Esimerkiksi Vue:n ratkaisussa (= puumalli) huomaamme, että jos tuhoamme objektin nimeltä <em>Profiili</em> (kts. kuva), objektit <em>Tallenna-nappi</em> ja <em>Profiilin kentät</em> putoavat &ldquo;tyhjyyteen&rdquo;. Ne ovat erillään jäljellejäävästä Vue-puusta. Mitä tälläisille erakoille tulisi tehdä? Käytännössä kaksi vaihtoehtoa; joko <em>liitämme</em> ne takaisin puuhun, tai <em>tuhoamme</em> ne.</p>
+
+<p>Takaisin puuhun liittäminen on vaikeaa, sillä mistä tiedämme mihin nuo kaksi erakkoa liitämme? Yksi looginen ajatus olisi liittää ne siihen objektiin, joka oli äskettäin tuhoamamme <em>Profiilikentät</em>-objektit äiti.</p>
+
+<p>Tätä mallia käytetään paljon. Monissa käyttötarkoituksissa tämä on <strong>tismalleen</strong> oikea tapa toimia.</p>
+
+<p>Mutta monissa muissa käyttötarkoituksissa tuo ei ole oikea tapa toimia.</p>
+
+<p>Ajatellaan vaikkapa tavanomaista sukupuuta, jossa suvun viimeisin jäsen on ylimpänä (root, juuri). Tämä käännetty sukupuu on <em>binaaripuu</em>; jokaisella objektilla on tasan kaksi <em>lapsi-objektia</em>. Ironisesti, nuo kaksi lapsi-objektia ovat objektin kuvaaman henkilön vanhemmat.</p>
+
+<p>Jos tästä puusta poistetaan yksi objekti, niin meidän on pakko poistaa kaikki hänen aiemmat esi-isänsäkin. Muuten puu ei enää olisi luotettava.</p>
+
+<p>Puumallin ohjelmoinnissa on muutamia muitakin erityisseikkoja:</p>
+
+<ol>
+<li><p>Puumalli on helppo käydä läpi. Lähtee juuresta liikkeelle, ja kiertää koko puun. Puumallin hienous on, että kun loogisesti seuraa liitoksiä yksi kerrallaan esim. vasemmalta oikealle, ei koskaan saavu samaan objektiin kahdesti.</p></li>
+
+<li><p>Objekteilla on selkeä hierarkia. Juuri tästä syystä puumalli sopii niin hyvin esimerkiksi käyttöliittymän taustalla olevaksi datastruktuuriksi. Tyypillinen käyttöliittymä on pohjimmiltaan pelkkä iso pino <em>sisäkkäisiä suorakulmioita</em>. Koska suorakulmiot ovat sisäkkäisiä, ne sopivat mainiosti puumalliin. Yhdellä suorakulmiolla on aina tasan yksi äiti; suorakulmio ei voi olla yhtäaikaisesti kahden eri suorakulmion sisällä siten, että nuo kaksi muuta suorakulmiota eivät ole keskenään äiti-lapsi -hierarkiassa.</p></li>
+
+<li><p>Hierarkia tekee objektien välisestä kommunikaatiosta helpompaa. Puumallin hieno ominaisuus on, että pohjalta lähtiessä ylöspäin päätyy <strong>aina</strong> juuri-objektiin. Tämäkin seikka on mukava käyttöliittymän kannalta. Moni käyttöliittymä reagoi eventteihin (tapahtumat) siinä objektissa, missä ne alunperin tapahtuvat. Esimerkkinä vaikka hiiren klikkaus. Kun käyttäjä klikkaa hiirellä &ldquo;Tallenna-nappia&rdquo; (kts. aiempi puumalli-kuva), klikkaus rekisteröidään vastaanotetuksi &ldquo;Tallenna-nappi&rdquo;-objektissa.</p></li>
+</ol>
+
+<p>Mutta entä jos haluamme tietää ylimmällä tasolla (juuri-objektissa), että nappulaa on klikattu? Monissa käyttöliittymissä juuri-objekti edustaa <em>ikkunaa</em>.</p>
+
+<p>Usein haluamme klikkauksen - tapahtui se klikkaus missä kohtaa ikkunaa tahansa - seurauksena aktivoida ikkunan. Tämä aktivointi tehdään ikkuna-objektissa. Mutta itse klikkaus voi tapahtua missä tahansa objektissa, vaikka kuinka &ldquo;syvällä&rdquo; puumallin pohjamudissa tahansa. Miten ikkuna-objekti saa tiedon klikkauksesta? Helposti, sillä puumallin ominaisuus on, että liikkumalla puussa ylöspäin päätyy ennen pitkään väistämättä juureen. Tässä tapauksessa siis ikkuna-objektiin.</p>
+
+<blockquote>
+<p>Voit testata saman lähimetsässä. Valitse iso puu. Valitse satunnaisesti mikä tahansa sen oksa. Kiipeä valitsemaltasi oksalta ylöspäin. Ennen pitkään saavut puun latvaan. Maagisinta on, että saavut samaan latvaan riippumatta siitä, miltä oksalta kiipeämisesi aloitit.</p>
+</blockquote>
+
+<p>Tätä eventin liikuttelua kohti juurta kutsutaan nimellä &ldquo;event bubbling&rdquo;.</p>
+
+<p>[Graafi tähän]</p>
+
+<p><strong>Jatkuu huomenna</strong></p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="https://www.nollaversio.fi/blog/public/laravel/one-token2/">
         Yksi tunniste, monta käyttöä
       </a>

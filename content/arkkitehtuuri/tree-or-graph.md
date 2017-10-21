@@ -1,6 +1,6 @@
 +++
 date = "2017-10-15T10:08:29+03:00"
-draft = true
+draft = false
 title = "Onko ohjelmasi puu vai graafi?"
 
 +++
@@ -55,4 +55,6 @@ Usein haluamme klikkauksen - tapahtui se klikkaus missä kohtaa ikkunaa tahansa 
 
 Tätä eventin liikuttelua kohti juurta kutsutaan nimellä "event bubbling".
 
-Graafi tähän. 
+[Graafi tähän]
+
+**Jatkuu huomenna** 

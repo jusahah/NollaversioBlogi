@@ -6,8 +6,76 @@
     <description>Recent content in Arkkitehtuuris on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Wed, 11 Jan 2017 19:03:44 +0200</lastBuildDate>
+    <lastBuildDate>Sun, 15 Oct 2017 10:08:29 +0300</lastBuildDate>
     <atom:link href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Onko ohjelmasi puu vai graafi?</title>
+      <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/tree-or-graph/</link>
+      <pubDate>Sun, 15 Oct 2017 10:08:29 +0300</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/arkkitehtuuri/tree-or-graph/</guid>
+      <description>&lt;p&gt;Tässä kätevä ajatusmalli: ennenkuin ohjelmoit riviäkään koodia, päätä onko ohjelmasi (tai ohjelmasi osa!) puu vai graafi!&lt;/p&gt;
+
+&lt;p&gt;Ai mikä ihmeen &amp;ldquo;puu vai graafi&amp;rdquo;?&lt;/p&gt;
+
+&lt;p&gt;Puumalli ja graafi ovat tapoja organisoida objektit, joilla on liitoksia muihin objekteihin. Puumallin spesialiteetti on, että objektit on organisoitu kuusipuun näköiseksi struktuuriksi. Kuusipuun keskiossä on runko, josta lähtee oksia. Jokainen oksa haarautuun pienempiin oksiin, ja jokainen pienempi oksa haarautuu vielä pienempiin oksiin.&lt;/p&gt;
+
+&lt;p&gt;Puumallin ydinominaisuus on, että jokaisella &lt;em&gt;lapsi-oksalla&lt;/em&gt; on tasan yksi &lt;em&gt;äiti-oksa&lt;/em&gt;. Oikeassakin kuusipuussa jokainen uusi oksa haarautuu tasan yhdestä oksasta.&lt;/p&gt;
+
+&lt;p&gt;Graafi puolestaan organisoi objektit vailla em. &lt;em&gt;äiti-lapsi&lt;/em&gt;-hierarkiaa. Esimerkiksi Helsingin tieristeykset noudattavat graafi-mallia. Kuhunkin risteykseen yhtyy useampi tie, ja yksikään risteys ei ole &lt;em&gt;äiti&lt;/em&gt; jollekin toiselle risteykselle.&lt;/p&gt;
+
+&lt;p&gt;Ohjelmoinnissa näiden kahden mallin ero näkyy esim. Laravellin Model-layerin ja Vuen view-layerin välissä.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Laravel ja Vue ovat vain esimerkkiteknologioita. Fundamentaalisemmin voisi sanoa, että ero näkyy domain-driven-design -periaatteen mukaisen Domain-layerin ja XML-pohjaisen elementtihierarkian välillä.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Laravellin Model-layer saattaa näyttää esim. tältä.&lt;/p&gt;
+
+&lt;p&gt;[Kuva tähän]&lt;/p&gt;
+
+&lt;p&gt;Vuen view-layer puolestaan saattaa näyttää tältä.&lt;/p&gt;
+
+&lt;p&gt;[Kuva tähän]&lt;/p&gt;
+
+&lt;p&gt;Ylläolevat kaksi erilaista tapaa strukturoida applikaatio vaativat erilaiset ratkaisut. Esimerkiksi Vue:n ratkaisussa (= puumalli) huomaamme, että jos tuhoamme objektin nimeltä &lt;em&gt;Profiili&lt;/em&gt; (kts. kuva), objektit &lt;em&gt;Tallenna-nappi&lt;/em&gt; ja &lt;em&gt;Profiilin kentät&lt;/em&gt; putoavat &amp;ldquo;tyhjyyteen&amp;rdquo;. Ne ovat erillään jäljellejäävästä Vue-puusta. Mitä tälläisille erakoille tulisi tehdä? Käytännössä kaksi vaihtoehtoa; joko &lt;em&gt;liitämme&lt;/em&gt; ne takaisin puuhun, tai &lt;em&gt;tuhoamme&lt;/em&gt; ne.&lt;/p&gt;
+
+&lt;p&gt;Takaisin puuhun liittäminen on vaikeaa, sillä mistä tiedämme mihin nuo kaksi erakkoa liitämme? Yksi looginen ajatus olisi liittää ne siihen objektiin, joka oli äskettäin tuhoamamme &lt;em&gt;Profiilikentät&lt;/em&gt;-objektit äiti.&lt;/p&gt;
+
+&lt;p&gt;Tätä mallia käytetään paljon. Monissa käyttötarkoituksissa tämä on &lt;strong&gt;tismalleen&lt;/strong&gt; oikea tapa toimia.&lt;/p&gt;
+
+&lt;p&gt;Mutta monissa muissa käyttötarkoituksissa tuo ei ole oikea tapa toimia.&lt;/p&gt;
+
+&lt;p&gt;Ajatellaan vaikkapa tavanomaista sukupuuta, jossa suvun viimeisin jäsen on ylimpänä (root, juuri). Tämä käännetty sukupuu on &lt;em&gt;binaaripuu&lt;/em&gt;; jokaisella objektilla on tasan kaksi &lt;em&gt;lapsi-objektia&lt;/em&gt;. Ironisesti, nuo kaksi lapsi-objektia ovat objektin kuvaaman henkilön vanhemmat.&lt;/p&gt;
+
+&lt;p&gt;Jos tästä puusta poistetaan yksi objekti, niin meidän on pakko poistaa kaikki hänen aiemmat esi-isänsäkin. Muuten puu ei enää olisi luotettava.&lt;/p&gt;
+
+&lt;p&gt;Puumallin ohjelmoinnissa on muutamia muitakin erityisseikkoja:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;&lt;p&gt;Puumalli on helppo käydä läpi. Lähtee juuresta liikkeelle, ja kiertää koko puun. Puumallin hienous on, että kun loogisesti seuraa liitoksiä yksi kerrallaan esim. vasemmalta oikealle, ei koskaan saavu samaan objektiin kahdesti.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Objekteilla on selkeä hierarkia. Juuri tästä syystä puumalli sopii niin hyvin esimerkiksi käyttöliittymän taustalla olevaksi datastruktuuriksi. Tyypillinen käyttöliittymä on pohjimmiltaan pelkkä iso pino &lt;em&gt;sisäkkäisiä suorakulmioita&lt;/em&gt;. Koska suorakulmiot ovat sisäkkäisiä, ne sopivat mainiosti puumalliin. Yhdellä suorakulmiolla on aina tasan yksi äiti; suorakulmio ei voi olla yhtäaikaisesti kahden eri suorakulmion sisällä siten, että nuo kaksi muuta suorakulmiota eivät ole keskenään äiti-lapsi -hierarkiassa.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Hierarkia tekee objektien välisestä kommunikaatiosta helpompaa. Puumallin hieno ominaisuus on, että pohjalta lähtiessä ylöspäin päätyy &lt;strong&gt;aina&lt;/strong&gt; juuri-objektiin. Tämäkin seikka on mukava käyttöliittymän kannalta. Moni käyttöliittymä reagoi eventteihin (tapahtumat) siinä objektissa, missä ne alunperin tapahtuvat. Esimerkkinä vaikka hiiren klikkaus. Kun käyttäjä klikkaa hiirellä &amp;ldquo;Tallenna-nappia&amp;rdquo; (kts. aiempi puumalli-kuva), klikkaus rekisteröidään vastaanotetuksi &amp;ldquo;Tallenna-nappi&amp;rdquo;-objektissa.&lt;/p&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Mutta entä jos haluamme tietää ylimmällä tasolla (juuri-objektissa), että nappulaa on klikattu? Monissa käyttöliittymissä juuri-objekti edustaa &lt;em&gt;ikkunaa&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Usein haluamme klikkauksen - tapahtui se klikkaus missä kohtaa ikkunaa tahansa - seurauksena aktivoida ikkunan. Tämä aktivointi tehdään ikkuna-objektissa. Mutta itse klikkaus voi tapahtua missä tahansa objektissa, vaikka kuinka &amp;ldquo;syvällä&amp;rdquo; puumallin pohjamudissa tahansa. Miten ikkuna-objekti saa tiedon klikkauksesta? Helposti, sillä puumallin ominaisuus on, että liikkumalla puussa ylöspäin päätyy ennen pitkään väistämättä juureen. Tässä tapauksessa siis ikkuna-objektiin.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Voit testata saman lähimetsässä. Valitse iso puu. Valitse satunnaisesti mikä tahansa sen oksa. Kiipeä valitsemaltasi oksalta ylöspäin. Ennen pitkään saavut puun latvaan. Maagisinta on, että saavut samaan latvaan riippumatta siitä, miltä oksalta kiipeämisesi aloitit.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Tätä eventin liikuttelua kohti juurta kutsutaan nimellä &amp;ldquo;event bubbling&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;[Graafi tähän]&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Jatkuu huomenna&lt;/strong&gt;&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Amazonin kartoitus #1: Polly</title>
