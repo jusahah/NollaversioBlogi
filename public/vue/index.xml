@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Vues on Nollaversio IT</title>
+    <link>https://www.nollaversio.fi/blog/public/vue/</link>
+    <description>Recent content in Vues on Nollaversio IT</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>fi-fi</language>
+    <lastBuildDate>Sat, 21 Oct 2017 12:01:31 +0300</lastBuildDate>
+    <atom:link href="https://www.nollaversio.fi/blog/public/vue/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Vue.js reactivity gotcha</title>
+      <link>https://www.nollaversio.fi/blog/public/vue/paper-and-vue/</link>
+      <pubDate>Sat, 21 Oct 2017 12:01:31 +0300</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/vue/paper-and-vue/</guid>
+      <description>
+
+&lt;p&gt;&lt;img src=&#34;https://www.nollaversio.fi/blog/public/blog/public/img/paper-vue.png&#34; alt=&#34;PaperJs object violated by Vue&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Vue is great framework. However, one must be careful when using it in apps requiring usage of animation loop (requestAnimationFrame).&lt;/p&gt;
+
+&lt;p&gt;Lately I&amp;rsquo;ve been using Vue with Paper.js. There is some great synergy between these two when building games or game-like javascript apps. Vue specializes in handling typical UI interactions, while Paper.js takes care of high-speed rendering and animations to canvas.&lt;/p&gt;
+
+&lt;p&gt;In application I am building, Paper.js takes care of running the game (and game loop) and Vue provides HTML elements used to control gameplay. This works well, but there is a big gotcha.&lt;/p&gt;
+
+&lt;h3 id=&#34;beware-vue-s-reactivity-octopus&#34;&gt;Beware Vue&amp;rsquo;s reactivity octopus&lt;/h3&gt;
+
+&lt;p&gt;Lets say we want to build a very simple HTML canvas based game. It is a game where some monster sprites (or whatever) move on the canvas. And then there are HTML buttons above canvas; one button for each monster. Clicking the button deletes the monster on the canvas. Each monster has its own button.&lt;/p&gt;
+
+&lt;p&gt;Creating buttons from dynamically changing arrays is something Vue is very good at, so we naturally use &lt;em&gt;v-for&lt;/em&gt; directive to keep monsters and buttons in sync.&lt;/p&gt;
+
+&lt;p&gt;Now, one could build it like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+&amp;lt;template&amp;gt;
+	&amp;lt;div&amp;gt;
+		&amp;lt;!-- Render delete buttons for game objects above canvas --&amp;gt;
+		&amp;lt;button 
+			v-for=&amp;quot;monster in monsters&amp;quot; 
+			v-on:click=&amp;quot;deleteMonster(monster.id)&amp;quot;
+			:key=&amp;quot;monster.id&amp;quot;
+		&amp;gt;Delete {{monster.id}}&amp;lt;/button&amp;gt;
+		&amp;lt;!-- Canvas paper.js uses to draw game stuff --&amp;gt;
+		&amp;lt;canvas id=&amp;quot;forpaper&amp;quot;&amp;gt;&amp;lt;/canvas&amp;gt;
+	&amp;lt;/div&amp;gt;
+&amp;lt;/template&amp;gt;
+
+&amp;lt;script&amp;gt;
+
+import _ from &#39;lodash&#39;;
+import paper from &#39;paper&#39;;
+
+function Monster(paper) {
+	
+	this.id = /* generate random id*/
+
+	this.paperObject = new paper.Circle(/*settings*/);
+
+	this.moveTo = function(x, y) {
+		// Delegate to Paper object which will takes care
+		// of updating and drawing to the screen.
+		this.paperObject.position = {x: x, y: y};
+	} 
+
+	//... etc
+}
+
+export default {
+
+	data: function() {
+		return {
+			monsters: []
+		}
+	},
+
+	mounted: function() {
+
+		// Init Paper to our canvas (not implemented here)
+
+		// Create 4 monsters to start with
+		_.times(4, this.createMonster.bind(this));
+	},
+
+	methods: {
+		createMonster: function() {
+			var monster = new Monster(paper);
+			// This push will cause button to be inserted to DOM 
+			// for the monster.
+			this.monsters.push(monster);
+		},
+		deleteMonster: function(id) {
+
+			// First we remove our wrapping object, which causes 
+			// corresponding button to disappear.
+			var removedPlayers = _.remove(monsters, function(p) { 
+				return p.id === id
+			});
+			var removedPlayer = removedPlayers[0];
+			// ...then actual Paper.js object.
+			removedPlayer.paperObject.remove();
+
+		}
+	}
+
+}
+
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Vue component above looks nice. All of the monster-related Paper.js stuff is nicely encapsulated inside Monster. We can freely design any API we want for Monster object, and Monster then internally calls Paper.js methods.&lt;/p&gt;
+
+&lt;p&gt;There is deep performance issue, however.&lt;/p&gt;
+
+&lt;p&gt;First of all, notice that we are pushing Monster objects to monsters-array that is used to render HTML buttons. This monsters-array is component&amp;rsquo;s data member, giving us all the reactivity magic Vue is so good at. But at what price?&lt;/p&gt;
+
+&lt;p&gt;Consider what happens when we call &lt;em&gt;createMonster&lt;/em&gt; method:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;We call new Monster().&lt;/li&gt;
+&lt;li&gt;Monster&amp;rsquo;s constructor builds up PaperJs object and saves it locally to a &lt;em&gt;property&lt;/em&gt;.&lt;/li&gt;
+&lt;li&gt;Newly-created Monster is pushed to an array.&lt;/li&gt;
+&lt;li&gt;Vue notices this and &lt;em&gt;binds&lt;/em&gt; get/set listeners to our Monster object&amp;rsquo;s properties.&lt;/li&gt;
+&lt;li&gt;Virtual Dom is recreated and real DOM updated (new button shown on the screen).&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Fourth step is problematic, because Vue binds reactivity listeners &lt;em&gt;recursively&lt;/em&gt;. That is, it traverses Monster object&amp;rsquo;s all normal properties and plunges right in if one of them happens to be Object or Array.&lt;/p&gt;
+
+&lt;p&gt;And Monster.paperObject is an Object.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Thus what happens it that Vue ends up binding ALL the internal properties of Paper.js Circle object!&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;This means that every time &lt;em&gt;any&lt;/em&gt; internal property of our Circle object changes, Vue&amp;rsquo;s reactivity listener gets called. That might not sound that terrible, but consider this; our &lt;em&gt;Circle&lt;/em&gt; represents a particular graphical object on the screen which is (by default) updated &lt;strong&gt;60 times a second&lt;/strong&gt; via browser&amp;rsquo;s own animation loop.&lt;/p&gt;
+
+&lt;p&gt;If the circle is constantly being animated (which it probably is&amp;hellip; we are after all building a game), we end up calling Vue&amp;rsquo;s reactivity listener 60 times per second.&lt;/p&gt;
+
+&lt;p&gt;And that is for &lt;em&gt;one object&lt;/em&gt;, and for its &lt;em&gt;one property&lt;/em&gt; that is mutated somewhere deep down in the heart of PaperJS code.&lt;/p&gt;
+
+&lt;p&gt;Now imagine we have 100 Monster objects. That would cause 6000 totally unnecessary calls per second per property.&lt;/p&gt;
+
+&lt;p&gt;That is still vast underestimate. Most likely one update call to a Circle will mutate many of its properties. Position, rotation, size,&amp;hellip; etc.&lt;/p&gt;
+
+&lt;p&gt;You can see this quickly gets out of hand. A massive slow-down ensues.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;This is something I experienced first-hand. Simply pushing one object &lt;em&gt;that had internal Paper.js linkage somewhere deep down&lt;/em&gt; to an array Vue controls caused massive performance drop. This was  hard to notice at first, because I was developing with PC happily running FPS 60. That is, each frame still got processed in under 17 ms so there was no visual feedback.&lt;/p&gt;
+
+&lt;p&gt;When I started using the app on mobile device, performance issues became apparent. Doing even the most elementary PaperJS stuff (like drawing a simple rectange over and over again) caused FPS to drop around 30-40.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I call this gotcha &lt;strong&gt;Vue the Kraken&lt;/strong&gt;, because its feels like Vue deliberately tries to hunt down my Paper.js object with its long slimy tentacles. No matter how deep you hide your linkage to Paper, Vue will find it and fuck up everything.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Of course, Vue is just doing its job to make the reactivity system work as expected. There is no way Vue could know which data-bound objects to walk through and which not. But still. Kraken Vue.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;So beware. Keep Vue and PaperJs separate. They are still great match for building HTML5 games with nice UIs, but you must introduce some impenetrable layer between them.&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>

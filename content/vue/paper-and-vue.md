@@ -1,9 +1,11 @@
 +++
 date = "2017-10-21T12:01:31+03:00"
-draft = true
-title = "Vue.js reactivity system gotcha"
+draft = false
+title = "Vue.js reactivity gotcha"
 
 +++
+
+![PaperJs object violated by Vue](/blog/public/img/paper-vue.png)
 
 Vue is great framework. However, one must be careful when using it in apps requiring usage of animation loop (requestAnimationFrame).
 
@@ -19,7 +21,8 @@ Creating buttons from dynamically changing arrays is something Vue is very good 
 
 Now, one could build it like this:
 
-```
+```javascript
+
 <template>
 	<div>
 		<!-- Render delete buttons for game objects above canvas -->
@@ -72,13 +75,18 @@ export default {
 	methods: {
 		createMonster: function() {
 			var monster = new Monster(paper);
-			// This push will cause button to be inserted to DOM for the monster.
+			// This push will cause button to be inserted to DOM 
+			// for the monster.
 			this.monsters.push(monster);
 		},
 		deleteMonster: function(id) {
 
-			// First we remove our wrapping object, which causes corresponding button to disappear.
-			var removedPlayer = _.remove(monsters, function(p) { return p.id === id})[0];
+			// First we remove our wrapping object, which causes 
+			// corresponding button to disappear.
+			var removedPlayers = _.remove(monsters, function(p) { 
+				return p.id === id
+			});
+			var removedPlayer = removedPlayers[0];
 			// ...then actual Paper.js object.
 			removedPlayer.paperObject.remove();
 
@@ -123,17 +131,17 @@ That is still vast underestimate. Most likely one update call to a Circle will m
 
 You can see this quickly gets out of hand. A massive slow-down ensues.
 
->This is something I experienced first-hand. Simply pushing one object *that had internal Paper.js linkage somewhere deep down* to an array Vue controls caused massive performance drop. This was even hard to notice at first, because I was developing mostly with PC happily running FPS 60. 
+>This is something I experienced first-hand. Simply pushing one object *that had internal Paper.js linkage somewhere deep down* to an array Vue controls caused massive performance drop. This was  hard to notice at first, because I was developing with PC happily running FPS 60. That is, each frame still got processed in under 17 ms so there was no visual feedback.
 >
 >
 >
->But when using the app on mobile device, performance issues became apparent. Doing even the most elementary PaperJS stuff (like drawing a simple rectange over and over again) caused FPS to drop around 30-40.
+>When I started using the app on mobile device, performance issues became apparent. Doing even the most elementary PaperJS stuff (like drawing a simple rectange over and over again) caused FPS to drop around 30-40.
 
-I call this gothca **Vue the Kraken**, because its feels like Vue deliberately tries to hunt down my Paper.js object with its long slimy tentacles. No matter how deep you hide your linkage to Paper, Vue will find it and fuck up everything.
+I call this gotcha **Vue the Kraken**, because its feels like Vue deliberately tries to hunt down my Paper.js object with its long slimy tentacles. No matter how deep you hide your linkage to Paper, Vue will find it and fuck up everything.
 
-Of course, Vue is just doing its job to make the reactivity system work. But still. Kraken Vue.
+> Of course, Vue is just doing its job to make the reactivity system work as expected. There is no way Vue could know which data-bound objects to walk through and which not. But still. Kraken Vue.
 
-You only need *one* linkage from PaperJs to Vue's data property and you are fucked.
+So beware. Keep Vue and PaperJs separate. They are still great match for building HTML5 games with nice UIs, but you must introduce some impenetrable layer between them.
 
-So beware. Keep Vue and PaperJs separate. They are still great match for building HTML5 games and stuff, but you must introduce some impenetrable layer between them.
+
 
