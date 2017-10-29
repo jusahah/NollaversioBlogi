@@ -21,7 +21,7 @@ Creating buttons from dynamically changing arrays is something Vue is very good 
 
 Now, one could build it like this:
 
-```javascript
+```html
 
 <template>
 	<div>

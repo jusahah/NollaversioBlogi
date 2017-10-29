@@ -33,7 +33,7 @@
 
 &lt;p&gt;Now, one could build it like this:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
 &amp;lt;template&amp;gt;
 	&amp;lt;div&amp;gt;
 		&amp;lt;!-- Render delete buttons for game objects above canvas --&amp;gt;

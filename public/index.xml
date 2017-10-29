@@ -6,8 +6,307 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Sat, 21 Oct 2017 12:01:31 +0300</lastBuildDate>
+    <lastBuildDate>Sun, 29 Oct 2017 05:04:20 +0200</lastBuildDate>
     <atom:link href="https://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Kaikki tapahtumat vievät try-catchiin</title>
+      <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/centralised-event-pipe/</link>
+      <pubDate>Sun, 29 Oct 2017 05:04:20 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/arkkitehtuuri/centralised-event-pipe/</guid>
+      <description>&lt;p&gt;Tyypillinen UI-lähtöinen web-applikaatio perustuu nk. event-driven paradigmaan. Tämä tarkoittaa, että applikaation oleelliset toiminnallisuudet suoritetaan &lt;em&gt;tapahtumien&lt;/em&gt; (events) seurauksena.&lt;/p&gt;
+
+&lt;p&gt;Esimerkkinä: kun käyttäjä klikkaa hiirellä ikonia, syntyy tapahtuma. Tuo tapahtuma aiheuttaa jonkin toiminnallisuuden suorittamisen applikaation sisällä. Kun toiminnallisuus on suoritettu, applikaatio menee horrostilaan odottamaan seuraavaa tapahtumaa.&lt;/p&gt;
+
+&lt;p&gt;Tapahtumakeskeiset applikaatiot tupataan koodaamaan &lt;em&gt;tapahtumakuuntelijoiden&lt;/em&gt; ympärille. Tyypillinen UI-applikaatio on pohjimmiltaan pelkkä kasa kuuntelijoita, jotka suorittavat toimintoja. Tyypillinen ylätason arkkitehtuuri on seuraavanlainen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// App contains all the business code and logic.
+var app = new App();
+
+var listeners = {
+
+	onEventX: app.api.doSomething,
+	onEventY: app.api.doSomethingElse,
+	onEventZ: app.api.doThirdThing,
+	//...
+}
+
+// Bind listeners to device, allowing User to interact 
+// with our App by pressing buttons on the device etc.
+device.registerListeners(listeners);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva on karkea kuvaus siitä, miten käytännössä kaikki graafisen käyttöliittymän omaavat applikaatiot toimivat.&lt;/p&gt;
+
+&lt;p&gt;Entä miltä näyttää tuollaisen applikaation suoritus-/ajohistoria? Tapahtumia odottaville applikaatiolle on nyrkkisääntönä tyypillistä, että ne kirjaimellisesti &lt;strong&gt;odottavat&lt;/strong&gt; valtaosan ajasta. Tämä johtuu siitä, että tyypillinen applikaatio käsittelee sisääntulleen tapahtuman silmänräpäyksessä.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Esimerkiksi tyypillinen tekstieditori - sanotaan vaikka Microsoftin Notepad - istuu ja odottaa vähintään 99% elinkaarestaan toimettomana. Joka kerta kun tekstieditorin käyttäjä - siis ruudun edessä istuva ihminen - painaa näppäimistöllä nappulaa, tekstieditori herää ruususen unestaan ja suorittaa toimenpiteen. Tekstieditorin tapauksessa toimenpide on useimmiten käyttäjän näppäimistöllä painaman kirjaimen tallentaminen keskusmuistiin ja piirtäminen ruudulle. Aikaa tuohon kuluu ehkä parisenkymmentä *mikro*sekuntia (sekunnin miljoonasosa!), jonka jälkeen tekstieditori siirtyy takaisin unten maille.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Ajohistorian toinen hauska piirre on, että kaikki suoritusajot lähtevät liikkeelle tapahtumahallinnasta. Tämä on väistämätöntä, sillä juuri tapahtumahallinta vastaanottaa sisääntulleen tapahtuman ja kutsuu applikaation varsinaisen bisneslogiikan sisältämiä funktioita.&lt;/p&gt;
+
+&lt;p&gt;Tämä &amp;ldquo;tapahtumalähtöisyys&amp;rdquo; antaa mainion tavan organisoida loki- ja virhehallinta! Koska kaikki suoritusajot lähtevät liikkeelle tapahtumien kautta, voi näppärä koodari luoda &lt;em&gt;putken&lt;/em&gt;, jonne kaikki tapahtumat ajetaan.&lt;/p&gt;
+
+&lt;p&gt;Putken toisessa päässä odottaa itse applikaatio. Kun putkeen työntää &lt;em&gt;tapahtuman&lt;/em&gt;, se hetkeä myöhemmin tömähtää toisesta päästä ulos ja herättää horrokseen vaipuneen applikaation.&lt;/p&gt;
+
+&lt;p&gt;Ensimmäistä koodiesimerkkiä muokkaamalla:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+////////////////////////
+//// EVENTS.JS /////////
+////////////////////////
+
+// App contains all the business code and logic.
+var app = new App();
+
+var listeners = {
+
+	onEventX: app.eventBus.bind(app, &#39;eventX&#39;),
+	onEventY: app.eventBus.bind(app, &#39;eventY&#39;),
+	onEventZ: app.eventBus.bind(app, &#39;eventZ&#39;),
+	//...
+}
+
+// Bind listeners to device, allowing User to interact 
+// with our App by pressing buttons on the device etc.
+device.registerListeners(listeners);
+
+
+////////////////////////
+/////// APP.JS /////////
+////////////////////////
+
+function App() {
+
+	this.api = new Api();
+	
+	this.eventBus = function(eventTag) {
+		// eventTag on joko eventX, eventY tai eventZ.
+
+		if (eventTaget === &#39;eventX&#39;) {
+			this.api.doSomething();
+		} else if (eventTaget === &#39;eventY&#39;) {
+			this.api.doSomethingElse();
+		} else if (eventTaget === &#39;eventZ&#39;) {
+			this.api.doThirdThing();
+		}
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevan ero verrattuna ensimmäiseen koodiesimerkkiin on, että nyt kaikki tapahtumat saapuvat &lt;em&gt;yhden&lt;/em&gt; linkkipisteen kautta. Tuo linkkipiste on eventBus-metodi.&lt;/p&gt;
+
+&lt;p&gt;Tämä on käytännössä ainoa ero näiden kahden koodiesimerkin välillä; applikaatiota ajaessa ne toimivat tismalleen samoin. Miksi siis luoda yksittäinen linkkipiste?&lt;/p&gt;
+
+&lt;p&gt;Periaate on sama kuin vaikkapa Suomen rajalla. Sen sijaan, että ulkomaalaisten annettaisiin hyppiä Suomen maaperälle mistä kohdin tahansa, kaikki maahantulot ohjataan &lt;em&gt;raja-asemalle&lt;/em&gt;. Tuolla raja-asemalla voidaan &lt;strong&gt;keskitetysti&lt;/strong&gt; suorittaa tietyt toimenpiteet, kuten passin tarkastus.&lt;/p&gt;
+
+&lt;p&gt;Siirtämällä esimerkkiapplikaatiomme käyttämään keskitettyä linkkipistettä, mekin voimme nyt suorittaa keskitetysti avustavia toimenpiteitä.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function App() {
+
+	this.api = new Api();
+	
+	this.eventBus = function(eventTag, event) {
+		// eventTag on joko eventX, eventY tai eventZ.
+
+		// Kirjaa lokitietoihin uuden tapahtuman käsittely
+		this.log(&#39;Tapahtuma &#39; + eventTag + &#39; saapunut&#39;); 
+
+		if (eventTaget === &#39;eventX&#39;) {
+			this.api.doSomething();
+		} else if (eventTaget === &#39;eventY&#39;) {
+			this.api.doSomethingElse();
+		} else if (eventTaget === &#39;eventZ&#39;) {
+			this.api.doThirdThing();
+		}
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yllä kirjasimme lokiin tiedon tapahtuman saapumisesta. Koska kaikki tapahtumat tulevat sisään eventBus-metodin kautta, kaikki tapahtumat myös tulevat kirjatuksi lokiin!&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Lisäsimme myös eventBus-metodiin toisen parametrin nimeltä &lt;em&gt;event&lt;/em&gt;. Applikaatiosta riippuen tätä parametriä tarvitaan tai ei tarvita. Se sisältää itse &lt;em&gt;tapahtuman&lt;/em&gt;, jonka applikaation alta löytyvä laitteisto synnytti. Ensimmäinen parametri (eventTag) sisältää vain tiedon &lt;em&gt;minkälainen&lt;/em&gt; tapahtuma on kyseessä; toinen parametri sisältää itse tapahtuman. Kuten sanottua, joskus (usein) riittää tietää millainen tapahtuma on kyseessä; tällöin itse tapahtuma-objektia ei tarvita lainkaan.&lt;/p&gt;
+
+&lt;p&gt;Silloin kun tapahtuma-objekti tarvitaan, se sisältää kaiken tapahtumaan liittyvän informaation. Esimerkiksi klikatessa hiirellä ikonia tuo parametri &lt;em&gt;event&lt;/em&gt; sisältää tiedon siitä, mitä ikonia klikattiin. Tai vaihtoehtoisesti se voi sisältää tietokoneen näyttöpäätteen koordinaatit (x/y), jossa klikkaus tapahtui.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Ylläoleva on ihan kiva, mutta todellinen hyöty syntyy virhehallinnan puolella. Kuten useaan otteeseen todettu, tyypillisessä UI-applikaatiossa kaikki toimenpiteet lähtevät liikkeelle tapahtumahallinnasta. Sama hiukka teknisemmin todettuna: yksittäinen suoritusajo muodostaa itsenäisen call stackin, jossa ylimpänä funktiokutsuna on tapahtumahallinta, meidän esimerkin tapauksessa &lt;em&gt;eventBus&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Esimerkkinä applikaation call stack, joka muodostuu vaikkapa Photoshopissa kun käyttäjä klikkaa hiirellä työkalupalkista &amp;ldquo;Pensseli-työkalua&amp;rdquo;.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;	eventBus
+	  api.handleClick
+	    drawTools.handleClick
+	      drawTools.setPensseliAsNewTool
+	  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kun käyttäjä painaa Photoshopin teksti-objektin ollessa valittuna näppäintä &amp;ldquo;s&amp;rdquo;, syntyy puolestaan seuraava call stack:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;	eventBus
+	  api.handleKeyPress
+	    canvas.handleKeyPress
+	      textObject.handleKeyPress
+	        textObject.updateText
+	  
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevan sisäkkäisten funktiokutsujen sarjan perusteella Photoshop päivittää teksti-objektin sisältämän tekstin. Jos aiemmin ruudulla luki &amp;ldquo;Kaamo&amp;rdquo;, nyt siinä lukee &amp;ldquo;Kaamos&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Yhteistä kahdelle edeltävälle call stackille on, että eventBus on molempien lähtöpiste. Tämä antaa mahdollisuuden seuraavanlaiseen virhehallintaan.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function App() {
+
+	this.api = new Api();
+	
+	this.eventBus = function(eventTag, event) {
+		// eventTag on joko eventX, eventY tai eventZ.
+
+		// Kirjaa lokitietoihin uuden tapahtuman käsittely
+		this.log(&#39;Tapahtuma &#39; + eventTag + &#39; saapunut&#39;); 
+
+		try {
+			if (eventTag === &#39;eventX&#39;) {
+				this.api.doSomething();
+			} else if (eventTag === &#39;eventY&#39;) {
+				this.api.doSomethingElse();
+			} else if (eventTag === &#39;eventZ&#39;) {
+				this.api.doThirdThing();
+			}
+		}
+
+		catch (e) {
+			// Jotain meni pieleen tapahtumaa käsitellessä/suorittaessa
+
+		}
+
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Wrappasimme &lt;strong&gt;koko event-dispatchin&lt;/strong&gt; (tuon ison if-else-lausekkeen) try-catchin sisälle. Tämä tarkoittaa, että kaikki virheet, jotka tapahtuvat alempana call stackissa, napataan viimeistään eventBus-metodin sisällä kiinni. Tämä on keskitettyä virheiden hallintaa parhaimmillaan.&lt;/p&gt;
+
+&lt;p&gt;Myös virheiden raportointia on helppo kehittää:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function App() {
+
+	this.api = new Api();
+	
+	this.eventBus = function(eventTag, event) {
+		// eventTag on joko eventX, eventY tai eventZ.
+
+		// Kirjaa lokitietoihin uuden tapahtuman käsittely
+		this.log(&#39;Tapahtuma &#39; + eventTag + &#39; saapunut&#39;); 
+
+		try {
+			if (eventTag === &#39;eventX&#39;) {
+				this.api.doSomething();
+			} else if (eventTag === &#39;eventY&#39;) {
+				this.api.doSomethingElse();
+			} else if (eventTag === &#39;eventZ&#39;) {
+				this.api.doThirdThing();
+			}
+		}
+
+		catch (e) {
+			// Jotain meni pieleen tapahtumaa käsitellessä/suorittaessa
+			
+			// Lähetetään virheilmoitus Bugsnag-palveluun.
+
+			// Kerrotaan ensin minkä tapahtuman käsittelyssä virhe syntyi...
+			Bugsnag.leaveBreadcrumb(&amp;quot;Virhe syntyi käsitellessä tapahtumaa &amp;quot; + eventTag);
+			// ...sitten lisätään lähetyspakettiin itse Exception-objekti.
+			Bugsnag.notifyException(e);
+
+			// Kehittäjien ja sidosryhmien informointi on suoritettu!
+
+			// Yritetään korjata tilanne palauttamalla aiempi tila. Tällä tavoin
+			// käyttäjän on mahdollista jatkaa ohjelman käyttämistä virheestä huolimatta.
+			this.resetPreviousState();
+		}
+
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yllä lähetämme virheilmoituksen mainioon Bugsnag-palveluun. Tuon palvelun kautta ilmoitus päätyy applikaation kehittäjille, parhaimmillaan jopa reaaliajassa.&lt;/p&gt;
+
+&lt;p&gt;Tämän lisäksi yritämme palauttaa applikaation aiempaan, varmuudella toimivaan tilaan. Yksi ikävä piirre virhetilanteissa noin yleensä on, että ne sotkevat applikaation sisäiset tilamuuttujat. Näin ei ole pakko tapahtua; on vallan mahdollista, että virhe tapahtuu &lt;em&gt;turvallisesti&lt;/em&gt;, jolloin se jättää jälkeensä siistin, toimivan applikaation. Mutta monet ennakoimattomat virheet tapahtuvat nk. kriittisellä hetkellä, jolloin ne sotkevat applikaation.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Tilanne on vähän vastaava kuin vaikka laskiessa säästöpossun kolikoita. Jos kesken laskusuorituksen menet yhtäkkiä laskuissa sekaisin (= aivojesi virhetilanne), ei sinulla ole muuta vaihtoehtoa kuin aloittaa alusta. Virhe tapahtui kriittisellä hetkellä, tässä tapauksessa laskennan ollessa käynnissä.&lt;/p&gt;
+
+&lt;p&gt;Ei-kriittinen virhetilanne syntyy jos kesken laskutoimituksen vahingossa pudotat kädessä olevan kolikon lattialle. Tämä on ilmiselvä käsiesi virhetilanne; et varmastikaan tarkoittanut pudottaa kolikkoa. Mutta kyseessä on ei-kriittinen virhe siksi, että voit nostaa kolikon lattialta ja jatkaa laskutoimitusta siitä mihin jäit. No harm done.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Metodikutsumme resetPreviousState antaa applikaatiolle käskyn palauttaa aiempi, toimivaksi todettu tila. Tämän toiminnallisuuden toteuttaminen olisi toisen postauksen aihe; tässä kohtaa riittää, että oletamme aiemman tilan palauttamisen olevan mahdollista.&lt;/p&gt;
+
+&lt;p&gt;Koodia voi vielä hiukan siistiä siirtämällä varsinaisen dispatch-osuuden erikseen avustavista toimenpiteistä (raportointi, recovery-toimenpiteet):&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function App() {
+
+	this.api = new Api();
+	
+	this.eventBus = function(eventTag, event) {
+		// eventTag on joko eventX, eventY tai eventZ.
+
+		// Kirjaa lokitietoihin uuden tapahtuman käsittely
+		this.log(&#39;Tapahtuma &#39; + eventTag + &#39; saapunut&#39;); 
+
+		try {
+			this.handleEvent(eventTag, event);
+		}
+
+		catch (e) {
+			// Jotain meni pieleen tapahtumaa käsitellessä/suorittaessa
+			
+			// Lähetetään virheilmoitus Bugsnag-palveluun.
+
+			// Kerrotaan ensin minkä tapahtuman käsittelyssä virhe syntyi...
+			Bugsnag.leaveBreadcrumb(&amp;quot;Virhe syntyi käsitellessä tapahtumaa &amp;quot; + eventTag);
+			// ...sitten lisätään lähetyspakettiin itse Exception-objekti.
+			Bugsnag.notifyException(e);
+
+			// Kehittäjien ja sidosryhmien informointi on suoritettu!
+
+			// Yritetään korjata tilanne palauttamalla aiempi tila. Tällä tavoin
+			// käyttäjän on mahdollista jatkaa ohjelman käyttämistä virheestä huolimatta.
+			this.resetPreviousState();
+		}
+
+	}
+
+	// HandleEvent-metodi keskittyy yksinomaan valitsemaan oikean toimenpiteen saamansa
+	// tapahtuman (tai tapahtumatagin) perusteella.
+	this.handleEvent = function(eventTag, event) {
+		if (eventTag === &#39;eventX&#39;) {
+			this.api.doSomething();
+		} else if (eventTag === &#39;eventY&#39;) {
+			this.api.doSomethingElse();
+		} else if (eventTag === &#39;eventZ&#39;) {
+			this.api.doThirdThing();
+		}		
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Thats it! Koodi näyttää selkeältä, ja eri vastuualueet on selkeän visuaalisesti erillään koodipohjassa.&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Vue.js reactivity gotcha</title>
@@ -33,7 +332,7 @@
 
 &lt;p&gt;Now, one could build it like this:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
 &amp;lt;template&amp;gt;
 	&amp;lt;div&amp;gt;
 		&amp;lt;!-- Render delete buttons for game objects above canvas --&amp;gt;
@@ -1775,44 +2074,6 @@ $kommunikaatiot-&amp;gt;each(function($komm) {
 &lt;blockquote&gt;
 &lt;p&gt;Single-table inheritance - yhden taulun periytyvyys - antaa mahdollisuuden tallentaa yhteen ja samaan tauluun eri tyyppisiä objekteja. Mikä parasta, Laravellin avulla voimme luoda kokoelmia, jotka sisältävät noita eri tyyppisiä objekteja. Kaiken huippuna voimme käsitellä kokoelmia ilman, että tiedämme mitä tyyppiä kukin objekti on. Riittää, että kukin objekti tarjoaa tietyn yhteisen käyttöliittymän (interface).&lt;/p&gt;
 &lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Yksi taulu, useampi objekti</title>
-      <link>https://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p1/</link>
-      <pubDate>Mon, 03 Oct 2016 18:12:51 +0300</pubDate>
-      
-      <guid>https://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p1/</guid>
-      <description>&lt;p&gt;Tietokantapohjaisissa web-applikaatioissa tulee käyttöön aina välillä kätevä konsepti nimeltä &amp;ldquo;Single table inheritance&amp;rdquo;, eli &amp;ldquo;yhden taulun periytyvyys&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;Konsepti mahdollistaa useamman eri datatyypin objektin tallennettavan yhteen tietokantatauluun.&lt;/p&gt;
-
-&lt;p&gt;Lähtökohtaisesti useamman eri objektin tallennuksessa samaan tauluun &lt;em&gt;ei ole mitään järkeä&lt;/em&gt;. Active Record-pohjaisissa järjestelmissä kukin ns. malliobjekti on kytketty pinnan alla yhteen tauluun, ja jos kaksi objektia kytkeytyy samaan tauluun, täytyy niillä olla samanmoiset attribuutit. Tämä siksi, että kukin tietokantataulu sisältää tietyn määrän attribuutteja (sarakkeita), ja tauluun menevän objektin tulee mukauttaa itsensä noihin attribuutteihin.&lt;/p&gt;
-
-&lt;p&gt;Esimerkiksi objektiluokan &amp;ldquo;Hevonen&amp;rdquo; ja &amp;ldquo;Tilisiirto&amp;rdquo; kytkeminen osaksi samaa tietokantataulua kuulostaa aika järjettömältä. Hevonen on elävä eläin, Tilisiirto on abstrakti konsepti liittyen pankkitoimintaan. Kovin paljoa yhteistä ei noilla kahdella objektilla ole.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Tilanne on vähän sama kuin jos yrittäisit valmistaa kulkuneuvon, joka liikkuu sekä ilmojen halki että vetten alla sukelluksissa. Ehkä saisit sellaisen aikaan, mutta kovin käytännöllinen tuo vehje ei varmasti ole.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Mutta entä jos meillä on jokin abstrakti konsepti, josta on mahdollista tuottaa konkreettisia objekteja?&lt;/p&gt;
-
-&lt;p&gt;Esimerkkinä vaikka &amp;ldquo;Kommunikaatio&amp;rdquo;. Kommunikaatio on abstrakti konsepti; se kuvaa motiivin vaihtaa informaatiota, mutta ei määrittele &lt;em&gt;miten&lt;/em&gt; informaatiota vaihdetaan.&lt;/p&gt;
-
-&lt;p&gt;&amp;ldquo;Puhelin&amp;rdquo; puolestaan on konkreettinen objekti, joka menettelee miten informaatiota vaihdetaan.&lt;/p&gt;
-
-&lt;p&gt;Samoin on &amp;ldquo;Savumerkki&amp;rdquo;. Samoin on &amp;ldquo;Valomerkki&amp;rdquo;. Kaikki nuo tarjoavat &lt;em&gt;menetelmän&lt;/em&gt; suorittaa käytännön maailmassa konsepti &amp;ldquo;Kommunikaatio&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;Kuvitellaan sitten, että meillä on Kommunikaatio-niminen luokka. Tuohon luokkaan on kytketty tietokantataulu &amp;ldquo;kommunikaatiot&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Nyt suuri kysymys&lt;/strong&gt;: miten saamme järkevästi kommunikaatiot-tauluun talletettua erilaisia kommunikaatiovälineitä?&lt;/p&gt;
-
-&lt;p&gt;Toinen suuri kysymys: miksi haluaisimme tehdä niin? Miksi emme vain loisi uutta tietokantataulua jokaista kommunikaatiovälinettä varten? Esim. &amp;ldquo;Puhelin&amp;rdquo; objektia varten taulu &amp;ldquo;puhelimet&amp;rdquo;. Savumerkkiä varten taulu &amp;ldquo;savumerkit&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;Eli: &lt;strong&gt;Miten yhdistämme usean eri luokan yhteen tauluun ja miksi haluamme niin tehdä?&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;(Esimerkki jatkuu huomenna)&lt;/p&gt;
 </description>
     </item>
     

@@ -71,6 +71,308 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/centralised-event-pipe/">
+        Kaikki tapahtumat vievät try-catchiin
+      </a>
+    </h1>
+
+    <span class="post-date">Sun, Oct 29, 2017</span>
+
+    <p>Tyypillinen UI-lähtöinen web-applikaatio perustuu nk. event-driven paradigmaan. Tämä tarkoittaa, että applikaation oleelliset toiminnallisuudet suoritetaan <em>tapahtumien</em> (events) seurauksena.</p>
+
+<p>Esimerkkinä: kun käyttäjä klikkaa hiirellä ikonia, syntyy tapahtuma. Tuo tapahtuma aiheuttaa jonkin toiminnallisuuden suorittamisen applikaation sisällä. Kun toiminnallisuus on suoritettu, applikaatio menee horrostilaan odottamaan seuraavaa tapahtumaa.</p>
+
+<p>Tapahtumakeskeiset applikaatiot tupataan koodaamaan <em>tapahtumakuuntelijoiden</em> ympärille. Tyypillinen UI-applikaatio on pohjimmiltaan pelkkä kasa kuuntelijoita, jotka suorittavat toimintoja. Tyypillinen ylätason arkkitehtuuri on seuraavanlainen:</p>
+
+<pre><code class="language-javascript">
+// App contains all the business code and logic.
+var app = new App();
+
+var listeners = {
+
+	onEventX: app.api.doSomething,
+	onEventY: app.api.doSomethingElse,
+	onEventZ: app.api.doThirdThing,
+	//...
+}
+
+// Bind listeners to device, allowing User to interact 
+// with our App by pressing buttons on the device etc.
+device.registerListeners(listeners);
+
+</code></pre>
+
+<p>Ylläoleva on karkea kuvaus siitä, miten käytännössä kaikki graafisen käyttöliittymän omaavat applikaatiot toimivat.</p>
+
+<p>Entä miltä näyttää tuollaisen applikaation suoritus-/ajohistoria? Tapahtumia odottaville applikaatiolle on nyrkkisääntönä tyypillistä, että ne kirjaimellisesti <strong>odottavat</strong> valtaosan ajasta. Tämä johtuu siitä, että tyypillinen applikaatio käsittelee sisääntulleen tapahtuman silmänräpäyksessä.</p>
+
+<blockquote>
+<p>Esimerkiksi tyypillinen tekstieditori - sanotaan vaikka Microsoftin Notepad - istuu ja odottaa vähintään 99% elinkaarestaan toimettomana. Joka kerta kun tekstieditorin käyttäjä - siis ruudun edessä istuva ihminen - painaa näppäimistöllä nappulaa, tekstieditori herää ruususen unestaan ja suorittaa toimenpiteen. Tekstieditorin tapauksessa toimenpide on useimmiten käyttäjän näppäimistöllä painaman kirjaimen tallentaminen keskusmuistiin ja piirtäminen ruudulle. Aikaa tuohon kuluu ehkä parisenkymmentä *mikro*sekuntia (sekunnin miljoonasosa!), jonka jälkeen tekstieditori siirtyy takaisin unten maille.</p>
+</blockquote>
+
+<p>Ajohistorian toinen hauska piirre on, että kaikki suoritusajot lähtevät liikkeelle tapahtumahallinnasta. Tämä on väistämätöntä, sillä juuri tapahtumahallinta vastaanottaa sisääntulleen tapahtuman ja kutsuu applikaation varsinaisen bisneslogiikan sisältämiä funktioita.</p>
+
+<p>Tämä &ldquo;tapahtumalähtöisyys&rdquo; antaa mainion tavan organisoida loki- ja virhehallinta! Koska kaikki suoritusajot lähtevät liikkeelle tapahtumien kautta, voi näppärä koodari luoda <em>putken</em>, jonne kaikki tapahtumat ajetaan.</p>
+
+<p>Putken toisessa päässä odottaa itse applikaatio. Kun putkeen työntää <em>tapahtuman</em>, se hetkeä myöhemmin tömähtää toisesta päästä ulos ja herättää horrokseen vaipuneen applikaation.</p>
+
+<p>Ensimmäistä koodiesimerkkiä muokkaamalla:</p>
+
+<pre><code class="language-javascript">
+////////////////////////
+//// EVENTS.JS /////////
+////////////////////////
+
+// App contains all the business code and logic.
+var app = new App();
+
+var listeners = {
+
+	onEventX: app.eventBus.bind(app, 'eventX'),
+	onEventY: app.eventBus.bind(app, 'eventY'),
+	onEventZ: app.eventBus.bind(app, 'eventZ'),
+	//...
+}
+
+// Bind listeners to device, allowing User to interact 
+// with our App by pressing buttons on the device etc.
+device.registerListeners(listeners);
+
+
+////////////////////////
+/////// APP.JS /////////
+////////////////////////
+
+function App() {
+
+	this.api = new Api();
+	
+	this.eventBus = function(eventTag) {
+		// eventTag on joko eventX, eventY tai eventZ.
+
+		if (eventTaget === 'eventX') {
+			this.api.doSomething();
+		} else if (eventTaget === 'eventY') {
+			this.api.doSomethingElse();
+		} else if (eventTaget === 'eventZ') {
+			this.api.doThirdThing();
+		}
+	}
+}
+
+</code></pre>
+
+<p>Ylläolevan ero verrattuna ensimmäiseen koodiesimerkkiin on, että nyt kaikki tapahtumat saapuvat <em>yhden</em> linkkipisteen kautta. Tuo linkkipiste on eventBus-metodi.</p>
+
+<p>Tämä on käytännössä ainoa ero näiden kahden koodiesimerkin välillä; applikaatiota ajaessa ne toimivat tismalleen samoin. Miksi siis luoda yksittäinen linkkipiste?</p>
+
+<p>Periaate on sama kuin vaikkapa Suomen rajalla. Sen sijaan, että ulkomaalaisten annettaisiin hyppiä Suomen maaperälle mistä kohdin tahansa, kaikki maahantulot ohjataan <em>raja-asemalle</em>. Tuolla raja-asemalla voidaan <strong>keskitetysti</strong> suorittaa tietyt toimenpiteet, kuten passin tarkastus.</p>
+
+<p>Siirtämällä esimerkkiapplikaatiomme käyttämään keskitettyä linkkipistettä, mekin voimme nyt suorittaa keskitetysti avustavia toimenpiteitä.</p>
+
+<pre><code class="language-javascript">
+function App() {
+
+	this.api = new Api();
+	
+	this.eventBus = function(eventTag, event) {
+		// eventTag on joko eventX, eventY tai eventZ.
+
+		// Kirjaa lokitietoihin uuden tapahtuman käsittely
+		this.log('Tapahtuma ' + eventTag + ' saapunut'); 
+
+		if (eventTaget === 'eventX') {
+			this.api.doSomething();
+		} else if (eventTaget === 'eventY') {
+			this.api.doSomethingElse();
+		} else if (eventTaget === 'eventZ') {
+			this.api.doThirdThing();
+		}
+	}
+}
+
+</code></pre>
+
+<p>Yllä kirjasimme lokiin tiedon tapahtuman saapumisesta. Koska kaikki tapahtumat tulevat sisään eventBus-metodin kautta, kaikki tapahtumat myös tulevat kirjatuksi lokiin!</p>
+
+<blockquote>
+<p>Lisäsimme myös eventBus-metodiin toisen parametrin nimeltä <em>event</em>. Applikaatiosta riippuen tätä parametriä tarvitaan tai ei tarvita. Se sisältää itse <em>tapahtuman</em>, jonka applikaation alta löytyvä laitteisto synnytti. Ensimmäinen parametri (eventTag) sisältää vain tiedon <em>minkälainen</em> tapahtuma on kyseessä; toinen parametri sisältää itse tapahtuman. Kuten sanottua, joskus (usein) riittää tietää millainen tapahtuma on kyseessä; tällöin itse tapahtuma-objektia ei tarvita lainkaan.</p>
+
+<p>Silloin kun tapahtuma-objekti tarvitaan, se sisältää kaiken tapahtumaan liittyvän informaation. Esimerkiksi klikatessa hiirellä ikonia tuo parametri <em>event</em> sisältää tiedon siitä, mitä ikonia klikattiin. Tai vaihtoehtoisesti se voi sisältää tietokoneen näyttöpäätteen koordinaatit (x/y), jossa klikkaus tapahtui.</p>
+</blockquote>
+
+<p>Ylläoleva on ihan kiva, mutta todellinen hyöty syntyy virhehallinnan puolella. Kuten useaan otteeseen todettu, tyypillisessä UI-applikaatiossa kaikki toimenpiteet lähtevät liikkeelle tapahtumahallinnasta. Sama hiukka teknisemmin todettuna: yksittäinen suoritusajo muodostaa itsenäisen call stackin, jossa ylimpänä funktiokutsuna on tapahtumahallinta, meidän esimerkin tapauksessa <em>eventBus</em>.</p>
+
+<p>Esimerkkinä applikaation call stack, joka muodostuu vaikkapa Photoshopissa kun käyttäjä klikkaa hiirellä työkalupalkista &ldquo;Pensseli-työkalua&rdquo;.</p>
+
+<pre><code>	eventBus
+	  api.handleClick
+	    drawTools.handleClick
+	      drawTools.setPensseliAsNewTool
+	  
+</code></pre>
+
+<p>Kun käyttäjä painaa Photoshopin teksti-objektin ollessa valittuna näppäintä &ldquo;s&rdquo;, syntyy puolestaan seuraava call stack:</p>
+
+<pre><code>	eventBus
+	  api.handleKeyPress
+	    canvas.handleKeyPress
+	      textObject.handleKeyPress
+	        textObject.updateText
+	  
+</code></pre>
+
+<p>Ylläolevan sisäkkäisten funktiokutsujen sarjan perusteella Photoshop päivittää teksti-objektin sisältämän tekstin. Jos aiemmin ruudulla luki &ldquo;Kaamo&rdquo;, nyt siinä lukee &ldquo;Kaamos&rdquo;.</p>
+
+<p>Yhteistä kahdelle edeltävälle call stackille on, että eventBus on molempien lähtöpiste. Tämä antaa mahdollisuuden seuraavanlaiseen virhehallintaan.</p>
+
+<pre><code class="language-javascript">
+function App() {
+
+	this.api = new Api();
+	
+	this.eventBus = function(eventTag, event) {
+		// eventTag on joko eventX, eventY tai eventZ.
+
+		// Kirjaa lokitietoihin uuden tapahtuman käsittely
+		this.log('Tapahtuma ' + eventTag + ' saapunut'); 
+
+		try {
+			if (eventTag === 'eventX') {
+				this.api.doSomething();
+			} else if (eventTag === 'eventY') {
+				this.api.doSomethingElse();
+			} else if (eventTag === 'eventZ') {
+				this.api.doThirdThing();
+			}
+		}
+
+		catch (e) {
+			// Jotain meni pieleen tapahtumaa käsitellessä/suorittaessa
+
+		}
+
+	}
+}
+
+</code></pre>
+
+<p>Wrappasimme <strong>koko event-dispatchin</strong> (tuon ison if-else-lausekkeen) try-catchin sisälle. Tämä tarkoittaa, että kaikki virheet, jotka tapahtuvat alempana call stackissa, napataan viimeistään eventBus-metodin sisällä kiinni. Tämä on keskitettyä virheiden hallintaa parhaimmillaan.</p>
+
+<p>Myös virheiden raportointia on helppo kehittää:</p>
+
+<pre><code class="language-javascript">
+function App() {
+
+	this.api = new Api();
+	
+	this.eventBus = function(eventTag, event) {
+		// eventTag on joko eventX, eventY tai eventZ.
+
+		// Kirjaa lokitietoihin uuden tapahtuman käsittely
+		this.log('Tapahtuma ' + eventTag + ' saapunut'); 
+
+		try {
+			if (eventTag === 'eventX') {
+				this.api.doSomething();
+			} else if (eventTag === 'eventY') {
+				this.api.doSomethingElse();
+			} else if (eventTag === 'eventZ') {
+				this.api.doThirdThing();
+			}
+		}
+
+		catch (e) {
+			// Jotain meni pieleen tapahtumaa käsitellessä/suorittaessa
+			
+			// Lähetetään virheilmoitus Bugsnag-palveluun.
+
+			// Kerrotaan ensin minkä tapahtuman käsittelyssä virhe syntyi...
+			Bugsnag.leaveBreadcrumb(&quot;Virhe syntyi käsitellessä tapahtumaa &quot; + eventTag);
+			// ...sitten lisätään lähetyspakettiin itse Exception-objekti.
+			Bugsnag.notifyException(e);
+
+			// Kehittäjien ja sidosryhmien informointi on suoritettu!
+
+			// Yritetään korjata tilanne palauttamalla aiempi tila. Tällä tavoin
+			// käyttäjän on mahdollista jatkaa ohjelman käyttämistä virheestä huolimatta.
+			this.resetPreviousState();
+		}
+
+	}
+}
+
+</code></pre>
+
+<p>Yllä lähetämme virheilmoituksen mainioon Bugsnag-palveluun. Tuon palvelun kautta ilmoitus päätyy applikaation kehittäjille, parhaimmillaan jopa reaaliajassa.</p>
+
+<p>Tämän lisäksi yritämme palauttaa applikaation aiempaan, varmuudella toimivaan tilaan. Yksi ikävä piirre virhetilanteissa noin yleensä on, että ne sotkevat applikaation sisäiset tilamuuttujat. Näin ei ole pakko tapahtua; on vallan mahdollista, että virhe tapahtuu <em>turvallisesti</em>, jolloin se jättää jälkeensä siistin, toimivan applikaation. Mutta monet ennakoimattomat virheet tapahtuvat nk. kriittisellä hetkellä, jolloin ne sotkevat applikaation.</p>
+
+<blockquote>
+<p>Tilanne on vähän vastaava kuin vaikka laskiessa säästöpossun kolikoita. Jos kesken laskusuorituksen menet yhtäkkiä laskuissa sekaisin (= aivojesi virhetilanne), ei sinulla ole muuta vaihtoehtoa kuin aloittaa alusta. Virhe tapahtui kriittisellä hetkellä, tässä tapauksessa laskennan ollessa käynnissä.</p>
+
+<p>Ei-kriittinen virhetilanne syntyy jos kesken laskutoimituksen vahingossa pudotat kädessä olevan kolikon lattialle. Tämä on ilmiselvä käsiesi virhetilanne; et varmastikaan tarkoittanut pudottaa kolikkoa. Mutta kyseessä on ei-kriittinen virhe siksi, että voit nostaa kolikon lattialta ja jatkaa laskutoimitusta siitä mihin jäit. No harm done.</p>
+</blockquote>
+
+<p>Metodikutsumme resetPreviousState antaa applikaatiolle käskyn palauttaa aiempi, toimivaksi todettu tila. Tämän toiminnallisuuden toteuttaminen olisi toisen postauksen aihe; tässä kohtaa riittää, että oletamme aiemman tilan palauttamisen olevan mahdollista.</p>
+
+<p>Koodia voi vielä hiukan siistiä siirtämällä varsinaisen dispatch-osuuden erikseen avustavista toimenpiteistä (raportointi, recovery-toimenpiteet):</p>
+
+<pre><code class="language-javascript">
+function App() {
+
+	this.api = new Api();
+	
+	this.eventBus = function(eventTag, event) {
+		// eventTag on joko eventX, eventY tai eventZ.
+
+		// Kirjaa lokitietoihin uuden tapahtuman käsittely
+		this.log('Tapahtuma ' + eventTag + ' saapunut'); 
+
+		try {
+			this.handleEvent(eventTag, event);
+		}
+
+		catch (e) {
+			// Jotain meni pieleen tapahtumaa käsitellessä/suorittaessa
+			
+			// Lähetetään virheilmoitus Bugsnag-palveluun.
+
+			// Kerrotaan ensin minkä tapahtuman käsittelyssä virhe syntyi...
+			Bugsnag.leaveBreadcrumb(&quot;Virhe syntyi käsitellessä tapahtumaa &quot; + eventTag);
+			// ...sitten lisätään lähetyspakettiin itse Exception-objekti.
+			Bugsnag.notifyException(e);
+
+			// Kehittäjien ja sidosryhmien informointi on suoritettu!
+
+			// Yritetään korjata tilanne palauttamalla aiempi tila. Tällä tavoin
+			// käyttäjän on mahdollista jatkaa ohjelman käyttämistä virheestä huolimatta.
+			this.resetPreviousState();
+		}
+
+	}
+
+	// HandleEvent-metodi keskittyy yksinomaan valitsemaan oikean toimenpiteen saamansa
+	// tapahtuman (tai tapahtumatagin) perusteella.
+	this.handleEvent = function(eventTag, event) {
+		if (eventTag === 'eventX') {
+			this.api.doSomething();
+		} else if (eventTag === 'eventY') {
+			this.api.doSomethingElse();
+		} else if (eventTag === 'eventZ') {
+			this.api.doThirdThing();
+		}		
+	}
+}
+
+</code></pre>
+
+<p>Thats it! Koodi näyttää selkeältä, ja eri vastuualueet on selkeän visuaalisesti erillään koodipohjassa.</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="https://www.nollaversio.fi/blog/public/vue/paper-and-vue/">
         Vue.js reactivity gotcha
       </a>
@@ -96,7 +398,7 @@
 
 <p>Now, one could build it like this:</p>
 
-<pre><code class="language-javascript">
+<pre><code class="language-html">
 &lt;template&gt;
 	&lt;div&gt;
 		&lt;!-- Render delete buttons for game objects above canvas --&gt;
