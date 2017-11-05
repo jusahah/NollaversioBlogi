@@ -6,8 +6,121 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Sun, 29 Oct 2017 05:04:20 +0200</lastBuildDate>
+    <lastBuildDate>Sun, 05 Nov 2017 06:22:32 +0200</lastBuildDate>
     <atom:link href="https://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Beware JS accumulating math inaccuracies</title>
+      <link>https://www.nollaversio.fi/blog/public/nodejs/js-math-inaccuracy/</link>
+      <pubDate>Sun, 05 Nov 2017 06:22:32 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/nodejs/js-math-inaccuracy/</guid>
+      <description>
+
+&lt;p&gt;One of the fun things about programming is that math operations on floating point values are inherently inaccurate. This can be seen in Javascript:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var b = 0.362 * 100;
+
+console.log(b); // 36.199999999999996
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Math operation above should produce 36.2, but instead it spews out something else. It is not a large inaccurary, but it is an inaccuracy nevertheless.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Of course, what is &amp;ldquo;large&amp;rdquo; is relative.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Most of the time those small inaccuracies do not cause any troubles; after all, Javascript is not meant to be used in high-precision scientific computing. Javascript is a scripting language for the Web.&lt;/p&gt;
+
+&lt;p&gt;However, as always, there is a big gotcha to watch out for: &lt;em&gt;accumulating inaccuracies during render loop&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h3 id=&#34;small-inaccurary-turns-into-a-big-one&#34;&gt;Small inaccurary turns into a big one&lt;/h3&gt;
+
+&lt;p&gt;Here is an example how things can quickly go haywire:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var c = 0.362 * 100 - 35.2; // Should produce value 1
+
+var frames = 60 * 60; // One minute at 60 FPS
+
+while (frames--) {
+  // 1 * 1 should be 1, thus c should never change!
+  c = c*c;
+}
+
+// c should be 1, but...
+console.log(&amp;quot;Eventual c: &amp;quot; + c); // 0
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;In the code above we are running a simulated game loop. Every loop run simply multiplies &lt;em&gt;c&lt;/em&gt; by itself. As this is supposed to be game loop, it spins approximately &lt;strong&gt;60 times a second&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;What happens is that originally small and meaningless inaccuracy quickly &lt;em&gt;accumulates itself&lt;/em&gt; into a devastating error. At the end of the loop, variable &lt;em&gt;c&lt;/em&gt; contains value zero.&lt;/p&gt;
+
+&lt;p&gt;This is a type of bug that will certainly cause troubles within your program. First of all, it is pretty hard to find in testing because of its accumulating nature.&lt;/p&gt;
+
+&lt;p&gt;Like multithreading bugs, likelihood of the bug appearing increases with the duration of the program has been running.&lt;/p&gt;
+
+&lt;p&gt;But again, above still seems pretty theoretical example. Does this bug &lt;em&gt;really&lt;/em&gt; cause troubles in practice?&lt;/p&gt;
+
+&lt;p&gt;Yes. I had this bug happen in my Javascript game. I was using PaperJs library, and this bug periodically messed up scales of my PaperJS objects. Code causing troubles was (loosely) like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var paperObject = new paper.Circle(...);
+
+// This gets called on every render frame.
+function setScaleToObject(newScale) {
+	paperObject.scaling = {
+		x: newScale,
+		y: newScale
+    };
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Setting scale-values right into paperJS object caused problems. Because, for example, if I expected &lt;em&gt;newScale&lt;/em&gt; to be
+1 but it instead was 0.999999999, PaperJs would store 0.999999999 to its internal data structures. And then somehow that value got repeatedly multiplied until suddenly object just disappeared from the screen.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Sudden disappearance is due the fact that the inaccuracy grows slowly at first, but eventually it reaches &amp;ldquo;critical mass&amp;rdquo; and starts to grow exponentially.&lt;/p&gt;
+
+&lt;p&gt;For example: &lt;strong&gt;0.99999 ^ 2&lt;/strong&gt; is still pretty close to 0.99999, but &lt;strong&gt;0.9 ^ 2&lt;/strong&gt; is clearly different (0.9 vs 0.81).&lt;/p&gt;
+
+&lt;p&gt;If you think about this in terms of pixels, &lt;strong&gt;0.99999 ^ 2 multiplied by 1000 pixels&lt;/strong&gt; still rounds to 1000 pixels. But &lt;strong&gt;0.9 ^ 2 multiplied by 1000 pixels&lt;/strong&gt; is only 810 pixels. A huge difference.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;What happened is this: PaperJs internal scale value hit zero. This was extremely strange because I could always be certain that newScale was &lt;strong&gt;not&lt;/strong&gt; zero. Thus I was explicitly setting object&amp;rsquo;s scale to non-Zero value.&lt;/p&gt;
+
+&lt;p&gt;But setting scaling-attribute did not reset actual matrix scale.&lt;/p&gt;
+
+&lt;p&gt;Instead, somehow, setting that scaling-attribute directly caused underlying PaperJs matrix object to become instable, and slowly to drift away from the wanted value (newScale).&lt;/p&gt;
+
+&lt;p&gt;The fix I used to avoid accumulating errors was to introduce &lt;strong&gt;auto-correction&lt;/strong&gt; to the code. And stop setting scale-value directly to paperJS object:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var paperObject = new paper.Circle(...);
+
+function scaleObject(newScale) {
+	
+	// We use objects current scale to auto-adjust our scale change.
+	var currentScale = paperObject.getScaling().x;
+
+	// We know currentScale and newScale; now we can calculate how much to scale
+	// to achieve newScale given currentScale.
+	// This achieves auto-correction!!
+	var change = newScale / currentScale;
+
+	paperObject.scale(change);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The code above is &lt;em&gt;auto-correcting&lt;/em&gt;; meaning that if currentScale starts to drift away from epexted exact value (e.g. 0.99999 vs 1), our change calculation will take it into account. This saves the day.&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Kaikki tapahtumat vievät try-catchiin</title>
@@ -1943,136 +2056,6 @@ Pankkitili::all()-&amp;gt;count(); // 1
 
 &lt;blockquote&gt;
 &lt;p&gt;Soft Delete-toiminnallisuus mahdollistaa helposti &lt;em&gt;append-only&lt;/em&gt;-tyylisen tiedonhallintaratkaisun luomisen. &lt;em&gt;Append-only&lt;/em&gt;-ratkaisussa mitään tietoa ei koskaan poisteta; vanhentunut tieto yksinkertaisesti merkitään jollain ruksilla (&lt;em&gt;deleted_at&lt;/em&gt;), joka kertoo, että tietoa ei pidä sisällytettävän applikaation tietokantahakuihin.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Yksi taulu, useampi objekti (part 2)</title>
-      <link>https://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p2/</link>
-      <pubDate>Tue, 04 Oct 2016 17:40:46 +0300</pubDate>
-      
-      <guid>https://www.nollaversio.fi/blog/public/laravel/single-table-inheritance-p2/</guid>
-      <description>&lt;p&gt;&lt;em&gt;(jatkoa edelliselle postauksella)&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;Eli kysymys siis on: &lt;strong&gt;Miten yhdistämme usean eri luokan yhteen tauluun ja miksi haluamme niin tehdä?&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Yksi tapa vetää mutkat suoriksi on tehdä yksinkertainen taulu, joka sisältää objekti-ID:n ja sitten tekstimuodossa valinnaisen datan, joka kuvaa objektia:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;
-id | data
--- | ----------------------------------
-1  | {name: &#39;jaakko&#39;, osoite: &#39;...&#39;}
-2  | {pankki: &#39;OP&#39;, puhelin: &#39;...&#39;}
-3  | {yhteys: &#39;SQLDriver&#39;, args: &#39;...&#39;}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tällä tavalla on helppo saada eri tyyppiset objektit menemään samaan tauluun. Riittää, että objektin sisältö kyetään mahduttamaan data-kenttään, ja avot.&lt;/p&gt;
-
-&lt;p&gt;Mutta hetkinen, jotain puuttuu. Miten erotamme eri tyyppiset objektit toisistaan? Tarvitsemme uuden sarakkeen:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;
-id | tyyppi  | data
--- | ------- | ----------------------------------
-1  | Henkilo | {name: &#39;jaakko&#39;, osoite: &#39;...&#39;}
-2  | Pankki  | {pankki: &#39;OP&#39;, puhelin: &#39;...&#39;}
-3  | Ajuri   | {yhteys: &#39;SQLDriver&#39;, args: &#39;...&#39;}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Nyt meidän &lt;em&gt;tyyppi&lt;/em&gt;-sarake kertoo millainen objekti kyseiselle riville on tallennettu. Teoriassa tuon objektin tyypin olisi voinut tallentaa osaksi data-attribuuttia, mutta parempi näin. Sillä nyt pystymme tekemään hakuja &lt;em&gt;tyyppi&lt;/em&gt;-attribuuttia hyödyntäen.&lt;/p&gt;
-
-&lt;p&gt;Muokataan ylläolevaa meidän kommunikaatioesimerkkiä varten:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;
-// Taulu: &#39;kommunikaatiot&#39;
-
-id | tyyppi     | data
--- | ---------- | --------------------------
-1  | Savumerkki | {savunvari: &#39;harmaa&#39;, ...}
-2  | Valomerkki | {aallonpituus: &#39;30&#39;, ...}
-3  | Puhelin    | {numero: 0409351405, ...}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Jokainen rivi sisältää tiedon siitä millainen &lt;strong&gt;konkreettinen&lt;/strong&gt; kommunikaatiotapa on kyseessä, ja tarvittavan lisäinfon tuon tavan käyttämiseksi applikaatiokoodissa.&lt;/p&gt;
-
-&lt;p&gt;Miten sitten applikaatiokoodi tietää luoda oikeanlaisen objektin kunkin rivin pohjalta?&lt;/p&gt;
-
-&lt;p&gt;Muistutetaan mieleen, että tämä oli koko &amp;ldquo;yhden taulun periytyvuuden&amp;rdquo;-lähtökohta; kyky luoda &lt;em&gt;eri&lt;/em&gt; objekteja &lt;em&gt;saman&lt;/em&gt; taulun tietueista. Olemme kivasti onnistuneet koodaamaan tietuetyypin osaksi riviä (&amp;ldquo;tyyppi&amp;rdquo;-sarake!), mutta kuinka luoda objekti tuon sarakkeen avulla?&lt;/p&gt;
-
-&lt;p&gt;Laravellissa homma onnistuu laittoman helposti; &lt;em&gt;voimme nätisti korvata vakioluontimetodin omalla metodillamme, joka tarkastaa tyyppi-sarakkeen ja valitsee oikean objektiluokan sarakkeen arvon perusteella!&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;Kas, näin:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-use App\Models\Puhelin;
-use App\Models\Valomerkki;
-use App\Models\Savumerkki;
-
-class Kommunikaatio extends Model {
-	
-  public function newFromBuilder($attributes = array(), $connection = null) {
-
-    $m;
-
-    $tyyppi = $attributes-&amp;gt;tyyppi;
-
-    // Voisimme myös instantoida suoraan &amp;quot;tyyppi&amp;quot;-attribuuttia käyttäen:
-    // $m = new $tyyppi($attributes-&amp;gt;data);
-    // Tällöin emme tarvitsisi if-lausekkeita lainkaan!
-
-    if ($tyyppi === &#39;Puhelin&#39;) {
-      $m = new Puhelin($attributes-&amp;gt;data);
-    } 
-    else if ($tyyppi === &#39;Savumerkki&#39;) {
-      $m = new Savumerkki($attributes-&amp;gt;data);
-    } 
-    else if ($tyyppi === &#39;Valomerkki&#39;) {
-      $m = new Valomerkki($attributes-&amp;gt;data);
-    }     	
-    else {
-      throw new \Exception(&#39;Missing type: &#39; . $tyyppi);
-    }
-
-    return $m;
-  }
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Nyt meidän abstrakti konseptimallimme &lt;em&gt;Kommunikaatio&lt;/em&gt; - joka on suoraan kytketty &lt;em&gt;kommunikaatiot&lt;/em&gt; tietokantatauluun - tekee päätöksen lopullisesta &lt;em&gt;konkreettisesta&lt;/em&gt; objektiluokasta, jonka perusteella objekti luodaan!&lt;/p&gt;
-
-&lt;p&gt;Tämän päätöksen Kommunikaatio tekee tarkastelemalla &lt;em&gt;tyyppi&lt;/em&gt;-attribuuttia, ja valitsemalla sopivan mallin. Tuon sopivan mallin pohjalta luotu uusi objekti sitten palautetaan ulos metodista.&lt;/p&gt;
-
-&lt;p&gt;Kaiken hienous on siinä, että metodia kutsutaan Laravellin itsensä toimesta. Eli kun applikaatiokoodini hakee tietyn kokoelman &lt;em&gt;kommunikaatioita&lt;/em&gt; tietokannasta, kukin kommunikaatio rakennetaan ylläolevan &lt;em&gt;newFromBuilder&lt;/em&gt;-metodin kautta!&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Esimerkki
-Kommunikaatio::all(); // [Puhelin, Valomerkki, Valomerkki, Puhelin, ...]
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Toisin sanoen pystyn yhdellä ylätason kutsulla &lt;em&gt;Kommunikaatio::all()&lt;/em&gt; luomaan kokoelman, joka sisältää eri objekteja. Tämä on aika hienoa. Koska nyt voin käsitellä noita eri objekteja miten haluan. Niin kauan kuin ne kaikki noudattavat jotain kommunikaatiokanaville yhteistä käyttöliittymää, ei ongelmia synny.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Esimerkki
-$kommunikaatiot = Kommunikaatio::all();
-
-$kommunikaatiot-&amp;gt;each(function($komm) {
-  // Tässä on hienous! Voimme polymorfisesti kutsua
-  // tiettyä metodia tietämättä lainkaan mikä konkreettinen
-  // objekti &amp;quot;$komm&amp;quot; itse asiassa on!
-
-  // Puhelin, Valomerkki, Savumerkki kaikki tarjoavat &amp;quot;send&amp;quot;-metodin.
-  $komm-&amp;gt;send(&#39;Haloo!&#39;);
-});
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Single-table inheritance - yhden taulun periytyvyys - antaa mahdollisuuden tallentaa yhteen ja samaan tauluun eri tyyppisiä objekteja. Mikä parasta, Laravellin avulla voimme luoda kokoelmia, jotka sisältävät noita eri tyyppisiä objekteja. Kaiken huippuna voimme käsitellä kokoelmia ilman, että tiedämme mitä tyyppiä kukin objekti on. Riittää, että kukin objekti tarjoaa tietyn yhteisen käyttöliittymän (interface).&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>

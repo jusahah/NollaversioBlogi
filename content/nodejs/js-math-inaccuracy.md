@@ -1,7 +1,7 @@
 +++
 date = "2017-11-05T06:22:32+02:00"
-draft = true
-title = "Beware JS cumulating math inaccuracies"
+draft = false
+title = "Beware JS accumulating math inaccuracies"
 
 +++
 
@@ -17,9 +17,11 @@ console.log(b); // 36.199999999999996
 
 Math operation above should produce 36.2, but instead it spews out something else. It is not a large inaccurary, but it is an inaccuracy nevertheless.
 
+> Of course, what is "large" is relative.
+
 Most of the time those small inaccuracies do not cause any troubles; after all, Javascript is not meant to be used in high-precision scientific computing. Javascript is a scripting language for the Web.
 
-However, as always, there is a big gotcha to watch out for: *cumulating inaccuracies during render loop*.
+However, as always, there is a big gotcha to watch out for: *accumulating inaccuracies during render loop*.
 
 ### Small inaccurary turns into a big one
 
@@ -44,15 +46,15 @@ console.log("Eventual c: " + c); // 0
 
 In the code above we are running a simulated game loop. Every loop run simply multiplies *c* by itself. As this is supposed to be game loop, it spins approximately **60 times a second**.
 
-What happens is that originally small and meaningless inaccuracy quickly *cumulates itself* into a devastating error. At the end of the loop, variable *c* contains value zero.
+What happens is that originally small and meaningless inaccuracy quickly *accumulates itself* into a devastating error. At the end of the loop, variable *c* contains value zero.
 
 This is a type of bug that will certainly cause troubles within your program. First of all, it is pretty hard to find in testing because of its accumulating nature. 
 
-Like most multithreading bugs, likelihood of the bug appearing increases with the duration of the program has been running. 
+Like multithreading bugs, likelihood of the bug appearing increases with the duration of the program has been running. 
 
-But again... does this bug actually occur in practice?
+But again, above still seems pretty theoretical example. Does this bug *really* cause troubles in practice?
 
-Yes. I had this bug happen in my Javascript game. I was using PaperJs library, and this bug periodically messed up scales of my PaperJS objects. Following pseudocode demonstrates:
+Yes. I had this bug happen in my Javascript game. I was using PaperJs library, and this bug periodically messed up scales of my PaperJS objects. Code causing troubles was (loosely) like this:
 
 ```javascript
 
@@ -81,7 +83,13 @@ Setting scale-values right into paperJS object caused problems. Because, for exa
 >
 > If you think about this in terms of pixels, **0.99999 ^ 2 multiplied by 1000 pixels** still rounds to 1000 pixels. But **0.9 ^ 2 multiplied by 1000 pixels** is only 810 pixels. A huge difference. 
 
-The fix to avoid cumulating errors is to introduce auto-correction to the code and stop setting scale-value directly to paperJS object:
+What happened is this: PaperJs internal scale value hit zero. This was extremely strange because I could always be certain that newScale was **not** zero. Thus I was explicitly setting object's scale to non-Zero value. 
+
+But setting scaling-attribute did not reset actual matrix scale.
+
+Instead, somehow, setting that scaling-attribute directly caused underlying PaperJs matrix object to become instable, and slowly to drift away from the wanted value (newScale).
+
+The fix I used to avoid accumulating errors was to introduce **auto-correction** to the code. And stop setting scale-value directly to paperJS object:
 
 ```javascript
 
@@ -94,7 +102,7 @@ function scaleObject(newScale) {
 
 	// We know currentScale and newScale; now we can calculate how much to scale
 	// to achieve newScale given currentScale.
-
+	// This achieves auto-correction!!
 	var change = newScale / currentScale;
 
 	paperObject.scale(change);
@@ -102,7 +110,7 @@ function scaleObject(newScale) {
 
 ```
 
-The code above is *auto-correcting*; meaning that if currentScale starts to drift away from epexted exact value (e.g. 0.99999 vs 1), our change calculation will take it into account. This saves the day.
+The code above is *auto-correcting*; meaning that if currentScale starts to drift away from expected exact value (e.g. 0.99999 vs 1), our change calculation will take it into account. This saves the day.
 
 
 

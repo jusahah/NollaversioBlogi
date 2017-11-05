@@ -6,8 +6,121 @@
     <description>Recent content in Nodejs on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Fri, 07 Oct 2016 16:09:02 +0300</lastBuildDate>
+    <lastBuildDate>Sun, 05 Nov 2017 06:22:32 +0200</lastBuildDate>
     <atom:link href="https://www.nollaversio.fi/blog/public/nodejs/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Beware JS accumulating math inaccuracies</title>
+      <link>https://www.nollaversio.fi/blog/public/nodejs/js-math-inaccuracy/</link>
+      <pubDate>Sun, 05 Nov 2017 06:22:32 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/nodejs/js-math-inaccuracy/</guid>
+      <description>
+
+&lt;p&gt;One of the fun things about programming is that math operations on floating point values are inherently inaccurate. This can be seen in Javascript:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var b = 0.362 * 100;
+
+console.log(b); // 36.199999999999996
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Math operation above should produce 36.2, but instead it spews out something else. It is not a large inaccurary, but it is an inaccuracy nevertheless.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Of course, what is &amp;ldquo;large&amp;rdquo; is relative.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Most of the time those small inaccuracies do not cause any troubles; after all, Javascript is not meant to be used in high-precision scientific computing. Javascript is a scripting language for the Web.&lt;/p&gt;
+
+&lt;p&gt;However, as always, there is a big gotcha to watch out for: &lt;em&gt;accumulating inaccuracies during render loop&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h3 id=&#34;small-inaccurary-turns-into-a-big-one&#34;&gt;Small inaccurary turns into a big one&lt;/h3&gt;
+
+&lt;p&gt;Here is an example how things can quickly go haywire:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var c = 0.362 * 100 - 35.2; // Should produce value 1
+
+var frames = 60 * 60; // One minute at 60 FPS
+
+while (frames--) {
+  // 1 * 1 should be 1, thus c should never change!
+  c = c*c;
+}
+
+// c should be 1, but...
+console.log(&amp;quot;Eventual c: &amp;quot; + c); // 0
+
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;In the code above we are running a simulated game loop. Every loop run simply multiplies &lt;em&gt;c&lt;/em&gt; by itself. As this is supposed to be game loop, it spins approximately &lt;strong&gt;60 times a second&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;What happens is that originally small and meaningless inaccuracy quickly &lt;em&gt;accumulates itself&lt;/em&gt; into a devastating error. At the end of the loop, variable &lt;em&gt;c&lt;/em&gt; contains value zero.&lt;/p&gt;
+
+&lt;p&gt;This is a type of bug that will certainly cause troubles within your program. First of all, it is pretty hard to find in testing because of its accumulating nature.&lt;/p&gt;
+
+&lt;p&gt;Like multithreading bugs, likelihood of the bug appearing increases with the duration of the program has been running.&lt;/p&gt;
+
+&lt;p&gt;But again, above still seems pretty theoretical example. Does this bug &lt;em&gt;really&lt;/em&gt; cause troubles in practice?&lt;/p&gt;
+
+&lt;p&gt;Yes. I had this bug happen in my Javascript game. I was using PaperJs library, and this bug periodically messed up scales of my PaperJS objects. Code causing troubles was (loosely) like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var paperObject = new paper.Circle(...);
+
+// This gets called on every render frame.
+function setScaleToObject(newScale) {
+	paperObject.scaling = {
+		x: newScale,
+		y: newScale
+    };
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Setting scale-values right into paperJS object caused problems. Because, for example, if I expected &lt;em&gt;newScale&lt;/em&gt; to be
+1 but it instead was 0.999999999, PaperJs would store 0.999999999 to its internal data structures. And then somehow that value got repeatedly multiplied until suddenly object just disappeared from the screen.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Sudden disappearance is due the fact that the inaccuracy grows slowly at first, but eventually it reaches &amp;ldquo;critical mass&amp;rdquo; and starts to grow exponentially.&lt;/p&gt;
+
+&lt;p&gt;For example: &lt;strong&gt;0.99999 ^ 2&lt;/strong&gt; is still pretty close to 0.99999, but &lt;strong&gt;0.9 ^ 2&lt;/strong&gt; is clearly different (0.9 vs 0.81).&lt;/p&gt;
+
+&lt;p&gt;If you think about this in terms of pixels, &lt;strong&gt;0.99999 ^ 2 multiplied by 1000 pixels&lt;/strong&gt; still rounds to 1000 pixels. But &lt;strong&gt;0.9 ^ 2 multiplied by 1000 pixels&lt;/strong&gt; is only 810 pixels. A huge difference.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;What happened is this: PaperJs internal scale value hit zero. This was extremely strange because I could always be certain that newScale was &lt;strong&gt;not&lt;/strong&gt; zero. Thus I was explicitly setting object&amp;rsquo;s scale to non-Zero value.&lt;/p&gt;
+
+&lt;p&gt;But setting scaling-attribute did not reset actual matrix scale.&lt;/p&gt;
+
+&lt;p&gt;Instead, somehow, setting that scaling-attribute directly caused underlying PaperJs matrix object to become instable, and slowly to drift away from the wanted value (newScale).&lt;/p&gt;
+
+&lt;p&gt;The fix I used to avoid accumulating errors was to introduce &lt;strong&gt;auto-correction&lt;/strong&gt; to the code. And stop setting scale-value directly to paperJS object:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var paperObject = new paper.Circle(...);
+
+function scaleObject(newScale) {
+	
+	// We use objects current scale to auto-adjust our scale change.
+	var currentScale = paperObject.getScaling().x;
+
+	// We know currentScale and newScale; now we can calculate how much to scale
+	// to achieve newScale given currentScale.
+	// This achieves auto-correction!!
+	var change = newScale / currentScale;
+
+	paperObject.scale(change);
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;The code above is &lt;em&gt;auto-correcting&lt;/em&gt;; meaning that if currentScale starts to drift away from epexted exact value (e.g. 0.99999 vs 1), our change calculation will take it into account. This saves the day.&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Lodash: template</title>
@@ -1832,179 +1945,6 @@ module.exports = function(sisaantulevaData) {
 
 &lt;p&gt;Tässä tapauksessa &lt;em&gt;tap-funktio&lt;/em&gt; pelastaa päivän suorastaan naurettavan helpolla. Kutsumme &lt;em&gt;printtaaFedererinTulokset&lt;/em&gt;-kirjastofunktiota tap-funktion sisältä, ja kaikki toimii.&lt;/p&gt;
 &lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Raskas koodi erillisessä säikeessä? Lupaus auttaa.</title>
-      <link>https://www.nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</link>
-      <pubDate>Mon, 18 Jul 2016 17:11:43 +0300</pubDate>
-      
-      <guid>https://www.nollaversio.fi/blog/public/nodejs/promise-waiting-for-thread/</guid>
-      <description>
-
-&lt;p&gt;Javascriptin hauska puoli on, että se ajaa itseään mukavasti yhdessä säikeessä. Tämä tarkoittaa, että kaikki
-koodi ajetaan &lt;em&gt;perätysten&lt;/em&gt;, kiltisti jonossa.&lt;/p&gt;
-
-&lt;p&gt;Eli kun funktio &lt;strong&gt;A&lt;/strong&gt; aloittaa ajonsa, funktio &lt;strong&gt;B&lt;/strong&gt; ei voi aloittaa ennenkuin &lt;strong&gt;A&lt;/strong&gt; on valmis. Täydellinen metafööri Javascriptille onkin McDonaldsin autokaistan jono - jos yksi autoilija jää suustansa kiinni noutotiskille, yksikään takana olevista autoista ei liiku senttiäkään.&lt;/p&gt;
-
-&lt;p&gt;Ohjelmoinnin maailmassa tämä tarkoittaa, että jos yksi funktio rohmuaa prosessorin ajoaikaa viisi sekuntia, kaikki muut ajovuoroa odottavat koodinpätkäset joutuvat vähintään tuon viisi sekuntia odottamaan.&lt;/p&gt;
-
-&lt;p&gt;Tämä kylmä totuus pätee sekä selaimen puolella että serverimaailmassa (Node.js).&lt;/p&gt;
-
-&lt;p&gt;Yksi tapa ratkoa jonotuksen tuomat haasteet on pitää huoli, että jono liikkuu vauhdilla. Mäkkärikin tekee näin - he pitävät huolen, ettei yksittäinen asiakas tuki koko autokaistaa, vaan siirtyy sutjakasti elämässään eteenpäin. Koodin puolella tämä on tehtävissä ohjelmoijan maalaisjärjen käytöllä - ohjelmoija arvioi parhaan kykynsä mukaan kuinka kauan kunkin koodinpätkän ajo kestää.&lt;/p&gt;
-
-&lt;p&gt;Jos ajo kestää kaksi mikrosekuntia, ei ongelmia.&lt;/p&gt;
-
-&lt;p&gt;Jos ajo kestää kaksi sekuntia, niin pulassa ollaan.&lt;/p&gt;
-
-&lt;p&gt;Mikä avuksi tilanteisiin, joissa yksittäinen koodinajo on pitkäkestoinen?&lt;/p&gt;
-
-&lt;h3 id=&#34;luo-uusi-säie-joka-tekee-raskaat-työt&#34;&gt;Luo uusi säie, joka tekee raskaat työt&lt;/h3&gt;
-
-&lt;p&gt;Ratkaisu on yksinkertainen - uusi työmyyrä (säie), joka ottaa kontolleen raskaan työurakan. Selaimessa Web Worker-standardi mahdollistaa säikeen luomisen. Muita &lt;em&gt;järkeviä&lt;/em&gt; vaihtoehtoja ei juuri ole.&lt;/p&gt;
-
-&lt;p&gt;Serveripuolella (Node.js) on enemmän vaihtoehtoja. Yksi vaihtoehto on ajaa raskas koodi kokonaan uudessa Node.js-instanssissa. Eli uudessa käyttöjärjestelmän prosessissa, joka pyörittää Node.js-koodia.&lt;/p&gt;
-
-&lt;p&gt;Se voi olla ihan hyväkin idea, mutta aika raskas, sillä koko Node.js-moottori täytyy ladata uusiksi tätä uutta &amp;ldquo;säiettä&amp;rdquo; varten. Jos koodinajo on pitkäkestoinen, tällä ei ole juuri merkitystä.&lt;/p&gt;
-
-&lt;p&gt;Toinen vaihtoehto olisi käyttää &amp;ldquo;kevyempää säiettä&amp;rdquo;, joka ajetaan jo olemassaolevan Node.js-prosessin alaisuudessa. Tällöin käyttöjärjestelmän ei tarvitse synnyttää uutta prosessia, vaan uusi prosessi syntyy kivasti käyttöjärjestelmän tietämättä asiasta mitään.&lt;/p&gt;
-
-&lt;p&gt;Valitaan kuitenkin vaihtoehto yksi ihan siksi, että yksi parhaista &lt;em&gt;säiekirjastoista&lt;/em&gt; turvautuu siihen.&lt;/p&gt;
-
-&lt;h3 id=&#34;threads-kirjasto-ja-lupaukset&#34;&gt;Threads -kirjasto ja lupaukset&lt;/h3&gt;
-
-&lt;p&gt;Oletetaan, että meillä on koodinpätkä, joka etsii kaikki suomalaiset erisnimet tekstidokumentista. Skripti toimii seuraavasti:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// etsiErisnimet.js
-
-var ERISNIMET = [&#39;Aado&#39;, &#39;Aamu&#39;, &#39;Aapo&#39;, ... , &#39;Yrjö&#39;];
-
-module.exports = function(dokumentti) {
-	
-  var sanat = dokumentti.split(&amp;quot; &amp;quot;); // Erottele välilyönnillä
-
-  var nimet = _.filter(sanat, function(sana) {
-    return ERISNIMET.indexOf(sana) !== -1; // Löytyikö sana nimiluettelosta?
-  })
-
-  // Poista duplikaatit
-  // [&#39;Mikko&#39;, &#39;Mikko&#39;, &#39;Matti&#39;] -&amp;gt; [&#39;Mikko&#39;, &#39;Matti&#39;]
-  return _.uniq(nimet);
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Algoritmi on kompleksisuudeltaan about &lt;em&gt;O(nk)&lt;/em&gt;, jossa &lt;em&gt;n&lt;/em&gt; kuvaa tekstin pituutta ja &lt;em&gt;k&lt;/em&gt; etunimien lukumäärää.
-Ei ehkä ihan optimialgoritmi, mutta what the hell. Käyttö on helppoa.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Testi.js
-var nimiEtsinta = require(&#39;etsiErisnimet&#39;);
-
-var nimet = nimiEtsinta(&#39;Pirkko ja Ville menivät kalaan.&#39;);
-console.log(nimet) // [&#39;Pirkko&#39;, &#39;Ville&#39;]
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Seuraavaksi katsotaan, miten tuo algoritmi saadaan ajettua erillisessä säikeessä.&lt;/p&gt;
-
-&lt;p&gt;Ensinnäkin tarvitsemme säiekirjaston. Sen voi asentaa &lt;em&gt;npm install threads &amp;ndash;save&lt;/em&gt; -komennolla komentorivillä.
-Tämän lisäksi on syytä tehdä pieni muutos etsiErisnimet.js-tiedostoon, jotta se pystyy toimimaan threads-kirjaston kanssa. Muuta ei tarvita.&lt;/p&gt;
-
-&lt;p&gt;Sitten itse koodi. Huomattavaa on, että &lt;em&gt;paketoimme&lt;/em&gt; aiemman erisnimien etsintään erikoistuneen koodin siten, että se voidaan ajaa säikeen sisällä.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// etsiErisnimetThreaded.js
-
-// Tämä moduuli toimii yksinomaan wrapperinä.
-
-var threads = require(&#39;threads&#39;); // Säiekirjasto
-var Promise = require(&#39;bluebird&#39;); // Lupauskirjasto
-
-module.exports = function(dokumentti) {
-
-  return new Promise(function(resolve, reject) {
-    // Luodaan uusi säie
-    // Spawn-funktio ottaa parametrikseen sen moduulin nimen, 
-    // jonka koodin säie ottaa ajaakseen.
-    var thread = threads.spawn(&#39;etsiErisnimet&#39;);
-
-    // Säie on luotu pinnan alla ja valmis toimimaan.
-    // Lähetetään säikeelle viesti
-    thread.send(dokumentti)
-    // ...ja jäädään kuuntelemaan vastausta
-    .on(&#39;message&#39;, function(loydetytErisnimet) {
-      // Resolvoidaan lupaus saaduilla tuloksilla.
-      return resolve(loydetytErisnimet);
-    })
-    .on(&#39;error&#39;, function(error) {
-      // Rejektoidaan lupaus
-      return reject(error);
-    });
-
-  });
-
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// etsiErisnimet.js
-
-// Aiempi erisnimien etsintä toimii kuten ennenkin, mutta
-// tarvitsemme hiukan lisäkoodia hallitsemaan tiedonvaihtoa
-// säikeiden välillä.
-
-var ERISNIMET = [&#39;Aado&#39;, &#39;Aamu&#39;, &#39;Aapo&#39;, ... , &#39;Yrjö&#39;];
-
-module.exports = function(dokumentti, takaisinlahetys) {
-
-  var sanat = dokumentti.split(&amp;quot; &amp;quot;); // Erottele välilyönnillä
-
-  var nimet = _.filter(sanat, function(sana) {
-    return ERISNIMET.indexOf(sana) !== -1; // Löytyikö sana nimiluettelosta?
-  })
-
-  // Poista duplikaatit
-  // [&#39;Mikko&#39;, &#39;Mikko&#39;, &#39;Matti&#39;] -&amp;gt; [&#39;Mikko&#39;, &#39;Matti&#39;]
-  takaisinlahetys(_.uniq(nimet));
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva koodi on kaikki mitä tarvitsemme. Nyt voimme suorittaa erisnimietsinnän täysin erillään omassa säikeessään!&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// RikosSeurantaApplikaatio.js
-
-var Promise = require(&#39;bluebird&#39;);
-var nimietsinta = require(&#39;etsiErisnimetThreaded&#39;);
-
-function vastaanotaDokumentti(dokumentti) {
-	
-  nimietsinta(dokumentti)
-  .then(function(loydetytNimet) {
-    return tarkistaEpailyttavatNimiParit(loydetytNimet);
-  })
-  .catch(function(error) {
-    console.log(&amp;quot;Nimien etsintä epäonnistui&amp;quot;);
-    console.error(error);
-  })
-}
-
-function tarkistaEpailyttavatNimiParit(nimet) {
-  if (_.intersection([&#39;Ilkka&#39;, &#39;Kanerva&#39;], nimet).length === 2) {
-    // Sekä Ilkka että Kanerva löytyivät, soita Karhuryhmä.
-  }
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tällä tavoin olemme kivasti paketoineet säikeidenhallinnan ikävät sivuseikat lupausta tarjoavat abstraktion taakse. &lt;em&gt;RikosSeurantaApplikaation&lt;/em&gt; ei tarvitse välittää tuon taivaallista säikeiden olemassaolosta - riittää, että se kutsuu tarjottua rajapintaa ja ottaa vastaan &lt;em&gt;lupauksen&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Tuo lupaus sitten jonain kauniina aamuna realisoituu todeksi, ja kaikki ovat tyytyväisiä.&lt;/p&gt;
 </description>
     </item>
     

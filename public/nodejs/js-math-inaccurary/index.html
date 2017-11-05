@@ -1,0 +1,183 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Beware JS accumulating math inaccuracies &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="https://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/vue">Vue </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Beware JS accumulating math inaccuracies</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Sun, Nov 5, 2017</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>One of the fun things about programming is that math operations on floating point values are inherently inaccurate. This can be seen in Javascript:</p>
+
+<pre><code class="language-javascript">
+var b = 0.362 * 100;
+
+console.log(b); // 36.199999999999996
+
+</code></pre>
+
+<p>Math operation above should produce 36.2, but instead it spews out something else. It is not a large inaccurary, but it is an inaccuracy nevertheless.</p>
+
+<blockquote>
+<p>Of course, what is &ldquo;large&rdquo; is relative.</p>
+</blockquote>
+
+<p>Most of the time those small inaccuracies do not cause any troubles; after all, Javascript is not meant to be used in high-precision scientific computing. Javascript is a scripting language for the Web.</p>
+
+<p>However, as always, there is a big gotcha to watch out for: <em>accumulating inaccuracies during render loop</em>.</p>
+
+<h3 id="small-inaccurary-turns-into-a-big-one">Small inaccurary turns into a big one</h3>
+
+<p>Here is an example how things can quickly go haywire:</p>
+
+<pre><code class="language-javascript">
+var c = 0.362 * 100 - 35.2; // Should produce value 1
+
+var frames = 60 * 60; // One minute at 60 FPS
+
+while (frames--) {
+  // 1 * 1 should be 1, thus c should never change!
+  c = c*c;
+}
+
+// c should be 1, but...
+console.log(&quot;Eventual c: &quot; + c); // 0
+
+
+</code></pre>
+
+<p>In the code above we are running a simulated game loop. Every loop run simply multiplies <em>c</em> by itself. As this is supposed to be game loop, it spins approximately <strong>60 times a second</strong>.</p>
+
+<p>What happens is that originally small and meaningless inaccuracy quickly <em>accumulates itself</em> into a devastating error. At the end of the loop, variable <em>c</em> contains value zero.</p>
+
+<p>This is a type of bug that will certainly cause troubles within your program. First of all, it is pretty hard to find in testing because of its accumulating nature.</p>
+
+<p>Like most multithreading bugs, likelihood of the bug appearing increases with the duration of the program has been running.</p>
+
+<p>But again&hellip; does this bug actually occur in practice?</p>
+
+<p>Yes. I had this bug happen in my Javascript game. I was using PaperJs library, and this bug periodically messed up scales of my PaperJS objects. Following pseudocode demonstrates:</p>
+
+<pre><code class="language-javascript">
+var paperObject = new paper.Circle(...);
+
+// This gets called on every render frame.
+function setScaleToObject(newScale) {
+	paperObject.scaling = {
+		x: newScale,
+		y: newScale
+    };
+}
+
+</code></pre>
+
+<p>Setting scale-values right into paperJS object caused problems. Because, for example, if I expected <em>newScale</em> to be
+1 but it instead was 0.999999999, PaperJs would store 0.999999999 to its internal data structures. And then somehow that value got repeatedly multiplied until suddenly object just disappeared from the screen.</p>
+
+<blockquote>
+<p>Sudden disappearance is due the fact that the inaccuracy grows slowly at first, but eventually it reaches &ldquo;critical mass&rdquo; and starts to grow exponentially.</p>
+
+<p>For example: <strong>0.99999 ^ 2</strong> is still pretty close to 0.99999, but <strong>0.9 ^ 2</strong> is clearly different (0.9 vs 0.81).</p>
+
+<p>If you think about this in terms of pixels, <strong>0.99999 ^ 2 multiplied by 1000 pixels</strong> still rounds to 1000 pixels. But <strong>0.9 ^ 2 multiplied by 1000 pixels</strong> is only 810 pixels. A huge difference.</p>
+</blockquote>
+
+<p>The fix to avoid accumulating errors is to introduce auto-correction to the code and stop setting scale-value directly to paperJS object:</p>
+
+<pre><code class="language-javascript">
+var paperObject = new paper.Circle(...);
+
+function scaleObject(newScale) {
+	
+	// We use objects current scale to auto-adjust our scale change.
+	var currentScale = paperObject.getScaling().x;
+
+	// We know currentScale and newScale; now we can calculate how much to scale
+	// to achieve newScale given currentScale.
+	// This achieves auto-correction!!
+	var change = newScale / currentScale;
+
+	paperObject.scale(change);
+}
+
+</code></pre>
+
+<p>The code above is <em>auto-correcting</em>; meaning that if currentScale starts to drift away from epexted exact value (e.g. 0.99999 vs 1), our change calculation will take it into account. This saves the day.</p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>
