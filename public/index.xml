@@ -6,8 +6,170 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Sun, 05 Nov 2017 06:22:32 +0200</lastBuildDate>
+    <lastBuildDate>Sat, 11 Nov 2017 07:47:42 +0200</lastBuildDate>
     <atom:link href="https://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Tietokanta per asiakas</title>
+      <link>https://www.nollaversio.fi/blog/public/laravel/database-per-client/</link>
+      <pubDate>Sat, 11 Nov 2017 07:47:42 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/laravel/database-per-client/</guid>
+      <description>
+
+&lt;p&gt;Tyypillinen pieni/keskisuuri Laravel-applikaatio rakentuu yhden tietokannan päälle. Tuo yksi tietokanta sisältää kaiken datan, jota Laravel-sovellus tallentaa/käyttää.&lt;/p&gt;
+
+&lt;p&gt;Tyypillinen web-applikaatio kuitenkin tarjoaa käyttöoikeuden usealle erilliselle käyttäjälle/loppuasiakkaalle. Varsin yleinen tapaus vieläpä on, että kunkin loppuasiakkaan data elää täysin erillään muiden asiakkaiden datasta. Tällöin jokainen asiakas muodostaa oman universuminsa tietokannan sisälle; useimmiten tämä &amp;ldquo;privaatti maailma&amp;rdquo; rakennetaan käyttämällä avokätisesti &lt;em&gt;viiteavaimia&lt;/em&gt; (foreign key).&lt;/p&gt;
+
+&lt;p&gt;Näitä viiteavaimia sitten ripotellaan ympäri tietokannan rakennetta; lähes jokainen tietokantataulu sisältää sarakkeen, jossa viiteavain määrittelee kenen asiakkaan universumiin kyseinen tietue (rivi) kuuluu.&lt;/p&gt;
+
+&lt;p&gt;Toinen vaihtoehto on tehdä asiat konseptuaalisesti yksinkertaisemmin; &lt;strong&gt;annetaan jokaiselle asiakkaalle oma tietokanta!&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Tällöin viiteavaimia ei tarvita, sillä yksittäisessä tietokannassa on aina vain yhden asiakkaan data.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Tietokannan luominen jokaiselle asiakkaalle erikseen sisältää paljon hyviä puolia. Mutta kuten aina, trade-off on olemassa. Hyvä kokonaiskatsaus näihin kahteen eriävään strategiaan löytyy esim.: &lt;a href=&#34;https://stackoverflow.com/questions/18910519/pros-cons-using-multiple-databases-vs-using-single-database&#34;&gt;https://stackoverflow.com/questions/18910519/pros-cons-using-multiple-databases-vs-using-single-database&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Tutkitaan seuraavaksi, miten Laravel-applikaatio voidaan rakentaa käyttämään &lt;em&gt;yhtä tietokantaa per asiakas&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h3 id=&#34;tietokanta-subdomain&#34;&gt;Tietokanta === subdomain&lt;/h3&gt;
+
+&lt;p&gt;Yksi erinomainen tapa mahdollistaa usean tietokannan käyttö järkevästi on kytkeä looginen yhtäläisyys &lt;em&gt;tietokannan&lt;/em&gt; ja &lt;em&gt;alidomainin&lt;/em&gt; välille.&lt;/p&gt;
+
+&lt;p&gt;Tämä tarkoittaa, että esimerkiksi domain &lt;em&gt;nokia.app.fi&lt;/em&gt; valitsee käyttöönsä Nokia-tietokannan, ja &lt;em&gt;atria.app.fi&lt;/em&gt; valitsee käyttöönsä Atria-tietokannan. Molemmat asiakkaat (Nokia ja Atria) jakavat yhteisen Laravel-applikaatiopalvelimen, ja mahdollisesti myös fyysisen tietokantapalvelimen, mutta Laravel valitsee &lt;em&gt;kunkin sisääntulevan palvelupyynnön yhteydessä&lt;/em&gt; sopivan tietokannan dynaamisesti.&lt;/p&gt;
+
+&lt;p&gt;Koodirajapinnan tasolla tämä voisi näyttää kutakuinkin tältä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;
+// routes/api.php
+
+Route::group([&#39;domain&#39; =&amp;gt; &#39;{company}.&#39; . ENV(&#39;APP_DOMAIN&#39;)], function() {
+	
+	Route::get(&#39;/users&#39;, &#39;UserController@all&#39;);
+
+}); 
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Route-tiedostomme siis ottaa alidomainin sisään dynaamisena muuttujana. Tuota muuttujaa voidaan käyttää Controllerin puolella:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// Controller/UserController.php
+
+class UserController extends Controller
+{
+
+    public function index(Request $request, $company) {
+
+    	if ($company === &#39;nokia&#39;) {
+    		// Käytä Nokian tietokantaa
+    	} else if ($company === &#39;atria&#39;) {
+    		// Käytä Atrian tietokantaa.
+    	}
+
+    	// Tässä kohtaa Eloquent on kytketty oikeaan tietokantaan.
+
+    	return User::all();
+    }
+
+
+ }
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ikävää ylläolevassa on tietenkin se, että meidän tarvitsee jokaikisessä Controllerissa tehdä tietokannan valinta. Helpompaa on siirtää tietokannan dynaaminen valinta middlewareen:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;
+// Http/Kernel.php
+
+class Kernel extends HttpKernel
+{
+	//... muita asetuksia...
+
+    protected $middlewareGroups = [
+        &#39;api&#39; =&amp;gt; [
+            \App\Http\Middleware\ValitseTietokanta::class, 
+            &#39;throttle:60,1&#39;,
+            &#39;bindings&#39;,
+        ]
+    ]; 
+
+    // ... muita asetuksia...
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code&gt;
+// Middleware/ValitseTietokanta.php
+
+class ValitseTietokanta
+{
+
+    public function handle($request, Closure $next)
+    {
+        $company = $request-&amp;gt;route(&#39;company&#39;);
+
+    	// Määritämme globaalin vakion, jota voidaan käyttää
+    	// missä tahansa applikaatiokoodissa. Tällä tavoin
+    	// mikä tahansa funktio saa tarvittaessa tietoonsa minkä
+    	// asiakkaan kontekstissa se suoritetaan.
+        if (!defined(&#39;COMPANY_SUBDOMAIN&#39;)) {
+            define(&#39;COMPANY_SUBDOMAIN&#39;, $company);
+        }
+
+        // Ylikirjoita default-config.
+        \Config::set(&#39;database.connections.mysql.database&#39;, &#39;appi_db_&#39; . $company);
+        // Ota uusi tietokantayhteys
+        \DB::reconnect(&#39;mysql&#39;);
+
+        return $next($request);
+    }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva tekee tietokannan valinnan jokaiselle API-routelle. Se ei tee suuremmin virhetilanteiden hallintaa. On mahdollista, että tietokantaa ei ole olemassa. Tällöin myöskään alidomainia ei pitäisi olla olemassa, eli ympäröivän www-palvelimen tulisi estää sisääntuleva yhteys.&lt;/p&gt;
+
+&lt;p&gt;Ylläoleva tarvitsee vielä config-tiedostoon lisäyksen.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;// config/database.php
+
+return [
+
+	// muita asetuksia
+
+    &#39;connections&#39; =&amp;gt; [
+
+
+        &#39;mysql&#39; =&amp;gt; [
+            &#39;driver&#39; =&amp;gt; &#39;mysql&#39;,
+            &#39;host&#39; =&amp;gt; env(&#39;DB_HOST&#39;, &#39;localhost&#39;),
+            &#39;port&#39; =&amp;gt; env(&#39;DB_PORT&#39;, &#39;3306&#39;),
+            // Tämä attribuutti korvataan middlewaressa.
+            &#39;database&#39; =&amp;gt; env(&#39;DB_DATABASE&#39;, &#39;appi_db_default&#39;),
+            &#39;username&#39; =&amp;gt; env(&#39;DB_USERNAME&#39;, &#39;forge&#39;),
+            &#39;password&#39; =&amp;gt; env(&#39;DB_PASSWORD&#39;, &#39;&#39;),
+            &#39;charset&#39; =&amp;gt; &#39;utf8&#39;,
+            &#39;collation&#39; =&amp;gt; &#39;utf8_unicode_ci&#39;,
+            &#39;prefix&#39; =&amp;gt; &#39;&#39;,
+            &#39;strict&#39; =&amp;gt; true,
+            &#39;engine&#39; =&amp;gt; null,
+        ],
+];
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Homma toimii siten, että middlewaressa ylikirjoitamme &lt;em&gt;database&lt;/em&gt;-attribuutin mysql-configista. Ylikirjoituksen jälkeen kutsumme &lt;em&gt;DB::reconnect()&lt;/em&gt;, joka lataa (muunnetun) configin uusiksi ja ottaa uuden tietokantayhteyden.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Ylläoleva koodiesimerkki tekee ikävän oletuksen siitä, että kaikki asiakkaat käyttävät tietokannassa samaa salasanaa, tunnusta ja hostia. Tämä estää tietokannan siirtämisen ulkoiselle palvelimelle, esimerkiksi asiakasyrityksen omalle palvelimelle.&lt;/p&gt;
+
+&lt;p&gt;Äärimmäinen dynaamisuus on saavutettavissa siten, että luomme erillisen taulun &lt;em&gt;&amp;ldquo;_asiakkaat&amp;rdquo;&lt;/em&gt;, jonne tallennamme tiedot kunkin asiakkaan tietokannasta. Tämän jälkeen middlewaressa asetamme kaikki mysql-configin attribuutit asiakastietokannan asetusten mukaisiksi.&lt;/p&gt;
+
+&lt;p&gt;Mutta minne luomme &amp;ldquo;_asiakkaat&amp;rdquo;-taulun? Nokian vai Atrian tietokantaan? Ei kumpaankaan. Loogisin paikka on erillinen &lt;em&gt;admin-tietokanta&lt;/em&gt;, joka on rakenteeltaan erilainen kuin asiakkaiden tietokannat. Toinen vaihtoehto on käyttää .env-tiedostoa, ja tunkea kaikkien asiakkaiden tietokantatiedot sinne. Tärkeintä on, että asiakkaiden tietoja ei päästetä versiohallinnan piiriin, eli config/database -tiedostoon niitä EI saa laittaa.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Beware JS accumulating math inaccuracies</title>
@@ -118,7 +280,7 @@ function scaleObject(newScale) {
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;p&gt;The code above is &lt;em&gt;auto-correcting&lt;/em&gt;; meaning that if currentScale starts to drift away from epexted exact value (e.g. 0.99999 vs 1), our change calculation will take it into account. This saves the day.&lt;/p&gt;
+&lt;p&gt;The code above is &lt;em&gt;auto-correcting&lt;/em&gt;; meaning that if currentScale starts to drift away from expected exact value (e.g. 0.99999 vs 1), our change calculation will take it into account. This saves the day.&lt;/p&gt;
 </description>
     </item>
     
@@ -1964,98 +2126,6 @@ pohja({nimi: vieras2}); // &amp;quot;Hei vain Kalle&amp;quot;
 &lt;p&gt;Jonotettu työvaihe ajetaan irrallaan perinteisestä &lt;em&gt;selain-&amp;gt;palvelin-&amp;gt;selain&lt;/em&gt; -viestienvaihdosta. Tämä on koko jonotuksen ydinpointti (selain saa vastauksen nopeasti, ja raskas työvaihe voidaan jonottaa myöhempään ajankohtaan), mutta sen heikkous on, että debuggaus hiukan monimutkaistuu.&lt;/p&gt;
 
 &lt;p&gt;Yksi varteenotettava ratkaisu on debugata kirjoittamalla Laravellin omiin lokitiedostoihin, esim. komennolla &lt;em&gt;\Log::info(&amp;lsquo;debug-viesti&amp;rsquo;);&lt;/em&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Laravel ja pehmeä tuho</title>
-      <link>https://www.nollaversio.fi/blog/public/laravel/soft-delete/</link>
-      <pubDate>Wed, 05 Oct 2016 18:05:16 +0300</pubDate>
-      
-      <guid>https://www.nollaversio.fi/blog/public/laravel/soft-delete/</guid>
-      <description>
-
-&lt;p&gt;Laravel tarjoaa ohjelmoijan käyttöön konseptin nimeltä &amp;ldquo;soft delete&amp;rdquo;. Suomennan tuo &amp;ldquo;pehmeäksi tuhoksi&amp;rdquo;, koska termi on niin hauska.&lt;/p&gt;
-
-&lt;p&gt;Pehmeä tuho tarkoittaa seuraavaa: kun tietue poistetaan tietokannasta, sitä &lt;em&gt;ei oikeasti poistetakaan&lt;/em&gt;, se vain merkitään näkymättömäksi.&lt;/p&gt;
-
-&lt;p&gt;Vastakohtana on tietenkin &amp;ldquo;kova tuho&amp;rdquo; - eli siis tuikitavallinen poisto-operaatio, jossa tietue ihan aidosti poistetaan tietokannasta.&lt;/p&gt;
-
-&lt;h3 id=&#34;miksi-pehmeä-tuho&#34;&gt;Miksi pehmeä tuho?&lt;/h3&gt;
-
-&lt;p&gt;Herää kysymys, että mitä järkeä koko pehmeän tuhon konseptissa on? Poistamme tietueen, mutta emme poistakaan sitä. Häh? Miksi halusimme alunperinkään poistaa, jos emme sitten halunneetkaan.&lt;/p&gt;
-
-&lt;p&gt;Kaiken ytimessä on ajatus siitä, että &lt;em&gt;applikaation&lt;/em&gt; tasolla tietue on saavuttamattomissa. Applikaatio siis elää käsityksessä, että tietue on ihan oikeasti tuhottu. Samaan aikaan kuitenkin yrityksen muut komponentit - esim. Business Intelligence - haluaa, että tietue on visusti tallessa.&lt;/p&gt;
-
-&lt;p&gt;Tämä eri komponenttien erilainen tarve tietueen olemassaololle johtuu komponenttien eriävistä vaatimuksista:&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Applikaation ydinkoodille on ensisijaisen tärkeää, että poistetut tietueet ovat poissa. Eli että ne eivät väärään aikaan yhtäkkiä hyppää silmille.&lt;/p&gt;
-
-&lt;p&gt;Business Intelligence väelle taas on tärkeää, että jos jokin tietue on &lt;em&gt;kerran asuttanut applikaation tietokantaa&lt;/em&gt;, on tuosta tietueesta &lt;em&gt;ikuinen jälki jossain&lt;/em&gt;. Tällä tavoin mitään informaatiota ei huku bittiavaruuteen; jokainen tietue on ikuisesti tallessa.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Oleellista on, että yksi ja sama tietokanta voi pehmeää tuhoa hyväksikäyttäen tarjota soveltuvat toiminnallisuudet sekä &lt;em&gt;applikaatiokoodille&lt;/em&gt; että &lt;em&gt;Business Intelligence väelle&lt;/em&gt;!&lt;/p&gt;
-
-&lt;p&gt;Tämä onnistuu yksinkertaisesti siten, että kaikki applikaatiokoodin haut tietokantaan ajetaan yhdessä kontekstissa, ja kaikki Business Intelligencen haut ajetaan toisessa kontekstissa.&lt;/p&gt;
-
-&lt;p&gt;Yksinkertaisemmin: &lt;strong&gt;applikaatiokoodin haut &lt;em&gt;jättävät huomioimatta pehmeästi tuhotut tietueet&lt;/em&gt;, kun taas Business Intelligence &lt;em&gt;sisällyttää kaikki tietueet&lt;/em&gt;.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;h3 id=&#34;toteutus-laravellissa&#34;&gt;Toteutus Laravellissa&lt;/h3&gt;
-
-&lt;p&gt;Laravellin puolella pehmeän tuhon käyttö on helppoa. Käytännössä käyttöönotossa on vain kaksi vaihetta:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;Käytettävään tietokantatauluun lisätään &amp;ldquo;deleted_at&amp;rdquo;-sarake.&lt;/li&gt;
-&lt;li&gt;Käytettävä malli ottaa käyttöön &lt;em&gt;SoftDeletes&lt;/em&gt;-toiminnallisuuden.&lt;/li&gt;
-&lt;li&gt;Käytettävän mallin tulee sisältää &lt;em&gt;dates&lt;/em&gt;-attribuutin.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Kas, näin:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// App\Models\Pankkitili.php
-
-class Pankkitili extends Model
-{
-  // Vaatimus 2.
-  use SoftDeletes;
-  // Vaatimus 3.
-  protected $dates = [&#39;deleted_at&#39;];
-
-  // jne. muut mallin normimetodit
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Vaatimuksen nro 1 täyttämiseksi meidän tulee luoda taulu, jossa on deleted_at-sarake. Esimerkiksi:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;
-// Taulu: pankkitilit
-
-
-id | tilinumero | omistaja    | created_at | deleted_at
--- | ---------- | ----------- | ---------- | ----------
-1  | FI23932118 | 070278-262M | 2016-10-01 | 2016-10-03
-2  | FI88001921 | 261188-771S | 2015-02-27 | NULL
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevassa taulussa sarake &lt;em&gt;deleted_at&lt;/em&gt; kertoo milloin tietue on &amp;ldquo;tuhottu&amp;rdquo;, eli siis pehmeästi tuhottu.&lt;/p&gt;
-
-&lt;p&gt;Jos sarakkeen arvo on NULL, tietue on vielä olemassa. Tällöin siis sekä Business Intelligence että applikaatiokoodi näkevät tietueen.&lt;/p&gt;
-
-&lt;p&gt;Applikaatiokoodin puolella Laravel huolehtii siitä, että pehmeästi tuhotut mallit eivät tule mukaan hakutuloksiin.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;// Koska vain malli ID #2 on applikaation näkökulmasta olemassa,
-// seuraava haku palauttaa lukumääräksi 1.
-Pankkitili::all()-&amp;gt;count(); // 1
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Soft Delete-toiminnallisuus mahdollistaa helposti &lt;em&gt;append-only&lt;/em&gt;-tyylisen tiedonhallintaratkaisun luomisen. &lt;em&gt;Append-only&lt;/em&gt;-ratkaisussa mitään tietoa ei koskaan poisteta; vanhentunut tieto yksinkertaisesti merkitään jollain ruksilla (&lt;em&gt;deleted_at&lt;/em&gt;), joka kertoo, että tietoa ei pidä sisällytettävän applikaation tietokantahakuihin.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>

@@ -1,0 +1,238 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Tietokanta per asiakas &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="https://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/vue">Vue </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Tietokanta per asiakas</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Sat, Nov 11, 2017</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Tyypillinen pieni/keskisuuri Laravel-applikaatio rakentuu yhden tietokannan päälle. Tuo yksi tietokanta sisältää kaiken datan, jota Laravel-sovellus tallentaa/käyttää.</p>
+
+<p>Tyypillinen web-applikaatio kuitenkin tarjoaa käyttöoikeuden usealle erilliselle käyttäjälle/loppuasiakkaalle. Varsin yleinen tapaus vieläpä on, että kunkin loppuasiakkaan data elää täysin erillään muiden asiakkaiden datasta. Tällöin jokainen asiakas muodostaa oman universuminsa tietokannan sisälle; useimmiten tämä &ldquo;privaatti maailma&rdquo; rakennetaan käyttämällä avokätisesti <em>viiteavaimia</em> (foreign key).</p>
+
+<p>Näitä viiteavaimia sitten ripotellaan ympäri tietokannan rakennetta; lähes jokainen tietokantataulu sisältää sarakkeen, jossa viiteavain määrittelee kenen asiakkaan universumiin kyseinen tietue (rivi) kuuluu.</p>
+
+<p>Toinen vaihtoehto on tehdä asiat konseptuaalisesti yksinkertaisemmin; <strong>annetaan jokaiselle asiakkaalle oma tietokanta!</strong></p>
+
+<p>Tällöin viiteavaimia ei tarvita, sillä yksittäisessä tietokannassa on aina vain yhden asiakkaan data.</p>
+
+<blockquote>
+<p>Tietokannan luominen jokaiselle asiakkaalle erikseen sisältää paljon hyviä puolia. Mutta kuten aina, trade-off on olemassa. Hyvä kokonaiskatsaus näihin kahteen eriävään strategiaan löytyy esim.: <a href="https://stackoverflow.com/questions/18910519/pros-cons-using-multiple-databases-vs-using-single-database">https://stackoverflow.com/questions/18910519/pros-cons-using-multiple-databases-vs-using-single-database</a></p>
+</blockquote>
+
+<p>Tutkitaan seuraavaksi, miten Laravel-applikaatio voidaan rakentaa käyttämään <em>yhtä tietokantaa per asiakas</em>.</p>
+
+<h3 id="tietokanta-subdomain">Tietokanta === subdomain</h3>
+
+<p>Yksi erinomainen tapa mahdollistaa usean tietokannan käyttö järkevästi on kytkeä looginen yhtäläisyys <em>tietokannan</em> ja <em>alidomainin</em> välille.</p>
+
+<p>Tämä tarkoittaa, että esimerkiksi domain <em>nokia.app.fi</em> valitsee käyttöönsä Nokia-tietokannan, ja <em>atria.app.fi</em> valitsee käyttöönsä Atria-tietokannan. Molemmat asiakkaat (Nokia ja Atria) jakavat yhteisen Laravel-applikaatiopalvelimen, ja mahdollisesti myös fyysisen tietokantapalvelimen, mutta Laravel valitsee <em>kunkin sisääntulevan palvelupyynnön yhteydessä</em> sopivan tietokannan dynaamisesti.</p>
+
+<p>Koodirajapinnan tasolla tämä voisi näyttää kutakuinkin tältä:</p>
+
+<pre><code>
+// routes/api.php
+
+Route::group(['domain' =&gt; '{company}.' . ENV('APP_DOMAIN')], function() {
+	
+	Route::get('/users', 'UserController@all');
+
+}); 
+
+</code></pre>
+
+<p>Route-tiedostomme siis ottaa alidomainin sisään dynaamisena muuttujana. Tuota muuttujaa voidaan käyttää Controllerin puolella:</p>
+
+<pre><code>// Controller/UserController.php
+
+class UserController extends Controller
+{
+
+    public function index(Request $request, $company) {
+
+    	if ($company === 'nokia') {
+    		// Käytä Nokian tietokantaa
+    	} else if ($company === 'atria') {
+    		// Käytä Atrian tietokantaa.
+    	}
+
+    	// Tässä kohtaa Eloquent on kytketty oikeaan tietokantaan.
+
+    	return User::all();
+    }
+
+
+ }
+
+</code></pre>
+
+<p>Ikävää ylläolevassa on tietenkin se, että meidän tarvitsee jokaikisessä Controllerissa tehdä tietokannan valinta. Helpompaa on siirtää tietokannan dynaaminen valinta middlewareen:</p>
+
+<pre><code>
+// Http/Kernel.php
+
+class Kernel extends HttpKernel
+{
+	//... muita asetuksia...
+
+    protected $middlewareGroups = [
+        'api' =&gt; [
+            \App\Http\Middleware\ValitseTietokanta::class, 
+            'throttle:60,1',
+            'bindings',
+        ]
+    ]; 
+
+    // ... muita asetuksia...
+}
+
+</code></pre>
+
+<pre><code>
+// Middleware/ValitseTietokanta.php
+
+class ValitseTietokanta
+{
+
+    public function handle($request, Closure $next)
+    {
+        $company = $request-&gt;route('company');
+
+    	// Määritämme globaalin vakion, jota voidaan käyttää
+    	// missä tahansa applikaatiokoodissa. Tällä tavoin
+    	// mikä tahansa funktio saa tarvittaessa tietoonsa minkä
+    	// asiakkaan kontekstissa se suoritetaan.
+        if (!defined('COMPANY_SUBDOMAIN')) {
+            define('COMPANY_SUBDOMAIN', $company);
+        }
+
+        // Ylikirjoita default-config.
+        \Config::set('database.connections.mysql.database', 'appi_db_' . $company);
+        // Ota uusi tietokantayhteys
+        \DB::reconnect('mysql');
+
+        return $next($request);
+    }
+}
+
+</code></pre>
+
+<p>Ylläoleva tekee tietokannan valinnan jokaiselle API-routelle. Se ei tee suuremmin virhetilanteiden hallintaa. On mahdollista, että tietokantaa ei ole olemassa. Tällöin myöskään alidomainia ei pitäisi olla olemassa, eli ympäröivän www-palvelimen tulisi estää sisääntuleva yhteys.</p>
+
+<p>Ylläoleva tarvitsee vielä config-tiedostoon lisäyksen.</p>
+
+<pre><code>// config/database.php
+
+return [
+
+	// muita asetuksia
+
+    'connections' =&gt; [
+
+
+        'mysql' =&gt; [
+            'driver' =&gt; 'mysql',
+            'host' =&gt; env('DB_HOST', 'localhost'),
+            'port' =&gt; env('DB_PORT', '3306'),
+            // Tämä attribuutti korvataan middlewaressa.
+            'database' =&gt; env('DB_DATABASE', 'appi_db_default'),
+            'username' =&gt; env('DB_USERNAME', 'forge'),
+            'password' =&gt; env('DB_PASSWORD', ''),
+            'charset' =&gt; 'utf8',
+            'collation' =&gt; 'utf8_unicode_ci',
+            'prefix' =&gt; '',
+            'strict' =&gt; true,
+            'engine' =&gt; null,
+        ],
+];
+
+</code></pre>
+
+<p>Homma toimii siten, että middlewaressa ylikirjoitamme <em>database</em>-attribuutin mysql-configista. Ylikirjoituksen jälkeen kutsumme <em>DB::reconnect()</em>, joka lataa (muunnetun) configin uusiksi ja ottaa uuden tietokantayhteyden.</p>
+
+<blockquote>
+<p>Ylläoleva koodiesimerkki tekee ikävän oletuksen siitä, että kaikki asiakkaat käyttävät tietokannassa samaa salasanaa, tunnusta ja hostia. Tämä estää tietokannan siirtämisen ulkoiselle palvelimelle, esimerkiksi asiakasyrityksen omalle palvelimelle.</p>
+
+<p>Äärimmäinen dynaamisuus on saavutettavissa siten, että luomme erillisen taulun <em>&ldquo;_asiakkaat&rdquo;</em>, jonne tallennamme tiedot kunkin asiakkaan tietokannasta. Tämän jälkeen middlewaressa asetamme kaikki mysql-configin attribuutit asiakastietokannan asetusten mukaisiksi.</p>
+
+<p>Mutta minne luomme &ldquo;_asiakkaat&rdquo;-taulun? Nokian vai Atrian tietokantaan? Ei kumpaankaan. Loogisin paikka on erillinen <em>admin-tietokanta</em>, joka on rakenteeltaan erilainen kuin asiakkaiden tietokannat. Toinen vaihtoehto on käyttää .env-tiedostoa, ja tunkea kaikkien asiakkaiden tietokantatiedot sinne. Tärkeintä on, että asiakkaiden tietoja ei päästetä versiohallinnan piiriin, eli config/database -tiedostoon niitä EI saa laittaa.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

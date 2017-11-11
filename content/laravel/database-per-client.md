@@ -1,7 +1,7 @@
 +++
 date = "2017-11-11T07:47:42+02:00"
 draft = false
-title = "Database per client"
+title = "Tietokanta per asiakas"
 
 +++
 
@@ -9,7 +9,7 @@ Tyypillinen pieni/keskisuuri Laravel-applikaatio rakentuu yhden tietokannan pä�
 
 Tyypillinen web-applikaatio kuitenkin tarjoaa käyttöoikeuden usealle erilliselle käyttäjälle/loppuasiakkaalle. Varsin yleinen tapaus vieläpä on, että kunkin loppuasiakkaan data elää täysin erillään muiden asiakkaiden datasta. Tällöin jokainen asiakas muodostaa oman universuminsa tietokannan sisälle; useimmiten tämä "privaatti maailma" rakennetaan käyttämällä avokätisesti *viiteavaimia* (foreign key). 
 
-Näitä viiteavaimia sitten ripotellaan ympäri tietokannan rakennetta; lähes jokainen tietokantataulu sisältää sarakkeen, jossa viiteavain määrittelee kenen asiakkaan universumiin kyseinen tietua (rivi) kuuluu.
+Näitä viiteavaimia sitten ripotellaan ympäri tietokannan rakennetta; lähes jokainen tietokantataulu sisältää sarakkeen, jossa viiteavain määrittelee kenen asiakkaan universumiin kyseinen tietue (rivi) kuuluu.
 
 Toinen vaihtoehto on tehdä asiat konseptuaalisesti yksinkertaisemmin; **annetaan jokaiselle asiakkaalle oma tietokanta!** 
 
@@ -84,6 +84,7 @@ class Kernel extends HttpKernel
     ]; 
 
     // ... muita asetuksia...
+}
 
 ```
 
@@ -117,7 +118,7 @@ class ValitseTietokanta
 
 ```
 
-Ylläoleva tekee tietokannan valinnan jokaiselle API-routelle. Se ei tee suuremmin virhetilanteiden hallintaa (esim. jos tietokanta-konnektiota ei ole lisätty configiin).
+Ylläoleva tekee tietokannan valinnan jokaiselle API-routelle. Se ei tee suuremmin virhetilanteiden hallintaa. On mahdollista, että tietokantaa ei ole olemassa. Tällöin myöskään alidomainia ei pitäisi olla olemassa, eli ympäröivän www-palvelimen tulisi estää sisääntuleva yhteys.
 
 Ylläoleva tarvitsee vielä config-tiedostoon lisäyksen.
 
@@ -149,10 +150,14 @@ return [
 
 ```
 
-Homma toimii siten, että middlewaressa ylikirjoitamme *database*-attribuutin mysql-configista. Ylikirjoituksen jälkeen kutsumme DB::reconnect(), joka lataa (muunnetun) configin uusiksi ja ottaa uuden tietokantayhteyden.
+Homma toimii siten, että middlewaressa ylikirjoitamme *database*-attribuutin mysql-configista. Ylikirjoituksen jälkeen kutsumme *DB::reconnect()*, joka lataa (muunnetun) configin uusiksi ja ottaa uuden tietokantayhteyden.
 
-> Ylläoleva tekee ikävän oletuksen siitä, että kaikki asiakkaat käyttävät tietokannassa samaa salasanaa, tunnusta ja hostia. Tämä estää tietokannan siirtämisen ulkoiselle palvelimelle, esimerkiksi asiakasyrityksen omalle palvelimelle.
+> Ylläoleva koodiesimerkki tekee ikävän oletuksen siitä, että kaikki asiakkaat käyttävät tietokannassa samaa salasanaa, tunnusta ja hostia. Tämä estää tietokannan siirtämisen ulkoiselle palvelimelle, esimerkiksi asiakasyrityksen omalle palvelimelle.
 >
 >
 >
 > Äärimmäinen dynaamisuus on saavutettavissa siten, että luomme erillisen taulun *"_asiakkaat"*, jonne tallennamme tiedot kunkin asiakkaan tietokannasta. Tämän jälkeen middlewaressa asetamme kaikki mysql-configin attribuutit asiakastietokannan asetusten mukaisiksi.
+>
+>
+>
+> Mutta minne luomme "_asiakkaat"-taulun? Nokian vai Atrian tietokantaan? Ei kumpaankaan. Loogisin paikka on erillinen *admin-tietokanta*, joka on rakenteeltaan erilainen kuin asiakkaiden tietokannat. Toinen vaihtoehto on käyttää .env-tiedostoa, ja tunkea kaikkien asiakkaiden tietokantatiedot sinne. Tärkeintä on, että asiakkaiden tietoja ei päästetä versiohallinnan piiriin, eli config/database -tiedostoon niitä EI saa laittaa.
