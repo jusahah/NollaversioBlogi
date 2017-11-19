@@ -1,0 +1,402 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> PaperJS: What does applyMatrix do? &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="https://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/vue">Vue </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>PaperJS: What does applyMatrix do?</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Sun, Nov 19, 2017</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>PaperJs is great library for building scene hierarchies and virtual worlds (e.g. game worlds). It is somewhat beginner-friendly; the documentation could be better, but for the most part, PaperJS library simply does what is expected.</p>
+
+<p>However, there is one big gotcha that tripped me over when I started using PaperJs; behaviour of <em>applyMatrix</em> -attribute.</p>
+
+<p>Lets start with an example. I want to build a christmas-themed scene.</p>
+
+<p>This scene is pretty simple; it has one single room, with nicely decorated Christmas tree standing in the middle of the room.</p>
+
+<p>Something like this should achieve our setup of the scene:</p>
+
+<pre><code>  // Our room is equivalent to PaperJs global project coordinate system.
+  // In other words, top-left corner of the room is point [0,0] in global space.
+
+  // Lets create scene.
+  // Start by creating a Group that holds all objects for our Christmas tree.
+  var xmasTree = new paper.Group({});
+
+  // Place the xmasTree Group to the middle of the room.
+  xmasTree.position({x: 0.5 * roomMaxX, y: 0.5 * roomMaxY});
+
+  // Create a tree 
+  var tree = new paper.Path.Rectangle(
+    // Tree's relative position within xmasTree group
+    new paper.Point(0, 0),
+    // Tree trunks size
+    new paper.Size(20, 80)
+  );
+  tree.fillColor = 'green';
+
+  // Add tree as a child of our xmasTree group
+  xmasTree.addChild(tree);
+
+  // Create tree decorations, and add to xmasTree group.
+  // ...
+
+</code></pre>
+
+<p>Code above looks like it gets the job done. What we are doing above is:</p>
+
+<ol>
+<li>Create xmas tree group that&rsquo;ll logically group together all individual objects (actual tree, christmas balls, candles, etc.) of the xmas tree.</li>
+<li>Place the group into the middle of the room.</li>
+<li>Add a tree to the group, and place it to relative (to the group!) position of {0,0}.</li>
+<li>Add decorations (not shown in the code)</li>
+</ol>
+
+<p>Logically that should do it, but what you&rsquo;ll see in the screen is something quite else.</p>
+
+<p><img src="/blog/public/img/tree-in-corner.png" alt="Xmas tree NOT in the middle of the room" /></p>
+
+<p>The actual tree (green rectangle) is of correct size, but it is not in the middle on the room!</p>
+
+<p>What happened? We clearly specified that our Group object (xmasTree) is placed to middle of the room. Then we created child object for that group, and placed it to position {0,0} relative to the Group.</p>
+
+<p>Or is it relative to the Group? If you look at the code closely, we specify tree&rsquo;s position BEFORE specifying the tree is a child of the xmasTree group. Maybe you could solve the issue by setting tree&rsquo;s position AFTER its group membership:</p>
+
+<pre><code>
+  // Start by creating a Group that holds all objects for our Christmas tree.
+  var xmasTree = new paper.Group({});
+
+  // Place the xmasTree Group to the middle of the room.
+  xmasTree.position({x: 0.5 * roomMaxX, y: 0.5 * roomMaxY});
+
+  // Create a tree 
+  var tree = new paper.Path.Rectangle(
+    // Tree's relative position within xmasTree group
+    new paper.Point(0, 0),
+    // Tree trunks size
+    new paper.Size(20, 80)
+  );
+  tree.fillColor = 'green';
+
+  // Add tree as a child of our xmasTree group
+  xmasTree.addChild(tree);
+
+  // NEW! Now that tree is a child or xmasTree, lets re-set tree's position!
+  tree.position = {x: 0, y: 0};
+
+  // Create tree decorations, and add to xmasTree group.
+  // ...
+
+</code></pre>
+
+<p>Does this help? No. Nothing changes. Our green tree rectangle is still not in the middle of the room.</p>
+
+<p><img src="/blog/public/img/tree-in-corner.png" alt="Xmas tree still NOT in the middle of the room" /></p>
+
+<p>Next we might think: &ldquo;hmm, what if we also re-set group&rsquo;s position AFTER adding tree as its child&rdquo;:</p>
+
+<pre><code>  // Start by creating a Group that holds all objects for our Christmas tree.
+  var xmasTree = new paper.Group({});
+
+  // Place the xmasTree Group to the middle of the room.
+  xmasTree.position({x: 0.5 * roomMaxX, y: 0.5 * roomMaxY});
+
+  // Create a tree 
+  var tree = new paper.Path.Rectangle(
+    // Tree's relative position within xmasTree group
+    new paper.Point(0, 0),
+    // Tree trunks size
+    new paper.Size(20, 80)
+  );
+  tree.fillColor = 'green';
+
+  // Add tree as a child of our xmasTree group
+  xmasTree.addChild(tree);
+
+  // NEW! Now that tree is a child of xmasTree, lets re-set tree's position!
+  tree.position = {x: 0, y: 0};
+
+  // MORE NEW! Now that tree is child of xmasTree, lets re-set group's position!
+  xmasTree.position({x: 0.5 * roomMaxX, y: 0.5 * roomMaxY});
+
+  // Create tree decorations, and add to xmasTree group.
+  // ...
+
+</code></pre>
+
+<p>Does this help? Yes! Now the tree is in the middle of the room.</p>
+
+<p><img src="/blog/public/img/tree-in-middle2.png" alt="Xmas tree NOT in the middle of the room" /></p>
+
+<p>So the problem was that our group&rsquo;s global position got set too early; when we later added a tree (the green rectangle) as xmasTree&rsquo;s child, group&rsquo;s position did not <em>propagate</em> to its new child object. Thus, the tree-object got position relative to the <strong>global project space</strong>. Thats why it was right next to the screen edge in the first screeshot.</p>
+
+<p>We - of course - want it to be positioned in terms of the xmasTree group; that is, we want xmasTree to create its own <strong>local coordinate space</strong>, and we want all child objects to be positioned relative to that space!</p>
+
+<blockquote>
+<p>Understanding the difference between <em>global coordinate space</em> versus <em>local coordinate space(s)</em> is absolutely crucial; you can not work with PaperJs without ability to transform one space to another. Of course, all the calculations are being performed by PaperJS, but you should at least understand <em>why</em> local coordinate spaces are needed.</p>
+
+<p>Think about our real world, and how it forms a hierarchy of local coordinate spaces. You have latitudes and longitudes, and those help you find - for example - a route to Tokyo. But when you are in the Tokyo, it is much more convenient to use some <em>local coordinate space</em> that is relevant only inside Tokyo. That coordinate space is probably arranged using street names etc.</p>
+
+<p>Then, you go into a restaurant in Tokyo. Inside the restaurant you won&rsquo;t use street names anymore. When a waiter gives you directions to restaurant&rsquo;s toilet, she will talk in terms of <em>restaurant&rsquo;s local coordinate space</em>: &ldquo;take the stairs down and turn left, you&rsquo;ll find our restroom there&rdquo;.</p>
+</blockquote>
+
+<p>So lets get to it. How do we create a local coordinate space that actually <em>stays alive</em> for more than a single function call?</p>
+
+<h2 id="applymatrix-false">applyMatrix = false</h2>
+
+<p>The name of game is this: paperJs Group-objects have an attribute named <em>applyMatrix</em>, which controls the <em>lifetime</em> of group&rsquo;s local coordinate space!</p>
+
+<p>In our code example, we did not care about applyMatrix-attribute, allowing paperJs to set it to whatever value it wants. And, perhaps bit questionably, paperJS uses <em>applyMatrix = true</em> as a default value (for Groups).</p>
+
+<p>Setting applyMatrix to true means this: whenever we do some transform operation on the Group-level, that operation is <em>instantly</em> applied to Group&rsquo;s children.</p>
+
+<blockquote>
+<p>We have been using <em>positioning</em> as an example of more general concept called <em>transform/translate operation</em>. Positioning is not the only one; there are other transform/translate operations like scaling, rotating, skewing etc. Importantly, <em>exactly</em> same rules apply to all transform operations! All these individual operations combine into a concept called <em>transformation matrix</em>, and each PaperJS object has its own transformation matrix. This matrix is - very informally - a set of <em>mirrors, lenses and magnifying glasses</em> that define how the actual object looks from a particular point of view.</p>
+</blockquote>
+
+<p>This means that if we set Group&rsquo;s position to - lets say - {x: 20, y: 30}, what we are actually doing is setting the origin of the Group&rsquo;s local coordinate space to global coordinate space point {x: 20, y: 30}.</p>
+
+<p>Notice that this is exactly what we want! We want to define our group&rsquo;s position in relative to the global space. However, with applyMatrix === true, *this new position is <strong>not</strong> stored anywhere in the Group object*; instead, for each child a new global position is calculated and object is rerendered when the position of the group is being set.</p>
+
+<p>Now think about this - what happens if you set a new position for a Group with <em>no children</em>?</p>
+
+<p>It is a no-op! Literally. Nothing happens. Because the group tries to calculate new position of each of its children, but there are none - thus there is nothing to calculate.</p>
+
+<p>When you later add a child to the group, you might expect its position to be relative to the position of the group you previously set. But it can not be so. Because&hellip; applyMatrix is true means that <em>the group does not store its own position in its own transformation matrix</em>.</p>
+
+<p>Its exactly like telling an Alzheimer&rsquo;s patient to remember numbers 3 and 5. Later, we ask that same patient to sum up the two numbers he was told earlier with a number 2. What will he answer? 10? Nope. He will answer 2.</p>
+
+<p>Taking all this into account, we come to a solution:</p>
+
+<pre><code>  var xmasTree = new paper.Group({});
+
+  // Important!!! 
+  // ApplyMatrix must be set false before setting position of the Group!
+  xmasTree.applyMatrix = false;
+
+  // Place the xmasTree Group to the middle of the room.
+  xmasTree.position({x: 0.5 * roomMaxX, y: 0.5 * roomMaxY});
+
+  // Create a tree 
+  var tree = new paper.Path.Rectangle(
+    // Tree's relative position within xmasTree group
+    new paper.Point(0, 0),
+    // Tree trunks size
+    new paper.Size(20, 80)
+  );
+  tree.fillColor = 'green';
+
+  // Add tree as a child of our xmasTree group
+  xmasTree.addChild(tree);
+
+  // Create tree decorations, and add to xmasTree group.
+  // ...
+
+</code></pre>
+
+<p>Now everything works correctly and, importantly, <em>does not depend on the order of setting group position versus child position</em>. Whenever you add new child objects (Christmas balls, tree candles, presents under the tree, etc.) to our xmasTree group, they will get automatically positioned correctly.</p>
+
+<p><img src="/blog/public/img/tree-in-middle2.png" alt="Xmas tree NOT in the middle of the room" /></p>
+
+<p>And more importantly, if you ever reposition our xmasTree object, all its child will &ldquo;get carried&rdquo; with the group. This is then just what we want.</p>
+
+<pre><code>  // Woman of the household decides xmasTree should be moved to the corner of the room   
+  xmasTree.position({x: 0, y: 0});
+
+  // Whole xmasTree is now correctly moved to the corner.
+
+</code></pre>
+
+<h2 id="quiz">Quiz</h2>
+
+<p>Lets take a test.</p>
+
+<p>Take a look of the following code snippets, and determine what is the position (in terms of the global space!) of the tree object.</p>
+
+<h3 id="1">1</h3>
+
+<pre><code>  var xmasTree = new paper.Group({});
+  // Group global position set to {x: 100, y: 0}, right?
+  xmasTree.position = {x: 100, y: 0}
+
+  var tree = new paper.Path.Rectangle(
+    // Local (or is it?) position is {x: 0, y: 0}
+    new paper.Point(0, 0), 
+    // Size is irrelevant, lets say 1x1.
+    new paper.Size(1, 1)
+  );
+
+  xmasTree.addChild(tree);
+
+  // Whats the global x-coordinate offset of tree: 0 or 100?
+
+</code></pre>
+
+<h3 id="2">2</h3>
+
+<pre><code>  var xmasTree = new paper.Group({});
+  
+  var tree = new paper.Path.Rectangle(
+    // Local (or is it?) position is {x: 0, y: 0}
+    new paper.Point(0, 0), 
+    // Size is irrelevant, lets say 1x1.
+    new paper.Size(1, 1)
+  );
+
+  xmasTree.addChild(tree);
+
+  // Group global position set to {x: 100, y: 0}, right?
+  xmasTree.position = {x: 100, y: 0}
+
+  // Whats the global x-coordinate offset of tree: 0 or 100?
+
+</code></pre>
+
+<h3 id="3">3</h3>
+
+<pre><code>  var xmasTree = new paper.Group({});
+
+  // Group global position set to {x: 100, y: 0}, right?
+  xmasTree.position = {x: 100, y: 0}
+
+  xmasTree.applyMatrix = false;
+
+  var tree = new paper.Path.Rectangle(
+    // Local (or is it?) position is {x: 0, y: 0}
+    new paper.Point(0, 0), 
+    // Size is irrelevant, lets say 1x1.
+    new paper.Size(1, 1)
+  );
+
+  xmasTree.addChild(tree);
+
+  // Whats the global x-coordinate offset of tree: 0 or 100?
+
+</code></pre>
+
+<h3 id="4">4</h3>
+
+<pre><code>  var xmasTree = new paper.Group({});
+
+  xmasTree.applyMatrix = false;
+
+  // Group global position set to {x: 100, y: 0}, right?
+  xmasTree.position = {x: 100, y: 0}
+
+  var tree = new paper.Path.Rectangle(
+    // Local (or is it?) position is {x: 0, y: 0}
+    new paper.Point(0, 0), 
+    // Size is irrelevant, lets say 1x1.
+    new paper.Size(1, 1)
+  );
+
+  xmasTree.addChild(tree);
+
+  // Whats the global x-coordinate offset of tree: 0 or 100?
+
+</code></pre>
+
+<blockquote>
+<p>Answers below&hellip;</p>
+
+<p>&hellip;</p>
+
+<p>&hellip;</p>
+
+<p>&hellip; bit more&hellip;</p>
+
+<p>&hellip;</p>
+
+<p>Answers:</p>
+
+<p>1: 0
+Reason: applyMatrix = true, setting Group position too early is no-op!</p>
+
+<p>2: 100
+Reason: applyMatrix = true, setting Group position after adding child.</p>
+
+<p>3: 0
+Reason: applyMatrix = false, but it is set false AFTER group position setup.</p>
+
+<p>4: 100
+Reason: applyMatrix = false, and set false before anything else.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

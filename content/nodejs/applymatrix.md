@@ -5,9 +5,9 @@ title = "PaperJS: What does applyMatrix do?"
 
 +++
 
-PaperJs is great library for building scene hierarchies and world (e.g. game worlds). It is somewhat beginner-friendly; the documentation could be better, but for the most part, PaperJS library simply does what is expected.
+PaperJs is great library for building scene hierarchies and virtual worlds (e.g. game worlds). It is somewhat beginner-friendly; the documentation could be better, but for the most part, PaperJS library simply does what is expected.
 
-However, there is one big gotcha that tripped me over when I started using PaperJs; behaviour of applyMatrix-attribute.
+However, there is one big gotcha that tripped me over when I started using PaperJs; behaviour of *applyMatrix* -attribute.
 
 Lets start with an example. I want to build a christmas-themed scene. 
 
@@ -17,10 +17,9 @@ Something like this should achieve our setup of the scene:
 
 ```
   // Our room is equivalent to PaperJs global project coordinate system.
-  // In other words, top-left corner of the room is point [0,0] in our project space.
+  // In other words, top-left corner of the room is point [0,0] in global space.
 
   // Lets create scene.
-
   // Start by creating a Group that holds all objects for our Christmas tree.
   var xmasTree = new paper.Group({});
 
@@ -48,7 +47,7 @@ Code above looks like it gets the job done. What we are doing above is:
 
 1. Create xmas tree group that'll logically group together all individual objects (actual tree, christmas balls, candles, etc.) of the xmas tree.
 2. Place the group into the middle of the room.
-3. Add a tree to the group, and place to relative (to the group!) position of {0,0}.
+3. Add a tree to the group, and place it to relative (to the group!) position of {0,0}.
 4. Add decorations (not shown in the code)
 
 Logically that should do it, but what you'll see in the screen is something quite else.
@@ -59,14 +58,10 @@ The actual tree (green rectangle) is of correct size, but it is not in the middl
 
 What happened? We clearly specified that our Group object (xmasTree) is placed to middle of the room. Then we created child object for that group, and placed it to position {0,0} relative to the Group.
 
-Or is it relative to the Group? If you look at the code closely, we specify tree's position BEFORE adding the tree as a child of the xmasTree group. Maybe you could solve the issue by setting tree's position AFTER its group membership:
+Or is it relative to the Group? If you look at the code closely, we specify tree's position BEFORE specifying the tree is a child of the xmasTree group. Maybe you could solve the issue by setting tree's position AFTER its group membership:
 
 
 ```
-  // Our room is equivalent to PaperJs global project coordinate system.
-  // In other words, top-left corner of the room is point [0,0] in our project space.
-
-  // Lets create scene.
 
   // Start by creating a Group that holds all objects for our Christmas tree.
   var xmasTree = new paper.Group({});
@@ -146,13 +141,13 @@ We - of course - want it to be positioned in terms of the xmasTree group; that i
 >
 >
 >
-> Then, you go into a restaurant in Tokyo. Inside the restaurant you won't use street names anymore. When a waiter gives you directions to restaurant's toilet, she will talk in terms of *restaurant's local coordinate space*. "Take the stairs down and turn left, you'll find our restroom there".
+> Then, you go into a restaurant in Tokyo. Inside the restaurant you won't use street names anymore. When a waiter gives you directions to restaurant's toilet, she will talk in terms of *restaurant's local coordinate space*: "take the stairs down and turn left, you'll find our restroom there".
 
 So lets get to it. How do we create a local coordinate space that actually *stays alive* for more than a single function call?
 
 ## applyMatrix = false
 
-The name of game is this: paperJs Group-objects have an attribute named *applyMatrix*, which controls the behaviour of local coordinate space for that Group!
+The name of game is this: paperJs Group-objects have an attribute named *applyMatrix*, which controls the *lifetime* of group's local coordinate space!
 
 In our code example, we did not care about applyMatrix-attribute, allowing paperJs to set it to whatever value it wants. And, perhaps bit questionably, paperJS uses *applyMatrix = true* as a default value (for Groups).
 
@@ -160,22 +155,25 @@ Setting applyMatrix to true means this: whenever we do some transform operation 
 
 > We have been using *positioning* as an example of more general concept called *transform/translate operation*. Positioning is not the only one; there are other transform/translate operations like scaling, rotating, skewing etc. Importantly, *exactly* same rules apply to all transform operations! All these individual operations combine into a concept called *transformation matrix*, and each PaperJS object has its own transformation matrix. This matrix is - very informally - a set of *mirrors, lenses and magnifying glasses* that define how the actual object looks from a particular point of view.
 
-This means that if we set Group's position to - lets say - {x: 20, y: 30}, what we are actually doing is setting the origin of of Group local coordinate space to global coordinate space point {x: 20, y: 30}. 
+This means that if we set Group's position to - lets say - {x: 20, y: 30}, what we are actually doing is setting the origin of the Group's local coordinate space to global coordinate space point {x: 20, y: 30}. 
 
-This is exactly what we want. However, with applyMatrix === true, *this new setup is **not** stored anywhere in the Group object*; instead, for each child a new global position is calculated and object is rerendered.
+Notice that this is exactly what we want! We want to define our group's position in relative to the global space. However, with applyMatrix === true, *this new position is **not** stored anywhere in the Group object*; instead, for each child a new global position is calculated and object is rerendered when the position of the group is being set.
 
-Now think about this - what happens if you set a new position for Group with *no children*?
+Now think about this - what happens if you set a new position for a Group with *no children*?
 
 It is a no-op! Literally. Nothing happens. Because the group tries to calculate new position of each of its children, but there are none - thus there is nothing to calculate.
 
-When you later add a child to the group, you might expect its position to be relative to the position of the group you previously set. But it can not be so. Because... applyMatrix is true means that *the group does not store its own position anywhere*. 
+When you later add a child to the group, you might expect its position to be relative to the position of the group you previously set. But it can not be so. Because... applyMatrix is true means that *the group does not store its own position in its own transformation matrix*. 
+
+Its exactly like telling an Alzheimer's patient to remember numbers 3 and 5. Later, we ask that same patient to sum up the two numbers he was told earlier with a number 2. What will he answer? 10? Nope. He will answer 2.
 
 Taking all this into account, we come to a solution:
 
 ```
   var xmasTree = new paper.Group({});
 
-  // Important!!! ApplyMatrix must be set false before setting position of the Group!
+  // Important!!! 
+  // ApplyMatrix must be set false before setting position of the Group!
   xmasTree.applyMatrix = false;
 
   // Place the xmasTree Group to the middle of the room.
@@ -198,13 +196,17 @@ Taking all this into account, we come to a solution:
 
 ```
 
-Now everything works correctly. Whenever you add new child objects (Christmas balls, tree candles, presents under the tree, etc.) to our xmasTree group, they will get automatically positioned correctly.
+Now everything works correctly and, importantly, *does not depend on the order of setting group position versus child position*. Whenever you add new child objects (Christmas balls, tree candles, presents under the tree, etc.) to our xmasTree group, they will get automatically positioned correctly.
+
+![Xmas tree NOT in the middle of the room](/blog/public/img/tree-in-middle2.png)
 
 And more importantly, if you ever reposition our xmasTree object, all its child will "get carried" with the group. This is then just what we want.
 
 ```
   // Woman of the household decides xmasTree should be moved to the corner of the room   
   xmasTree.position({x: 0, y: 0});
+
+  // Whole xmasTree is now correctly moved to the corner.
 
 ```
 

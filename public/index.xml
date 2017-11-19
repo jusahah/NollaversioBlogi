@@ -6,8 +6,334 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Sat, 11 Nov 2017 07:47:42 +0200</lastBuildDate>
+    <lastBuildDate>Sun, 19 Nov 2017 09:23:22 +0200</lastBuildDate>
     <atom:link href="https://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>PaperJS: What does applyMatrix do?</title>
+      <link>https://www.nollaversio.fi/blog/public/nodejs/applymatrix/</link>
+      <pubDate>Sun, 19 Nov 2017 09:23:22 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/nodejs/applymatrix/</guid>
+      <description>
+
+&lt;p&gt;PaperJs is great library for building scene hierarchies and virtual worlds (e.g. game worlds). It is somewhat beginner-friendly; the documentation could be better, but for the most part, PaperJS library simply does what is expected.&lt;/p&gt;
+
+&lt;p&gt;However, there is one big gotcha that tripped me over when I started using PaperJs; behaviour of &lt;em&gt;applyMatrix&lt;/em&gt; -attribute.&lt;/p&gt;
+
+&lt;p&gt;Lets start with an example. I want to build a christmas-themed scene.&lt;/p&gt;
+
+&lt;p&gt;This scene is pretty simple; it has one single room, with nicely decorated Christmas tree standing in the middle of the room.&lt;/p&gt;
+
+&lt;p&gt;Something like this should achieve our setup of the scene:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;  // Our room is equivalent to PaperJs global project coordinate system.
+  // In other words, top-left corner of the room is point [0,0] in global space.
+
+  // Lets create scene.
+  // Start by creating a Group that holds all objects for our Christmas tree.
+  var xmasTree = new paper.Group({});
+
+  // Place the xmasTree Group to the middle of the room.
+  xmasTree.position({x: 0.5 * roomMaxX, y: 0.5 * roomMaxY});
+
+  // Create a tree 
+  var tree = new paper.Path.Rectangle(
+    // Tree&#39;s relative position within xmasTree group
+    new paper.Point(0, 0),
+    // Tree trunks size
+    new paper.Size(20, 80)
+  );
+  tree.fillColor = &#39;green&#39;;
+
+  // Add tree as a child of our xmasTree group
+  xmasTree.addChild(tree);
+
+  // Create tree decorations, and add to xmasTree group.
+  // ...
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Code above looks like it gets the job done. What we are doing above is:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Create xmas tree group that&amp;rsquo;ll logically group together all individual objects (actual tree, christmas balls, candles, etc.) of the xmas tree.&lt;/li&gt;
+&lt;li&gt;Place the group into the middle of the room.&lt;/li&gt;
+&lt;li&gt;Add a tree to the group, and place it to relative (to the group!) position of {0,0}.&lt;/li&gt;
+&lt;li&gt;Add decorations (not shown in the code)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Logically that should do it, but what you&amp;rsquo;ll see in the screen is something quite else.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://www.nollaversio.fi/blog/public/blog/public/img/tree-in-corner.png&#34; alt=&#34;Xmas tree NOT in the middle of the room&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The actual tree (green rectangle) is of correct size, but it is not in the middle on the room!&lt;/p&gt;
+
+&lt;p&gt;What happened? We clearly specified that our Group object (xmasTree) is placed to middle of the room. Then we created child object for that group, and placed it to position {0,0} relative to the Group.&lt;/p&gt;
+
+&lt;p&gt;Or is it relative to the Group? If you look at the code closely, we specify tree&amp;rsquo;s position BEFORE specifying the tree is a child of the xmasTree group. Maybe you could solve the issue by setting tree&amp;rsquo;s position AFTER its group membership:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;
+  // Start by creating a Group that holds all objects for our Christmas tree.
+  var xmasTree = new paper.Group({});
+
+  // Place the xmasTree Group to the middle of the room.
+  xmasTree.position({x: 0.5 * roomMaxX, y: 0.5 * roomMaxY});
+
+  // Create a tree 
+  var tree = new paper.Path.Rectangle(
+    // Tree&#39;s relative position within xmasTree group
+    new paper.Point(0, 0),
+    // Tree trunks size
+    new paper.Size(20, 80)
+  );
+  tree.fillColor = &#39;green&#39;;
+
+  // Add tree as a child of our xmasTree group
+  xmasTree.addChild(tree);
+
+  // NEW! Now that tree is a child or xmasTree, lets re-set tree&#39;s position!
+  tree.position = {x: 0, y: 0};
+
+  // Create tree decorations, and add to xmasTree group.
+  // ...
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Does this help? No. Nothing changes. Our green tree rectangle is still not in the middle of the room.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://www.nollaversio.fi/blog/public/blog/public/img/tree-in-corner.png&#34; alt=&#34;Xmas tree still NOT in the middle of the room&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Next we might think: &amp;ldquo;hmm, what if we also re-set group&amp;rsquo;s position AFTER adding tree as its child&amp;rdquo;:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;  // Start by creating a Group that holds all objects for our Christmas tree.
+  var xmasTree = new paper.Group({});
+
+  // Place the xmasTree Group to the middle of the room.
+  xmasTree.position({x: 0.5 * roomMaxX, y: 0.5 * roomMaxY});
+
+  // Create a tree 
+  var tree = new paper.Path.Rectangle(
+    // Tree&#39;s relative position within xmasTree group
+    new paper.Point(0, 0),
+    // Tree trunks size
+    new paper.Size(20, 80)
+  );
+  tree.fillColor = &#39;green&#39;;
+
+  // Add tree as a child of our xmasTree group
+  xmasTree.addChild(tree);
+
+  // NEW! Now that tree is a child of xmasTree, lets re-set tree&#39;s position!
+  tree.position = {x: 0, y: 0};
+
+  // MORE NEW! Now that tree is child of xmasTree, lets re-set group&#39;s position!
+  xmasTree.position({x: 0.5 * roomMaxX, y: 0.5 * roomMaxY});
+
+  // Create tree decorations, and add to xmasTree group.
+  // ...
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Does this help? Yes! Now the tree is in the middle of the room.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://www.nollaversio.fi/blog/public/blog/public/img/tree-in-middle2.png&#34; alt=&#34;Xmas tree NOT in the middle of the room&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;So the problem was that our group&amp;rsquo;s global position got set too early; when we later added a tree (the green rectangle) as xmasTree&amp;rsquo;s child, group&amp;rsquo;s position did not &lt;em&gt;propagate&lt;/em&gt; to its new child object. Thus, the tree-object got position relative to the &lt;strong&gt;global project space&lt;/strong&gt;. Thats why it was right next to the screen edge in the first screeshot.&lt;/p&gt;
+
+&lt;p&gt;We - of course - want it to be positioned in terms of the xmasTree group; that is, we want xmasTree to create its own &lt;strong&gt;local coordinate space&lt;/strong&gt;, and we want all child objects to be positioned relative to that space!&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Understanding the difference between &lt;em&gt;global coordinate space&lt;/em&gt; versus &lt;em&gt;local coordinate space(s)&lt;/em&gt; is absolutely crucial; you can not work with PaperJs without ability to transform one space to another. Of course, all the calculations are being performed by PaperJS, but you should at least understand &lt;em&gt;why&lt;/em&gt; local coordinate spaces are needed.&lt;/p&gt;
+
+&lt;p&gt;Think about our real world, and how it forms a hierarchy of local coordinate spaces. You have latitudes and longitudes, and those help you find - for example - a route to Tokyo. But when you are in the Tokyo, it is much more convenient to use some &lt;em&gt;local coordinate space&lt;/em&gt; that is relevant only inside Tokyo. That coordinate space is probably arranged using street names etc.&lt;/p&gt;
+
+&lt;p&gt;Then, you go into a restaurant in Tokyo. Inside the restaurant you won&amp;rsquo;t use street names anymore. When a waiter gives you directions to restaurant&amp;rsquo;s toilet, she will talk in terms of &lt;em&gt;restaurant&amp;rsquo;s local coordinate space&lt;/em&gt;: &amp;ldquo;take the stairs down and turn left, you&amp;rsquo;ll find our restroom there&amp;rdquo;.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;So lets get to it. How do we create a local coordinate space that actually &lt;em&gt;stays alive&lt;/em&gt; for more than a single function call?&lt;/p&gt;
+
+&lt;h2 id=&#34;applymatrix-false&#34;&gt;applyMatrix = false&lt;/h2&gt;
+
+&lt;p&gt;The name of game is this: paperJs Group-objects have an attribute named &lt;em&gt;applyMatrix&lt;/em&gt;, which controls the &lt;em&gt;lifetime&lt;/em&gt; of group&amp;rsquo;s local coordinate space!&lt;/p&gt;
+
+&lt;p&gt;In our code example, we did not care about applyMatrix-attribute, allowing paperJs to set it to whatever value it wants. And, perhaps bit questionably, paperJS uses &lt;em&gt;applyMatrix = true&lt;/em&gt; as a default value (for Groups).&lt;/p&gt;
+
+&lt;p&gt;Setting applyMatrix to true means this: whenever we do some transform operation on the Group-level, that operation is &lt;em&gt;instantly&lt;/em&gt; applied to Group&amp;rsquo;s children.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;We have been using &lt;em&gt;positioning&lt;/em&gt; as an example of more general concept called &lt;em&gt;transform/translate operation&lt;/em&gt;. Positioning is not the only one; there are other transform/translate operations like scaling, rotating, skewing etc. Importantly, &lt;em&gt;exactly&lt;/em&gt; same rules apply to all transform operations! All these individual operations combine into a concept called &lt;em&gt;transformation matrix&lt;/em&gt;, and each PaperJS object has its own transformation matrix. This matrix is - very informally - a set of &lt;em&gt;mirrors, lenses and magnifying glasses&lt;/em&gt; that define how the actual object looks from a particular point of view.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;This means that if we set Group&amp;rsquo;s position to - lets say - {x: 20, y: 30}, what we are actually doing is setting the origin of the Group&amp;rsquo;s local coordinate space to global coordinate space point {x: 20, y: 30}.&lt;/p&gt;
+
+&lt;p&gt;Notice that this is exactly what we want! We want to define our group&amp;rsquo;s position in relative to the global space. However, with applyMatrix === true, *this new position is &lt;strong&gt;not&lt;/strong&gt; stored anywhere in the Group object*; instead, for each child a new global position is calculated and object is rerendered when the position of the group is being set.&lt;/p&gt;
+
+&lt;p&gt;Now think about this - what happens if you set a new position for a Group with &lt;em&gt;no children&lt;/em&gt;?&lt;/p&gt;
+
+&lt;p&gt;It is a no-op! Literally. Nothing happens. Because the group tries to calculate new position of each of its children, but there are none - thus there is nothing to calculate.&lt;/p&gt;
+
+&lt;p&gt;When you later add a child to the group, you might expect its position to be relative to the position of the group you previously set. But it can not be so. Because&amp;hellip; applyMatrix is true means that &lt;em&gt;the group does not store its own position in its own transformation matrix&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Its exactly like telling an Alzheimer&amp;rsquo;s patient to remember numbers 3 and 5. Later, we ask that same patient to sum up the two numbers he was told earlier with a number 2. What will he answer? 10? Nope. He will answer 2.&lt;/p&gt;
+
+&lt;p&gt;Taking all this into account, we come to a solution:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;  var xmasTree = new paper.Group({});
+
+  // Important!!! 
+  // ApplyMatrix must be set false before setting position of the Group!
+  xmasTree.applyMatrix = false;
+
+  // Place the xmasTree Group to the middle of the room.
+  xmasTree.position({x: 0.5 * roomMaxX, y: 0.5 * roomMaxY});
+
+  // Create a tree 
+  var tree = new paper.Path.Rectangle(
+    // Tree&#39;s relative position within xmasTree group
+    new paper.Point(0, 0),
+    // Tree trunks size
+    new paper.Size(20, 80)
+  );
+  tree.fillColor = &#39;green&#39;;
+
+  // Add tree as a child of our xmasTree group
+  xmasTree.addChild(tree);
+
+  // Create tree decorations, and add to xmasTree group.
+  // ...
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Now everything works correctly and, importantly, &lt;em&gt;does not depend on the order of setting group position versus child position&lt;/em&gt;. Whenever you add new child objects (Christmas balls, tree candles, presents under the tree, etc.) to our xmasTree group, they will get automatically positioned correctly.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://www.nollaversio.fi/blog/public/blog/public/img/tree-in-middle2.png&#34; alt=&#34;Xmas tree NOT in the middle of the room&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;And more importantly, if you ever reposition our xmasTree object, all its child will &amp;ldquo;get carried&amp;rdquo; with the group. This is then just what we want.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;  // Woman of the household decides xmasTree should be moved to the corner of the room   
+  xmasTree.position({x: 0, y: 0});
+
+  // Whole xmasTree is now correctly moved to the corner.
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&#34;quiz&#34;&gt;Quiz&lt;/h2&gt;
+
+&lt;p&gt;Lets take a test.&lt;/p&gt;
+
+&lt;p&gt;Take a look of the following code snippets, and determine what is the position (in terms of the global space!) of the tree object.&lt;/p&gt;
+
+&lt;h3 id=&#34;1&#34;&gt;1&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;  var xmasTree = new paper.Group({});
+  // Group global position set to {x: 100, y: 0}, right?
+  xmasTree.position = {x: 100, y: 0}
+
+  var tree = new paper.Path.Rectangle(
+    // Local (or is it?) position is {x: 0, y: 0}
+    new paper.Point(0, 0), 
+    // Size is irrelevant, lets say 1x1.
+    new paper.Size(1, 1)
+  );
+
+  xmasTree.addChild(tree);
+
+  // Whats the global x-coordinate offset of tree: 0 or 100?
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;2&#34;&gt;2&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;  var xmasTree = new paper.Group({});
+  
+  var tree = new paper.Path.Rectangle(
+    // Local (or is it?) position is {x: 0, y: 0}
+    new paper.Point(0, 0), 
+    // Size is irrelevant, lets say 1x1.
+    new paper.Size(1, 1)
+  );
+
+  xmasTree.addChild(tree);
+
+  // Group global position set to {x: 100, y: 0}, right?
+  xmasTree.position = {x: 100, y: 0}
+
+  // Whats the global x-coordinate offset of tree: 0 or 100?
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;3&#34;&gt;3&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;  var xmasTree = new paper.Group({});
+
+  // Group global position set to {x: 100, y: 0}, right?
+  xmasTree.position = {x: 100, y: 0}
+
+  xmasTree.applyMatrix = false;
+
+  var tree = new paper.Path.Rectangle(
+    // Local (or is it?) position is {x: 0, y: 0}
+    new paper.Point(0, 0), 
+    // Size is irrelevant, lets say 1x1.
+    new paper.Size(1, 1)
+  );
+
+  xmasTree.addChild(tree);
+
+  // Whats the global x-coordinate offset of tree: 0 or 100?
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;4&#34;&gt;4&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code&gt;  var xmasTree = new paper.Group({});
+
+  xmasTree.applyMatrix = false;
+
+  // Group global position set to {x: 100, y: 0}, right?
+  xmasTree.position = {x: 100, y: 0}
+
+  var tree = new paper.Path.Rectangle(
+    // Local (or is it?) position is {x: 0, y: 0}
+    new paper.Point(0, 0), 
+    // Size is irrelevant, lets say 1x1.
+    new paper.Size(1, 1)
+  );
+
+  xmasTree.addChild(tree);
+
+  // Whats the global x-coordinate offset of tree: 0 or 100?
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Answers below&amp;hellip;&lt;/p&gt;
+
+&lt;p&gt;&amp;hellip;&lt;/p&gt;
+
+&lt;p&gt;&amp;hellip;&lt;/p&gt;
+
+&lt;p&gt;&amp;hellip; bit more&amp;hellip;&lt;/p&gt;
+
+&lt;p&gt;&amp;hellip;&lt;/p&gt;
+
+&lt;p&gt;Answers:&lt;/p&gt;
+
+&lt;p&gt;1: 0
+Reason: applyMatrix = true, setting Group position too early is no-op!&lt;/p&gt;
+
+&lt;p&gt;2: 100
+Reason: applyMatrix = true, setting Group position after adding child.&lt;/p&gt;
+
+&lt;p&gt;3: 0
+Reason: applyMatrix = false, but it is set false AFTER group position setup.&lt;/p&gt;
+
+&lt;p&gt;4: 100
+Reason: applyMatrix = false, and set false before anything else.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Tietokanta per asiakas</title>
@@ -2095,38 +2421,6 @@ pohja({nimi: vieras2}); // &amp;quot;Hei vain Kalle&amp;quot;
 &lt;p&gt;Lodashin template-metodi sisältää paljon ominaisuuksia. Se pystyy mm. tunnistamaan HTML-merkistön ja tekemään asianmukaiset merkistökoodaukset (&amp;ldquo;escape&amp;rdquo;).&lt;/p&gt;
 
 &lt;p&gt;Lisätietoa löytyy doc-sivuilta: &lt;a href=&#34;https://lodash.com/docs/4.16.4#template&#34;&gt;https://lodash.com/docs/4.16.4#template&lt;/a&gt;&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Jonotettu työvaihe ja debuggaus</title>
-      <link>https://www.nollaversio.fi/blog/public/laravel/queued-job-debugging/</link>
-      <pubDate>Thu, 06 Oct 2016 18:14:55 +0300</pubDate>
-      
-      <guid>https://www.nollaversio.fi/blog/public/laravel/queued-job-debugging/</guid>
-      <description>&lt;p&gt;Yksi Laravellin monista hienoista ominaisuuksista on kyky jonottaa. Siis laittaa työtehtäviä jonoon myöhemmin suoritettavaksi.&lt;/p&gt;
-
-&lt;p&gt;Laravel tarjoaa kaikki tarvittavat komponentit jonotuksen toteuttamiseksi ns. &amp;ldquo;out-of-the-box&amp;rdquo;. Kaikki vain toimii.&lt;/p&gt;
-
-&lt;p&gt;Itse jonotuksen saloista olen puhunut aiemminkin &lt;a href=&#34;http://www.nollaversio.fi/blog/public/laravel/queue-worker/&#34;&gt;täällä&lt;/a&gt;, mutta yksi hauska twisti jonon kautta ajetulla koodilla on.&lt;/p&gt;
-
-&lt;p&gt;Se on tämä: &lt;em&gt;koska jonotettu koodinpätkä ajetaan erillisessä prosessissa, se ei voi palauttaa selaimelle debug-tekstiä ohjelmoijan tarkasteltavaksi&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Kun PHP-koodi ajetaan tavanomaisesti osana selaimelta lähtöisin olevaan kutsua, PHP voi aina palauttaa tarvittavan tekstijonon ohjelmoijan käyttöön. PHP-koodin puolella tämä onnistuu esimerkiksi komennoilla &lt;em&gt;echo&lt;/em&gt; tai &lt;em&gt;var_dump&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Tuo palautettu tekstijono printataan selaimen toimesta suoraan näyttöpäätteelle.&lt;/p&gt;
-
-&lt;p&gt;Mutta kun PHP-koodi ajetaan &lt;em&gt;jonotetun työvaiheen&lt;/em&gt; kautta, ei ole mitään selainta jolle palauttaa mitään! Jonotettu työvaihe ajetaan nimittäin jono-managerin toimesta, joka siis käskyttää erillistä käyttöjärjestelmän prosessia ajamaan PHP-koodin. Tuo jono-manageri ei saa yhteyttä selaimeen.&lt;/p&gt;
-
-&lt;p&gt;Joten miten debugata jonotetun työvaiheen sisällä ajettavaa koodia?&lt;/p&gt;
-
-&lt;p&gt;En tiedä oikeaa vastausta itsekään. Pitäisi varmaan kysellä. Yksi ok tapa on logata debug-viestejä Laravellin lokiin. Jonotetulla prosessilla on luonnollisesti kyky kirjoittaa lokitiedostoihin, joten tämä onnistuu.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Jonotettu työvaihe ajetaan irrallaan perinteisestä &lt;em&gt;selain-&amp;gt;palvelin-&amp;gt;selain&lt;/em&gt; -viestienvaihdosta. Tämä on koko jonotuksen ydinpointti (selain saa vastauksen nopeasti, ja raskas työvaihe voidaan jonottaa myöhempään ajankohtaan), mutta sen heikkous on, että debuggaus hiukan monimutkaistuu.&lt;/p&gt;
-
-&lt;p&gt;Yksi varteenotettava ratkaisu on debugata kirjoittamalla Laravellin omiin lokitiedostoihin, esim. komennolla &lt;em&gt;\Log::info(&amp;lsquo;debug-viesti&amp;rsquo;);&lt;/em&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
 </description>
     </item>
     
