@@ -15,7 +15,7 @@ This scene is pretty simple; it has one single room, with nicely decorated Chris
 
 Something like this should achieve our setup of the scene:
 
-```
+```javascript
   // Our room is equivalent to PaperJs global project coordinate system.
   // In other words, top-left corner of the room is point [0,0] in global space.
 
@@ -61,7 +61,7 @@ What happened? We clearly specified that our Group object (xmasTree) is placed t
 Or is it relative to the Group? If you look at the code closely, we specify tree's position BEFORE specifying the tree is a child of the xmasTree group. Maybe you could solve the issue by setting tree's position AFTER its group membership:
 
 
-```
+```javascript
 
   // Start by creating a Group that holds all objects for our Christmas tree.
   var xmasTree = new paper.Group({});
@@ -95,7 +95,7 @@ Does this help? No. Nothing changes. Our green tree rectangle is still not in th
 
 Next we might think: "hmm, what if we also re-set group's position AFTER adding tree as its child":
 
-```
+```javascript
   // Start by creating a Group that holds all objects for our Christmas tree.
   var xmasTree = new paper.Group({});
 
@@ -169,7 +169,8 @@ Its exactly like telling an Alzheimer's patient to remember numbers 3 and 5. Lat
 
 Taking all this into account, we come to a solution:
 
-```
+```javascript
+
   var xmasTree = new paper.Group({});
 
   // Important!!! 
@@ -200,9 +201,10 @@ Now everything works correctly and, importantly, *does not depend on the order o
 
 ![Xmas tree NOT in the middle of the room](/blog/public/img/tree-in-middle2.png)
 
-And more importantly, if you ever reposition our xmasTree object, all its child will "get carried" with the group. This is then just what we want.
+And more importantly, if you ever reposition our xmasTree object, all its children will "get carried" with the group. This is then just what we want.
 
-```
+```javascript
+
   // Woman of the household decides xmasTree should be moved to the corner of the room   
   xmasTree.position({x: 0, y: 0});
 
@@ -218,7 +220,8 @@ Take a look of the following code snippets, and determine what is the position (
 
 ### 1
 
-```
+```javascript
+
   var xmasTree = new paper.Group({});
   // Group global position set to {x: 100, y: 0}, right?
   xmasTree.position = {x: 100, y: 0}
@@ -238,7 +241,8 @@ Take a look of the following code snippets, and determine what is the position (
 
 ### 2
 
-```
+```javascript
+
   var xmasTree = new paper.Group({});
   
   var tree = new paper.Path.Rectangle(
@@ -259,7 +263,8 @@ Take a look of the following code snippets, and determine what is the position (
 
 ### 3
 
-```
+```javascript
+
   var xmasTree = new paper.Group({});
 
   // Group global position set to {x: 100, y: 0}, right?
@@ -282,7 +287,8 @@ Take a look of the following code snippets, and determine what is the position (
 
 ### 4
 
-```
+```javascript
+
   var xmasTree = new paper.Group({});
 
   xmasTree.applyMatrix = false;
@@ -328,16 +334,20 @@ Take a look of the following code snippets, and determine what is the position (
 >
 >
 > 1: 0
+>
 > Reason: applyMatrix = true, setting Group position too early is no-op!
 >
 >
 > 2: 100
+>
 > Reason: applyMatrix = true, setting Group position after adding child.
 >
 >
 > 3: 0
+>
 > Reason: applyMatrix = false, but it is set false AFTER group position setup.
 >
 >
 > 4: 100
+>
 > Reason: applyMatrix = false, and set false before anything else.

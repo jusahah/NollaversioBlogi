@@ -27,7 +27,7 @@
 
 &lt;p&gt;Something like this should achieve our setup of the scene:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;  // Our room is equivalent to PaperJs global project coordinate system.
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  // Our room is equivalent to PaperJs global project coordinate system.
   // In other words, top-left corner of the room is point [0,0] in global space.
 
   // Lets create scene.
@@ -73,7 +73,7 @@
 
 &lt;p&gt;Or is it relative to the Group? If you look at the code closely, we specify tree&amp;rsquo;s position BEFORE specifying the tree is a child of the xmasTree group. Maybe you could solve the issue by setting tree&amp;rsquo;s position AFTER its group membership:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
   // Start by creating a Group that holds all objects for our Christmas tree.
   var xmasTree = new paper.Group({});
 
@@ -106,7 +106,7 @@
 
 &lt;p&gt;Next we might think: &amp;ldquo;hmm, what if we also re-set group&amp;rsquo;s position AFTER adding tree as its child&amp;rdquo;:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;  // Start by creating a Group that holds all objects for our Christmas tree.
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  // Start by creating a Group that holds all objects for our Christmas tree.
   var xmasTree = new paper.Group({});
 
   // Place the xmasTree Group to the middle of the room.
@@ -179,7 +179,8 @@
 
 &lt;p&gt;Taking all this into account, we come to a solution:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;  var xmasTree = new paper.Group({});
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+  var xmasTree = new paper.Group({});
 
   // Important!!! 
   // ApplyMatrix must be set false before setting position of the Group!
@@ -209,9 +210,10 @@
 
 &lt;p&gt;&lt;img src=&#34;https://www.nollaversio.fi/blog/public/blog/public/img/tree-in-middle2.png&#34; alt=&#34;Xmas tree NOT in the middle of the room&#34; /&gt;&lt;/p&gt;
 
-&lt;p&gt;And more importantly, if you ever reposition our xmasTree object, all its child will &amp;ldquo;get carried&amp;rdquo; with the group. This is then just what we want.&lt;/p&gt;
+&lt;p&gt;And more importantly, if you ever reposition our xmasTree object, all its children will &amp;ldquo;get carried&amp;rdquo; with the group. This is then just what we want.&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;  // Woman of the household decides xmasTree should be moved to the corner of the room   
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+  // Woman of the household decides xmasTree should be moved to the corner of the room   
   xmasTree.position({x: 0, y: 0});
 
   // Whole xmasTree is now correctly moved to the corner.
@@ -226,7 +228,8 @@
 
 &lt;h3 id=&#34;1&#34;&gt;1&lt;/h3&gt;
 
-&lt;pre&gt;&lt;code&gt;  var xmasTree = new paper.Group({});
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+  var xmasTree = new paper.Group({});
   // Group global position set to {x: 100, y: 0}, right?
   xmasTree.position = {x: 100, y: 0}
 
@@ -245,7 +248,8 @@
 
 &lt;h3 id=&#34;2&#34;&gt;2&lt;/h3&gt;
 
-&lt;pre&gt;&lt;code&gt;  var xmasTree = new paper.Group({});
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+  var xmasTree = new paper.Group({});
   
   var tree = new paper.Path.Rectangle(
     // Local (or is it?) position is {x: 0, y: 0}
@@ -265,7 +269,8 @@
 
 &lt;h3 id=&#34;3&#34;&gt;3&lt;/h3&gt;
 
-&lt;pre&gt;&lt;code&gt;  var xmasTree = new paper.Group({});
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+  var xmasTree = new paper.Group({});
 
   // Group global position set to {x: 100, y: 0}, right?
   xmasTree.position = {x: 100, y: 0}
@@ -287,7 +292,8 @@
 
 &lt;h3 id=&#34;4&#34;&gt;4&lt;/h3&gt;
 
-&lt;pre&gt;&lt;code&gt;  var xmasTree = new paper.Group({});
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+  var xmasTree = new paper.Group({});
 
   xmasTree.applyMatrix = false;
 
@@ -320,17 +326,21 @@
 
 &lt;p&gt;Answers:&lt;/p&gt;
 
-&lt;p&gt;1: 0
-Reason: applyMatrix = true, setting Group position too early is no-op!&lt;/p&gt;
+&lt;p&gt;1: 0&lt;/p&gt;
 
-&lt;p&gt;2: 100
-Reason: applyMatrix = true, setting Group position after adding child.&lt;/p&gt;
+&lt;p&gt;Reason: applyMatrix = true, setting Group position too early is no-op!&lt;/p&gt;
 
-&lt;p&gt;3: 0
-Reason: applyMatrix = false, but it is set false AFTER group position setup.&lt;/p&gt;
+&lt;p&gt;2: 100&lt;/p&gt;
 
-&lt;p&gt;4: 100
-Reason: applyMatrix = false, and set false before anything else.&lt;/p&gt;
+&lt;p&gt;Reason: applyMatrix = true, setting Group position after adding child.&lt;/p&gt;
+
+&lt;p&gt;3: 0&lt;/p&gt;
+
+&lt;p&gt;Reason: applyMatrix = false, but it is set false AFTER group position setup.&lt;/p&gt;
+
+&lt;p&gt;4: 100&lt;/p&gt;
+
+&lt;p&gt;Reason: applyMatrix = false, and set false before anything else.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>

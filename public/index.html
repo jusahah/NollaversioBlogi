@@ -90,7 +90,7 @@
 
 <p>Something like this should achieve our setup of the scene:</p>
 
-<pre><code>  // Our room is equivalent to PaperJs global project coordinate system.
+<pre><code class="language-javascript">  // Our room is equivalent to PaperJs global project coordinate system.
   // In other words, top-left corner of the room is point [0,0] in global space.
 
   // Lets create scene.
@@ -136,7 +136,7 @@
 
 <p>Or is it relative to the Group? If you look at the code closely, we specify tree&rsquo;s position BEFORE specifying the tree is a child of the xmasTree group. Maybe you could solve the issue by setting tree&rsquo;s position AFTER its group membership:</p>
 
-<pre><code>
+<pre><code class="language-javascript">
   // Start by creating a Group that holds all objects for our Christmas tree.
   var xmasTree = new paper.Group({});
 
@@ -169,7 +169,7 @@
 
 <p>Next we might think: &ldquo;hmm, what if we also re-set group&rsquo;s position AFTER adding tree as its child&rdquo;:</p>
 
-<pre><code>  // Start by creating a Group that holds all objects for our Christmas tree.
+<pre><code class="language-javascript">  // Start by creating a Group that holds all objects for our Christmas tree.
   var xmasTree = new paper.Group({});
 
   // Place the xmasTree Group to the middle of the room.
@@ -242,7 +242,8 @@
 
 <p>Taking all this into account, we come to a solution:</p>
 
-<pre><code>  var xmasTree = new paper.Group({});
+<pre><code class="language-javascript">
+  var xmasTree = new paper.Group({});
 
   // Important!!! 
   // ApplyMatrix must be set false before setting position of the Group!
@@ -272,9 +273,10 @@
 
 <p><img src="/blog/public/img/tree-in-middle2.png" alt="Xmas tree NOT in the middle of the room" /></p>
 
-<p>And more importantly, if you ever reposition our xmasTree object, all its child will &ldquo;get carried&rdquo; with the group. This is then just what we want.</p>
+<p>And more importantly, if you ever reposition our xmasTree object, all its children will &ldquo;get carried&rdquo; with the group. This is then just what we want.</p>
 
-<pre><code>  // Woman of the household decides xmasTree should be moved to the corner of the room   
+<pre><code class="language-javascript">
+  // Woman of the household decides xmasTree should be moved to the corner of the room   
   xmasTree.position({x: 0, y: 0});
 
   // Whole xmasTree is now correctly moved to the corner.
@@ -289,7 +291,8 @@
 
 <h3 id="1">1</h3>
 
-<pre><code>  var xmasTree = new paper.Group({});
+<pre><code class="language-javascript">
+  var xmasTree = new paper.Group({});
   // Group global position set to {x: 100, y: 0}, right?
   xmasTree.position = {x: 100, y: 0}
 
@@ -308,7 +311,8 @@
 
 <h3 id="2">2</h3>
 
-<pre><code>  var xmasTree = new paper.Group({});
+<pre><code class="language-javascript">
+  var xmasTree = new paper.Group({});
   
   var tree = new paper.Path.Rectangle(
     // Local (or is it?) position is {x: 0, y: 0}
@@ -328,7 +332,8 @@
 
 <h3 id="3">3</h3>
 
-<pre><code>  var xmasTree = new paper.Group({});
+<pre><code class="language-javascript">
+  var xmasTree = new paper.Group({});
 
   // Group global position set to {x: 100, y: 0}, right?
   xmasTree.position = {x: 100, y: 0}
@@ -350,7 +355,8 @@
 
 <h3 id="4">4</h3>
 
-<pre><code>  var xmasTree = new paper.Group({});
+<pre><code class="language-javascript">
+  var xmasTree = new paper.Group({});
 
   xmasTree.applyMatrix = false;
 
@@ -383,17 +389,21 @@
 
 <p>Answers:</p>
 
-<p>1: 0
-Reason: applyMatrix = true, setting Group position too early is no-op!</p>
+<p>1: 0</p>
 
-<p>2: 100
-Reason: applyMatrix = true, setting Group position after adding child.</p>
+<p>Reason: applyMatrix = true, setting Group position too early is no-op!</p>
 
-<p>3: 0
-Reason: applyMatrix = false, but it is set false AFTER group position setup.</p>
+<p>2: 100</p>
 
-<p>4: 100
-Reason: applyMatrix = false, and set false before anything else.</p>
+<p>Reason: applyMatrix = true, setting Group position after adding child.</p>
+
+<p>3: 0</p>
+
+<p>Reason: applyMatrix = false, but it is set false AFTER group position setup.</p>
+
+<p>4: 100</p>
+
+<p>Reason: applyMatrix = false, and set false before anything else.</p>
 </blockquote>
 
   </div>
