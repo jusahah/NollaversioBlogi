@@ -1,23 +1,37 @@
 +++
 date = "2017-11-28T09:45:14+02:00"
 draft = true
-title = "Ohjelmistoprojektien koordinointi (osa 1)"
+title = "Ohjelmistoprojektin koordinointi ja psykologia (osa 1)"
 
 +++
 
-Vaativan ohjelmistokehitys on mentaalisesti raskasta ja kuluttavaa puuhaa. Tyypillinen ohjelmistoprojekti koostuu tuhansista ja tuhansista riveistä koodia. Abstraktion tasosta ja applikaation luonteesta riippuen koodin pystyy jaottelemaan *moduuleihin ja komponentteihin*, ja tällä tavoin hahmottamaan kehitysprosessin abstraktioiden yhdistelynä ja muovaamisena.
+Vaativan ohjelmistokehitys on mentaalisesti raskasta ja kuluttavaa puuhaa. Tyypillinen ohjelmistoprojekti koostuu tuhansista ja tuhansista riveistä koodia. Abstraktion tasosta ja applikaation luonteesta riippuen koodin pystyy jaottelemaan suurempiin, erillisiin paloihin, ja tällä tavoin hahmottamaan kehitysprosessin abstraktioiden yhdistelynä ja muovaamisena.
 
-Mutta abstraktoiminen ja "black box" -ajattelu ovat lähinnä optimisaatioita, eivät ratkaisuja. Mitä suuremmaksi ja vaativammaksi ohjelmistoprojekti paisuu, sitä enemmän se sisältää liikkuvia osia *kaikilla* abstraktion tasoilla; yksittäisten funktioiden määrä (luonnollisesti) kasvaa kasvamistaan, mutta tämä kasvu on vertailussa vähäpätöinen ongelma, sillä funktioista elää kiltisti jonkin ylemmän tason abstraktion sisällä. 
+Mutta abstraktoiminen ja "black box" -ajattelu ovat lähinnä optimisaatioita, eivät ratkaisuja. Mitä suuremmaksi ja vaativammaksi ohjelmistoprojekti paisuu, sitä enemmän se sisältää liikkuvia osia *kaikilla* abstraktion tasoilla.
 
-Suurempi ongelma on, että abstraktion *ylimmällä* tasolla komponentit yhä enemmän kytkeytyvät toisiinsa. Ne siis entistä tiiviimmin kiinnittävät limaiset lonkeronsa toistensa sisuskaluihin. Tämä on seurausta kahdesta erillisestä ilmiöstä:
+Yksittäisten funktioiden määrä kasvaa kasvamistaan, mutta tämä kasvu on ongelmista pienin, sillä suurin osa funktioista elää kiltisti jonkin ylemmän tason abstraktion sisällä. 
 
-1. **Ajallinen ulottuvuus ("hyvätkin ideat tuppaavat unohtumaan"):** Ohjelmistoprojektin alkuvaiheessa kokonaisarkkitehtuuri on tuoreena mielessä, ja koodin määrä on vähäinen, joten arkkitehtuurillisesti kauniit/järkevät ratkaisuja ovat helppoja. Mitä pidempään projekti jatkuu, sitä häilyvämmäksi applikaation arkkitehtuuri muuntuu ohjelmoijan pään sisällä. Alunperin kirkkaana ollut idea pikkuhiljaa häviää harmaan sumuverhon taakse.
+Suurempi ongelma on, että abstraktion *ylimmällä* tasolla komponentit yhä enemmän kytkeytyvät toisiinsa. Ne siis entistä tiiviimmin kiinnittävät limaiset lonkeronsa toistensa sisuskaluihin. 
 
-2.  **Psykologinen ulottuvuus ("kuka idiootti on tämän kirjoittanut"):** Vaativan ohjelmistoprojektin hieno asia on, että se kehittää ohjelmoijaa aivan helvetisti. Kuusi kuukautta projektin aloituksen jälkeen ohjelmoija katsoo koodiaan, jonka on itse kirjoittanut kuusi kuukautta aiemmin, ja naurahtaa: *ei jumalauta, olinpa amatööri*. Tämä on tietenkin hieno tunne, mutta psykologisesti sillä on ikävä seuraus; ohjelmoija alkaa alitajuntaisesti halveksua aiempaa, amatöörimäistä koodiaan ja haluaa pysyä siitä erossa. Mutta koska projekti jatkuu ja vaatii lisäkehitystä, ohjelmoijan täytyy elää oman menneisyytensä kanssa. Tämä on psykologisesti yllättävän raskasta. Ei ihme, että ohjelmoijat ovat kovin herkkiä kirjoittamaan tarvittaessa *vaikka koko applikaation alusta asti uusiksi*, eli nk. rewrite. Kun uusi ja parempi ratkaisu on materialisoitunut ohjelmoijan pääkoppaan, on lähes mahdoton jättää vanha, huonon ratkaisun sisältävä koodi rauhaan.
+Tämä on seurausta kahdesta erillisestä ilmiöstä:
 
-Perimmäinen syy ilmiöön numero 1 on ihmisen työmuistin rajallinen koko. Ilmiön 2 taustalla taas on kaikille kunnianhimoisille ihmisille tyypillinen perfektionismi.
+#### Ajallinen ulottuvuus (a.k.a "hyvätkin ideat tuppaavat unohtumaan") 
 
-Ilmiö 2 on kenties suurin yksittäinen syy siihen, miksi fiksut ihmiset tuppaavat saamaan niin *vähän* aikaa työurallaan. Mutta ei siitä sen enempää. Keskitytään ilmiöön 1. 
+Ohjelmistoprojektin alkuvaiheessa kokonaisarkkitehtuuri on tuoreena mielessä, ja koodin määrä on vähäinen, joten arkkitehtuurillisesti kauniit/järkevät ratkaisuja ovat helppoja. Mitä pidempään projekti jatkuu, sitä häilyvämmäksi applikaation arkkitehtuuri muuntuu ohjelmoijan pään sisällä. Alunperin kirkkaana ollut idea pikkuhiljaa häviää harmaan sumuverhon taakse.
+
+#### Psykologinen ulottuvuus (a.k.a "kuka idiootti tämänkin on kirjoittanut") 
+
+Vaativan ohjelmistoprojektin hieno asia on, että se kehittää ohjelmoijaa aivan helvetisti. Kuusi kuukautta projektin aloituksen jälkeen ohjelmoija katsoo koodiaan, jonka on itse kirjoittanut kuusi kuukautta aiemmin, ja naurahtaa: *ei jumalauta, olinpa uskomaton amatööri*.
+
+Tämä on tietenkin hieno tunne, mutta psykologisesti sillä on ikävä seuraus; ohjelmoija alkaa alitajuntaisesti halveksua aiempaa, amatöörimäistä koodiaan ja haluaa pysyä siitä erossa. Mutta koska projekti jatkuu ja vaatii lisäkehitystä, ohjelmoijan täytyy elää oman menneisyytensä kanssa. Tämä on psykologisesti yllättävän raskasta. Kun uusi ja parempi ratkaisu on materialisoitunut ohjelmoijan pääkoppaan, on lähes mahdoton jättää vanha, huonon ratkaisun sisältävä koodi rauhaan.
+
+Perimmäinen syy ilmiöön numero 1 on ihmisen pitkäkestoinen muistin toiminta. Ilmiön 2 taustalla taas on kaikille kunnianhimoisille ihmisille tyypillinen perfektionismi. 
+
+Ilmiö 2 on kenties toiseksi* suurin yksittäinen syy siihen, miksi fiksut ihmiset tuppaavat saamaan niin *vähän* aikaan työurallaan.
+
+> Suurin yksittäinen syy siihen, että fiksut ihmiset eivät saa ikinä mitään aikaan on tietenkin sosiaalinen media. Ei kahta kysymystä.
+
+Mutta ei siitä sen enempää. Keskitytään ilmiöön 1. 
 
 ### Abstraktion eri tasot ja työmuisti 
 
