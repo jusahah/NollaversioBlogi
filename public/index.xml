@@ -6,8 +6,76 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Sun, 19 Nov 2017 09:23:22 +0200</lastBuildDate>
+    <lastBuildDate>Sun, 26 Nov 2017 08:31:56 +0200</lastBuildDate>
     <atom:link href="https://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Kahden näytön työ-setup</title>
+      <link>https://www.nollaversio.fi/blog/public/misc/work-setup/</link>
+      <pubDate>Sun, 26 Nov 2017 08:31:56 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/misc/work-setup/</guid>
+      <description>
+
+&lt;p&gt;Ammattimaisen koodaamisen perusedellytys on, että tukitoiminnot ja työkalut varsinaista koodin kirjoittamista ajatellen ovat kunnossa. Koodarin tärkein työkalu on luonnollisesti laitteisto, jolla koodia kirjoitetaan. Siis fyysinen tietokone ja jonkin sortin näppäimistö.&lt;/p&gt;
+
+&lt;p&gt;Oma työkaluni on vanha kunnon pöytäkone, joka hurisee hiljaa työpöydän alla. Koneen speksit eivät ole tärkeät, etenkään web-koodauksen puolella. Vanhakin prosessori riittää oikein hyvin, ja näytönohjain tarvitaan lähinnä usean näytön tukea varten (useimmissa web-sovelluksissa itse graafiikka on yksinkertaista eikä vaadi näytönohjaimilta suuremmin tehoja).&lt;/p&gt;
+
+&lt;p&gt;Tärkein osa laitteistokokonaisuutta on näyttöpäätteet, ja niiden konfigurointi maksimaalista tuottavuutta ajatellen. Seuraavassa oma ratkaisuni.&lt;/p&gt;
+
+&lt;h3 id=&#34;kaksi-fyysistä-näyttöpäätettä-kahdeksan-virtuaalista-näyttöä&#34;&gt;Kaksi fyysistä näyttöpäätettä, kahdeksan virtuaalista näyttöä&lt;/h3&gt;
+
+&lt;p&gt;Työpöytäni näyttää tältä:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://www.nollaversio.fi/blog/public/blog/public/img/tyopoyta.jpg&#34; alt=&#34;Työpöytä&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Kaksi näyttöä vierekkäin, joista toinen on perinteinen vaakasuuntainen, toinen käännetty pystyyn.&lt;/p&gt;
+
+&lt;p&gt;Miksi toinen on vaaka-asennossa, toinen pystyasennossa? Näytöt palvelevat eri tarpeita. Vaakasuuntainen näyttö sisältää kivasti vaakasuuntaista tilaa, joten siihen sopii hyvin selainikkuna, tarvittaessa vaikka kaksi vierekkäin.&lt;/p&gt;
+
+&lt;p&gt;Pystysuuntainen näyttö taas sisältää rutkasti tilaa pystysuunnassa. Koodieditori soveltuu tälle näytölle mainiosti, sillä koodia kirjoittaessa on tärkeämpää &lt;em&gt;nähdä monta koodiriviä kerrallaan&lt;/em&gt; kuin &lt;em&gt;nähdä yhden pitkän koodirivin koko teksti&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Toisin sanoen, koodieditori puolella vertikaalinen tila on tärkeämpää kuin horisontaalinen. Pystynäytöllä saa nopeasti kokonaiskuvan isosta palasesta koodia, ja esimerkiksi moni yksittäinen kooditiedosto mahtuu näyttöruudulle kokonaisuudessaan, jolloin ei tarvitse skrollata. Horisontaalisesti tilaa on vähemmän, mutta koodirivit tuppaavat olemaan horisontaalisesti lyhyitä, joten tämä ei ole ongelma.&lt;/p&gt;
+
+&lt;p&gt;Näyttöpäätteiden tarjoama tila puolestaan jakautuu seuraavasti (per näyttöpääte):&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://www.nollaversio.fi/blog/public/blog/public/img/work-setup.png&#34; alt=&#34;Näyttöjen jaottelu&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Koodieditori valtaa kokonaan pystynäytön. Vaakanäytöllä puolestaan on niin paljon horisontaalista tilaa, että olen laittanut vasempaan reunaan komentorivikehoitteen (siis terminaalin), ja oikealle laidalle selainikkunan.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Kuvasta asiaa ei näe, mutta itse asiassa selainikkuna jakautuu vielä kahteen osaan: itse varsinaiseen työskentelyalueeseen (&amp;ldquo;webbisivu-näkymään&amp;rdquo;) ja työkalupalkkiin (Chrome Dev Tools). Tämäkin jaottelu on horisontaalinen.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Tällä tavoin saan kahden näytön turvin luotua setupin, jossa pystyn näkemään koodieditorin ja koodattavan applikaation yhtäaikaisesti. Editori vasemmalla näytöllä, applikaatio oikealla näytöllä.&lt;/p&gt;
+
+&lt;p&gt;Mutta tämä on vasta alkua, sillä useimmat applikaatiot koostuvat sekä frontend-koodipohjasta että backend-koodipohjasta. Nämä kaksi koodipohjaa ovat erilliset, eivätkä millään mahdu yhteen koodieditoriin. Mikä avuksi?&lt;/p&gt;
+
+&lt;h3 id=&#34;virtuaaliset-näytöt-workspaces&#34;&gt;Virtuaaliset näytöt (workspaces)&lt;/h3&gt;
+
+&lt;p&gt;Ubuntussa on kiva konsepti nimeltä &amp;ldquo;workspace&amp;rdquo;.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Ubuntun help-sivuston kuvaus workspacesta: &lt;em&gt;Workspaces refer to the grouping of windows on your desktop. You can create multiple workspaces, which act like virtual desktops. Workspaces are meant to reduce clutter and make the desktop easier to navigate.&lt;/em&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Useamman kuin yhden Workspacen käyttö mahdollista ikäänkuin &lt;em&gt;fyysisten näyttöjen monistamisen virtuaalisiksi näytöiksi&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Toistaiseksi olemme olettaneet, että käytössä on yksi workspace. Mutta Ubuntu sallii jopa neljän workspacen käytön. Tälläisessä tilanteessa meillä on kahdeksan virtuaalisen näyttöpäätteen verran tilaa.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://www.nollaversio.fi/blog/public/blog/public/img/workspaces-work-setup.png&#34; alt=&#34;Näyttöjen jaottelu&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Vertauskuvallisesti voimme ajatella, että saamme kolme uutta kopiota koko työpöydästä (siis siitä puisesta työpöydästä, jolla fyysiset näyttöpäätteet seisovat) käyttöömme.&lt;/p&gt;
+
+&lt;p&gt;Tämä mahdollistaa asetelman, jossa yhden applikaation jokainen &amp;ldquo;osa-applikaatio&amp;rdquo; elää omassa workspacessaan. Ohjelmoija voi sitten pomppia workspacejen välillä nopeasti &lt;em&gt;Ctrl+Alt+nuolinäppäin&lt;/em&gt; -komennolla.&lt;/p&gt;
+
+&lt;p&gt;Esimerkkinä oma tyypillinen workspace-struktuurini, kun kehitän vaativaa web-applikaatiota:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://www.nollaversio.fi/blog/public/blog/public/img/workspaces-logical-setup.png&#34; alt=&#34;Kahdeksan virtuaalinäyttöä&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Yksi &lt;em&gt;virtuaalinen näyttöpari&lt;/em&gt; on varattu backend-koodille ja tietokantanäkymälle (esim. phpmyadmin). Toinen on varattu frontend-koodin käyttöön. Kolmas on varattu Slackille (mikäli koodaus vaatii muiden koodareiden kanssa kommunikointia; muussa tapauksessa koko workspace on tyhjä). Neljäs on varattu kaikelle ylimääräiselle hölynpölylle, kuten Youtube-näkymälle, josta kuunnella - fiiliksestä riippuen - vaikka &lt;a href=&#34;https://www.youtube.com/watch?v=ih4_1FyVjaY&#34;&gt;huuhkajan huhuilua&lt;/a&gt; tai &lt;a href=&#34;https://www.youtube.com/watch?v=mpbDlp_gk6M&#34;&gt;ammattilaiskäyttöön soveltuvaa koodausmusiikkia&lt;/a&gt;.&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>PaperJS: What does applyMatrix do?</title>
@@ -2373,64 +2441,6 @@ class MittaaLampotila implements ShouldQueue
 &lt;p&gt;Mutta jos orjallisesti seuraamme yllä kuvattua API Tokenin käyttömallia, olemme pian dilemman edessä.&lt;/p&gt;
 
 &lt;p&gt;(jatkuu huomenna&amp;hellip;)&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Lodash: template</title>
-      <link>https://www.nollaversio.fi/blog/public/nodejs/template-function/</link>
-      <pubDate>Fri, 07 Oct 2016 16:09:02 +0300</pubDate>
-      
-      <guid>https://www.nollaversio.fi/blog/public/nodejs/template-function/</guid>
-      <description>
-
-&lt;p&gt;Javascriptillä populoitavien mallipohjien (template) käyttö on etenkin frontend-koodauksessa varsin yleistä. Tyypillinen tarve mallipohjalle syntyy silloin, kun DOM-puuhun pitäisi lisätä uusi DOM-elementti, ja tuo elementti on rakennettava dynaamisesti.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;DOM-puu tulee sanoista &amp;ldquo;Document Object Model tree&amp;rdquo;. DOM-puu kaikessa yksinkertaisuudessaan kuvaa hierarkisessa muodossa kaiken sen mitä nettisivu sisältää. Nettisivun tekstit, kuvat, videoelementit kaikki ovat osa tuota puurakennetta.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Elementtiä dynaamisesti rakennettaessa oleellista on, että pystymme injektoimaan haluttuun mallipohjaan sopivia tekstinpätkiä. Mallipohja sisältää näitä injektioita varten erikseen määritellyt &amp;ldquo;replace here&amp;rdquo;-kohdat.&lt;/p&gt;
-
-&lt;p&gt;Dynaamisen elementin rakentaminen mallipohjan pohjalta on konseptiltaan sama kuin sanaristikon täyttäminen. Ristikkointoilija täyttää ennaltamääriteltyihin laatikoihin kirjaimia. Vihjekuvat ovat aina samat - ne ovat osa mallipohjaa, tässä tapauksessa ristikkoa.&lt;/p&gt;
-
-&lt;p&gt;Omalla kohdallani perinteinen tapa toteuttaa HTML-mallipohjien käyttö on ollut turvautua &lt;em&gt;Handlebars&lt;/em&gt;-kirjastoon. Tuo kirjasto hoitaa homman asiallisesti. Mutta jokunen aika sitten kävi ilmi, että myös Lodash-kirjasto hoitaa homman.&lt;/p&gt;
-
-&lt;p&gt;Ja koska käytän Lodashia muutenkin kovin runsaasti, oli suora motivaatio siirtyä heidän pariin tässäkin asiassa.&lt;/p&gt;
-
-&lt;h3 id=&#34;template-funktion-käyttö&#34;&gt;template()-funktion käyttö&lt;/h3&gt;
-
-&lt;p&gt;Lodashin &lt;em&gt;template()&lt;/em&gt; apumetodi mahdollistaa tekstijonon tuottamisen &lt;em&gt;toisen tekstijonon pohjalta&lt;/em&gt; seuraavaan tyyliin:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var vieras1 = &amp;quot;Jaakko&amp;quot;;
-var vieras2 = &amp;quot;Kalle&amp;quot;;
-
-var pohja = _.template(&#39;Hei vain &amp;lt;%= nimi %&amp;gt;&#39;);
-
-// Luodaan pohjan perusteella uusia tekstijonoja, joissa 
-// nimi on dynaamisesti korvattu uudella tekstijonolla.
-
-pohja({nimi: vieras1}); // &amp;quot;Hei vain Jaakko&amp;quot;
-pohja({nimi: vieras2}); // &amp;quot;Hei vain Kalle&amp;quot;
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Käyttö on tismalleen noin yksinkertaista. Ylläolevassa esimerkissä mallipohjan käytön hyöty ei ole merkittävä - yhtä hyvin voisimme tehdä seuraavalla tavalla:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// Luodaan kumpikin tervehdys liimamalla tekstijonoja yhteen käsin.
-
-&amp;quot;Hei vain &amp;quot; + vieras1; // &amp;quot;Hei vain Jaakko&amp;quot;
-&amp;quot;Hei vain &amp;quot; + vieras2; // &amp;quot;Hei vain Kalle&amp;quot;
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tilanne muuttuu, kun mallipohjana toimiva tekstijono on pitkä, ja siihen on tehtävä useita tekstikorvauksia. Tällöin leikkaaminen + liimaaminen käsipelillä vie rutosti aikaa (ohjelmoijan aikaa, ei CPU-aikaa).&lt;/p&gt;
-
-&lt;p&gt;Lodashin template-metodi sisältää paljon ominaisuuksia. Se pystyy mm. tunnistamaan HTML-merkistön ja tekemään asianmukaiset merkistökoodaukset (&amp;ldquo;escape&amp;rdquo;).&lt;/p&gt;
-
-&lt;p&gt;Lisätietoa löytyy doc-sivuilta: &lt;a href=&#34;https://lodash.com/docs/4.16.4#template&#34;&gt;https://lodash.com/docs/4.16.4#template&lt;/a&gt;&lt;/p&gt;
 </description>
     </item>
     

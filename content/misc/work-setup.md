@@ -15,7 +15,7 @@ Tärkein osa laitteistokokonaisuutta on näyttöpäätteet, ja niiden konfiguroi
 
 Työpöytäni näyttää tältä:
 
-![Työpöytä](/blog/public/img/work-setup.png)
+![Työpöytä](/blog/public/img/tyopoyta.jpg)
 
 Kaksi näyttöä vierekkäin, joista toinen on perinteinen vaakasuuntainen, toinen käännetty pystyyn. 
 
@@ -27,7 +27,7 @@ Toisin sanoen, koodieditori puolella vertikaalinen tila on tärkeämpää kuin h
 
 Näyttöpäätteiden tarjoama tila puolestaan jakautuu seuraavasti (per näyttöpääte):
 
-![Näyttöjen jaottelu](/blog/public/img/workspaces-work-setup.png)
+![Näyttöjen jaottelu](/blog/public/img/work-setup.png)
 
 Koodieditori valtaa kokonaan pystynäytön. Vaakanäytöllä puolestaan on niin paljon horisontaalista tilaa, että olen laittanut vasempaan reunaan komentorivikehoitteen (siis terminaalin), ja oikealle laidalle selainikkunan. 
 
@@ -46,6 +46,8 @@ Ubuntussa on kiva konsepti nimeltä "workspace".
 Useamman kuin yhden Workspacen käyttö mahdollista ikäänkuin *fyysisten näyttöjen monistamisen virtuaalisiksi näytöiksi*. 
 
 Toistaiseksi olemme olettaneet, että käytössä on yksi workspace. Mutta Ubuntu sallii jopa neljän workspacen käytön. Tälläisessä tilanteessa meillä on kahdeksan virtuaalisen näyttöpäätteen verran tilaa. 
+
+![Näyttöjen jaottelu](/blog/public/img/workspaces-work-setup.png)
 
 Vertauskuvallisesti voimme ajatella, että saamme kolme uutta kopiota koko työpöydästä (siis siitä puisesta työpöydästä, jolla fyysiset näyttöpäätteet seisovat) käyttöömme.
 

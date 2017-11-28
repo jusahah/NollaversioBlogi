@@ -52,6 +52,9 @@
         <li><a href="https://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
       
 
+        <li><a href="https://www.nollaversio.fi/blog/public/misc">Misc </a></li>
+      
+
         <li><a href="https://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
       
 
@@ -69,6 +72,77 @@
 <div class="posts">
 
       
+  <div class="post">
+    <h1 class="post-title">
+      <a href="https://www.nollaversio.fi/blog/public/misc/work-setup/">
+        Kahden näytön työ-setup
+      </a>
+    </h1>
+
+    <span class="post-date">Sun, Nov 26, 2017</span>
+
+    
+
+<p>Ammattimaisen koodaamisen perusedellytys on, että tukitoiminnot ja työkalut varsinaista koodin kirjoittamista ajatellen ovat kunnossa. Koodarin tärkein työkalu on luonnollisesti laitteisto, jolla koodia kirjoitetaan. Siis fyysinen tietokone ja jonkin sortin näppäimistö.</p>
+
+<p>Oma työkaluni on vanha kunnon pöytäkone, joka hurisee hiljaa työpöydän alla. Koneen speksit eivät ole tärkeät, etenkään web-koodauksen puolella. Vanhakin prosessori riittää oikein hyvin, ja näytönohjain tarvitaan lähinnä usean näytön tukea varten (useimmissa web-sovelluksissa itse graafiikka on yksinkertaista eikä vaadi näytönohjaimilta suuremmin tehoja).</p>
+
+<p>Tärkein osa laitteistokokonaisuutta on näyttöpäätteet, ja niiden konfigurointi maksimaalista tuottavuutta ajatellen. Seuraavassa oma ratkaisuni.</p>
+
+<h3 id="kaksi-fyysistä-näyttöpäätettä-kahdeksan-virtuaalista-näyttöä">Kaksi fyysistä näyttöpäätettä, kahdeksan virtuaalista näyttöä</h3>
+
+<p>Työpöytäni näyttää tältä:</p>
+
+<p><img src="/blog/public/img/tyopoyta.jpg" alt="Työpöytä" /></p>
+
+<p>Kaksi näyttöä vierekkäin, joista toinen on perinteinen vaakasuuntainen, toinen käännetty pystyyn.</p>
+
+<p>Miksi toinen on vaaka-asennossa, toinen pystyasennossa? Näytöt palvelevat eri tarpeita. Vaakasuuntainen näyttö sisältää kivasti vaakasuuntaista tilaa, joten siihen sopii hyvin selainikkuna, tarvittaessa vaikka kaksi vierekkäin.</p>
+
+<p>Pystysuuntainen näyttö taas sisältää rutkasti tilaa pystysuunnassa. Koodieditori soveltuu tälle näytölle mainiosti, sillä koodia kirjoittaessa on tärkeämpää <em>nähdä monta koodiriviä kerrallaan</em> kuin <em>nähdä yhden pitkän koodirivin koko teksti</em>.</p>
+
+<p>Toisin sanoen, koodieditori puolella vertikaalinen tila on tärkeämpää kuin horisontaalinen. Pystynäytöllä saa nopeasti kokonaiskuvan isosta palasesta koodia, ja esimerkiksi moni yksittäinen kooditiedosto mahtuu näyttöruudulle kokonaisuudessaan, jolloin ei tarvitse skrollata. Horisontaalisesti tilaa on vähemmän, mutta koodirivit tuppaavat olemaan horisontaalisesti lyhyitä, joten tämä ei ole ongelma.</p>
+
+<p>Näyttöpäätteiden tarjoama tila puolestaan jakautuu seuraavasti (per näyttöpääte):</p>
+
+<p><img src="/blog/public/img/work-setup.png" alt="Näyttöjen jaottelu" /></p>
+
+<p>Koodieditori valtaa kokonaan pystynäytön. Vaakanäytöllä puolestaan on niin paljon horisontaalista tilaa, että olen laittanut vasempaan reunaan komentorivikehoitteen (siis terminaalin), ja oikealle laidalle selainikkunan.</p>
+
+<blockquote>
+<p>Kuvasta asiaa ei näe, mutta itse asiassa selainikkuna jakautuu vielä kahteen osaan: itse varsinaiseen työskentelyalueeseen (&ldquo;webbisivu-näkymään&rdquo;) ja työkalupalkkiin (Chrome Dev Tools). Tämäkin jaottelu on horisontaalinen.</p>
+</blockquote>
+
+<p>Tällä tavoin saan kahden näytön turvin luotua setupin, jossa pystyn näkemään koodieditorin ja koodattavan applikaation yhtäaikaisesti. Editori vasemmalla näytöllä, applikaatio oikealla näytöllä.</p>
+
+<p>Mutta tämä on vasta alkua, sillä useimmat applikaatiot koostuvat sekä frontend-koodipohjasta että backend-koodipohjasta. Nämä kaksi koodipohjaa ovat erilliset, eivätkä millään mahdu yhteen koodieditoriin. Mikä avuksi?</p>
+
+<h3 id="virtuaaliset-näytöt-workspaces">Virtuaaliset näytöt (workspaces)</h3>
+
+<p>Ubuntussa on kiva konsepti nimeltä &ldquo;workspace&rdquo;.</p>
+
+<blockquote>
+<p>Ubuntun help-sivuston kuvaus workspacesta: <em>Workspaces refer to the grouping of windows on your desktop. You can create multiple workspaces, which act like virtual desktops. Workspaces are meant to reduce clutter and make the desktop easier to navigate.</em></p>
+</blockquote>
+
+<p>Useamman kuin yhden Workspacen käyttö mahdollista ikäänkuin <em>fyysisten näyttöjen monistamisen virtuaalisiksi näytöiksi</em>.</p>
+
+<p>Toistaiseksi olemme olettaneet, että käytössä on yksi workspace. Mutta Ubuntu sallii jopa neljän workspacen käytön. Tälläisessä tilanteessa meillä on kahdeksan virtuaalisen näyttöpäätteen verran tilaa.</p>
+
+<p><img src="/blog/public/img/workspaces-work-setup.png" alt="Näyttöjen jaottelu" /></p>
+
+<p>Vertauskuvallisesti voimme ajatella, että saamme kolme uutta kopiota koko työpöydästä (siis siitä puisesta työpöydästä, jolla fyysiset näyttöpäätteet seisovat) käyttöömme.</p>
+
+<p>Tämä mahdollistaa asetelman, jossa yhden applikaation jokainen &ldquo;osa-applikaatio&rdquo; elää omassa workspacessaan. Ohjelmoija voi sitten pomppia workspacejen välillä nopeasti <em>Ctrl+Alt+nuolinäppäin</em> -komennolla.</p>
+
+<p>Esimerkkinä oma tyypillinen workspace-struktuurini, kun kehitän vaativaa web-applikaatiota:</p>
+
+<p><img src="/blog/public/img/workspaces-logical-setup.png" alt="Kahdeksan virtuaalinäyttöä" /></p>
+
+<p>Yksi <em>virtuaalinen näyttöpari</em> on varattu backend-koodille ja tietokantanäkymälle (esim. phpmyadmin). Toinen on varattu frontend-koodin käyttöön. Kolmas on varattu Slackille (mikäli koodaus vaatii muiden koodareiden kanssa kommunikointia; muussa tapauksessa koko workspace on tyhjä). Neljäs on varattu kaikelle ylimääräiselle hölynpölylle, kuten Youtube-näkymälle, josta kuunnella - fiiliksestä riippuen - vaikka <a href="https://www.youtube.com/watch?v=ih4_1FyVjaY">huuhkajan huhuilua</a> tai <a href="https://www.youtube.com/watch?v=mpbDlp_gk6M">ammattilaiskäyttöön soveltuvaa koodausmusiikkia</a>.</p>
+
+  </div>
+  
   <div class="post">
     <h1 class="post-title">
       <a href="https://www.nollaversio.fi/blog/public/nodejs/applymatrix/">
