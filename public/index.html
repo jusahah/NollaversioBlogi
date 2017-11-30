@@ -74,6 +74,99 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="https://www.nollaversio.fi/blog/public/misc/project-management/">
+        Ohjelmistoprojektin koordinointi ja psykologia (osa 1)
+      </a>
+    </h1>
+
+    <span class="post-date">Tue, Nov 28, 2017</span>
+
+    
+
+<p>Vaativan ohjelmistokehitys on mentaalisesti raskasta ja kuluttavaa puuhaa. Tyypillinen ohjelmistoprojekti koostuu tuhansista ja tuhansista riveistä koodia. Abstraktion tasosta ja applikaation luonteesta riippuen koodin pystyy jaottelemaan suurempiin paloihin - ja tällä tavoin hahmottamaan kehitysprosessin abstraktioiden yhdistelynä ja muovaamisena - mutta abstraktoiminen ja &ldquo;black box&rdquo; -ajattelu ovat lähinnä optimisaatioita, eivät ratkaisuja.</p>
+
+<p>Mitä suuremmaksi ja vaativammaksi ohjelmistoprojekti paisuu, sitä enemmän se sisältää liikkuvia osia <em>kaikilla</em> abstraktion tasoilla.</p>
+
+<p>Yksittäisten funktioiden määrä kasvaa kasvamistaan, mutta tämä kasvu on ongelmista pienin, sillä suurin osa funktioista elää kiltisti jonkin ylemmän tason abstraktion sisällä.</p>
+
+<p>Suurempi ongelma on, että abstraktion <em>ylimmällä</em> tasolla komponentit yhä enemmän kytkeytyvät toisiinsa. Ne siis entistä tiiviimmin kiinnittävät limaiset lonkeronsa toistensa sisuskaluihin.</p>
+
+<p>Tämä on seurausta kahdesta erillisestä ilmiöstä:</p>
+
+<h3 id="ajallinen-ulottuvuus-a-k-a-hyvätkin-ideat-tuppaavat-unohtumaan">Ajallinen ulottuvuus (a.k.a &ldquo;hyvätkin ideat tuppaavat unohtumaan&rdquo;)</h3>
+
+<p>Ohjelmistoprojektin alkuvaiheessa kokonaisarkkitehtuuri on tuoreena mielessä, ja koodin määrä on vähäinen, joten arkkitehtuurillisesti kauniit/järkevät ratkaisut ovat helppoja. Mitä pidempään projekti jatkuu, sitä häilyvämmäksi applikaation arkkitehtuuri muuntuu ohjelmoijan pään sisällä. Alunperin kirkkaana ollut idea pikkuhiljaa häviää harmaan sumuverhon taakse.</p>
+
+<h3 id="psykologinen-ulottuvuus-a-k-a-kuka-idiootti-tämänkin-on-kirjoittanut">Psykologinen ulottuvuus (a.k.a &ldquo;kuka idiootti tämänkin on kirjoittanut&rdquo;)</h3>
+
+<p>Vaativan ohjelmistoprojektin hieno asia on, että se kehittää ohjelmoijaa aivan helvetisti. Kuusi kuukautta projektin aloituksen jälkeen ohjelmoija katsoo koodiaan, jonka on itse kirjoittanut kuusi kuukautta aiemmin, ja naurahtaa: <em>ei jumalauta, olinpa uskomaton amatööri</em>.</p>
+
+<p>Tämä on tietenkin hieno tunne, mutta psykologisesti sillä on ikävä seuraus; ohjelmoija alkaa alitajuntaisesti halveksua aiempaa, amatöörimäistä koodiaan ja haluaa pysyä siitä erossa. Mutta koska projekti jatkuu ja vaatii lisäkehitystä, ohjelmoijan täytyy elää oman menneisyytensä kanssa. Tämä on psykologisesti yllättävän raskasta. Kun uusi ja parempi ratkaisu on materialisoitunut ohjelmoijan pääkoppaan, on lähes mahdoton jättää vanha, huonon ratkaisun sisältävä koodi rauhaan.</p>
+
+<p>Tämä psykologinen inho omaa koodiaan kohtaan johtaa siihen, että ohjelmoija ei jaksa nähdä vaivaa sen eteen. Hän olettaa, että ennemmin tai myöhemmin hän uudelleenkirjoittaa koko koodin. Pienten parannusten tekeminen on turhaa, sillä uudelleenkirjoitus nollaa parannukset kuitenkin. Ohjelmoija ryhtyy oikomaan mutkia, sillä ratkaisujen tekeminen oikeaoppisesti on turhaa työtä; parempi tehdä ratkaisut oikeaoppisesti sitten, kun koko koodi laitetaan kerralla uusiksi.</p>
+
+<p>Perimmäinen syy ilmiöön numero 1 on ihmisen pitkäkestoisen muistin toiminta. Ilmiön 2 taustalla taas on kaikille kunnianhimoisille ihmisille tyypillinen perfektionismi yhdistettynä pakonomaiseen ajankäytön optimointiin ja ylianalysointiin.</p>
+
+<p>Ilmiö 2 on kenties <em>toiseksi</em> suurin yksittäinen syy siihen, miksi fiksut ihmiset tuppaavat saamaan niin <em>vähän</em> aikaan työurallaan.</p>
+
+<blockquote>
+<p>Suurin yksittäinen syy siihen, että fiksut ihmiset eivät saa ikinä mitään aikaan on tietenkin sosiaalinen media.</p>
+</blockquote>
+
+<p>Mutta ei siitä sen enempää. Keskitytään ilmiöön 1.</p>
+
+<h2 id="abstraktion-eri-tasot-ja-työmuisti">Abstraktion eri tasot ja työmuisti</h2>
+
+<p>Työmuistin rajallinen koko aiheuttaa sen, että ohjelmoija joutuu kaikilla abstraktion tasoilla &ldquo;paloittelemaan maailman&rdquo; kouralliseen yksittäisiä konsepteja.</p>
+
+<p>Mitä tarkoitan tällä?</p>
+
+<p>Sitä, että työmuistiin on aina mahduttava koko <em>tarkastelun alaisena oleva maailma</em> kerrallaan.</p>
+
+<h3 id="komennot-alin-taso">Komennot (alin taso)</h3>
+
+<p>Alimmalla abstraktion tasolla huomiokyky (ja työmuistin sisältö) on keskittynyt asettelemaan yksittäiset koodikomennot järkevästi ja siten, että ne toimivat. Epävirallisesti voimme sanoa, että yksittäiset koodikomennot ovat palasia, joista funktiot ja metodit koostuvat. Tällä tasolla ohjelmointi on lähinnä komentojen syöttämistä mikroprosessorille, ja tarkastelun alaisena oleva maailma on <em>yksittäisen komennon suorittaminen</em>.</p>
+
+<h3 id="funktiot">Funktiot</h3>
+
+<p>Ylöspäin mentäessä seuraavalla abstraktion tasolla ohjelmoija käsittelee funktioita. Jo tällä tasolla siirrytään pois raudan parista, ja käytetään näkökulmaa &ldquo;mitä halutaan saavuttaa&rdquo;, ei &ldquo;miten halutaan saavuttaa&rdquo;. Web-ohjelmoinnin piirissä tämä on käytännössä alin taso.</p>
+
+<blockquote>
+<p>Web-ohjelmoija ei kerro tietokoneelle, <em>miten</em> HTML-elementti asetellaan ruudulle, vaan <em>minne</em> HTML-elementti asetellaan. Tietokone sitten ratkoo kaikki käytännön ongelmat, kuten yksittäisten pikseleiden värittämisen.</p>
+</blockquote>
+
+<p>Tällä tasolla tarkastelun alaisena oleva maailma on esimerkiksi animaation pyöritys osana tietokonepeliä. Tyypillinen animaatio on kokoelma osa-animaatioita. Sanotaan vaikka, että meillä on animaatio nimeltä &ldquo;vieteriukon ilmestyminen&rdquo;. Tuon animaation osa-animaatiot ovat seuraavat: &ldquo;avaa laatikon yläkansi, pompauta vieteriukko ulos&rdquo;.</p>
+
+<p>Kumpikin noista osa-animaatioista voi puolestaan koostua alemman tason osa-animaatioista. Jossain kohtaa sitten tullaan osa-animaatioon, joka kirjaimellisesti värittää näyttöpäätteen pikseleitä 60 kertaa sekunnissa, mutta oleellista on, että ylimmällä tasolla (&ldquo;vieteriukon ilmestyminen&rdquo;) emme välitä pikseleistä pätkän vertaa.</p>
+
+<p>Ja koska emme välitä, eivät pikselit ja niiden värityksestä huolehtiminen rasita työmuistiamme.</p>
+
+<blockquote>
+<p>Tämä on kaiken ohjelmoinnin perusta; tietyllä abstraktion tasolla <em>emme välitä</em> alemman tason toiminnoista. Otamme ne vastaan annettuina, ja sokeasti luotamme, että ne toimivat. Maaginen ohjelmointiguru Gerald Sussman (SICP, Scheme, ym.) kutsuu tätä termillä <em>wishful thinking</em>.</p>
+</blockquote>
+
+<h3 id="moduulit-ja-komponentit">Moduulit ja komponentit</h3>
+
+<p>Ylöspäin mentäessä siirrytään joko moduuleiden (löyhästi <em>kokoelma toisiinsa liittyviä funktioita</em>) tai komponenttien (löyhästi <em>erillinen palikka, joka kykenee itsenäisesti suorittamaan vaativia tehtäviä, esim. sähköpostin lähetyksen</em>) tasolle. Tällä tasolla syntyy ensimmäistä kertaa kokonaiskuva (osa-)applikaatiosta, jota ollaan rakentamassa. Applikaatio koostuu komponenteista, jotka vuorovaikuttavat toistensa kanssa. Yhdistelemällä komponentteja ja rakentamalla informaatioväyliä komponenttien välille saavutetaan applikaatio.</p>
+
+<blockquote>
+<p>Komponentin ja moduulin ero on tärkeä ymmärtää; moduuli on <strong>staattinen</strong> kokoelma koodia, jolla on jokin yhteinen tarkoitus olla olemassa. Komponentti on <strong>dynaaminen</strong> palikka, joka elää ohjelman ajon aikana ja suorittaa vastuulleen kuuluvia velvollisuuksia. Komponentti on siis ohjelman ajon aikana elävä asia; moduuli puolestaan on kasa koodia, joka elää &ldquo;koodieditorissa&rdquo;.</p>
+
+<p>Ero on sama kuin Pythagoraan lauseella ja Kheopsin pyramidilla; Pythagoraan lause ei ole olemassa muuten kuin abstraktina sääntönä, jonka perusteella voidaan käsin kosketeltavia asioita (kuten pyramidit) rakentaa.</p>
+</blockquote>
+
+<h3 id="osa-applikaatiot-rajapinnat-ja-palvelu-arkkitehtuuri">Osa-applikaatiot, rajapinnat ja palvelu-arkkitehtuuri</h3>
+
+<p>Abstraktion ylimmällä tasolla komponentit muodostavat kokonaisuuksia, joita voi kutsua &ldquo;osa-applikaatioiksi&rdquo;. Web-applikaatioissa esim. frontend vs. backend -jaottelu on tyypillinen esimerkki osa-applikaatioista; frontend on yksi applikaatio, backend on toinen, ja yhdessä ne muodostavat halutun &ldquo;kokonaisapplikaation&rdquo;, joka toivottavasti täyttää jonkin oikean maailman tarpeen. Useimmiten nämä osa-applikaatiot keskustelevat vastaavalla tavalla kuin me ihmisetkin; ne rimpauttavat toisilleen HTTP-protokollan (tai jonkin alemman, kuten TCP-protokollan) avulla ja kertovat kuulumisensa. Jokainen osa-applikaatio tarjoaa rajapinnan, johon muut osa-applikaatiot voivat soitella.</p>
+
+<ul>
+<li>Osa 2 - Jatkuu huomenna&hellip; *</li>
+</ul>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="https://www.nollaversio.fi/blog/public/misc/work-setup/">
         Kahden näytön työ-setup
       </a>

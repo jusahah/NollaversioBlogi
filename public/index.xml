@@ -6,8 +6,98 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Sun, 26 Nov 2017 08:31:56 +0200</lastBuildDate>
+    <lastBuildDate>Tue, 28 Nov 2017 09:45:14 +0200</lastBuildDate>
     <atom:link href="https://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Ohjelmistoprojektin koordinointi ja psykologia (osa 1)</title>
+      <link>https://www.nollaversio.fi/blog/public/misc/project-management/</link>
+      <pubDate>Tue, 28 Nov 2017 09:45:14 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/misc/project-management/</guid>
+      <description>
+
+&lt;p&gt;Vaativan ohjelmistokehitys on mentaalisesti raskasta ja kuluttavaa puuhaa. Tyypillinen ohjelmistoprojekti koostuu tuhansista ja tuhansista riveistä koodia. Abstraktion tasosta ja applikaation luonteesta riippuen koodin pystyy jaottelemaan suurempiin paloihin - ja tällä tavoin hahmottamaan kehitysprosessin abstraktioiden yhdistelynä ja muovaamisena - mutta abstraktoiminen ja &amp;ldquo;black box&amp;rdquo; -ajattelu ovat lähinnä optimisaatioita, eivät ratkaisuja.&lt;/p&gt;
+
+&lt;p&gt;Mitä suuremmaksi ja vaativammaksi ohjelmistoprojekti paisuu, sitä enemmän se sisältää liikkuvia osia &lt;em&gt;kaikilla&lt;/em&gt; abstraktion tasoilla.&lt;/p&gt;
+
+&lt;p&gt;Yksittäisten funktioiden määrä kasvaa kasvamistaan, mutta tämä kasvu on ongelmista pienin, sillä suurin osa funktioista elää kiltisti jonkin ylemmän tason abstraktion sisällä.&lt;/p&gt;
+
+&lt;p&gt;Suurempi ongelma on, että abstraktion &lt;em&gt;ylimmällä&lt;/em&gt; tasolla komponentit yhä enemmän kytkeytyvät toisiinsa. Ne siis entistä tiiviimmin kiinnittävät limaiset lonkeronsa toistensa sisuskaluihin.&lt;/p&gt;
+
+&lt;p&gt;Tämä on seurausta kahdesta erillisestä ilmiöstä:&lt;/p&gt;
+
+&lt;h3 id=&#34;ajallinen-ulottuvuus-a-k-a-hyvätkin-ideat-tuppaavat-unohtumaan&#34;&gt;Ajallinen ulottuvuus (a.k.a &amp;ldquo;hyvätkin ideat tuppaavat unohtumaan&amp;rdquo;)&lt;/h3&gt;
+
+&lt;p&gt;Ohjelmistoprojektin alkuvaiheessa kokonaisarkkitehtuuri on tuoreena mielessä, ja koodin määrä on vähäinen, joten arkkitehtuurillisesti kauniit/järkevät ratkaisut ovat helppoja. Mitä pidempään projekti jatkuu, sitä häilyvämmäksi applikaation arkkitehtuuri muuntuu ohjelmoijan pään sisällä. Alunperin kirkkaana ollut idea pikkuhiljaa häviää harmaan sumuverhon taakse.&lt;/p&gt;
+
+&lt;h3 id=&#34;psykologinen-ulottuvuus-a-k-a-kuka-idiootti-tämänkin-on-kirjoittanut&#34;&gt;Psykologinen ulottuvuus (a.k.a &amp;ldquo;kuka idiootti tämänkin on kirjoittanut&amp;rdquo;)&lt;/h3&gt;
+
+&lt;p&gt;Vaativan ohjelmistoprojektin hieno asia on, että se kehittää ohjelmoijaa aivan helvetisti. Kuusi kuukautta projektin aloituksen jälkeen ohjelmoija katsoo koodiaan, jonka on itse kirjoittanut kuusi kuukautta aiemmin, ja naurahtaa: &lt;em&gt;ei jumalauta, olinpa uskomaton amatööri&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tämä on tietenkin hieno tunne, mutta psykologisesti sillä on ikävä seuraus; ohjelmoija alkaa alitajuntaisesti halveksua aiempaa, amatöörimäistä koodiaan ja haluaa pysyä siitä erossa. Mutta koska projekti jatkuu ja vaatii lisäkehitystä, ohjelmoijan täytyy elää oman menneisyytensä kanssa. Tämä on psykologisesti yllättävän raskasta. Kun uusi ja parempi ratkaisu on materialisoitunut ohjelmoijan pääkoppaan, on lähes mahdoton jättää vanha, huonon ratkaisun sisältävä koodi rauhaan.&lt;/p&gt;
+
+&lt;p&gt;Tämä psykologinen inho omaa koodiaan kohtaan johtaa siihen, että ohjelmoija ei jaksa nähdä vaivaa sen eteen. Hän olettaa, että ennemmin tai myöhemmin hän uudelleenkirjoittaa koko koodin. Pienten parannusten tekeminen on turhaa, sillä uudelleenkirjoitus nollaa parannukset kuitenkin. Ohjelmoija ryhtyy oikomaan mutkia, sillä ratkaisujen tekeminen oikeaoppisesti on turhaa työtä; parempi tehdä ratkaisut oikeaoppisesti sitten, kun koko koodi laitetaan kerralla uusiksi.&lt;/p&gt;
+
+&lt;p&gt;Perimmäinen syy ilmiöön numero 1 on ihmisen pitkäkestoisen muistin toiminta. Ilmiön 2 taustalla taas on kaikille kunnianhimoisille ihmisille tyypillinen perfektionismi yhdistettynä pakonomaiseen ajankäytön optimointiin ja ylianalysointiin.&lt;/p&gt;
+
+&lt;p&gt;Ilmiö 2 on kenties &lt;em&gt;toiseksi&lt;/em&gt; suurin yksittäinen syy siihen, miksi fiksut ihmiset tuppaavat saamaan niin &lt;em&gt;vähän&lt;/em&gt; aikaan työurallaan.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Suurin yksittäinen syy siihen, että fiksut ihmiset eivät saa ikinä mitään aikaan on tietenkin sosiaalinen media.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Mutta ei siitä sen enempää. Keskitytään ilmiöön 1.&lt;/p&gt;
+
+&lt;h2 id=&#34;abstraktion-eri-tasot-ja-työmuisti&#34;&gt;Abstraktion eri tasot ja työmuisti&lt;/h2&gt;
+
+&lt;p&gt;Työmuistin rajallinen koko aiheuttaa sen, että ohjelmoija joutuu kaikilla abstraktion tasoilla &amp;ldquo;paloittelemaan maailman&amp;rdquo; kouralliseen yksittäisiä konsepteja.&lt;/p&gt;
+
+&lt;p&gt;Mitä tarkoitan tällä?&lt;/p&gt;
+
+&lt;p&gt;Sitä, että työmuistiin on aina mahduttava koko &lt;em&gt;tarkastelun alaisena oleva maailma&lt;/em&gt; kerrallaan.&lt;/p&gt;
+
+&lt;h3 id=&#34;komennot-alin-taso&#34;&gt;Komennot (alin taso)&lt;/h3&gt;
+
+&lt;p&gt;Alimmalla abstraktion tasolla huomiokyky (ja työmuistin sisältö) on keskittynyt asettelemaan yksittäiset koodikomennot järkevästi ja siten, että ne toimivat. Epävirallisesti voimme sanoa, että yksittäiset koodikomennot ovat palasia, joista funktiot ja metodit koostuvat. Tällä tasolla ohjelmointi on lähinnä komentojen syöttämistä mikroprosessorille, ja tarkastelun alaisena oleva maailma on &lt;em&gt;yksittäisen komennon suorittaminen&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h3 id=&#34;funktiot&#34;&gt;Funktiot&lt;/h3&gt;
+
+&lt;p&gt;Ylöspäin mentäessä seuraavalla abstraktion tasolla ohjelmoija käsittelee funktioita. Jo tällä tasolla siirrytään pois raudan parista, ja käytetään näkökulmaa &amp;ldquo;mitä halutaan saavuttaa&amp;rdquo;, ei &amp;ldquo;miten halutaan saavuttaa&amp;rdquo;. Web-ohjelmoinnin piirissä tämä on käytännössä alin taso.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Web-ohjelmoija ei kerro tietokoneelle, &lt;em&gt;miten&lt;/em&gt; HTML-elementti asetellaan ruudulle, vaan &lt;em&gt;minne&lt;/em&gt; HTML-elementti asetellaan. Tietokone sitten ratkoo kaikki käytännön ongelmat, kuten yksittäisten pikseleiden värittämisen.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Tällä tasolla tarkastelun alaisena oleva maailma on esimerkiksi animaation pyöritys osana tietokonepeliä. Tyypillinen animaatio on kokoelma osa-animaatioita. Sanotaan vaikka, että meillä on animaatio nimeltä &amp;ldquo;vieteriukon ilmestyminen&amp;rdquo;. Tuon animaation osa-animaatiot ovat seuraavat: &amp;ldquo;avaa laatikon yläkansi, pompauta vieteriukko ulos&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Kumpikin noista osa-animaatioista voi puolestaan koostua alemman tason osa-animaatioista. Jossain kohtaa sitten tullaan osa-animaatioon, joka kirjaimellisesti värittää näyttöpäätteen pikseleitä 60 kertaa sekunnissa, mutta oleellista on, että ylimmällä tasolla (&amp;ldquo;vieteriukon ilmestyminen&amp;rdquo;) emme välitä pikseleistä pätkän vertaa.&lt;/p&gt;
+
+&lt;p&gt;Ja koska emme välitä, eivät pikselit ja niiden värityksestä huolehtiminen rasita työmuistiamme.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Tämä on kaiken ohjelmoinnin perusta; tietyllä abstraktion tasolla &lt;em&gt;emme välitä&lt;/em&gt; alemman tason toiminnoista. Otamme ne vastaan annettuina, ja sokeasti luotamme, että ne toimivat. Maaginen ohjelmointiguru Gerald Sussman (SICP, Scheme, ym.) kutsuu tätä termillä &lt;em&gt;wishful thinking&lt;/em&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&#34;moduulit-ja-komponentit&#34;&gt;Moduulit ja komponentit&lt;/h3&gt;
+
+&lt;p&gt;Ylöspäin mentäessä siirrytään joko moduuleiden (löyhästi &lt;em&gt;kokoelma toisiinsa liittyviä funktioita&lt;/em&gt;) tai komponenttien (löyhästi &lt;em&gt;erillinen palikka, joka kykenee itsenäisesti suorittamaan vaativia tehtäviä, esim. sähköpostin lähetyksen&lt;/em&gt;) tasolle. Tällä tasolla syntyy ensimmäistä kertaa kokonaiskuva (osa-)applikaatiosta, jota ollaan rakentamassa. Applikaatio koostuu komponenteista, jotka vuorovaikuttavat toistensa kanssa. Yhdistelemällä komponentteja ja rakentamalla informaatioväyliä komponenttien välille saavutetaan applikaatio.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Komponentin ja moduulin ero on tärkeä ymmärtää; moduuli on &lt;strong&gt;staattinen&lt;/strong&gt; kokoelma koodia, jolla on jokin yhteinen tarkoitus olla olemassa. Komponentti on &lt;strong&gt;dynaaminen&lt;/strong&gt; palikka, joka elää ohjelman ajon aikana ja suorittaa vastuulleen kuuluvia velvollisuuksia. Komponentti on siis ohjelman ajon aikana elävä asia; moduuli puolestaan on kasa koodia, joka elää &amp;ldquo;koodieditorissa&amp;rdquo;.&lt;/p&gt;
+
+&lt;p&gt;Ero on sama kuin Pythagoraan lauseella ja Kheopsin pyramidilla; Pythagoraan lause ei ole olemassa muuten kuin abstraktina sääntönä, jonka perusteella voidaan käsin kosketeltavia asioita (kuten pyramidit) rakentaa.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&#34;osa-applikaatiot-rajapinnat-ja-palvelu-arkkitehtuuri&#34;&gt;Osa-applikaatiot, rajapinnat ja palvelu-arkkitehtuuri&lt;/h3&gt;
+
+&lt;p&gt;Abstraktion ylimmällä tasolla komponentit muodostavat kokonaisuuksia, joita voi kutsua &amp;ldquo;osa-applikaatioiksi&amp;rdquo;. Web-applikaatioissa esim. frontend vs. backend -jaottelu on tyypillinen esimerkki osa-applikaatioista; frontend on yksi applikaatio, backend on toinen, ja yhdessä ne muodostavat halutun &amp;ldquo;kokonaisapplikaation&amp;rdquo;, joka toivottavasti täyttää jonkin oikean maailman tarpeen. Useimmiten nämä osa-applikaatiot keskustelevat vastaavalla tavalla kuin me ihmisetkin; ne rimpauttavat toisilleen HTTP-protokollan (tai jonkin alemman, kuten TCP-protokollan) avulla ja kertovat kuulumisensa. Jokainen osa-applikaatio tarjoaa rajapinnan, johon muut osa-applikaatiot voivat soitella.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;Osa 2 - Jatkuu huomenna&amp;hellip; *&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
     
     <item>
       <title>Kahden näytön työ-setup</title>
@@ -2397,50 +2487,6 @@ class MittaaLampotila implements ShouldQueue
 &lt;blockquote&gt;
 &lt;p&gt;Miten MySQL toimii indeksoitavan kentän jäädessä tyhjäksi? &lt;a href=&#34;http://stackoverflow.com/questions/32217099/mysql-index-for-sparse-table&#34;&gt;Tämän linkin&lt;/a&gt; mukaan Mysql osaa ottaa asian huomioon jos asettaa kentän eksplisiittisesti arvoon &lt;em&gt;NULL&lt;/em&gt;. En muista kokeilleeni asiaa käytännössä.&lt;/p&gt;
 &lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Yksi tunniste, monta käyttöä</title>
-      <link>https://www.nollaversio.fi/blog/public/laravel/one-token/</link>
-      <pubDate>Sat, 08 Oct 2016 10:03:38 +0300</pubDate>
-      
-      <guid>https://www.nollaversio.fi/blog/public/laravel/one-token/</guid>
-      <description>&lt;p&gt;Yksi erinomainen tapa kytkeä front-end applikaatio rajapintaan, joka vaatii kirjautumisen/tunnistautumisen, on käyttää nk. API Tokenia.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;API Token on vähän vastaava asia kuin ranneke kesäfestivaaleilla. Kun festivaalien vierailija ensi kertaa astuu festivaalialueelle, häneltä kysytään lippua, mahdollisesti myös henkilökorttia. Lipun antaessaan vierailijalle lätkäistään käteen ranneke. Jos vierailija myöhemmin poistuu festivaalialueelta, hän voi palata sinne takaisin ranneketta (API Token) näyttämällä. Jos rannekkeessa on RFID-siru, rannekkeella voidaan yksilöidä kävijä helposti. Myös API Token yksilöi käyttäjänsä. Käyttäjän tarkka yksilöinti on valinnainen &amp;ldquo;lisäpalvelu&amp;rdquo;; joissain käyttötarkoituksissa riittää tietää, että kävijällä on &lt;em&gt;oikeus nähdä tiedot&lt;/em&gt; ilman tarvetta tietää &lt;em&gt;kuka haluaa tiedot nähdä&lt;/em&gt;. Useimmiten API Token kuitenkin yksilöi käyttäjän.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;API Tokenin saa antamalla rajapinnalle validin tunnus+salasana-yhdistelmän. Tällä tavoin rajapinta tietää, että API Token vastaanottava taho on ihan oikea poika palveluun rekisteröitynyt käyttäjä.&lt;/p&gt;
-
-&lt;p&gt;API Token on yleensä voimassa siihen asti, kunnes käyttäjä erikseen kirjautuu ulos palvelusta (rajapinnasta). Vaihtoehtoisesti tunniste voi olla voimassa vain tietyn ajan.&lt;/p&gt;
-
-&lt;p&gt;Tyypillisessä arkkitehtuurissa rajapinnasta saatu API Token talletetaan käyttäjän tietokoneen kovalevylle talteen. Tällä tavoin käyttäjä pysyy automaattisesti kirjautuneena rajapintaan, vaikka sulkisi tietokoneen välillä.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Automaattisesti kirjautuneena pysyminen tässä kohtaa tarkoittaa, että frontend-applikaatio hoitaa kovalevyltä ladatun API Token avulla tunnistautumisen; ihmiskäyttäjän ei tarvitse syöttää salasanaa. Oikeasti käyttäjä ei pysy kirjautuneena yhtään mihinkään. Pinnan alla joka ikisen rajapintakutsun yhteydessä kirjautuminen suoritetaan uusiksi juurikin API Tokenin avulla. Ihmiskäyttäjä ei tätä prosessia näe.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;API Tokenin ominaisuuksiin myös kuuluu useimmiten, että jos käyttäjä tarjoaa validin tunnus+salasana-yhdistelmän vaikka hänellä on (tai pitäisi olla!) hallussaan API Token, rajapinta generoi uuden API Tokenin. Vanha API Token lentää roskakoriin. Näin on pakko olla; muuten käyttäjä hävittäessään API Tokeninsa ei enää koskaan pääsisi sisälle rajapintaan. Ja kuinka API Token voi hävitä? Esimerkiksi tyhjentämällä web-selaimen välimuistin.&lt;/p&gt;
-
-&lt;p&gt;Tämä malli toimii erinomaisesti. Jos kovalevyltä ei API Tokenia löydy, käyttäjän on pakko syöttää salasana. Salasanan (mieluiten oikean) syötettyään käyttäjä saa API Tokenin, jonka voi tallettaa kovalevylleen.&lt;/p&gt;
-
-&lt;p&gt;Useimpien web-applikaatioiden yhteydessä &amp;lsquo;kovalevy&amp;rsquo; on synonyymi web-selaimen localStorage:lle.&lt;/p&gt;
-
-&lt;p&gt;##Yksi monen puolesta&lt;/p&gt;
-
-&lt;p&gt;Mutta entä jos yhtä rajapintaa käyttää kaksi erillistä web-applikaatiota? Tälläinen tilanne syntyy herkästi nk. micro service -arkkitehtuurissa sovellettuna fronttipuolelle. Yksi rajapinta tarjoaa palvelut monelle web-applikaatiolle, jotka yhdessä muodostavat tuoteperheen.&lt;/p&gt;
-
-&lt;p&gt;Esimerkkinä vaikkapa applikaatiokokonaisuus, jossa yksi web-app huolehtii lomakedatan käsittelystä, ja toinen web-app huolehtii lomakkeiden luonnista (lomake-editori). Molemmat web-appit ovat osa samaa kokonaisuutta, jota kutsuttakoon vaikka &amp;ldquo;liidien hallinnaksi&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;Kutsutaan applikaatioita vaikka nimillä &amp;ldquo;Lotus Lomakekäsittely&amp;rdquo; ja &amp;ldquo;Lotus Lomake-editori&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;On luontevaa, että applikaatiokokonaisuuden tilaava taho saa käyttöön yhdet admin-tunnukset, joilla kirjautua molempiin applikaatioihin sisään.&lt;/p&gt;
-
-&lt;p&gt;Mutta jos orjallisesti seuraamme yllä kuvattua API Tokenin käyttömallia, olemme pian dilemman edessä.&lt;/p&gt;
-
-&lt;p&gt;(jatkuu huomenna&amp;hellip;)&lt;/p&gt;
 </description>
     </item>
     
