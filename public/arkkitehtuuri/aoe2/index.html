@@ -1,0 +1,220 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Age of Empires - moninpelin arkkitehtuuri &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="https://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/misc">Misc </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/vue">Vue </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Age of Empires - moninpelin arkkitehtuuri</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Mon, Jan 8, 2018</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Age of Empires 2 on yksi lempipeleistäni. Etenkin sen online-multiplayer. Vuonna 1999 ilmestynyt AoE2 sisältää jopa kahdeksan pelaajan online-pelimuodon, jossa yli tuhat eri pelaajien kontrolloimaa pelihahmoa käy massiivisia taisteluja.</p>
+
+<p>Ohessa video hektisestä kahdeksan pelaajan multiplayer-pelistä: <a href="https://youtu.be/BBsyHerdpuI?t=50m3s">https://youtu.be/BBsyHerdpuI?t=50m3s</a></p>
+
+<p>Sattumalta googlasin männä päivänä tietoja siitä, kuinka Aoe2 on rakentanut jo 90-luvulla näin mahtavan online-pelikokemuksen.</p>
+
+<p>Ennen googlettelua oletin, että multiplayer tapahtuu <em>client-server</em>-mallin pohjalta; yksi palvelin (joka mahdollisesti sijaitsee yhden pelaajista, nk. host-pelaajan tietokoneella!) pitää globaalia pelitilaa yllä, ja jakaa sitä N kertaa sekunnissa pelaajille.</p>
+
+<p>Pelaajat puolestaan lähettävät palvelimelle komentoja; palvelin reagoi kuhunkin komentoon, päivittää yhteisen pelitilanteen, ja lähettää päivitetyn tilan pelaajille. Yksinkertaista.</p>
+
+<p>Mutta eihän se näin mennytkään; AoE2:n online-arkkitehtuuri perustuu <em>peer-to-peer</em> -malliin.</p>
+
+<h2 id="peer-to-peer">Peer-to-peer</h2>
+
+<p>Peer-to-peer -mallissa ei ole keskitettyä palvelinta, joka toimisi “single source of truth”-keskuksena pelin aikana.</p>
+
+<p>Missä sitten sijaitsee tieto siitä, miltä pelimaailma näyttää kullakin ajanhetkellä? Vastaus: <em>kullakin pelaajalla on tuo tieto erikseen</em>.</p>
+
+<p>Jotta koko hommassa olisi mitään järkeä, kullakin pelaajalla on oltava identtinen käsitys sen hetkisestä pelitilanteesta. Muuten koko pelissä ei olisi mitään mieltä.</p>
+
+<blockquote>
+<p>Kuvittele esimerkiksi shakkipeli, jossa valkea pelaaja näkee laudan nappulat eri ruuduissa kuin musta pelaaja. Shakin pelaaminen olisi aika tuskallista.</p>
+</blockquote>
+
+<p>Yksi tapa huolehtia siitä, että kullakin pelaajalla on sama identtinen pelitilanne tietyllä ajanhetkellä, on seuraava algoritmi:</p>
+
+<p><strong>Pelaajan algoritmi (ajetaan kunkin pelaajan tietokoneella):</strong></p>
+
+<ol>
+<li>Suorita pelaajan tekemä pelisiirto lokaalisti ja laske uusi pelitila.</li>
+<li>Lähetä uusi lokaalisti laskettu pelitila kaikille muille pelin pelaajille.</li>
+<li>Vastaanota muiden pelaajien vastaavalla tavalla laskettu uusi pelitila.</li>
+<li>Yhdistä eri pelaajien pelitilat yhteen, ja laske niistä uusi yhdistetty pelitila.</li>
+<li>Renderöi yhdistetty pelitila ruudulle, ja jää odottamaan uutta pelaajan komentoa/pelisiirtoa.</li>
+</ol>
+
+<p>Ongelmana tässä algoritmissä on kohta 4, joka saattaa – pelistä riippuen – olla joko mielipuolisen vaikea tai suorastaan mahdoton suorittaa. On helppo kuvitella tilanne, jossa kahden eri pelaajan tekemät pelisiirrot ovat lokaalisti (siis yksittäin tarkasteltuna) laillisia, mutta niiden yhdistelmä on laiton.</p>
+
+<h2 id="rts-vuoropohjainen">RTS === vuoropohjainen?</h2>
+
+<p>Ratkaisu tähän “lokaalisti laillinen – globaalisti laiton” -ongelmaan on pakottaa pelaajat tekemään siirrot <em>vuorotellen</em>.</p>
+
+<p>Tai, ellei teknisesti ihan vuorotellen, niin ainakin <em>vuoroja hyödyntäen</em>.</p>
+
+<p>Tämä kuulostaa liian tiukalta vaatimukselta monelle pelityypille, esimerkiksi AoE2:n kaltaiselle real-time-strategy (RTS)-pelille. Koko RTS:n pointti kun on olla real-time; vuoropohjaisten pelien ystäville on jo Civilization-saaga.</p>
+
+<p>On kuitenkin huomattava, että on kaksi eri asiaa olla <em>aidosti real-time</em> versus <em>näennäisesti real-time</em>.</p>
+
+<p>Age of Empiresin kaltainen RTS-peli käyttää konepellin alla itseasiassa diskreettejä pelivuoroja, mutta vuorojen varsinainen pituus on varsin lyhyt, ja muutamaa kikkaa hyödyntäen niiden pituus saadaan vaikuttamaan kuin vuoroja ei olisi lainkaan.</p>
+
+<p>Homma toimii näin. Pelin kulku koostuu pelivuoroista, joiden aikana kukin pelaaja voi tehdä N määrän pelisiirtoja. Erona Civilization-peliin on lähinnä se, että <em>eri pelaajat tekevät siirtonsa saman pelivuoron aikana</em>. Siinä missä Civilizationissa kullakin pelaajalla on oma pelivuoronsa, jonka aikana muut pelaajat kiltisti odottavat, Aoe2-pelissä kaikki pelaajat jakavat yhden globaalin pelivuoron kerrallaan.</p>
+
+<p>Lisäksi AoE2:n pelivuoro on siitä ikävä, että se ei odota pelaajaa (toisin kuin aidoissa vuoropohjaisissa peleissä); jos pelaaja ei ehdi tekemään pelisiirtoa pelivuoron aikana, se on pelaajan oma ongelma.</p>
+
+<p>AoE2:n pelivuorolla on nimittäin ajallinen pituus, joka on vakiona 200 millisekuntia. Näin lyhyt siirtovuoro on tarpeen, jotta peli saa luotua illuusion reaaliaikaisuudesta.</p>
+
+<blockquote>
+<p>Kahdensadan millisekunnin pituus on luonnollisesti muutettavissa riippuen pelaajien nettiyhteyksien nopeudesta. Arvoa voi skaalata suuntaan tai toiseen jopa yksittäisen pelin ollessa käynnissä. Toimintaperiaate muistuttaa TCP-protokollan flow-kontrollia.</p>
+</blockquote>
+
+<p>Mutta hetkinen, 200 ms on siltikin järjettömän <em>pitkä</em> aika tietokonepelin kontekstissa. Jos itse peli pyörisi 200 millisekunnin render-loopilla, pelin ruudunpäivitystahti (FPS) olisi viisi.</p>
+
+<p>Siis 5 ruudunpäivitystä sekunnissa. Eli puhdas slideshow.</p>
+
+<p>Mikä siis lopulta pyörii 200 millisekunnin vauhdilla?</p>
+
+<h2 id="pelisiirrot-vs-pelilogiikka">Pelisiirrot vs. pelilogiikka</h2>
+
+<p>Ainoastaan pelivuorot. Pelilogiikan sisältävä game-loop pyörii 30 FPS:n nopeudella.</p>
+
+<p>Homma toimii suunnilleen näin: kukin pelaaja tekee annetun pelivuoron (200ms) aikana <em>niin monta pelisiirtoa kuin ehtii</em>. Kun pelivuoro päättyy, tehdyt siirrot talletetaan listaksi ja lähetetään kaikille muille pelaajille. Vastaavasti pelaaja vastaanottaa kaikkien muiden pelaajien pelisiirrot.</p>
+
+<p>Kun tämä valtava – kukin pelaaja lähettää omat siirtonsa kullekin toiselle pelaajalle – lähetysoperaatio on tehty, kullakin pelaajalla on nyt identtinen lista pelivuoron aikana <em>globaalisti</em> tehdyistä pelisiirroista. Nyt seuraa paras kohta; kukin pelaaja lokaalisti päivittää oman pelitilansa annettujen pelisiirtojen perusteella.</p>
+
+<p>Ja koska kaikilla pelaajilla on <em>identtinen lista siirtoja</em> ja <em>identtinen pelitila</em> ennen päivitystä, päätyvät kaikki pelaajat identtiseen pelitilaan siirtopäivitysten jälkeen mikäli pelilogiikka toimii 100% deterministisesti.</p>
+
+<blockquote>
+<p>Asian voi havainnollistaa shakkipelillä: pelaajat A ja B aloittavat shakkipelin. Pelaaja A tekee siirron ja lähettää sen B:lle. Tarvitseeko A:n lähettää siirron mukana myös uusi peliasema? Ei, sillä shakkipeli on täysin deterministinen. Ja shakkipelin alkuasema on kirjoitettu shakin sääntöihin, joten se on identtinen ja molempien pelaajien tiedossa.</p>
+
+<p>Shakin deterministisyys mahdollistaa mielenkiintoisia pelimuotoja, jotka eivät ole mahdollisia esimerkiksi Afrikan Tähdessä. Kaksi vahvaa shakinpelaajaa voi pelata shakkipelin ilman lautaa ja nappuloita; he sanovat vuorotellen siirrot toisilleen. Tämä on sokkoshakkia. Hurjimmat pelaavat sokkoshakkia vaikka kesken tennisottelun.</p>
+
+<p>AoE2:n puolella pelin alkutilanne ei ole osa pelin sääntöjä (eikä täten identtinen pelikerrasta toiseen), joten pelin alkaessa alkuasema täytyy synkronoida kaikkien pelaajien kesken. Tämä on ainoa hetki, jolloin online-moninpelin pelaajat päivittävät pelitilansa globaalia tilamuuttujaa hyödyntäen. Globaalina tilamuuttujana voi toimia joko moninpelialusta (esim. Steam tai Voobly?) tai joku yksittäinen pelaaja, joka hetkellisesti ottaa host-roolin.</p>
+</blockquote>
+
+<p>Tätä mallia kutsutaan nimellä “deterministic lockstep”-malli. Mallilla on vankka teoreettinen pohja, ja se toimii kuin junan vessa.</p>
+
+<h2 id="back-to-the-earth-käytännön-haasteet">Back to the earth – käytännön haasteet</h2>
+
+<p>Toimii kuin junan vessa teoriassa, siis.</p>
+
+<p>Käytännössä mallin saaminen toimimaan vaatii pelistä riippuen joko vähän töitä tai aivan saatanasti töitä. Shakki on esimerkki ensin mainitusta, AoE2 jälkimmäisestä. Jo pelkästään AoE2 pelivideota katsomalla huomaa, että pelissä tapahtuu valtavasti asioita.</p>
+
+<p>Jotta deterministic lockstep toimii, täytyy <em>koko pelimekaniikan olla deterministinen</em>. Tämä tarkoittaa, että jokaikisen saksanhirven (AI-ohjattu) liikeradan, jokaisen keihään lentoradan, jokaisen läpi sokkeloisen metsäpolun lasketun kulkuradan (unit pathing)&hellip; kaikkien on toimittava identtisesti kaikilla kahdeksalla pelaajalla.</p>
+
+<p>Satunnaislukugeneraattori lentää ensimmäisenä roskakoriin, sillä jos yksikin osa pelimekaniikasta perustuu sattumaan, koko moninpeli on pilalla. Tilalle tulee <em>pseudo-satunnaislukugeneraattori</em>, joka alustetaan pelin alussa seedillä. Kaikilla pelaajilla on luonnollisesti oltava sama seed, jotta generaattorin tuottamat “satunnaisluvut” ovat ei-satunnaisia, eli samat kullakin pelaajalla.</p>
+
+<h2 id="mallin-edut">Mallin edut</h2>
+
+<h3 id="yksinpeli-vai-moninpeli-who-cares">Yksinpeli vai moninpeli - who cares?</h3>
+
+<p>Koko pelin deterministisyyden varmistaminen on pirullisen moninmutkainen ongelma. Mutta jos ongelma ratkotaan, moni muu asia tulee ikäänkuin ilmaiseksi.</p>
+
+<p>Esimerkiksi online-moninpeli typistyy lopulta lokaaliksi moninpeliksi tai yksinpeliksi isoa joukkoa AI-pelaajia vastaan, sillä AoE2-peli-instanssin ei tarvitse välittää mistä lähteestä pelisiirrot tulevat. Kaikki pelimuodot toimivat pelimoottorin näkökulmasta identtisesti; pelimoottori ottaa vastaan siirtoja, ja thats it. Siirtojen alkuperä ei pelimoottoria kiinnosta.</p>
+
+<h3 id="halpa-tiedonsiirto">Halpa tiedonsiirto</h3>
+
+<p>Deterministic lockstep -mallin toinen valtava etu on, että internet-yhteyden yli siirrettävä tietomäärä on verrattaen vähäinen.</p>
+
+<p>Vahva AoE2 pelaaja ehtii yhden siirtovuoron (sanotaan vaikka tuo 200 millisekuntia) aikana tekemään ehkä 3-4 siirtoa mikäli pelitilanne on oikein hektinen. Jokainen näistä siirroista on komento, joka sisältää ainoastaan tarvittavan tiedon komennon suorittamiseksi kaikkien online-pelin pelaajien tietokoneilla. Yksinkertaisimmillaan komento voisi siis olla:</p>
+
+<pre><code class="language-javascript">{
+  type: “move”,
+  unit: “knight_8282”,
+  to: {x: 672, y: 992}
+}
+</code></pre>
+
+<p>Komento sisältää kaiken tarvittavan tiedon; ritarihahmo, jonka ID on knight_8282, siirtykööt lokaatioon 672,992. Tämän tiedon perusteella kukin pelaaja voi päivittää pelitilansa; kunkin pelaajan AoE2-peli laskee <em>unit path-algoritmin</em> avulla reitin ritarin nykyisestä lokaatiosta uuteen lokaatioon.</p>
+
+<blockquote>
+<p>Ja koska kaikki AoE2-peli-instanssit käyttävät luonnollisesti samaa unit path-algoritmia, on koko laskettu reitti identtinen kaikilla pelaajilla.</p>
+</blockquote>
+
+<p>Komennon koko JSON-tekstinä (auttamattoman kookas dataformaatti) on hädin tuskin 50 tavua.</p>
+
+<p>Kyseessä on siis todella suorituskykyinen multiplayer-arkkitehtuuri. Hyvä niin, sillä internet-yhteydet vuonna 1999 eivät olleet kummoisia.</p>
+
+<blockquote>
+<p>Deterministic lockstep-mallin onnistunut käyttö AoE2-pelissä vaatii taustamekaniikkaa, ja tässä blogikirjoituksessa raapaistiin vain pintaa. AoE2-pelin arkkitehtuurin ydinajatukset löytyvät täältä: <a href="https://www.gamasutra.com/view/feature/131503/1500_archers_on_a_288_network_.php">https://www.gamasutra.com/view/feature/131503/1500_archers_on_a_288<em>network</em>.php</a></p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

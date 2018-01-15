@@ -6,8 +6,248 @@
     <description>Recent content in Vues on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Sat, 21 Oct 2017 12:01:31 +0300</lastBuildDate>
+    <lastBuildDate>Mon, 15 Jan 2018 17:57:17 +0200</lastBuildDate>
     <atom:link href="https://www.nollaversio.fi/blog/public/vue/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Komponentin datahaku alustuksen aikana</title>
+      <link>https://www.nollaversio.fi/blog/public/vue/messaging/</link>
+      <pubDate>Mon, 15 Jan 2018 17:57:17 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/vue/messaging/</guid>
+      <description>
+
+&lt;p&gt;Männä päivänä syntyi seuraavanlainen tarve Vue-käyttöliittymää ohjelmoidessa; yhden komponentin tuli alustuksensa (&lt;em&gt;created&lt;/em&gt;-hook) aikana saada informaatiota toiselta komponentilta, joka ei ollut suora esi-isä alustettavalle komponentille.&lt;/p&gt;
+
+&lt;p&gt;Ongelma ei kuulosta erityisen vaikealta - eikä sitä olekaan - mutta ohjelmoijan pääkoppa alkaa herkästi &lt;em&gt;yliratkomaan&lt;/em&gt; ongelmaa.&lt;/p&gt;
+
+&lt;p&gt;Tyypillisestihän Vue-komponenttien välinen kommunikointi tapahtuu jommalla kummalla kahdesta seuraavasta tavasta:&lt;/p&gt;
+
+&lt;h3 id=&#34;1-emit-props&#34;&gt;1. Emit/props&lt;/h3&gt;
+
+&lt;p&gt;Mikäli &lt;em&gt;toinen komponentti on toisen suora jälkeläinen&lt;/em&gt;, kommunikointi tapahtuu luontevasti joko käyttäen propseja (alaspäin kommunikoidessa!) tai emittoimalla eventtejä (ylöspäin kommunikoidessa!). Tämä on luonteva tapa kommunikoida jos komponenttipuussa liikutaan vain vertikaalisesti (&lt;em&gt;isä-poika&lt;/em&gt;), ei horisontaalisesti (&lt;em&gt;sisar-veli&lt;/em&gt;). Ohessa esimerkki eventtien käytöstä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Parent.js
+
+import Child from &#39;./Child&#39;
+
+&amp;lt;template&amp;gt;
+	&amp;lt;h3&amp;gt;Parent component&amp;lt;/h3&amp;gt;
+	&amp;lt;Child @viesti=&amp;quot;viestiAlhaalta&amp;quot;&amp;gt;&amp;lt;/Child&amp;gt;
+&amp;lt;/template&amp;gt;
+
+&amp;lt;script&amp;gt;
+
+export default {
+	methods: {
+		viestiAlhaalta(viestinSisalto) {
+			console.log(&amp;quot;Viesti alhaalta: &amp;quot; + viestinSisalto)
+			
+		}
+	}
+}
+
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Child.js
+
+&amp;lt;template&amp;gt;
+	&amp;lt;h3&amp;gt;Child component&amp;lt;/h3&amp;gt;
+	&amp;lt;button v-on:click=&amp;quot;lahetaViesti&amp;quot;&amp;gt;Lähetä&amp;lt;/button&amp;gt;
+&amp;lt;/template&amp;gt;
+
+&amp;lt;script&amp;gt;
+
+export default {
+	methods: {
+		lahetaViesti() {
+			this.$emit(&#39;viesti&#39;, &#39;Hei vain, isäpappa&#39;);
+			
+		}
+	}
+}
+
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;2-erillinen-vue-instanssi&#34;&gt;2. Erillinen Vue-instanssi&lt;/h3&gt;
+
+&lt;p&gt;Mikäli kumpikaan komponentti ei ole toisen suora jälkeläinen, kommunikointi voi tapahtua joko &lt;strong&gt;1)&lt;/strong&gt; yhteistä ylätason komponenttia käyttäen, joka ottaa vastaan viestin yhdestä alipuusta ja ampuu sen alas toiseen alipuuhun, tai &lt;strong&gt;2)&lt;/strong&gt; erillistä &lt;em&gt;observer&lt;/em&gt;-järjestelmää käyttäen.&lt;/p&gt;
+
+&lt;p&gt;Jälkimmäinen on suositeltava ratkaisu. Ensimmäinen ratkaisu toki toimii, mutta on isossa puurakenteessa tuhoisan sotkuinen toteuttaa ja ylläpitää.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Ohjelmoinnin kultainen sääntöhän on, että kaikkea on &lt;em&gt;mahdollista&lt;/em&gt; tehdä, mutta mitään ei ole &lt;em&gt;järkevää&lt;/em&gt; tehdä. Tai ainakaan lähes tulkoon mitään.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Eli observer-ratkaisu on parempi. Observer-radiomastona toimii luontevasti koko erillinen Vue-instanssi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// services/Radiomasto.js
+
+export default new Vue({});
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Palolaitos.js
+
+import Radiomasto from &#39;./services/Radiomasto&#39;;
+
+&amp;lt;script&amp;gt;
+export default {
+	data() {
+		observerCb: null
+	},
+	name: &#39;Palolaitos&#39;,
+	created() {
+		// Ilmoita halustasi kuunnella tiettyjä viestejä
+		this.observerCb = this.halytys.bind(this);
+		Radiomasto.$on(&#39;tulipalo&#39;, this.observerCb);	
+	},
+	beforeDestroy() {
+		// Lopeta kuuntelu
+		Radiomasto.$off(&#39;tulipalo&#39;, this.observerCb);
+	},
+	methods: {
+		halytys(osoite) {
+			// Lähetä palomiehet annettuun osoitteeseen
+			console.log(&amp;quot;Palomiehet paikalle!&amp;quot;);
+		}
+	}
+}
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Puukerrostalo.js
+
+import Radiomasto from &#39;./services/Radiomasto&#39;;
+
+&amp;lt;script&amp;gt;
+export default {
+	name: &#39;Puukerrostalo&#39;,
+	methods: {
+		tulipaloHavaittu() {
+			// Ilmoita palosta.
+			Radiomasto.$emit(&#39;tulipalo&#39;, &#39;Koivukuja 2&#39;);
+		}
+	}
+}
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevan ratkaisun saa tarvittaessa vieläpä siirrettyä &lt;em&gt;mixiniin&lt;/em&gt;, jolloin sitä on helppo käyttää milloin tarve vaatii.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Mutta alkuperäinen ongelmani oli saada yhdeltä komponentilta informaatiota toisen komponentin alustuksen aikana!&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Yksikään ylläolevista vaihtoehdoista ei sovellu erityisen hyvin tämän vaatimuksen täyttämiseen.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevassa #2 esimerkissä viestin lähetys on &lt;em&gt;tuottaja&lt;/em&gt;-lähtöistä; viestin luoja lähettää viestin haluamanaan ajanhetkenä. Mutta alkuperäisessä ongelmassa viestittely on &lt;em&gt;kuluttaja&lt;/em&gt;-lähtöistä; viestin vastaanottaja määrittää ajanhetken, jolloin hän tarvitsee informaatiota käyttöönsä. Tästä syystä tarvitsemme toisen lähestymistavan.&lt;/p&gt;
+
+&lt;p&gt;Yksinkertaisin ratkaisu on suorastaan hupaisan&amp;hellip; yksinkertainen. Käytetään yhteistä globaalia tietovarastoa, jonne kaikilla komponenteilla on yhteys! Joka kerta kun tuottaja-komponentti havaitsee muutoksen datassa, hän päivittää tietovaraston. Kuluttaja-komponentti voi sitten hakea haluamansa datan sopivalla hetkellä, tässä tapauksessa alustuksen aikana.&lt;/p&gt;
+
+&lt;h3 id=&#34;globaali-tietovarasto&#34;&gt;Globaali tietovarasto&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Tietovarasto.js
+
+export default {
+	muumitKpl: 0
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Muumimamma.js
+
+import Tietovarasto from &#39;services/Tietovarasto&#39;
+import Muumi from &#39;entities/Muumi&#39;
+import Tuutikki from &#39;entities/communists/Tuutikki&#39;
+
+&amp;lt;template&amp;gt;
+	&amp;lt;button v-on:click=&amp;quot;lisaaMuumi&amp;quot;&amp;gt;Lisää&amp;lt;/button&amp;gt;
+	&amp;lt;button v-on:click=&amp;quot;lisaaTuutikki&amp;quot;&amp;gt;Lisää tuutikki&amp;lt;/button&amp;gt;
+&amp;lt;/template&amp;gt;
+
+&amp;lt;script&amp;gt;
+export default {
+	name: &#39;Tuottaja&#39;,
+	data() {
+		olennot: [],
+	},
+	methods: {
+		lisaaMuumi() {
+			this.olennot(new Muumi());
+			// Muumien määrä muuttui
+			// Laske ja päivitä globaali tieto muumien määrästä
+			Tietovarasto.muumitKpl = this.olennot.filter((olento) =&amp;gt; {
+				return !!olento.valkoinenJaPullea;
+			}).length;
+		},
+		lisaaTuutikki() {
+			this.olennot(new Tuutikki());
+
+			// Muumien määrä ei muuttunut
+
+		}
+	}
+}
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// MuumitInfotaulu.js
+
+import Tietovarasto from &#39;services/Tietovarasto&#39;
+
+&amp;lt;template&amp;gt;
+	&amp;lt;h3&amp;gt;Muumeja on {{kpl}}&amp;lt;/h3&amp;gt;
+	&amp;lt;button v-on:click=&amp;quot;paivitaMuumimaara&amp;quot;&amp;gt;Päivitä&amp;lt;/button&amp;gt;
+&amp;lt;/template&amp;gt;
+&amp;lt;script&amp;gt;
+export default {
+	name: &#39;MuumitInfotaulu&#39;,
+	data() {
+		kpl: 0
+	},
+	methods: {
+		paivitaMuumimaara() {
+			// Käy hakemassa viimeisin lukumäärä
+			// globaalista tietovarastosta.
+			this.kpl = Tietovarasto.muumitKpl;
+		}
+	},
+	created() {
+		// Alustus
+		//
+		// Haetaan muumimäärä.
+		this.paivitaMuumimaara();
+	}
+}
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yleisemmin: ylläoleva ratkaisu antaa mille tahansa komponentille pääsyn minkä tahansa komponentin tietoihin haluamallaan ajanhetkellä. Datan tuottajalta silti vaaditaan hiukka suostuvaisuutta; tuottajan täytyy puskea muutokset globaaliin tietovarastoon.&lt;/p&gt;
+
+&lt;p&gt;Tietovaraston käytön voi haluttaessa yhdistää tavanomaiseen observer-järjestelmään. Tällöin kuluttaja-komponentti hakee viimeisimmän datatiedon &lt;em&gt;alustuksensa aikana&lt;/em&gt;, ja tämän jälkeen &lt;em&gt;jää kuuntelemaan&lt;/em&gt; päivityksiä dataan observer-järjestelmää hyödyntäen. Tämä ratkaisu on varsin toimiva monissa yhteyksissä.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Esimerkki yhdistetystä &lt;em&gt;haku + observer&lt;/em&gt; -ratkaisusta on vaikkapa chat-palikka, joka liitetään VueJS-sivustolle. Kun käyttäjä avaa chatin, on pulikan haettava keskusteluhistoria, jotta käyttäjä pääsee kärryille mistä keskustellaan. Avauksen jälkeen puolestaan on tarve saada live-päivityksiä, jotka kertovat uusien chat-viestien saapumisesta. Eli &lt;em&gt;alustuksen aikana haku, alustuksen jälkeen kuuntelu&lt;/em&gt;. Tämä on erittäin yleinen toimintamalli.&lt;/p&gt;
+
+&lt;p&gt;Globaali tietovarasto on esimerkissämme rakennettu erilliseen javascript-moduuliin. Toinen vaihtoehto on rakentaa se Vuen sisälle, esimerkiksi pluginin päälle. Kumpikin tapa saavuttaa kutakuinkin saman lopputuleman.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Vue.js reactivity gotcha</title>

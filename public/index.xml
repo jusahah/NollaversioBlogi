@@ -6,8 +6,551 @@
     <description>Recent content on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Tue, 28 Nov 2017 09:45:14 +0200</lastBuildDate>
+    <lastBuildDate>Mon, 15 Jan 2018 17:57:17 +0200</lastBuildDate>
     <atom:link href="https://www.nollaversio.fi/blog/public/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Komponentin datahaku alustuksen aikana</title>
+      <link>https://www.nollaversio.fi/blog/public/vue/messaging/</link>
+      <pubDate>Mon, 15 Jan 2018 17:57:17 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/vue/messaging/</guid>
+      <description>
+
+&lt;p&gt;Männä päivänä syntyi seuraavanlainen tarve Vue-käyttöliittymää ohjelmoidessa; yhden komponentin tuli alustuksensa (&lt;em&gt;created&lt;/em&gt;-hook) aikana saada informaatiota toiselta komponentilta, joka ei ollut suora esi-isä alustettavalle komponentille.&lt;/p&gt;
+
+&lt;p&gt;Ongelma ei kuulosta erityisen vaikealta - eikä sitä olekaan - mutta ohjelmoijan pääkoppa alkaa herkästi &lt;em&gt;yliratkomaan&lt;/em&gt; ongelmaa.&lt;/p&gt;
+
+&lt;p&gt;Tyypillisestihän Vue-komponenttien välinen kommunikointi tapahtuu jommalla kummalla kahdesta seuraavasta tavasta:&lt;/p&gt;
+
+&lt;h3 id=&#34;1-emit-props&#34;&gt;1. Emit/props&lt;/h3&gt;
+
+&lt;p&gt;Mikäli &lt;em&gt;toinen komponentti on toisen suora jälkeläinen&lt;/em&gt;, kommunikointi tapahtuu luontevasti joko käyttäen propseja (alaspäin kommunikoidessa!) tai emittoimalla eventtejä (ylöspäin kommunikoidessa!). Tämä on luonteva tapa kommunikoida jos komponenttipuussa liikutaan vain vertikaalisesti (&lt;em&gt;isä-poika&lt;/em&gt;), ei horisontaalisesti (&lt;em&gt;sisar-veli&lt;/em&gt;). Ohessa esimerkki eventtien käytöstä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Parent.js
+
+import Child from &#39;./Child&#39;
+
+&amp;lt;template&amp;gt;
+	&amp;lt;h3&amp;gt;Parent component&amp;lt;/h3&amp;gt;
+	&amp;lt;Child @viesti=&amp;quot;viestiAlhaalta&amp;quot;&amp;gt;&amp;lt;/Child&amp;gt;
+&amp;lt;/template&amp;gt;
+
+&amp;lt;script&amp;gt;
+
+export default {
+	methods: {
+		viestiAlhaalta(viestinSisalto) {
+			console.log(&amp;quot;Viesti alhaalta: &amp;quot; + viestinSisalto)
+			
+		}
+	}
+}
+
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Child.js
+
+&amp;lt;template&amp;gt;
+	&amp;lt;h3&amp;gt;Child component&amp;lt;/h3&amp;gt;
+	&amp;lt;button v-on:click=&amp;quot;lahetaViesti&amp;quot;&amp;gt;Lähetä&amp;lt;/button&amp;gt;
+&amp;lt;/template&amp;gt;
+
+&amp;lt;script&amp;gt;
+
+export default {
+	methods: {
+		lahetaViesti() {
+			this.$emit(&#39;viesti&#39;, &#39;Hei vain, isäpappa&#39;);
+			
+		}
+	}
+}
+
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h3 id=&#34;2-erillinen-vue-instanssi&#34;&gt;2. Erillinen Vue-instanssi&lt;/h3&gt;
+
+&lt;p&gt;Mikäli kumpikaan komponentti ei ole toisen suora jälkeläinen, kommunikointi voi tapahtua joko &lt;strong&gt;1)&lt;/strong&gt; yhteistä ylätason komponenttia käyttäen, joka ottaa vastaan viestin yhdestä alipuusta ja ampuu sen alas toiseen alipuuhun, tai &lt;strong&gt;2)&lt;/strong&gt; erillistä &lt;em&gt;observer&lt;/em&gt;-järjestelmää käyttäen.&lt;/p&gt;
+
+&lt;p&gt;Jälkimmäinen on suositeltava ratkaisu. Ensimmäinen ratkaisu toki toimii, mutta on isossa puurakenteessa tuhoisan sotkuinen toteuttaa ja ylläpitää.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Ohjelmoinnin kultainen sääntöhän on, että kaikkea on &lt;em&gt;mahdollista&lt;/em&gt; tehdä, mutta mitään ei ole &lt;em&gt;järkevää&lt;/em&gt; tehdä. Tai ainakaan lähes tulkoon mitään.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Eli observer-ratkaisu on parempi. Observer-radiomastona toimii luontevasti koko erillinen Vue-instanssi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// services/Radiomasto.js
+
+export default new Vue({});
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Palolaitos.js
+
+import Radiomasto from &#39;./services/Radiomasto&#39;;
+
+&amp;lt;script&amp;gt;
+export default {
+	data() {
+		observerCb: null
+	},
+	name: &#39;Palolaitos&#39;,
+	created() {
+		// Ilmoita halustasi kuunnella tiettyjä viestejä
+		this.observerCb = this.halytys.bind(this);
+		Radiomasto.$on(&#39;tulipalo&#39;, this.observerCb);	
+	},
+	beforeDestroy() {
+		// Lopeta kuuntelu
+		Radiomasto.$off(&#39;tulipalo&#39;, this.observerCb);
+	},
+	methods: {
+		halytys(osoite) {
+			// Lähetä palomiehet annettuun osoitteeseen
+			console.log(&amp;quot;Palomiehet paikalle!&amp;quot;);
+		}
+	}
+}
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Puukerrostalo.js
+
+import Radiomasto from &#39;./services/Radiomasto&#39;;
+
+&amp;lt;script&amp;gt;
+export default {
+	name: &#39;Puukerrostalo&#39;,
+	methods: {
+		tulipaloHavaittu() {
+			// Ilmoita palosta.
+			Radiomasto.$emit(&#39;tulipalo&#39;, &#39;Koivukuja 2&#39;);
+		}
+	}
+}
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevan ratkaisun saa tarvittaessa vieläpä siirrettyä &lt;em&gt;mixiniin&lt;/em&gt;, jolloin sitä on helppo käyttää milloin tarve vaatii.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Mutta alkuperäinen ongelmani oli saada yhdeltä komponentilta informaatiota toisen komponentin alustuksen aikana!&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Yksikään ylläolevista vaihtoehdoista ei sovellu erityisen hyvin tämän vaatimuksen täyttämiseen.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevassa #2 esimerkissä viestin lähetys on &lt;em&gt;tuottaja&lt;/em&gt;-lähtöistä; viestin luoja lähettää viestin haluamanaan ajanhetkenä. Mutta alkuperäisessä ongelmassa viestittely on &lt;em&gt;kuluttaja&lt;/em&gt;-lähtöistä; viestin vastaanottaja määrittää ajanhetken, jolloin hän tarvitsee informaatiota käyttöönsä. Tästä syystä tarvitsemme toisen lähestymistavan.&lt;/p&gt;
+
+&lt;p&gt;Yksinkertaisin ratkaisu on suorastaan hupaisan&amp;hellip; yksinkertainen. Käytetään yhteistä globaalia tietovarastoa, jonne kaikilla komponenteilla on yhteys! Joka kerta kun tuottaja-komponentti havaitsee muutoksen datassa, hän päivittää tietovaraston. Kuluttaja-komponentti voi sitten hakea haluamansa datan sopivalla hetkellä, tässä tapauksessa alustuksen aikana.&lt;/p&gt;
+
+&lt;h3 id=&#34;globaali-tietovarasto&#34;&gt;Globaali tietovarasto&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Tietovarasto.js
+
+export default {
+	muumitKpl: 0
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Muumimamma.js
+
+import Tietovarasto from &#39;services/Tietovarasto&#39;
+import Muumi from &#39;entities/Muumi&#39;
+import Tuutikki from &#39;entities/communists/Tuutikki&#39;
+
+&amp;lt;template&amp;gt;
+	&amp;lt;button v-on:click=&amp;quot;lisaaMuumi&amp;quot;&amp;gt;Lisää&amp;lt;/button&amp;gt;
+	&amp;lt;button v-on:click=&amp;quot;lisaaTuutikki&amp;quot;&amp;gt;Lisää tuutikki&amp;lt;/button&amp;gt;
+&amp;lt;/template&amp;gt;
+
+&amp;lt;script&amp;gt;
+export default {
+	name: &#39;Tuottaja&#39;,
+	data() {
+		olennot: [],
+	},
+	methods: {
+		lisaaMuumi() {
+			this.olennot(new Muumi());
+			// Muumien määrä muuttui
+			// Laske ja päivitä globaali tieto muumien määrästä
+			Tietovarasto.muumitKpl = this.olennot.filter((olento) =&amp;gt; {
+				return !!olento.valkoinenJaPullea;
+			}).length;
+		},
+		lisaaTuutikki() {
+			this.olennot(new Tuutikki());
+
+			// Muumien määrä ei muuttunut
+
+		}
+	}
+}
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// MuumitInfotaulu.js
+
+import Tietovarasto from &#39;services/Tietovarasto&#39;
+
+&amp;lt;template&amp;gt;
+	&amp;lt;h3&amp;gt;Muumeja on {{kpl}}&amp;lt;/h3&amp;gt;
+	&amp;lt;button v-on:click=&amp;quot;paivitaMuumimaara&amp;quot;&amp;gt;Päivitä&amp;lt;/button&amp;gt;
+&amp;lt;/template&amp;gt;
+&amp;lt;script&amp;gt;
+export default {
+	name: &#39;MuumitInfotaulu&#39;,
+	data() {
+		kpl: 0
+	},
+	methods: {
+		paivitaMuumimaara() {
+			// Käy hakemassa viimeisin lukumäärä
+			// globaalista tietovarastosta.
+			this.kpl = Tietovarasto.muumitKpl;
+		}
+	},
+	created() {
+		// Alustus
+		//
+		// Haetaan muumimäärä.
+		this.paivitaMuumimaara();
+	}
+}
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yleisemmin: ylläoleva ratkaisu antaa mille tahansa komponentille pääsyn minkä tahansa komponentin tietoihin haluamallaan ajanhetkellä. Datan tuottajalta silti vaaditaan hiukka suostuvaisuutta; tuottajan täytyy puskea muutokset globaaliin tietovarastoon.&lt;/p&gt;
+
+&lt;p&gt;Tietovaraston käytön voi haluttaessa yhdistää tavanomaiseen observer-järjestelmään. Tällöin kuluttaja-komponentti hakee viimeisimmän datatiedon &lt;em&gt;alustuksensa aikana&lt;/em&gt;, ja tämän jälkeen &lt;em&gt;jää kuuntelemaan&lt;/em&gt; päivityksiä dataan observer-järjestelmää hyödyntäen. Tämä ratkaisu on varsin toimiva monissa yhteyksissä.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Esimerkki yhdistetystä &lt;em&gt;haku + observer&lt;/em&gt; -ratkaisusta on vaikkapa chat-palikka, joka liitetään VueJS-sivustolle. Kun käyttäjä avaa chatin, on pulikan haettava keskusteluhistoria, jotta käyttäjä pääsee kärryille mistä keskustellaan. Avauksen jälkeen puolestaan on tarve saada live-päivityksiä, jotka kertovat uusien chat-viestien saapumisesta. Eli &lt;em&gt;alustuksen aikana haku, alustuksen jälkeen kuuntelu&lt;/em&gt;. Tämä on erittäin yleinen toimintamalli.&lt;/p&gt;
+
+&lt;p&gt;Globaali tietovarasto on esimerkissämme rakennettu erilliseen javascript-moduuliin. Toinen vaihtoehto on rakentaa se Vuen sisälle, esimerkiksi pluginin päälle. Kumpikin tapa saavuttaa kutakuinkin saman lopputuleman.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Age of Empires - moninpelin arkkitehtuuri</title>
+      <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/aoe2/</link>
+      <pubDate>Mon, 08 Jan 2018 13:38:19 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/arkkitehtuuri/aoe2/</guid>
+      <description>
+
+&lt;p&gt;Age of Empires 2 on yksi lempipeleistäni. Etenkin sen online-multiplayer. Vuonna 1999 ilmestynyt AoE2 sisältää jopa kahdeksan pelaajan online-pelimuodon, jossa yli tuhat eri pelaajien kontrolloimaa pelihahmoa käy massiivisia taisteluja.&lt;/p&gt;
+
+&lt;p&gt;Ohessa video hektisestä kahdeksan pelaajan multiplayer-pelistä: &lt;a href=&#34;https://youtu.be/BBsyHerdpuI?t=50m3s&#34;&gt;https://youtu.be/BBsyHerdpuI?t=50m3s&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Sattumalta googlasin männä päivänä tietoja siitä, kuinka Aoe2 on rakentanut jo 90-luvulla näin mahtavan online-pelikokemuksen.&lt;/p&gt;
+
+&lt;p&gt;Ennen googlettelua oletin, että multiplayer tapahtuu &lt;em&gt;client-server&lt;/em&gt;-mallin pohjalta; yksi palvelin (joka mahdollisesti sijaitsee yhden pelaajista, nk. host-pelaajan tietokoneella!) pitää globaalia pelitilaa yllä, ja jakaa sitä N kertaa sekunnissa pelaajille.&lt;/p&gt;
+
+&lt;p&gt;Pelaajat puolestaan lähettävät palvelimelle komentoja; palvelin reagoi kuhunkin komentoon, päivittää yhteisen pelitilanteen, ja lähettää päivitetyn tilan pelaajille. Yksinkertaista.&lt;/p&gt;
+
+&lt;p&gt;Mutta eihän se näin mennytkään; AoE2:n online-arkkitehtuuri perustuu &lt;em&gt;peer-to-peer&lt;/em&gt; -malliin.&lt;/p&gt;
+
+&lt;h2 id=&#34;peer-to-peer&#34;&gt;Peer-to-peer&lt;/h2&gt;
+
+&lt;p&gt;Peer-to-peer -mallissa ei ole keskitettyä palvelinta, joka toimisi “single source of truth”-keskuksena pelin aikana.&lt;/p&gt;
+
+&lt;p&gt;Missä sitten sijaitsee tieto siitä, miltä pelimaailma näyttää kullakin ajanhetkellä? Vastaus: &lt;em&gt;kullakin pelaajalla on tuo tieto erikseen&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Jotta koko hommassa olisi mitään järkeä, kullakin pelaajalla on oltava identtinen käsitys sen hetkisestä pelitilanteesta. Muuten koko pelissä ei olisi mitään mieltä.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Kuvittele esimerkiksi shakkipeli, jossa valkea pelaaja näkee laudan nappulat eri ruuduissa kuin musta pelaaja. Shakin pelaaminen olisi aika tuskallista.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Yksi tapa huolehtia siitä, että kullakin pelaajalla on sama identtinen pelitilanne tietyllä ajanhetkellä, on seuraava algoritmi:&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Pelaajan algoritmi (ajetaan kunkin pelaajan tietokoneella):&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Suorita pelaajan tekemä pelisiirto lokaalisti ja laske uusi pelitila.&lt;/li&gt;
+&lt;li&gt;Lähetä uusi lokaalisti laskettu pelitila kaikille muille pelin pelaajille.&lt;/li&gt;
+&lt;li&gt;Vastaanota muiden pelaajien vastaavalla tavalla laskettu uusi pelitila.&lt;/li&gt;
+&lt;li&gt;Yhdistä eri pelaajien pelitilat yhteen, ja laske niistä uusi yhdistetty pelitila.&lt;/li&gt;
+&lt;li&gt;Renderöi yhdistetty pelitila ruudulle, ja jää odottamaan uutta pelaajan komentoa/pelisiirtoa.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Ongelmana tässä algoritmissä on kohta 4, joka saattaa – pelistä riippuen – olla joko mielipuolisen vaikea tai suorastaan mahdoton suorittaa. On helppo kuvitella tilanne, jossa kahden eri pelaajan tekemät pelisiirrot ovat lokaalisti (siis yksittäin tarkasteltuna) laillisia, mutta niiden yhdistelmä on laiton.&lt;/p&gt;
+
+&lt;h2 id=&#34;rts-vuoropohjainen&#34;&gt;RTS === vuoropohjainen?&lt;/h2&gt;
+
+&lt;p&gt;Ratkaisu tähän “lokaalisti laillinen – globaalisti laiton” -ongelmaan on pakottaa pelaajat tekemään siirrot &lt;em&gt;vuorotellen&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tai, ellei teknisesti ihan vuorotellen, niin ainakin &lt;em&gt;vuoroja hyödyntäen&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Tämä kuulostaa liian tiukalta vaatimukselta monelle pelityypille, esimerkiksi AoE2:n kaltaiselle real-time-strategy (RTS)-pelille. Koko RTS:n pointti kun on olla real-time; vuoropohjaisten pelien ystäville on jo Civilization-saaga.&lt;/p&gt;
+
+&lt;p&gt;On kuitenkin huomattava, että on kaksi eri asiaa olla &lt;em&gt;aidosti real-time&lt;/em&gt; versus &lt;em&gt;näennäisesti real-time&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Age of Empiresin kaltainen RTS-peli käyttää konepellin alla itseasiassa diskreettejä pelivuoroja, mutta vuorojen varsinainen pituus on varsin lyhyt, ja muutamaa kikkaa hyödyntäen niiden pituus saadaan vaikuttamaan kuin vuoroja ei olisi lainkaan.&lt;/p&gt;
+
+&lt;p&gt;Homma toimii näin. Pelin kulku koostuu pelivuoroista, joiden aikana kukin pelaaja voi tehdä N määrän pelisiirtoja. Erona Civilization-peliin on lähinnä se, että &lt;em&gt;eri pelaajat tekevät siirtonsa saman pelivuoron aikana&lt;/em&gt;. Siinä missä Civilizationissa kullakin pelaajalla on oma pelivuoronsa, jonka aikana muut pelaajat kiltisti odottavat, Aoe2-pelissä kaikki pelaajat jakavat yhden globaalin pelivuoron kerrallaan.&lt;/p&gt;
+
+&lt;p&gt;Lisäksi AoE2:n pelivuoro on siitä ikävä, että se ei odota pelaajaa (toisin kuin aidoissa vuoropohjaisissa peleissä); jos pelaaja ei ehdi tekemään pelisiirtoa pelivuoron aikana, se on pelaajan oma ongelma.&lt;/p&gt;
+
+&lt;p&gt;AoE2:n pelivuorolla on nimittäin ajallinen pituus, joka on vakiona 200 millisekuntia. Näin lyhyt siirtovuoro on tarpeen, jotta peli saa luotua illuusion reaaliaikaisuudesta.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Kahdensadan millisekunnin pituus on luonnollisesti muutettavissa riippuen pelaajien nettiyhteyksien nopeudesta. Arvoa voi skaalata suuntaan tai toiseen jopa yksittäisen pelin ollessa käynnissä. Toimintaperiaate muistuttaa TCP-protokollan flow-kontrollia.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Mutta hetkinen, 200 ms on siltikin järjettömän &lt;em&gt;pitkä&lt;/em&gt; aika tietokonepelin kontekstissa. Jos itse peli pyörisi 200 millisekunnin render-loopilla, pelin ruudunpäivitystahti (FPS) olisi viisi.&lt;/p&gt;
+
+&lt;p&gt;Siis 5 ruudunpäivitystä sekunnissa. Eli puhdas slideshow.&lt;/p&gt;
+
+&lt;p&gt;Mikä siis lopulta pyörii 200 millisekunnin vauhdilla?&lt;/p&gt;
+
+&lt;h2 id=&#34;pelisiirrot-vs-pelilogiikka&#34;&gt;Pelisiirrot vs. pelilogiikka&lt;/h2&gt;
+
+&lt;p&gt;Ainoastaan pelivuorot. Pelilogiikan sisältävä game-loop pyörii 30 FPS:n nopeudella.&lt;/p&gt;
+
+&lt;p&gt;Homma toimii suunnilleen näin: kukin pelaaja tekee annetun pelivuoron (200ms) aikana &lt;em&gt;niin monta pelisiirtoa kuin ehtii&lt;/em&gt;. Kun pelivuoro päättyy, tehdyt siirrot talletetaan listaksi ja lähetetään kaikille muille pelaajille. Vastaavasti pelaaja vastaanottaa kaikkien muiden pelaajien pelisiirrot.&lt;/p&gt;
+
+&lt;p&gt;Kun tämä valtava – kukin pelaaja lähettää omat siirtonsa kullekin toiselle pelaajalle – lähetysoperaatio on tehty, kullakin pelaajalla on nyt identtinen lista pelivuoron aikana &lt;em&gt;globaalisti&lt;/em&gt; tehdyistä pelisiirroista. Nyt seuraa paras kohta; kukin pelaaja lokaalisti päivittää oman pelitilansa annettujen pelisiirtojen perusteella.&lt;/p&gt;
+
+&lt;p&gt;Ja koska kaikilla pelaajilla on &lt;em&gt;identtinen lista siirtoja&lt;/em&gt; ja &lt;em&gt;identtinen pelitila&lt;/em&gt; ennen päivitystä, päätyvät kaikki pelaajat identtiseen pelitilaan siirtopäivitysten jälkeen mikäli pelilogiikka toimii 100% deterministisesti.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Asian voi havainnollistaa shakkipelillä: pelaajat A ja B aloittavat shakkipelin. Pelaaja A tekee siirron ja lähettää sen B:lle. Tarvitseeko A:n lähettää siirron mukana myös uusi peliasema? Ei, sillä shakkipeli on täysin deterministinen. Ja shakkipelin alkuasema on kirjoitettu shakin sääntöihin, joten se on identtinen ja molempien pelaajien tiedossa.&lt;/p&gt;
+
+&lt;p&gt;Shakin deterministisyys mahdollistaa mielenkiintoisia pelimuotoja, jotka eivät ole mahdollisia esimerkiksi Afrikan Tähdessä. Kaksi vahvaa shakinpelaajaa voi pelata shakkipelin ilman lautaa ja nappuloita; he sanovat vuorotellen siirrot toisilleen. Tämä on sokkoshakkia. Hurjimmat pelaavat sokkoshakkia vaikka kesken tennisottelun.&lt;/p&gt;
+
+&lt;p&gt;AoE2:n puolella pelin alkutilanne ei ole osa pelin sääntöjä (eikä täten identtinen pelikerrasta toiseen), joten pelin alkaessa alkuasema täytyy synkronoida kaikkien pelaajien kesken. Tämä on ainoa hetki, jolloin online-moninpelin pelaajat päivittävät pelitilansa globaalia tilamuuttujaa hyödyntäen. Globaalina tilamuuttujana voi toimia joko moninpelialusta (esim. Steam tai Voobly?) tai joku yksittäinen pelaaja, joka hetkellisesti ottaa host-roolin.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Tätä mallia kutsutaan nimellä “deterministic lockstep”-malli. Mallilla on vankka teoreettinen pohja, ja se toimii kuin junan vessa.&lt;/p&gt;
+
+&lt;h2 id=&#34;back-to-the-earth-käytännön-haasteet&#34;&gt;Back to the earth – käytännön haasteet&lt;/h2&gt;
+
+&lt;p&gt;Toimii kuin junan vessa teoriassa, siis.&lt;/p&gt;
+
+&lt;p&gt;Käytännössä mallin saaminen toimimaan vaatii pelistä riippuen joko vähän töitä tai aivan saatanasti töitä. Shakki on esimerkki ensin mainitusta, AoE2 jälkimmäisestä. Jo pelkästään AoE2 pelivideota katsomalla huomaa, että pelissä tapahtuu valtavasti asioita.&lt;/p&gt;
+
+&lt;p&gt;Jotta deterministic lockstep toimii, täytyy &lt;em&gt;koko pelimekaniikan olla deterministinen&lt;/em&gt;. Tämä tarkoittaa, että jokaikisen saksanhirven (AI-ohjattu) liikeradan, jokaisen keihään lentoradan, jokaisen läpi sokkeloisen metsäpolun lasketun kulkuradan (unit pathing)&amp;hellip; kaikkien on toimittava identtisesti kaikilla kahdeksalla pelaajalla.&lt;/p&gt;
+
+&lt;p&gt;Satunnaislukugeneraattori lentää ensimmäisenä roskakoriin, sillä jos yksikin osa pelimekaniikasta perustuu sattumaan, koko moninpeli on pilalla. Tilalle tulee &lt;em&gt;pseudo-satunnaislukugeneraattori&lt;/em&gt;, joka alustetaan pelin alussa seedillä. Kaikilla pelaajilla on luonnollisesti oltava sama seed, jotta generaattorin tuottamat “satunnaisluvut” ovat ei-satunnaisia, eli samat kullakin pelaajalla.&lt;/p&gt;
+
+&lt;h2 id=&#34;mallin-edut&#34;&gt;Mallin edut&lt;/h2&gt;
+
+&lt;h3 id=&#34;yksinpeli-vai-moninpeli-who-cares&#34;&gt;Yksinpeli vai moninpeli - who cares?&lt;/h3&gt;
+
+&lt;p&gt;Koko pelin deterministisyyden varmistaminen on pirullisen moninmutkainen ongelma. Mutta jos ongelma ratkotaan, moni muu asia tulee ikäänkuin ilmaiseksi.&lt;/p&gt;
+
+&lt;p&gt;Esimerkiksi online-moninpeli typistyy lopulta lokaaliksi moninpeliksi tai yksinpeliksi isoa joukkoa AI-pelaajia vastaan, sillä AoE2-peli-instanssin ei tarvitse välittää mistä lähteestä pelisiirrot tulevat. Kaikki pelimuodot toimivat pelimoottorin näkökulmasta identtisesti; pelimoottori ottaa vastaan siirtoja, ja thats it. Siirtojen alkuperä ei pelimoottoria kiinnosta.&lt;/p&gt;
+
+&lt;h3 id=&#34;halpa-tiedonsiirto&#34;&gt;Halpa tiedonsiirto&lt;/h3&gt;
+
+&lt;p&gt;Deterministic lockstep -mallin toinen valtava etu on, että internet-yhteyden yli siirrettävä tietomäärä on verrattaen vähäinen.&lt;/p&gt;
+
+&lt;p&gt;Vahva AoE2 pelaaja ehtii yhden siirtovuoron (sanotaan vaikka tuo 200 millisekuntia) aikana tekemään ehkä 3-4 siirtoa mikäli pelitilanne on oikein hektinen. Jokainen näistä siirroista on komento, joka sisältää ainoastaan tarvittavan tiedon komennon suorittamiseksi kaikkien online-pelin pelaajien tietokoneilla. Yksinkertaisimmillaan komento voisi siis olla:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;{
+  type: “move”,
+  unit: “knight_8282”,
+  to: {x: 672, y: 992}
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Komento sisältää kaiken tarvittavan tiedon; ritarihahmo, jonka ID on knight_8282, siirtykööt lokaatioon 672,992. Tämän tiedon perusteella kukin pelaaja voi päivittää pelitilansa; kunkin pelaajan AoE2-peli laskee &lt;em&gt;unit path-algoritmin&lt;/em&gt; avulla reitin ritarin nykyisestä lokaatiosta uuteen lokaatioon.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Ja koska kaikki AoE2-peli-instanssit käyttävät luonnollisesti samaa unit path-algoritmia, on koko laskettu reitti identtinen kaikilla pelaajilla.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Komennon koko JSON-tekstinä (auttamattoman kookas dataformaatti) on hädin tuskin 50 tavua.&lt;/p&gt;
+
+&lt;p&gt;Kyseessä on siis todella suorituskykyinen multiplayer-arkkitehtuuri. Hyvä niin, sillä internet-yhteydet vuonna 1999 eivät olleet kummoisia.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Deterministic lockstep-mallin onnistunut käyttö AoE2-pelissä vaatii taustamekaniikkaa, ja tässä blogikirjoituksessa raapaistiin vain pintaa. AoE2-pelin arkkitehtuurin ydinajatukset löytyvät täältä: &lt;a href=&#34;https://www.gamasutra.com/view/feature/131503/1500_archers_on_a_288_network_.php&#34;&gt;https://www.gamasutra.com/view/feature/131503/1500_archers_on_a_288&lt;em&gt;network&lt;/em&gt;.php&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Promise yli netin</title>
+      <link>https://www.nollaversio.fi/blog/public/nodejs/promise-over-network/</link>
+      <pubDate>Thu, 30 Nov 2017 07:30:17 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/nodejs/promise-over-network/</guid>
+      <description>&lt;p&gt;Promise on hieno keksintö. Se mahdollistaa asynkronoidun operaation odottamisen yli yksittäisen Javascript-tapahtumaloopin pyörähdyksen (tick), ja tekee mm. virhetilanteiden hallinnasta helppoa.&lt;/p&gt;
+
+&lt;p&gt;Useimmissa tilanteissa Promise hoitaa kaiken koordinoinnin automaattisesti ohjelmoijan puolesta; ohjelmoijalle riittää kirjoittaa Promise-kutsu ja haluttu koodi, joka ajetaan Promisen täytyttyä.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+import Promise from &#39;bluebird&#39;
+
+Promise.resolve(&amp;quot;Kutsuttava async-operaatio&amp;quot;)
+.then(function() {
+	console.log(&amp;quot;Ajettava koodi&amp;quot;)	
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Mutta jotta ylläoleva toimisi ja tarjoaisi helppokäyttöisen API:n ohjelmoijalle, täytyy pinnan alla tapahtua aika paljon. Promise-objektin täytyy sisällään koordinoita sille annettujen callback-funktioiden kutsumista.&lt;/p&gt;
+
+&lt;p&gt;Entä jos Promisen suorittama asynkronoitu operaatio suoritetaan internet-yhteyden yli, siis osana operaatiota otetaan yhteys johonkin toiseen tietokoneeseen. Esimerkkinä seuraavan internet-moninpeli-applikaation koodinpätkä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Applikaatio kuvaa kaksinpeliä, jossa pelaajat
+// tekevät vuorotellen siirtoja.
+
+// Pelin business-logiikka.	
+var game = new Game();
+
+var loopMoves = function(player1, player2) {
+	var askForMove = function(player) {
+		// Palauttaa Promisen, joka odottaa pelaajan tekevän siirron.
+		return player.makeMove()
+		.then(function(move) {
+			// Tee siirto ja vahvista sen laillisuus
+			var legal = game.applyMove(move);
+
+			if (!legal || game.gameOver()) {
+				throw new GameOver();
+			}
+		});
+	}
+	// Pelaajan 1 siirtovuoro
+	return askForMove(player1)
+	// Pelaajan 2 siirtovuoro
+	.then(askForMove.bind(null, player2))
+	// Jos peli ei päättynyt, looppaa takaisin
+	// jotta pelaajat voivat tehdä uudet siirrot.
+	.then(loopMoves.bind(null, player1, player2);
+}
+
+// Player1 ja player2 tulevat ulkoa.
+loopMoves(player1, player2)
+.catch(GameOver, function(gameOver) {
+	console.log(&amp;quot;Game over&amp;quot;);
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevan kaltainen koodi tekee game-loopin kirjoittamisesta helppoa online-multiplayer-pelille. Kaiken ytimessä on kutsu &lt;em&gt;player.makeMove()&lt;/em&gt;, joka palauttaa Promisen, joka puolestaan täyttyy pelaajan antamalla siirrolla.&lt;/p&gt;
+
+&lt;p&gt;Mutta miltä tuo &lt;em&gt;makeMove&lt;/em&gt;-funktio näyttää? Ongelmana on, että makeMove-funktion tulee ottaa yhteys yli internetin siihen pelaajaan, jonka siirtovuoro on kyseessä. Tyypillisessä arkkitehtuurissa tuo yhteys on TCP-yhteyden välityksellä, web-applikaatioissa lähes poikkeuksetta WebSocket-protokollan avulla.&lt;/p&gt;
+
+&lt;p&gt;WebSocketin käyttö osana siirtovuoro-Promisea vaatii jonkin verran koordinointia. Tarvitsemme tavan yhdistää pelaajalle lähetetty pyyntö (&amp;ldquo;tee siirto&amp;rdquo;) myöhempään sisääntulevaan vastaukseen (&amp;ldquo;tässä siirtoni&amp;rdquo;). Ongelmana on, että pelaaja voi saada näiden kahden ajanhetken välillä useita eri viestejä palvelimelta, ja kaikki viestit välitetään samalla WebSocket-yhteydellä.&lt;/p&gt;
+
+&lt;p&gt;Tästä syystä meidän täytyy jotenkin tallentaa palvelimen päässä tieto lähetetystä siirtovuoro-pyynnöstä, ja myöhemmin osata yhdistää sisääntullut vastaus aiempaan pyyntöön, jotta voimme täyttää siirtovuoro-Promisen (joka makeMove-metodista palautetaan):&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function Player(webSocket) {
+	// Esim. socket.ion tuottama socket-objekti.
+	this.webSocket = webSocket;
+
+	this.init = function() {
+		// Ohjaa socketista tulevat siirtoviestit omaan receive-metodiimme.
+		this.webSocket.on(&#39;answerToMakeMove&#39;, this.receiveMoveFromClient.bind(this));
+	}
+
+	// Tämä objekti pitää kirjaa pelaajan suuntaan lähetetyistä pyynnöistä,
+	// joihin pelaaja ei ole vielä antanut vastausta.	
+	this.pendingMoveRequests = {};	
+
+	this.makeMove = function() {
+		var moveRequestId = generateUUID(); 
+
+		return new Promise(function(resolve, reject) {
+			// Talleta resolve-callback, jotta voimme myöhemmin
+			// löytää sen ja palauttaa pelaajalta saadun vastauksen
+			// alkuperäiselle kutsujalle.
+			this.pendingMoveRequests[moveRequestId] = resolve;
+
+			// Lähetä tieto pelaajalle 
+			this.webSocket.emit(&#39;makeMove&#39;, {
+				answerId: moveRequestId
+			});
+		}.bind(this))
+	}
+
+	this.receiveMoveFromClient = function(moveMsg) {
+		var answerTo = moveMsg.moveRequestId;
+		var move = moveMsg.move;
+
+		// Etsi resolver hyödyntäen clientin mukana kuljettamaa moveRequestId-arvoa.
+		if (this.pendingMoveRequests[answerTo]) {
+			var resolver = this.pendingMoveRequests[answerTo];
+			delete this.pendingMoveRequests[answerTo];
+
+			// Tämä täyttää Promisen, joka aikaa sitten palautettiin makeMove-metodista.
+			resolver(move);
+		}
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva vaatii clientin puolella sen, että client käyttää saamaansa moveRequestId-tunnistetta antaessaan vastauksen takaisin palvelimen suuntaan. Jos client tämän muistaa tehdä, voimme palvelimen puolella helposti matchata lähetetyn siirtopyynnön ja sisääntulleen siirtovastauksen toisiinsa.&lt;/p&gt;
+
+&lt;p&gt;Itse ylimmällä tasolla voimme laittaa pelin käyntiin esim. seuraavasti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var p1;
+var p2;
+var game = new Game();
+
+// Socket.io odottaa sisääntulevia yhteyksiä
+socketio.on(&#39;connect&#39;, function(socket) {
+	// Aseta disconnect-handler.
+	socket.on(&#39;disconnect&#39;, function() {
+		// Client on sulkenut yhteyden
+		if (game.running()) {
+			game.end();
+		}
+	});
+
+	if (!p1) {
+		// Ensimmäinen pelaaja
+		p1 = new Player(socket);
+		return;
+	}
+
+	// Toinen pelaaja
+	p2 = new Player(socket);
+
+	game.startGame();
+  p1.init();
+  p2.init();
+
+	// Molemmat pelaajat paikalla, aloita siirtojen looppaus.
+	loopMoves(p1, p2)
+	.catch(GameOver, function() {
+		// Peli päättynyt, disconnectoi pelaajat
+		p1.webSocket.disconnect();
+		p2.webSocket.disconnect();
+	});
+});
+
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>Ohjelmistoprojektin koordinointi ja psykologia (osa 1)</title>
@@ -84,7 +627,7 @@
 &lt;p&gt;Ylöspäin mentäessä siirrytään joko moduuleiden (löyhästi &lt;em&gt;kokoelma toisiinsa liittyviä funktioita&lt;/em&gt;) tai komponenttien (löyhästi &lt;em&gt;erillinen palikka, joka kykenee itsenäisesti suorittamaan vaativia tehtäviä, esim. sähköpostin lähetyksen&lt;/em&gt;) tasolle. Tällä tasolla syntyy ensimmäistä kertaa kokonaiskuva (osa-)applikaatiosta, jota ollaan rakentamassa. Applikaatio koostuu komponenteista, jotka vuorovaikuttavat toistensa kanssa. Yhdistelemällä komponentteja ja rakentamalla informaatioväyliä komponenttien välille saavutetaan applikaatio.&lt;/p&gt;
 
 &lt;blockquote&gt;
-&lt;p&gt;Komponentin ja moduulin ero on tärkeä ymmärtää; moduuli on &lt;strong&gt;staattinen&lt;/strong&gt; kokoelma koodia, jolla on jokin yhteinen tarkoitus olla olemassa. Komponentti on &lt;strong&gt;dynaaminen&lt;/strong&gt; palikka, joka elää ohjelman ajon aikana ja suorittaa vastuulleen kuuluvia velvollisuuksia. Komponentti on siis ohjelman ajon aikana elävä asia; moduuli puolestaan on kasa koodia, joka elää &amp;ldquo;koodieditorissa&amp;rdquo;.&lt;/p&gt;
+&lt;p&gt;Komponentin ja moduulin ero on tärkeä ymmärtää; moduuli on &lt;strong&gt;staattinen&lt;/strong&gt; kokoelma koodia, jolla on jokin yhteinen tarkoitus olla olemassa. Komponentti on &lt;strong&gt;dynaaminen&lt;/strong&gt; palikka, joka elää ohjelman ajon aikana ja suorittaa vastuulleen kuuluvia velvollisuuksia. Komponentti on siis ohjelman ajon aikana elävä asia; moduuli puolestaan on kasa koodia, joka &amp;ldquo;elää koodieditorissa&amp;rdquo;.&lt;/p&gt;
 
 &lt;p&gt;Ero on sama kuin Pythagoraan lauseella ja Kheopsin pyramidilla; Pythagoraan lause ei ole olemassa muuten kuin abstraktina sääntönä, jonka perusteella voidaan käsin kosketeltavia asioita (kuten pyramidit) rakentaa.&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -2139,354 +2682,6 @@ class Lampomittari extends Model {
 &lt;li&gt;Ehkä Lambdan ei tarvitse ilmoittaa kellekään. Jos käännöstä ei saada tehtyä, sitä ei saada tehtyä, ja sillä selvä. Vastaanotto-ohjelman puolella voi olla jokin aikamääre määriteltynä, jonka sisällä kukin käännöstyö tulee saada valmiiksi. Jos käännös ei valmistu aikamääreen sisällä, se katsotaan epäonnistuneeksi, ja hylätään. Lopullinen, ulos lähtevä zip-paketti on tällöin pienempi kuin sisääntullut zip-paketti.&lt;/li&gt;
 &lt;li&gt;&amp;ldquo;Päivitä Windows 10 uusimpaan versioon&amp;rdquo;.&lt;/li&gt;
 &lt;/ol&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Laravel: viivyttelyn taito</title>
-      <link>https://www.nollaversio.fi/blog/public/laravel/email-sending-with-delays/</link>
-      <pubDate>Wed, 26 Oct 2016 17:24:15 +0300</pubDate>
-      
-      <guid>https://www.nollaversio.fi/blog/public/laravel/email-sending-with-delays/</guid>
-      <description>
-
-&lt;p&gt;Laravel-kehyksen yksi sisäänrakennetuista ominaisuuksista on &lt;em&gt;jono&lt;/em&gt;. Laravel mahdollistaa tehtävien puskemisen jonoon, ja suorittamisen erillisessä käyttöjärjestelmän prosessissa.&lt;/p&gt;
-
-&lt;p&gt;Tällä tavoin käyttäjän palvelupyyntöä käsittelevä prosessi pääsee helpommalla. Sen ei tarvitse hoitaa kuin tehtävien assignointi, ei itse tehtävien suoritusta.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Jonotuksen perusteet löytyvät parhaiten aiemmasta postauksestani &lt;a href=&#34;http://www.nollaversio.fi/blog/public/laravel/queue-worker/&#34;&gt;täältä&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;Tässä postauksessa keskitymme erityisesti &lt;em&gt;delay()&lt;/em&gt;-metodin käyttöön jonotuksen yhteydessä.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Lähtökohtaisesti jonoon työnnetyt tehtävät suoritetaan &lt;em&gt;niin pian kuin mahdollista&lt;/em&gt;. Useimmiten tämä tarkoittaa, että tehtävä viettää jonossa aikaa vain muutaman sekunnin murto-osan.&lt;/p&gt;
-
-&lt;p&gt;On kuitenkin käyttötapauksia, joissa on ihanteellista &lt;em&gt;pakottaa&lt;/em&gt; tehtävä jonottamaan vähän pidempään.&lt;/p&gt;
-
-&lt;h3 id=&#34;ajastetut-tehtävät-jonon-kautta&#34;&gt;Ajastetut tehtävät jonon kautta&lt;/h3&gt;
-
-&lt;p&gt;Yksi yleinen toimenpide on &lt;em&gt;ajastaa&lt;/em&gt; sarja tehtäviä suoritettavaksi myöhempänä ajankohtana. Usein vieläpä nuo tehtävät tulee ajastaa siten, että tehtäväsuoritusten välillä kuluu tietty aika.&lt;/p&gt;
-
-&lt;p&gt;Otetaan esimerkki.&lt;/p&gt;
-
-&lt;h3 id=&#34;lämpötilan-mittaus-tunnin-välein-etukäteen-ajastettuna&#34;&gt;Lämpötilan mittaus tunnin välein - etukäteen ajastettuna!&lt;/h3&gt;
-
-&lt;p&gt;Oletetaan, että meillä on applikaatio, joka mittaa ulkolämpötilaa. Se miten varsinainen mittaus suoritetaan ei ole oleellista - esimerkin kannalta oleellista on se, miten mittaukset ajastetaan.&lt;/p&gt;
-
-&lt;p&gt;On täysin mahdollista mitata lämpötila joka sekunti. Ulkolämpötila ei kuitenkaan mainittavasti nouse/laske sekunnin välein, joten kovin järkevää tuo ei ole. Sen sijaan mitatkaamme lämpötila kerran tunnissa.&lt;/p&gt;
-
-&lt;p&gt;Järjestelmän hieno ominaisuus on, että se ei mittaa lämpötiloja omin päin. Sen sijaan käyttäjä joutuu pyytämään lämpötilan mittaussarjan aloittamista. Pyynnön yhteydessä käyttäjä myös ilmoittaa montako mittaustapahtumaa hän haluaa suorittaa. Mittaustapahtumien määrä vastaa tuntien määrää, sillä mittauksia tehdään yksi tunnissa.&lt;/p&gt;
-
-&lt;p&gt;Kätevimmin ylläolevan kaltainen toiminnallisuus onnistuu juuri &lt;em&gt;ajastetun jonotuksen avulla&lt;/em&gt;.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;// App\Execute.php
-
-// Se miten käyttäjältä kysytään mittaustapahtumien määrä ei ole oleellista.
-// Oletetaan että kysyminen on suoritettu *jotenkin*.
-$mittaustenMaara = 10;
-
-// Carbon on erinomainen ajanhallintaan erikoistuva lisäosa!
-$now = Carbon::now();
-
-// Luodaan ja jonotetaan mittaukset
-for($i=0; $i &amp;lt; $mittaustenMaara; $i++){
-  // dispatch siirtää tehtävän jonoon
-  // Huomionarvoista on *delay()*-metodin käyttö. Se 
-  // antaa meille tilaisuuden määrittää ajankohdan
-  // jolloin tehtävä aikaisintaan voidaan suorittaa!
-
-  // Delay-metodin avulla voimme täten siirtää tehtävän suorituksen
-  // haluttuun hetkeen tulevaisuuteen. Kullekin tehtävälle annamme
-  // odotusajaksi kasvavan tuntimäärän $i.
-  dispatch(new MittaaLampotila()-&amp;gt;delay($now-&amp;gt;addHours($i)));   
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tarvitsemme vielä tuon MittaaLampotila-luokan.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// App\Jobs\MittaaLampotila.php
-
-namespace App\Jobs;
-
-use Illuminate\Bus\Queueable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Queue\ShouldQueue;
-
-use App\Models\Mittaustulos;
-
-class MittaaLampotila implements ShouldQueue
-{
-    use InteractsWithQueue, Queueable
-
-    public function handle(LampotilaRajapinta $rajapinta)
-    {
-    	// $rajapinta tulee DI-konttanerin...kontaaninerin... kautta
-
-    	// Suoritetaan mittaus kutsumalla injektoitua rajapintaa.
-        $celsius = LampotilaRajapinta-&amp;gt;mittaa();
-
-        // Meillä on olemassa &#39;Mittaustulos&#39; Active Record-malli,
-        // joka hoitaa tuloksen puskemisen tietokantaan.
-        $mittaustulos = new Mittaustulos($celsius);
-        $mittaustulos-&amp;gt;save();
-
-    }
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kun koko jono on lopulta (esimerkin tapauksessa 9 tunnin kuluttua) tyhjentynyt, tietokanta näyttää appatiarallaa tältä.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;
-| celsius    | ajankohta |
-| ---------- | --------- |
-| 12         | 16.00     |
-| 13         | 17.00     |
-| 13         | 18.00     | 
-| 10         | 19.00     | 
-
-// jne. jne.
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Laravellin &lt;em&gt;delay()&lt;/em&gt;-metodi mahdollistaa helpon tavan siirtää tehtävä kauas tulevaisuuteen. Sen lisäksi, että tehtävä &lt;em&gt;ajetaan erillisessä prosessissa&lt;/em&gt; (ns. prosessi-isolaatio), tehtävä ajetaan myös &lt;em&gt;ajallisesti erillään&lt;/em&gt; (ns. ajallinen isolaatio).&lt;/p&gt;
-
-&lt;p&gt;Toinen hyvä käyttötarkoitus tälle portaalliselle ajastukselle on tehdä kutsuja johonkin rajapintaan. Sanotaan, että meillä on 1000 kpl HTTP-kutsuja tehtävänä. Jos kaikki kutsut ammutaan parin sekunnin sisällä, vastaanottava pää on käärmeissään (koska DoS-hyökkäys).&lt;/p&gt;
-
-&lt;p&gt;Jos taas ajastamme kutsut lähtemään aina 10 sekunnin välein, vastaanottaja on tyytyväinen.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Regex ja URL</title>
-      <link>https://www.nollaversio.fi/blog/public/laravel/regex-url/</link>
-      <pubDate>Tue, 25 Oct 2016 17:01:58 +0300</pubDate>
-      
-      <guid>https://www.nollaversio.fi/blog/public/laravel/regex-url/</guid>
-      <description>
-
-&lt;p&gt;Tarvitsin tänään Laravel-projektia koodatessani toiminnallisuutta, joka tsekkaa onko annettu tekstijono validi www-osoite.&lt;/p&gt;
-
-&lt;p&gt;Laravel itsessään tarjoaa tälläisen tsekkauksen, mutta ikäväksekseni Laravel on varsin tiukkapipoinen: se ei hyväksy osoitetta &lt;em&gt;www.nokia.fi&lt;/em&gt;, sillä osoitteen alusta puuttuu &amp;ldquo;http://&amp;ldquo;-alkuliite. Omassa projektissani en halua kiusata käyttäjiä mokoman http-alkuosan kirjoituspakolla, joten jouduin hylkäämään Laravellin tsekkarin.&lt;/p&gt;
-
-&lt;p&gt;Netistä löytyi varsin kiva regex (regular expression) hoitamaan URL:n tarkistus:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Niin että mitäs tuo sotku tarkoittaakaan? Itselläni ei ole juuri mitään hajua. Tai ei ollut ennen tätä päivää. Olen aina suosiolla ulkoistanut Regex-lauseiden muodostamisen Stack Overflown kaltaisille nettipalveluille.&lt;/p&gt;
-
-&lt;p&gt;Nyt kuitenkin selvitin asiaa, vaikka vain tätä blogipostausta varten. Ja toisaalta onhan se hyvä osata jotain.&lt;/p&gt;
-
-&lt;h3 id=&#34;miten-tuo-tekstihirviö-tarkistaa-url-osoitteen&#34;&gt;Miten tuo tekstihirviö tarkistaa URL-osoitteen?&lt;/h3&gt;
-
-&lt;p&gt;Ylläoleva regex tosiaan varmistaa, että sille annettu tekstijono on toimiva www-osoite eli URL. Miten ihmeessä? Tarkastellaan tekstimonsteria pala kerrallaan.&lt;/p&gt;
-
-&lt;p&gt;Koko monsteri oli siis:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;/^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;strong&gt;Ensimmäinen kenoviiva&lt;/strong&gt;&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;/
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ensimmäinen kenoviiva avaa regex-ekspressionin.&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Http-alkuliitteen tarkistus&lt;/strong&gt;&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;^(https?:\/\/)?
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tässä päästään itse asiaa. Tämä osuus tarkistaa, että URL-osoittessa joko on &lt;em&gt;http://&lt;/em&gt;-alkuliite, &lt;em&gt;https://&lt;/em&gt;-alkuliite, tai ei alkuliitettä ollenkaan. Jokin noista kolmesta vaihtoehdosta tulee olla voimassa; muussa tapauksessa kyseessä ei ole URL ja regex loppuu siihen.&lt;/p&gt;
-
-&lt;p&gt;Hiukka merkistöstä ylläolevan regex-palasen suhteen.&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;Sulut ympäröivät tarkistettavan konseptin.&lt;/li&gt;
-&lt;li&gt;Kysymysmerkki merkitsee, että sitä edeltävä konsepti esiintyy joko &lt;em&gt;kerran&lt;/em&gt; tai &lt;em&gt;ei lainkaan&lt;/em&gt;. Esimerkiksi &lt;em&gt;s?&lt;/em&gt; tarkoittaa, että osuuden &lt;em&gt;http&lt;/em&gt; jälkeen tulee kirjain &lt;em&gt;s&lt;/em&gt; joko kerran tai ei kertaakaan.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Mennään eteenpäin.&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Host-nimen tarkistus&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Seuraava palanen tarkistaa, että domainin host-osuus sisältää laillisia merkkejä. Host-osuus on domainissa se nimi, joka tulee ennen maatunnusta. Esimerkiksi domainissa &lt;em&gt;www.nokia.fi&lt;/em&gt;, host-nimi on &lt;em&gt;nokia&lt;/em&gt;.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;([\da-z\.-]+)
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva siis tarkistaa, että host-nimi sisältää numeroita (&lt;em&gt;\d&lt;/em&gt;) ja/tai laillisia kirjaimia (&lt;em&gt;a-z&lt;/em&gt;). Ääkkösiä ei saa sisältää, sillä &lt;em&gt;a-z&lt;/em&gt; sisältää vain englannin kielen kirjaimet.&lt;/p&gt;
-
-&lt;p&gt;Lisäksi &lt;em&gt;a-z&lt;/em&gt; tarkoittaa, että vain pieniä kirjaimia saa olla mukana. Isot kirjaimet eivät käy.&lt;/p&gt;
-
-&lt;p&gt;Tämä jälkeen tulee kohta  &amp;lsquo;&lt;em&gt;\.-&lt;/em&gt;&amp;rsquo;, joka tarkoittaa, että host-nimi saa sisältää myös pisteitä ja väliviivoja. Muut merkit eivät ole sallittuja.&lt;/p&gt;
-
-&lt;p&gt;Mitä nuo hakasulut tekevät tuossa? En tiedä. Jotain kapturoinnista internet-haun mukaan, mutta en täysin ymmärtänyt mitä kapturoinnilla (siis &amp;ldquo;kiinniotolla&amp;rdquo; suomeksi) tarkoitetaan tässä kontekstissa.&lt;/p&gt;
-
-&lt;p&gt;Tärkeä sen sijaan on plus-merkki juuri ennen viimeistä sulkua. Se tarkoittaa, että koko aiempi litanja voi laillisesti toistua yhden tai useamman kerran. Ei siis nolla kertaa - vähintään yksi kerta tarvitaan.&lt;/p&gt;
-
-&lt;p&gt;Tämä tarkoittaa, että seuraavat host-nimet ovat laillisia:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;&lt;em&gt;&amp;lsquo;nokia&amp;rsquo;&lt;/em&gt;&lt;/li&gt;
-&lt;li&gt;&lt;em&gt;&amp;lsquo;nokia-puhelin007&amp;rsquo;&lt;/em&gt;&lt;/li&gt;
-&lt;li&gt;&lt;em&gt;&amp;lsquo;nokia.puhelin007.ollila&amp;rsquo;&lt;/em&gt;&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Ylläolevat noudattavat sääntöjämme. Sen sijaan seuraavat host-nimet ovat laittomia:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;&lt;em&gt;&amp;lsquo;Nokia&amp;rsquo;&lt;/em&gt; (iso kirjain on laiton!)&lt;/li&gt;
-&lt;li&gt;&lt;em&gt;&amp;lsquo;huhtamäki&amp;rsquo;&lt;/em&gt; (ääkkönen on laiton!)&lt;/li&gt;
-&lt;li&gt;&amp;rsquo; &amp;lsquo; (tyhjä merkkijono on laiton!)&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Mennään eteenpäin.&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Pakollinen piste&lt;/strong&gt;&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;\.
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Tämä on hyvin yksinkertainen palanen; vaadimme, että host-nimen jälkeen tulee yksi piste. Tämä piste vastaa pistettä host-nimen ja maatunnuksen välissä, esim. &amp;ldquo;nokia.fi&amp;rdquo;.&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Maatunnus min. 2 merkkiä, max. 6 merkkiä&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Seuraavana tulee maatunnus, eli siis se &lt;em&gt;com&lt;/em&gt;, &lt;em&gt;fi&lt;/em&gt;, &lt;em&gt;org&lt;/em&gt; tjms.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;([a-z\.]{2,6})
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva vaatimus määrittää, että maatunnus voi sisältää vain &lt;em&gt;a-z&lt;/em&gt; -kirjaimet. Se siis EI voi sisältää numeroita. Ja sitten tulee mielenkiintoinen: &lt;em&gt;{2,6}&lt;/em&gt; tarkoittaa, että maatunnuksen pituus voi olla 2-6 merkkiä.&lt;/p&gt;
-
-&lt;p&gt;Eli &lt;em&gt;fi&lt;/em&gt; menee alarajalta nipin napin läpi, se kun on kaksi merkkiä. Maatunnus &lt;em&gt;finland&lt;/em&gt; ei menisi läpi, koska se on 7 merkkiä pitkä.&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Loppuosuus eli mahdolliset URI-päätteet&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Loppuosuus on aika sotku.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;([\/\w \.-]*)*\/?$/
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva on tarkoitettu varmistamaan, ettei URL-osoitteen hakemistopolku sisällä laittomuuksia. Hakemistopolku on siis se loppuosuus, joka määrittää tarkan resurssin, joka haetaan.&lt;/p&gt;
-
-&lt;p&gt;Esimerkiksi URL-tekstijonossa &lt;em&gt;www.nokia.fi/mobiili/ollila.jpg&lt;/em&gt;, tuo hakemistopolun osuus on &lt;em&gt;/mobiili/ollila.jpg&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Ylläoleva regex aluksi varmistaa, että loppuosuus alkaa kenoviivalla.&lt;/p&gt;
-
-&lt;p&gt;Sen jälkeen tulee merkki &lt;em&gt;\w&lt;/em&gt;, joka on mielenkiintoinen. Tuo tarkoittaa, että mikä tahansa alfanumeerinen merkki kelpaa. Eli siis pienet kirjaimet, isot kirjaimet ja numerot, ja vielä erikoismerkki &lt;em&gt;_&lt;/em&gt; (alaviiva).&lt;/p&gt;
-
-&lt;p&gt;Sitten tulee merkki &lt;em&gt;*&lt;/em&gt;. Se tarkoittaa, että koko aiempi litanja - joka on hakasulkujen sisällä - toistuu joko nolla kertaa, yhden kerran tai useammin. Eli siis kuinka monesti tahansa - kaikki käy.&lt;/p&gt;
-
-&lt;p&gt;Loppuosuus &lt;em&gt;*\/?$/&lt;/em&gt; merkkaa yksinkertaisesti, että syöte päättyy. Dollarimerkki käskyttää regex-moottoria ymmärtämään, että tekstijonon tulisi olla loppu tässä kohtaa.&lt;/p&gt;
-
-&lt;p&gt;Aika monimutkaista.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>AWS ja harva indeksi</title>
-      <link>https://www.nollaversio.fi/blog/public/arkkitehtuuri/sparse-index/</link>
-      <pubDate>Mon, 24 Oct 2016 17:41:19 +0300</pubDate>
-      
-      <guid>https://www.nollaversio.fi/blog/public/arkkitehtuuri/sparse-index/</guid>
-      <description>
-
-&lt;p&gt;Amazonin Dynamo-tietokantaa käytettäessä törmäsin tänään mielenkiintoiseen patterniin. Tarvitsin taululle indeksin attribuuttia varten, joka harvoin saa yhtään mitään arvoa.&lt;/p&gt;
-
-&lt;p&gt;Tälläisessä tapauksessa on ikävää joutua luomaan uusi, täysimittainen indeksitaulu.&lt;/p&gt;
-
-&lt;p&gt;Häh, miksi tuo on niin ikävää muka? Koska jos 99% talletettavista objekteista ei hyödy indeksistä lainkaan, niiden roikottaminen mukana indeksitaulussa on tilanhukkaa.&lt;/p&gt;
-
-&lt;p&gt;Otetaan konkreettinen esimerkki. Sanotaan huvin vuoksi, että meillä on seuraavanlainen tietokantataulu:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;
-| nimi       | ikä | maailmanmestari |
-| ---------- | --- | --------------- |
-| Matti M    | 62  |        -        |
-| Pekka J    | 11  |        -        |    
-| Ismo P     | 16  |        -        | 
-| Kimi R     | 37  |    Formula 1    | 
-
-// jne. jne.
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva taulu sisältää kaikista suomalaisista kolme tietoa; &lt;em&gt;nimi&lt;/em&gt;, &lt;em&gt;ikä&lt;/em&gt;, ja &lt;em&gt;minkä urheilulajin maailmanmestaruuden henkilö on voittanut&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Sanotaan että nimi-attribuutti muodostaa ns. pääavain-indeksin. Sen tulee siis olla uniikki - täyskaimoja tietokantamme ei salli.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Käytännössä emme tietenkään käyttäisi nimeä pääavaimena, vaan pääavain olisi henkilötunnus. En valitettavasti satu tietämään Räikkösen Kimin hetua joten esimerkki toimii paremmin näin.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Nyt voimme luoda kaksi indeksitaulua varsinaisen taulun oheen. Yksi indeksi iälle, toinen maailmanmestaruudelle.&lt;/p&gt;
-
-&lt;p&gt;Tällä tavoin nopeutamme merkittävästi hakuja, joissa ikää tai maailmanmestaruutta käytetään hakukriteerinä.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Esimerkki ikä-attribuuttia hakukriteerinä käyttävästä hausta: &lt;em&gt;palauta kaikki henkilöt, joiden ikä on 60 ja 65 välillä&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;Esimerkki maailmanmestari-attribuuttia käyttävästä hausta: &lt;em&gt;palauta kaikki henkilöt, jotka ovat voittaneet keihäänheiton MM-kultaa&lt;/em&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Kaikki hyvin. On kuitenkin huomattava, että ikä-indeksitaulu sisältää viisi miljoonaa riviä. Tämä ihan siksi, että alkuperäinen taulu sisältää myös viisi miljoonaa riviä, ja jokainen henkilö tulee indeksoida iän perusteella, jotta ikä-indeksi toimii oikein.&lt;/p&gt;
-
-&lt;h3 id=&#34;mutta-kuinka-moni-suomalainen-on-voittanut-mm-kultaa-yhtään-missään&#34;&gt;Mutta kuinka moni suomalainen on voittanut MM-kultaa yhtään missään?&lt;/h3&gt;
-
-&lt;p&gt;Datan indeksointi ikä-attribuutin suhteen on siis varsin järkevä idea.&lt;/p&gt;
-
-&lt;p&gt;Jokainen henkilö kun on &lt;em&gt;jonkin ikäinen&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Vaan kuinka moni on voittanut &lt;em&gt;jonkin lajin maailmanmestaruuden&lt;/em&gt;?&lt;/p&gt;
-
-&lt;p&gt;Ydinkysymys on tämä: kuinka suuri on maailmanmestareiden osuus on verrattuna koko väestöön?&lt;/p&gt;
-
-&lt;p&gt;Sanotaan esimerkin vuoksi, että mestareiden lukumäärä on 1000 henkilöä. &lt;em&gt;Eli koko kansasta 0.02%&lt;/em&gt;. Tästä herää pieni suorituskyvyllinen ongelma: &lt;strong&gt;jos luomme indeksin &lt;em&gt;maailmanmestari&lt;/em&gt;-attribuutille, 99.98% indeksitaulun jäsenistä on siellä ihan turhaan.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;He eivät ole voittaneet mestaruutta, joten ei heitä tarvitse indeksoida. Ei ole mitään mitä indeksoida! Sama kuin yrittäisi indeksoida sosiaalidemokraattien itsekunnioitusta.&lt;/p&gt;
-
-&lt;p&gt;Tälläinen tuhlaus kuulostaa hirveältä: 0.02% takia 99.98% joutuu kärsimään. Siis kärsimään siinä mielessä, että heille luodaan oma turhanpäiväinen rivi indeksitauluun.&lt;/p&gt;
-
-&lt;h3 id=&#34;harva-indeksi-jätä-luuserit-pois-alunperinkin&#34;&gt;Harva indeksi - jätä luuserit pois alunperinkin&lt;/h3&gt;
-
-&lt;p&gt;Harva indeksi tulee apuun. Ydinpointti on tässä: miksi emme loisi &lt;em&gt;maailmanmestari&lt;/em&gt;-indeksiä siten, että se sisältää &lt;strong&gt;ainoastaan&lt;/strong&gt; maailmanmestarit?&lt;/p&gt;
-
-&lt;p&gt;Ajatus on varsin luonteva, ja vain ohjelmistosuunnittelija voi ilakoida sen hoksaamisella. Mutta kuitenkin - harva indeksi on pätevä ratkaisu ongelmaamme.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Käytännössä luomme siis &amp;ldquo;eliitti-indeksin&amp;rdquo; - vain maailmanmestarit kelpuutetaan mukaan listaukseen. Indeksi toimii ikäänkuin urheilumaailman &amp;ldquo;Kuka kukin on&amp;rdquo;-oppaana.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Harvan indeksin avulla saamme pudotettua 5 miljoonan rivin kokoisen indeksin vaivaiseksi 1000 rivin indeksiksi. Tilaa säästyy valtava määrä.&lt;/p&gt;
-
-&lt;h3 id=&#34;amazon-tekee-harvan-indeksin-ohjelmoijan-puolesta&#34;&gt;Amazon tekee harvan indeksin ohjelmoijan puolesta&lt;/h3&gt;
-
-&lt;p&gt;Amazonin DynamoDB:ssä harvan indeksin luonti on helppoa. Jopa niin helppoa, että se tapahtuu täysin automaattisesti järjestelmän toimesta. Ihan totta, kirjaimellisesti ohjelmoijan &lt;em&gt;ei tarvitse tehdä yhtään mitään&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Teknisesti AWS:n toteutus toimii siten, että aina kun uutta objektia lisättäessä tuon objektin indeksoidun attribuutin jättää tyhjäksi, objektia ei indeksoida lainkaan. Henkilötaulun esimerkki yllä on suoraan siirrettävissä DynamoDB:n puolelle - lisätessämme uusia henkilöitä tietokantaan riittää, että jätämme &lt;em&gt;maailmanmestari&lt;/em&gt;-kentän tyhjäksi.&lt;/p&gt;
-
-&lt;p&gt;Jos emme jätä sitä tyhjäksi, henkilö on voittanut maailmanmestaruuden, ja Amazonin taustajärjestelmä indeksoi hänet oikeaoppisesti.&lt;/p&gt;
-
-&lt;p&gt;Kätevää.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Miten MySQL toimii indeksoitavan kentän jäädessä tyhjäksi? &lt;a href=&#34;http://stackoverflow.com/questions/32217099/mysql-index-for-sparse-table&#34;&gt;Tämän linkin&lt;/a&gt; mukaan Mysql osaa ottaa asian huomioon jos asettaa kentän eksplisiittisesti arvoon &lt;em&gt;NULL&lt;/em&gt;. En muista kokeilleeni asiaa käytännössä.&lt;/p&gt;
-&lt;/blockquote&gt;
 </description>
     </item>
     

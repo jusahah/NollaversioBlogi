@@ -148,6 +148,8 @@ socketio.on('connect', function(socket) {
 	p2 = new Player(socket);
 
 	game.startGame();
+  p1.init();
+  p2.init();
 
 	// Molemmat pelaajat paikalla, aloita siirtojen looppaus.
 	loopMoves(p1, p2)

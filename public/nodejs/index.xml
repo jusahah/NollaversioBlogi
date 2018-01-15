@@ -6,8 +6,170 @@
     <description>Recent content in Nodejs on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Sun, 19 Nov 2017 09:23:22 +0200</lastBuildDate>
+    <lastBuildDate>Thu, 30 Nov 2017 07:30:17 +0200</lastBuildDate>
     <atom:link href="https://www.nollaversio.fi/blog/public/nodejs/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Promise yli netin</title>
+      <link>https://www.nollaversio.fi/blog/public/nodejs/promise-over-network/</link>
+      <pubDate>Thu, 30 Nov 2017 07:30:17 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/nodejs/promise-over-network/</guid>
+      <description>&lt;p&gt;Promise on hieno keksintö. Se mahdollistaa asynkronoidun operaation odottamisen yli yksittäisen Javascript-tapahtumaloopin pyörähdyksen (tick), ja tekee mm. virhetilanteiden hallinnasta helppoa.&lt;/p&gt;
+
+&lt;p&gt;Useimmissa tilanteissa Promise hoitaa kaiken koordinoinnin automaattisesti ohjelmoijan puolesta; ohjelmoijalle riittää kirjoittaa Promise-kutsu ja haluttu koodi, joka ajetaan Promisen täytyttyä.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+import Promise from &#39;bluebird&#39;
+
+Promise.resolve(&amp;quot;Kutsuttava async-operaatio&amp;quot;)
+.then(function() {
+	console.log(&amp;quot;Ajettava koodi&amp;quot;)	
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Mutta jotta ylläoleva toimisi ja tarjoaisi helppokäyttöisen API:n ohjelmoijalle, täytyy pinnan alla tapahtua aika paljon. Promise-objektin täytyy sisällään koordinoita sille annettujen callback-funktioiden kutsumista.&lt;/p&gt;
+
+&lt;p&gt;Entä jos Promisen suorittama asynkronoitu operaatio suoritetaan internet-yhteyden yli, siis osana operaatiota otetaan yhteys johonkin toiseen tietokoneeseen. Esimerkkinä seuraavan internet-moninpeli-applikaation koodinpätkä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// Applikaatio kuvaa kaksinpeliä, jossa pelaajat
+// tekevät vuorotellen siirtoja.
+
+// Pelin business-logiikka.	
+var game = new Game();
+
+var loopMoves = function(player1, player2) {
+	var askForMove = function(player) {
+		// Palauttaa Promisen, joka odottaa pelaajan tekevän siirron.
+		return player.makeMove()
+		.then(function(move) {
+			// Tee siirto ja vahvista sen laillisuus
+			var legal = game.applyMove(move);
+
+			if (!legal || game.gameOver()) {
+				throw new GameOver();
+			}
+		});
+	}
+	// Pelaajan 1 siirtovuoro
+	return askForMove(player1)
+	// Pelaajan 2 siirtovuoro
+	.then(askForMove.bind(null, player2))
+	// Jos peli ei päättynyt, looppaa takaisin
+	// jotta pelaajat voivat tehdä uudet siirrot.
+	.then(loopMoves.bind(null, player1, player2);
+}
+
+// Player1 ja player2 tulevat ulkoa.
+loopMoves(player1, player2)
+.catch(GameOver, function(gameOver) {
+	console.log(&amp;quot;Game over&amp;quot;);
+})
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevan kaltainen koodi tekee game-loopin kirjoittamisesta helppoa online-multiplayer-pelille. Kaiken ytimessä on kutsu &lt;em&gt;player.makeMove()&lt;/em&gt;, joka palauttaa Promisen, joka puolestaan täyttyy pelaajan antamalla siirrolla.&lt;/p&gt;
+
+&lt;p&gt;Mutta miltä tuo &lt;em&gt;makeMove&lt;/em&gt;-funktio näyttää? Ongelmana on, että makeMove-funktion tulee ottaa yhteys yli internetin siihen pelaajaan, jonka siirtovuoro on kyseessä. Tyypillisessä arkkitehtuurissa tuo yhteys on TCP-yhteyden välityksellä, web-applikaatioissa lähes poikkeuksetta WebSocket-protokollan avulla.&lt;/p&gt;
+
+&lt;p&gt;WebSocketin käyttö osana siirtovuoro-Promisea vaatii jonkin verran koordinointia. Tarvitsemme tavan yhdistää pelaajalle lähetetty pyyntö (&amp;ldquo;tee siirto&amp;rdquo;) myöhempään sisääntulevaan vastaukseen (&amp;ldquo;tässä siirtoni&amp;rdquo;). Ongelmana on, että pelaaja voi saada näiden kahden ajanhetken välillä useita eri viestejä palvelimelta, ja kaikki viestit välitetään samalla WebSocket-yhteydellä.&lt;/p&gt;
+
+&lt;p&gt;Tästä syystä meidän täytyy jotenkin tallentaa palvelimen päässä tieto lähetetystä siirtovuoro-pyynnöstä, ja myöhemmin osata yhdistää sisääntullut vastaus aiempaan pyyntöön, jotta voimme täyttää siirtovuoro-Promisen (joka makeMove-metodista palautetaan):&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+function Player(webSocket) {
+	// Esim. socket.ion tuottama socket-objekti.
+	this.webSocket = webSocket;
+
+	this.init = function() {
+		// Ohjaa socketista tulevat siirtoviestit omaan receive-metodiimme.
+		this.webSocket.on(&#39;answerToMakeMove&#39;, this.receiveMoveFromClient.bind(this));
+	}
+
+	// Tämä objekti pitää kirjaa pelaajan suuntaan lähetetyistä pyynnöistä,
+	// joihin pelaaja ei ole vielä antanut vastausta.	
+	this.pendingMoveRequests = {};	
+
+	this.makeMove = function() {
+		var moveRequestId = generateUUID(); 
+
+		return new Promise(function(resolve, reject) {
+			// Talleta resolve-callback, jotta voimme myöhemmin
+			// löytää sen ja palauttaa pelaajalta saadun vastauksen
+			// alkuperäiselle kutsujalle.
+			this.pendingMoveRequests[moveRequestId] = resolve;
+
+			// Lähetä tieto pelaajalle 
+			this.webSocket.emit(&#39;makeMove&#39;, {
+				answerId: moveRequestId
+			});
+		}.bind(this))
+	}
+
+	this.receiveMoveFromClient = function(moveMsg) {
+		var answerTo = moveMsg.moveRequestId;
+		var move = moveMsg.move;
+
+		// Etsi resolver hyödyntäen clientin mukana kuljettamaa moveRequestId-arvoa.
+		if (this.pendingMoveRequests[answerTo]) {
+			var resolver = this.pendingMoveRequests[answerTo];
+			delete this.pendingMoveRequests[answerTo];
+
+			// Tämä täyttää Promisen, joka aikaa sitten palautettiin makeMove-metodista.
+			resolver(move);
+		}
+	}
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva vaatii clientin puolella sen, että client käyttää saamaansa moveRequestId-tunnistetta antaessaan vastauksen takaisin palvelimen suuntaan. Jos client tämän muistaa tehdä, voimme palvelimen puolella helposti matchata lähetetyn siirtopyynnön ja sisääntulleen siirtovastauksen toisiinsa.&lt;/p&gt;
+
+&lt;p&gt;Itse ylimmällä tasolla voimme laittaa pelin käyntiin esim. seuraavasti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+var p1;
+var p2;
+var game = new Game();
+
+// Socket.io odottaa sisääntulevia yhteyksiä
+socketio.on(&#39;connect&#39;, function(socket) {
+	// Aseta disconnect-handler.
+	socket.on(&#39;disconnect&#39;, function() {
+		// Client on sulkenut yhteyden
+		if (game.running()) {
+			game.end();
+		}
+	});
+
+	if (!p1) {
+		// Ensimmäinen pelaaja
+		p1 = new Player(socket);
+		return;
+	}
+
+	// Toinen pelaaja
+	p2 = new Player(socket);
+
+	game.startGame();
+  p1.init();
+  p2.init();
+
+	// Molemmat pelaajat paikalla, aloita siirtojen looppaus.
+	loopMoves(p1, p2)
+	.catch(GameOver, function() {
+		// Peli päättynyt, disconnectoi pelaajat
+		p1.webSocket.disconnect();
+		p2.webSocket.disconnect();
+	});
+});
+
+
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+    </item>
     
     <item>
       <title>PaperJS: What does applyMatrix do?</title>
@@ -1934,204 +2096,6 @@ console.log(tulo); // 8
 &lt;p&gt;Putken/liukuhihnan loppupäädyssä kutsumme metodia &lt;em&gt;value()&lt;/em&gt;, joka hakee lopullisen palautusarvon.&lt;/p&gt;
 
 &lt;p&gt;Kyseessä on erittäin vahva ja ennenkaikkea modulaarinen koodaustapa. Ketjuta funktiokutsut ja juoksuta haluamasi dataa ketjun lävitse. Yhdestä päästä menee raaka-aineet sisään, toisesta päästä tulee valmis tuote ulos.&lt;/p&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Filteröi epäonnistujat pois (reflect &#43; filter)</title>
-      <link>https://www.nollaversio.fi/blog/public/nodejs/promise-filter/</link>
-      <pubDate>Mon, 25 Jul 2016 17:28:05 +0300</pubDate>
-      
-      <guid>https://www.nollaversio.fi/blog/public/nodejs/promise-filter/</guid>
-      <description>
-
-&lt;p&gt;Lupauskirjasto &lt;em&gt;Bluebirdin&lt;/em&gt; yksi vähemmän tunnetuista apumetodeista on &lt;strong&gt;reflect()&lt;/strong&gt;. Ainakin allekirjoittaneelle tuo apufunktio pysyi tuntemattomana hyvää matkaa toista vuotta - ei vain tullut pakottavaa tarvetta, ja ongelmat sai aina ratkottua muutenkin.&lt;/p&gt;
-
-&lt;p&gt;Näin jälkikäteen ajateltuna nuo &amp;ldquo;muut&amp;rdquo; ratkaisut olivat aika hirveitä sekasotkuja, jotka toimivat jos jaksoivat.&lt;/p&gt;
-
-&lt;p&gt;Sittemmin otin reflectin käyttöön.&lt;/p&gt;
-
-&lt;h3 id=&#34;minkä-ongelman-promise-reflect-ratkoo&#34;&gt;Minkä ongelman Promise.reflect() ratkoo?&lt;/h3&gt;
-
-&lt;p&gt;Varsin usein omissa applikaatioissani on toiminnallisuuksia, joiden onnistunut läpivienti &lt;em&gt;ei ole kriittistä&lt;/em&gt;. Jotkut toiminnot ovat luonteeltaan sellaisia, että ei niin väliä mikäli toiminto epäonnistuu nolosti. &lt;strong&gt;Tärkeintä on, että yhden vähäpätöisen toiminnon epäonnistuminen ei vedä mukanaan koko applikaatiota vessan pöntöstä alas.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Puhtaan perinteisessä synkronoidussa koodissa on luonnollista, että epäonnistunut toiminto napataan kiinni &lt;em&gt;try-catch&lt;/em&gt; -siepparilla. Esim.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-var _       = require(&#39;lodash&#39;);
-var Promise = require(&#39;bluebird&#39;);
-
-// SyncVarkaus.js
-
-function kopioiBlogi(urls) {
-
-	// Käydään yksitellen pihistämässä blogien HTML-sisältö.
-	var blogiSisallot = _.map(urls, function(blogiURL) {
-		var sisalto; // Täytetään sisällöllä
-		try {
-			sisalto = syncRequest(blogiURL);
-		} catch (e) {
-			// No, pöllintä ei onnistunut. Eipä hätiä.
-			// Rikolliset aikeemme kohdistuvat seuraavaan uhriin.
-			console.warn(&#39;Pölliminen epäonnistui - seuraava uhri sisään.&#39;);
-		}	
-
-		return sisalto;	
-
-	})
-	
-	// blogiSisallot sisältää pöllityt sisällöt niistä blogeista,
-	// joiden kähvellys EI epäonnistunut nolosti. Luuserit roikkuvat
-	// vielä mukana undefined-arvoina. Mutta eivät pitkään.
-
-	// Compact() suodattaa töpeksijät roskakoriin.
-	return _.compact(blogiSisallot);
-}
-
-// Rikollisen uramme alkupiste.
-var tulokset = kopioiBlogi([
-	&#39;http://www.pollitasta.fi&#39;,
-	&#39;http://www.tuplaamo.fi&#39;,
-	&#39;http://www.nollaversio.fi/public/blog&#39;
-]);
-
-// Bestseller tiedossa.
-koostaKirja(tulokset);
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva on mukavaa perinteistä sync-koodia, jossa jokainen toiminto suoritetaan peräkanaa yksitellen. Ja try-catch-sieppari toimii kuin unelma.&lt;/p&gt;
-
-&lt;p&gt;Mutta kun Javascriptin (ja maalaisjärjen) luonteeseen kuuluu, että jokaista varkautta ei tarvitse tehdä perätysten. Niitä kun voi tehdä myös &lt;em&gt;samanaikaisesti&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Siirrytään ihanaan lupausten maailmaan, ja suoritetaan rikossarjamme asynkronoidusti.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// AsyncVarkaus.js
-
-function kopioiBlogi(urls) {
-
-	return Promise.resolve(urls)
-	.map(function(blogiURL) {
-		// Jokainen request lähtee liikkeelle yht&#39;aikaa.
-		return asyncRequest(blogiURL);
-	})
-	.catch(function(err) {
-		// Jotain meni nolosti pieleen.
-	})
-
-}
-
-kopioiBlogi([
-	&#39;http://www.pollitasta.fi&#39;,
-	&#39;http://www.tuplaamo.fi&#39;,
-	&#39;http://www.nollaversio.fi/public/blog&#39;
-]).then(function(tulokset) {
-	return koostaKirja(tulokset);
-}).then(function(kirja) {
-	// Valitaan sopivan korruptoitunut kustantaja.
-	talentumMedia.julkaise(kirja);
-})
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Kaikki näyttää pintapuolin hyvältä. Käyttämällä &lt;em&gt;Promise.map&lt;/em&gt;-metodia ammumme kaikki pöllimisyritykset käyntiin &lt;em&gt;samanaikaisesti&lt;/em&gt;. Kukin kähvellys joko onnistuu tai epäonnistuu. Epäonnistuminen tippuu kivasti &lt;em&gt;.catch()&lt;/em&gt;-sieppariin, joka sitten tekee jotain.&lt;/p&gt;
-
-&lt;p&gt;Mutta asiassa on ongelma. &lt;strong&gt;Jos yksikin yritys epäonnistuu, kaikki epäonnistuvat.&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Tämä on &lt;em&gt;.map&lt;/em&gt;-metodin ominaisuus - map-lupaus julistaa itsensä onnistujaksi &lt;strong&gt;vain&lt;/strong&gt; jos jokainen sen alaisuudessa hyörivistä lupauksista onnistuu.&lt;/p&gt;
-
-&lt;p&gt;Jos yksikin alainen töpeksii, map-lupaus vetää pultit ja rikkoo kaiken. Siis estää ketään muutakaan onnistumasta.&lt;/p&gt;
-
-&lt;p&gt;Kerrataan vielä tämä tärkeä pointti uusiksi - &lt;strong&gt;map-lupaus epäonnistuu jos yhdenkin blogin pölliminen epäonnistuu!&lt;/strong&gt;. Ja jos yksikin rosvous menee päin honkia, kaikki onnistuneet pöllimiset päätyvät jäteastiaan. Yksi kaikkien, ja kaikki yhden puolesta. Tämä ei tietenkään ole mitä haluamme.&lt;/p&gt;
-
-&lt;p&gt;Me haluamme, että jos yksi ryöstö menee reisille, muut ryöstöt voivat yhä onnistua.&lt;/p&gt;
-
-&lt;p&gt;Sata kultakelloa on parempi kuin 99, mutta 99 kultakelloa on parempi kuin pyöreä nolla.&lt;/p&gt;
-
-&lt;p&gt;Joten miten korjata asia?&lt;/p&gt;
-
-&lt;h3 id=&#34;reflect&#34;&gt;Reflect()&lt;/h3&gt;
-
-&lt;p&gt;Ratkaisu on sopivaan paikkaan sijoitettu reflect()-apumetodi.&lt;/p&gt;
-
-&lt;p&gt;Miksi reflect() toimii? Koska reflect() nappaa kiinni sekä &lt;em&gt;onnistumiset&lt;/em&gt; että &lt;em&gt;epäonnistumiset&lt;/em&gt;, ja välittää tiedon eteenpäin ns. neutraalissa muodossa.&lt;/p&gt;
-
-&lt;p&gt;Ikäänkuin luuseri ja maailmanmestari kävelisivät tasa-arvoisina rinta rinnan. Reflect() on koodimaailman emakko - kaikki kelpaa ruuaksi. Ja toisesta päästä tuleva tavara on aina vakioitua.&lt;/p&gt;
-
-&lt;p&gt;Katsotaanpa:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
-// AsyncVarkaus.js
-
-function kopioiBlogi(urls) {
-
-	return Promise.resolve(urls)
-	.map(function(blogiURL) {
-		// Yksittäinen varkaus - kokeillaan onnistuuko?
-		return asyncRequest(blogiURL).reflect();
-	})
-	.filter(function(varkausLupaus) {
-		// Suodatetaan(!) pois epäonnistuneet ryöstöt!
-		return varkausLupaus.isFulfilled();
-	})
-	.map(function(onnistunutVarkaus) {
-		// Vain onnistuneet rosvoukset jäljellä.
-		// Joudumme kutsumaan teknisen apufunktion joka
-		// hakee lopullisen tuloksen lupauksen syövereistä.
-		return onnistunutVarkaus.value();
-	})
-
-	// Huomion arvoista, että emme tarvitse -catch-siepparia lainkaan!
-	// Miksi? Koska kaikki luuserit on jo siivilöity ylempänä.
-	// Yksikään päivänpilaaja ei elä tänne saakka.
-
-}
-
-kopioiBlogi([
-	&#39;http://www.pollitasta.fi&#39;,
-	&#39;http://www.tuplaamo.fi&#39;,
-	&#39;http://www.nollaversio.fi/public/blog&#39;
-]).tap(function(tulokset) {
-
-	// Tulokset sisältää listan niistä blogisisällöistä, 
-	// joiden ryöstö meni nappiin. 
-
-	// Kokoa sisällöistä ikioma kirja.
-	var valmisKirja = _.chain(tulokset)
-	.reduce(function(kirja, pollittyBlogi) {
-		kirja.lisaaUusiLuku(pollittyBlogi);
-	}, new Kirja(&#39;Pölli Tästä Reloaded&#39;))
-	.value();
-
-	talentumMedia.julkaise(valmisKirja);
-})
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläolevassa koodissa huomattavaa ovat seuraavat rivit:&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;.filter(function(varkausLupaus) {...}&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Apumetodi &lt;em&gt;.filter&lt;/em&gt; (nimensä mukaisesti) suodattaa luuserit pois.&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;return asyncRequest(blogiURL).reflect();&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Teemme requestin, ja kutsumme heti apumetodia &lt;em&gt;reflect()&lt;/em&gt;. Kutsumalla reflectiä saamme luotua
-(ja palautetta ympäröivästä funktiosta ulos) uudentyyppisen lupauksen, joka &lt;em&gt;itse osaa napata
-omat virheensä kiinni.&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;Jännittävää. Olemme ikäänkuin koulineet parannetun Pokemonin, joka on sisäsiisti.&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: kun tietty operaatio on &lt;em&gt;valinnainen&lt;/em&gt;, toisin sanoen sen onnistuminen ei ole kriittisen tärkeää, on syytä muistaa &lt;em&gt;reflect() + filter()&lt;/em&gt; -kikka.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Ps. Huomasitko muuten, että käytimme yllä metodia &lt;strong&gt;tap()&lt;/strong&gt; perinteisen &lt;strong&gt;then&lt;/strong&gt;-metodin sijaan:&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;.tap(function(tulokset) {...}&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Tämä siksi, että julkaisun suorittava anonyymi funktiomme on päätepiste. Se ei palauta mitään takaisin liukuhihnalle. &lt;a href=&#34;http://nollaversio.fi/blog/public/nodejs/promise-tap/&#34;&gt;Lisää tap vs. then eroista aiemmasta blogikirjoituksessani.&lt;/a&gt;&lt;/p&gt;
 </description>
     </item>
     

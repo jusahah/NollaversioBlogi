@@ -74,6 +74,558 @@
       
   <div class="post">
     <h1 class="post-title">
+      <a href="https://www.nollaversio.fi/blog/public/vue/messaging/">
+        Komponentin datahaku alustuksen aikana
+      </a>
+    </h1>
+
+    <span class="post-date">Mon, Jan 15, 2018</span>
+
+    
+
+<p>Männä päivänä syntyi seuraavanlainen tarve Vue-käyttöliittymää ohjelmoidessa; yhden komponentin tuli alustuksensa (<em>created</em>-hook) aikana saada informaatiota toiselta komponentilta, joka ei ollut suora esi-isä alustettavalle komponentille.</p>
+
+<p>Ongelma ei kuulosta erityisen vaikealta - eikä sitä olekaan - mutta ohjelmoijan pääkoppa alkaa herkästi <em>yliratkomaan</em> ongelmaa.</p>
+
+<p>Tyypillisestihän Vue-komponenttien välinen kommunikointi tapahtuu jommalla kummalla kahdesta seuraavasta tavasta:</p>
+
+<h3 id="1-emit-props">1. Emit/props</h3>
+
+<p>Mikäli <em>toinen komponentti on toisen suora jälkeläinen</em>, kommunikointi tapahtuu luontevasti joko käyttäen propseja (alaspäin kommunikoidessa!) tai emittoimalla eventtejä (ylöspäin kommunikoidessa!). Tämä on luonteva tapa kommunikoida jos komponenttipuussa liikutaan vain vertikaalisesti (<em>isä-poika</em>), ei horisontaalisesti (<em>sisar-veli</em>). Ohessa esimerkki eventtien käytöstä:</p>
+
+<pre><code class="language-javascript">
+// Parent.js
+
+import Child from './Child'
+
+&lt;template&gt;
+	&lt;h3&gt;Parent component&lt;/h3&gt;
+	&lt;Child @viesti=&quot;viestiAlhaalta&quot;&gt;&lt;/Child&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+
+export default {
+	methods: {
+		viestiAlhaalta(viestinSisalto) {
+			console.log(&quot;Viesti alhaalta: &quot; + viestinSisalto)
+			
+		}
+	}
+}
+
+&lt;/script&gt;
+
+</code></pre>
+
+<pre><code class="language-javascript">
+// Child.js
+
+&lt;template&gt;
+	&lt;h3&gt;Child component&lt;/h3&gt;
+	&lt;button v-on:click=&quot;lahetaViesti&quot;&gt;Lähetä&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+
+export default {
+	methods: {
+		lahetaViesti() {
+			this.$emit('viesti', 'Hei vain, isäpappa');
+			
+		}
+	}
+}
+
+&lt;/script&gt;
+
+</code></pre>
+
+<h3 id="2-erillinen-vue-instanssi">2. Erillinen Vue-instanssi</h3>
+
+<p>Mikäli kumpikaan komponentti ei ole toisen suora jälkeläinen, kommunikointi voi tapahtua joko <strong>1)</strong> yhteistä ylätason komponenttia käyttäen, joka ottaa vastaan viestin yhdestä alipuusta ja ampuu sen alas toiseen alipuuhun, tai <strong>2)</strong> erillistä <em>observer</em>-järjestelmää käyttäen.</p>
+
+<p>Jälkimmäinen on suositeltava ratkaisu. Ensimmäinen ratkaisu toki toimii, mutta on isossa puurakenteessa tuhoisan sotkuinen toteuttaa ja ylläpitää.</p>
+
+<blockquote>
+<p>Ohjelmoinnin kultainen sääntöhän on, että kaikkea on <em>mahdollista</em> tehdä, mutta mitään ei ole <em>järkevää</em> tehdä. Tai ainakaan lähes tulkoon mitään.</p>
+</blockquote>
+
+<p>Eli observer-ratkaisu on parempi. Observer-radiomastona toimii luontevasti koko erillinen Vue-instanssi:</p>
+
+<pre><code class="language-javascript">
+// services/Radiomasto.js
+
+export default new Vue({});
+
+</code></pre>
+
+<pre><code class="language-javascript">
+// Palolaitos.js
+
+import Radiomasto from './services/Radiomasto';
+
+&lt;script&gt;
+export default {
+	data() {
+		observerCb: null
+	},
+	name: 'Palolaitos',
+	created() {
+		// Ilmoita halustasi kuunnella tiettyjä viestejä
+		this.observerCb = this.halytys.bind(this);
+		Radiomasto.$on('tulipalo', this.observerCb);	
+	},
+	beforeDestroy() {
+		// Lopeta kuuntelu
+		Radiomasto.$off('tulipalo', this.observerCb);
+	},
+	methods: {
+		halytys(osoite) {
+			// Lähetä palomiehet annettuun osoitteeseen
+			console.log(&quot;Palomiehet paikalle!&quot;);
+		}
+	}
+}
+&lt;/script&gt;
+
+</code></pre>
+
+<pre><code class="language-javascript">
+// Puukerrostalo.js
+
+import Radiomasto from './services/Radiomasto';
+
+&lt;script&gt;
+export default {
+	name: 'Puukerrostalo',
+	methods: {
+		tulipaloHavaittu() {
+			// Ilmoita palosta.
+			Radiomasto.$emit('tulipalo', 'Koivukuja 2');
+		}
+	}
+}
+&lt;/script&gt;
+
+</code></pre>
+
+<p>Ylläolevan ratkaisun saa tarvittaessa vieläpä siirrettyä <em>mixiniin</em>, jolloin sitä on helppo käyttää milloin tarve vaatii.</p>
+
+<p><em>Mutta alkuperäinen ongelmani oli saada yhdeltä komponentilta informaatiota toisen komponentin alustuksen aikana!</em></p>
+
+<p>Yksikään ylläolevista vaihtoehdoista ei sovellu erityisen hyvin tämän vaatimuksen täyttämiseen.</p>
+
+<p>Ylläolevassa #2 esimerkissä viestin lähetys on <em>tuottaja</em>-lähtöistä; viestin luoja lähettää viestin haluamanaan ajanhetkenä. Mutta alkuperäisessä ongelmassa viestittely on <em>kuluttaja</em>-lähtöistä; viestin vastaanottaja määrittää ajanhetken, jolloin hän tarvitsee informaatiota käyttöönsä. Tästä syystä tarvitsemme toisen lähestymistavan.</p>
+
+<p>Yksinkertaisin ratkaisu on suorastaan hupaisan&hellip; yksinkertainen. Käytetään yhteistä globaalia tietovarastoa, jonne kaikilla komponenteilla on yhteys! Joka kerta kun tuottaja-komponentti havaitsee muutoksen datassa, hän päivittää tietovaraston. Kuluttaja-komponentti voi sitten hakea haluamansa datan sopivalla hetkellä, tässä tapauksessa alustuksen aikana.</p>
+
+<h3 id="globaali-tietovarasto">Globaali tietovarasto</h3>
+
+<pre><code class="language-javascript">
+// Tietovarasto.js
+
+export default {
+	muumitKpl: 0
+}
+
+</code></pre>
+
+<pre><code class="language-javascript">
+// Muumimamma.js
+
+import Tietovarasto from 'services/Tietovarasto'
+import Muumi from 'entities/Muumi'
+import Tuutikki from 'entities/communists/Tuutikki'
+
+&lt;template&gt;
+	&lt;button v-on:click=&quot;lisaaMuumi&quot;&gt;Lisää&lt;/button&gt;
+	&lt;button v-on:click=&quot;lisaaTuutikki&quot;&gt;Lisää tuutikki&lt;/button&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+export default {
+	name: 'Tuottaja',
+	data() {
+		olennot: [],
+	},
+	methods: {
+		lisaaMuumi() {
+			this.olennot(new Muumi());
+			// Muumien määrä muuttui
+			// Laske ja päivitä globaali tieto muumien määrästä
+			Tietovarasto.muumitKpl = this.olennot.filter((olento) =&gt; {
+				return !!olento.valkoinenJaPullea;
+			}).length;
+		},
+		lisaaTuutikki() {
+			this.olennot(new Tuutikki());
+
+			// Muumien määrä ei muuttunut
+
+		}
+	}
+}
+&lt;/script&gt;
+
+</code></pre>
+
+<pre><code class="language-javascript">
+// MuumitInfotaulu.js
+
+import Tietovarasto from 'services/Tietovarasto'
+
+&lt;template&gt;
+	&lt;h3&gt;Muumeja on {{kpl}}&lt;/h3&gt;
+	&lt;button v-on:click=&quot;paivitaMuumimaara&quot;&gt;Päivitä&lt;/button&gt;
+&lt;/template&gt;
+&lt;script&gt;
+export default {
+	name: 'MuumitInfotaulu',
+	data() {
+		kpl: 0
+	},
+	methods: {
+		paivitaMuumimaara() {
+			// Käy hakemassa viimeisin lukumäärä
+			// globaalista tietovarastosta.
+			this.kpl = Tietovarasto.muumitKpl;
+		}
+	},
+	created() {
+		// Alustus
+		//
+		// Haetaan muumimäärä.
+		this.paivitaMuumimaara();
+	}
+}
+&lt;/script&gt;
+
+</code></pre>
+
+<p>Yleisemmin: ylläoleva ratkaisu antaa mille tahansa komponentille pääsyn minkä tahansa komponentin tietoihin haluamallaan ajanhetkellä. Datan tuottajalta silti vaaditaan hiukka suostuvaisuutta; tuottajan täytyy puskea muutokset globaaliin tietovarastoon.</p>
+
+<p>Tietovaraston käytön voi haluttaessa yhdistää tavanomaiseen observer-järjestelmään. Tällöin kuluttaja-komponentti hakee viimeisimmän datatiedon <em>alustuksensa aikana</em>, ja tämän jälkeen <em>jää kuuntelemaan</em> päivityksiä dataan observer-järjestelmää hyödyntäen. Tämä ratkaisu on varsin toimiva monissa yhteyksissä.</p>
+
+<blockquote>
+<p>Esimerkki yhdistetystä <em>haku + observer</em> -ratkaisusta on vaikkapa chat-palikka, joka liitetään VueJS-sivustolle. Kun käyttäjä avaa chatin, on pulikan haettava keskusteluhistoria, jotta käyttäjä pääsee kärryille mistä keskustellaan. Avauksen jälkeen puolestaan on tarve saada live-päivityksiä, jotka kertovat uusien chat-viestien saapumisesta. Eli <em>alustuksen aikana haku, alustuksen jälkeen kuuntelu</em>. Tämä on erittäin yleinen toimintamalli.</p>
+
+<p>Globaali tietovarasto on esimerkissämme rakennettu erilliseen javascript-moduuliin. Toinen vaihtoehto on rakentaa se Vuen sisälle, esimerkiksi pluginin päälle. Kumpikin tapa saavuttaa kutakuinkin saman lopputuleman.</p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri/aoe2/">
+        Age of Empires - moninpelin arkkitehtuuri
+      </a>
+    </h1>
+
+    <span class="post-date">Mon, Jan 8, 2018</span>
+
+    
+
+<p>Age of Empires 2 on yksi lempipeleistäni. Etenkin sen online-multiplayer. Vuonna 1999 ilmestynyt AoE2 sisältää jopa kahdeksan pelaajan online-pelimuodon, jossa yli tuhat eri pelaajien kontrolloimaa pelihahmoa käy massiivisia taisteluja.</p>
+
+<p>Ohessa video hektisestä kahdeksan pelaajan multiplayer-pelistä: <a href="https://youtu.be/BBsyHerdpuI?t=50m3s">https://youtu.be/BBsyHerdpuI?t=50m3s</a></p>
+
+<p>Sattumalta googlasin männä päivänä tietoja siitä, kuinka Aoe2 on rakentanut jo 90-luvulla näin mahtavan online-pelikokemuksen.</p>
+
+<p>Ennen googlettelua oletin, että multiplayer tapahtuu <em>client-server</em>-mallin pohjalta; yksi palvelin (joka mahdollisesti sijaitsee yhden pelaajista, nk. host-pelaajan tietokoneella!) pitää globaalia pelitilaa yllä, ja jakaa sitä N kertaa sekunnissa pelaajille.</p>
+
+<p>Pelaajat puolestaan lähettävät palvelimelle komentoja; palvelin reagoi kuhunkin komentoon, päivittää yhteisen pelitilanteen, ja lähettää päivitetyn tilan pelaajille. Yksinkertaista.</p>
+
+<p>Mutta eihän se näin mennytkään; AoE2:n online-arkkitehtuuri perustuu <em>peer-to-peer</em> -malliin.</p>
+
+<h2 id="peer-to-peer">Peer-to-peer</h2>
+
+<p>Peer-to-peer -mallissa ei ole keskitettyä palvelinta, joka toimisi “single source of truth”-keskuksena pelin aikana.</p>
+
+<p>Missä sitten sijaitsee tieto siitä, miltä pelimaailma näyttää kullakin ajanhetkellä? Vastaus: <em>kullakin pelaajalla on tuo tieto erikseen</em>.</p>
+
+<p>Jotta koko hommassa olisi mitään järkeä, kullakin pelaajalla on oltava identtinen käsitys sen hetkisestä pelitilanteesta. Muuten koko pelissä ei olisi mitään mieltä.</p>
+
+<blockquote>
+<p>Kuvittele esimerkiksi shakkipeli, jossa valkea pelaaja näkee laudan nappulat eri ruuduissa kuin musta pelaaja. Shakin pelaaminen olisi aika tuskallista.</p>
+</blockquote>
+
+<p>Yksi tapa huolehtia siitä, että kullakin pelaajalla on sama identtinen pelitilanne tietyllä ajanhetkellä, on seuraava algoritmi:</p>
+
+<p><strong>Pelaajan algoritmi (ajetaan kunkin pelaajan tietokoneella):</strong></p>
+
+<ol>
+<li>Suorita pelaajan tekemä pelisiirto lokaalisti ja laske uusi pelitila.</li>
+<li>Lähetä uusi lokaalisti laskettu pelitila kaikille muille pelin pelaajille.</li>
+<li>Vastaanota muiden pelaajien vastaavalla tavalla laskettu uusi pelitila.</li>
+<li>Yhdistä eri pelaajien pelitilat yhteen, ja laske niistä uusi yhdistetty pelitila.</li>
+<li>Renderöi yhdistetty pelitila ruudulle, ja jää odottamaan uutta pelaajan komentoa/pelisiirtoa.</li>
+</ol>
+
+<p>Ongelmana tässä algoritmissä on kohta 4, joka saattaa – pelistä riippuen – olla joko mielipuolisen vaikea tai suorastaan mahdoton suorittaa. On helppo kuvitella tilanne, jossa kahden eri pelaajan tekemät pelisiirrot ovat lokaalisti (siis yksittäin tarkasteltuna) laillisia, mutta niiden yhdistelmä on laiton.</p>
+
+<h2 id="rts-vuoropohjainen">RTS === vuoropohjainen?</h2>
+
+<p>Ratkaisu tähän “lokaalisti laillinen – globaalisti laiton” -ongelmaan on pakottaa pelaajat tekemään siirrot <em>vuorotellen</em>.</p>
+
+<p>Tai, ellei teknisesti ihan vuorotellen, niin ainakin <em>vuoroja hyödyntäen</em>.</p>
+
+<p>Tämä kuulostaa liian tiukalta vaatimukselta monelle pelityypille, esimerkiksi AoE2:n kaltaiselle real-time-strategy (RTS)-pelille. Koko RTS:n pointti kun on olla real-time; vuoropohjaisten pelien ystäville on jo Civilization-saaga.</p>
+
+<p>On kuitenkin huomattava, että on kaksi eri asiaa olla <em>aidosti real-time</em> versus <em>näennäisesti real-time</em>.</p>
+
+<p>Age of Empiresin kaltainen RTS-peli käyttää konepellin alla itseasiassa diskreettejä pelivuoroja, mutta vuorojen varsinainen pituus on varsin lyhyt, ja muutamaa kikkaa hyödyntäen niiden pituus saadaan vaikuttamaan kuin vuoroja ei olisi lainkaan.</p>
+
+<p>Homma toimii näin. Pelin kulku koostuu pelivuoroista, joiden aikana kukin pelaaja voi tehdä N määrän pelisiirtoja. Erona Civilization-peliin on lähinnä se, että <em>eri pelaajat tekevät siirtonsa saman pelivuoron aikana</em>. Siinä missä Civilizationissa kullakin pelaajalla on oma pelivuoronsa, jonka aikana muut pelaajat kiltisti odottavat, Aoe2-pelissä kaikki pelaajat jakavat yhden globaalin pelivuoron kerrallaan.</p>
+
+<p>Lisäksi AoE2:n pelivuoro on siitä ikävä, että se ei odota pelaajaa (toisin kuin aidoissa vuoropohjaisissa peleissä); jos pelaaja ei ehdi tekemään pelisiirtoa pelivuoron aikana, se on pelaajan oma ongelma.</p>
+
+<p>AoE2:n pelivuorolla on nimittäin ajallinen pituus, joka on vakiona 200 millisekuntia. Näin lyhyt siirtovuoro on tarpeen, jotta peli saa luotua illuusion reaaliaikaisuudesta.</p>
+
+<blockquote>
+<p>Kahdensadan millisekunnin pituus on luonnollisesti muutettavissa riippuen pelaajien nettiyhteyksien nopeudesta. Arvoa voi skaalata suuntaan tai toiseen jopa yksittäisen pelin ollessa käynnissä. Toimintaperiaate muistuttaa TCP-protokollan flow-kontrollia.</p>
+</blockquote>
+
+<p>Mutta hetkinen, 200 ms on siltikin järjettömän <em>pitkä</em> aika tietokonepelin kontekstissa. Jos itse peli pyörisi 200 millisekunnin render-loopilla, pelin ruudunpäivitystahti (FPS) olisi viisi.</p>
+
+<p>Siis 5 ruudunpäivitystä sekunnissa. Eli puhdas slideshow.</p>
+
+<p>Mikä siis lopulta pyörii 200 millisekunnin vauhdilla?</p>
+
+<h2 id="pelisiirrot-vs-pelilogiikka">Pelisiirrot vs. pelilogiikka</h2>
+
+<p>Ainoastaan pelivuorot. Pelilogiikan sisältävä game-loop pyörii 30 FPS:n nopeudella.</p>
+
+<p>Homma toimii suunnilleen näin: kukin pelaaja tekee annetun pelivuoron (200ms) aikana <em>niin monta pelisiirtoa kuin ehtii</em>. Kun pelivuoro päättyy, tehdyt siirrot talletetaan listaksi ja lähetetään kaikille muille pelaajille. Vastaavasti pelaaja vastaanottaa kaikkien muiden pelaajien pelisiirrot.</p>
+
+<p>Kun tämä valtava – kukin pelaaja lähettää omat siirtonsa kullekin toiselle pelaajalle – lähetysoperaatio on tehty, kullakin pelaajalla on nyt identtinen lista pelivuoron aikana <em>globaalisti</em> tehdyistä pelisiirroista. Nyt seuraa paras kohta; kukin pelaaja lokaalisti päivittää oman pelitilansa annettujen pelisiirtojen perusteella.</p>
+
+<p>Ja koska kaikilla pelaajilla on <em>identtinen lista siirtoja</em> ja <em>identtinen pelitila</em> ennen päivitystä, päätyvät kaikki pelaajat identtiseen pelitilaan siirtopäivitysten jälkeen mikäli pelilogiikka toimii 100% deterministisesti.</p>
+
+<blockquote>
+<p>Asian voi havainnollistaa shakkipelillä: pelaajat A ja B aloittavat shakkipelin. Pelaaja A tekee siirron ja lähettää sen B:lle. Tarvitseeko A:n lähettää siirron mukana myös uusi peliasema? Ei, sillä shakkipeli on täysin deterministinen. Ja shakkipelin alkuasema on kirjoitettu shakin sääntöihin, joten se on identtinen ja molempien pelaajien tiedossa.</p>
+
+<p>Shakin deterministisyys mahdollistaa mielenkiintoisia pelimuotoja, jotka eivät ole mahdollisia esimerkiksi Afrikan Tähdessä. Kaksi vahvaa shakinpelaajaa voi pelata shakkipelin ilman lautaa ja nappuloita; he sanovat vuorotellen siirrot toisilleen. Tämä on sokkoshakkia. Hurjimmat pelaavat sokkoshakkia vaikka kesken tennisottelun.</p>
+
+<p>AoE2:n puolella pelin alkutilanne ei ole osa pelin sääntöjä (eikä täten identtinen pelikerrasta toiseen), joten pelin alkaessa alkuasema täytyy synkronoida kaikkien pelaajien kesken. Tämä on ainoa hetki, jolloin online-moninpelin pelaajat päivittävät pelitilansa globaalia tilamuuttujaa hyödyntäen. Globaalina tilamuuttujana voi toimia joko moninpelialusta (esim. Steam tai Voobly?) tai joku yksittäinen pelaaja, joka hetkellisesti ottaa host-roolin.</p>
+</blockquote>
+
+<p>Tätä mallia kutsutaan nimellä “deterministic lockstep”-malli. Mallilla on vankka teoreettinen pohja, ja se toimii kuin junan vessa.</p>
+
+<h2 id="back-to-the-earth-käytännön-haasteet">Back to the earth – käytännön haasteet</h2>
+
+<p>Toimii kuin junan vessa teoriassa, siis.</p>
+
+<p>Käytännössä mallin saaminen toimimaan vaatii pelistä riippuen joko vähän töitä tai aivan saatanasti töitä. Shakki on esimerkki ensin mainitusta, AoE2 jälkimmäisestä. Jo pelkästään AoE2 pelivideota katsomalla huomaa, että pelissä tapahtuu valtavasti asioita.</p>
+
+<p>Jotta deterministic lockstep toimii, täytyy <em>koko pelimekaniikan olla deterministinen</em>. Tämä tarkoittaa, että jokaikisen saksanhirven (AI-ohjattu) liikeradan, jokaisen keihään lentoradan, jokaisen läpi sokkeloisen metsäpolun lasketun kulkuradan (unit pathing)&hellip; kaikkien on toimittava identtisesti kaikilla kahdeksalla pelaajalla.</p>
+
+<p>Satunnaislukugeneraattori lentää ensimmäisenä roskakoriin, sillä jos yksikin osa pelimekaniikasta perustuu sattumaan, koko moninpeli on pilalla. Tilalle tulee <em>pseudo-satunnaislukugeneraattori</em>, joka alustetaan pelin alussa seedillä. Kaikilla pelaajilla on luonnollisesti oltava sama seed, jotta generaattorin tuottamat “satunnaisluvut” ovat ei-satunnaisia, eli samat kullakin pelaajalla.</p>
+
+<h2 id="mallin-edut">Mallin edut</h2>
+
+<h3 id="yksinpeli-vai-moninpeli-who-cares">Yksinpeli vai moninpeli - who cares?</h3>
+
+<p>Koko pelin deterministisyyden varmistaminen on pirullisen moninmutkainen ongelma. Mutta jos ongelma ratkotaan, moni muu asia tulee ikäänkuin ilmaiseksi.</p>
+
+<p>Esimerkiksi online-moninpeli typistyy lopulta lokaaliksi moninpeliksi tai yksinpeliksi isoa joukkoa AI-pelaajia vastaan, sillä AoE2-peli-instanssin ei tarvitse välittää mistä lähteestä pelisiirrot tulevat. Kaikki pelimuodot toimivat pelimoottorin näkökulmasta identtisesti; pelimoottori ottaa vastaan siirtoja, ja thats it. Siirtojen alkuperä ei pelimoottoria kiinnosta.</p>
+
+<h3 id="halpa-tiedonsiirto">Halpa tiedonsiirto</h3>
+
+<p>Deterministic lockstep -mallin toinen valtava etu on, että internet-yhteyden yli siirrettävä tietomäärä on verrattaen vähäinen.</p>
+
+<p>Vahva AoE2 pelaaja ehtii yhden siirtovuoron (sanotaan vaikka tuo 200 millisekuntia) aikana tekemään ehkä 3-4 siirtoa mikäli pelitilanne on oikein hektinen. Jokainen näistä siirroista on komento, joka sisältää ainoastaan tarvittavan tiedon komennon suorittamiseksi kaikkien online-pelin pelaajien tietokoneilla. Yksinkertaisimmillaan komento voisi siis olla:</p>
+
+<pre><code class="language-javascript">{
+  type: “move”,
+  unit: “knight_8282”,
+  to: {x: 672, y: 992}
+}
+</code></pre>
+
+<p>Komento sisältää kaiken tarvittavan tiedon; ritarihahmo, jonka ID on knight_8282, siirtykööt lokaatioon 672,992. Tämän tiedon perusteella kukin pelaaja voi päivittää pelitilansa; kunkin pelaajan AoE2-peli laskee <em>unit path-algoritmin</em> avulla reitin ritarin nykyisestä lokaatiosta uuteen lokaatioon.</p>
+
+<blockquote>
+<p>Ja koska kaikki AoE2-peli-instanssit käyttävät luonnollisesti samaa unit path-algoritmia, on koko laskettu reitti identtinen kaikilla pelaajilla.</p>
+</blockquote>
+
+<p>Komennon koko JSON-tekstinä (auttamattoman kookas dataformaatti) on hädin tuskin 50 tavua.</p>
+
+<p>Kyseessä on siis todella suorituskykyinen multiplayer-arkkitehtuuri. Hyvä niin, sillä internet-yhteydet vuonna 1999 eivät olleet kummoisia.</p>
+
+<blockquote>
+<p>Deterministic lockstep-mallin onnistunut käyttö AoE2-pelissä vaatii taustamekaniikkaa, ja tässä blogikirjoituksessa raapaistiin vain pintaa. AoE2-pelin arkkitehtuurin ydinajatukset löytyvät täältä: <a href="https://www.gamasutra.com/view/feature/131503/1500_archers_on_a_288_network_.php">https://www.gamasutra.com/view/feature/131503/1500_archers_on_a_288<em>network</em>.php</a></p>
+</blockquote>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="https://www.nollaversio.fi/blog/public/nodejs/promise-over-network/">
+        Promise yli netin
+      </a>
+    </h1>
+
+    <span class="post-date">Thu, Nov 30, 2017</span>
+
+    <p>Promise on hieno keksintö. Se mahdollistaa asynkronoidun operaation odottamisen yli yksittäisen Javascript-tapahtumaloopin pyörähdyksen (tick), ja tekee mm. virhetilanteiden hallinnasta helppoa.</p>
+
+<p>Useimmissa tilanteissa Promise hoitaa kaiken koordinoinnin automaattisesti ohjelmoijan puolesta; ohjelmoijalle riittää kirjoittaa Promise-kutsu ja haluttu koodi, joka ajetaan Promisen täytyttyä.</p>
+
+<pre><code class="language-javascript">
+import Promise from 'bluebird'
+
+Promise.resolve(&quot;Kutsuttava async-operaatio&quot;)
+.then(function() {
+	console.log(&quot;Ajettava koodi&quot;)	
+})
+
+</code></pre>
+
+<p>Mutta jotta ylläoleva toimisi ja tarjoaisi helppokäyttöisen API:n ohjelmoijalle, täytyy pinnan alla tapahtua aika paljon. Promise-objektin täytyy sisällään koordinoita sille annettujen callback-funktioiden kutsumista.</p>
+
+<p>Entä jos Promisen suorittama asynkronoitu operaatio suoritetaan internet-yhteyden yli, siis osana operaatiota otetaan yhteys johonkin toiseen tietokoneeseen. Esimerkkinä seuraavan internet-moninpeli-applikaation koodinpätkä:</p>
+
+<pre><code class="language-javascript">
+// Applikaatio kuvaa kaksinpeliä, jossa pelaajat
+// tekevät vuorotellen siirtoja.
+
+// Pelin business-logiikka.	
+var game = new Game();
+
+var loopMoves = function(player1, player2) {
+	var askForMove = function(player) {
+		// Palauttaa Promisen, joka odottaa pelaajan tekevän siirron.
+		return player.makeMove()
+		.then(function(move) {
+			// Tee siirto ja vahvista sen laillisuus
+			var legal = game.applyMove(move);
+
+			if (!legal || game.gameOver()) {
+				throw new GameOver();
+			}
+		});
+	}
+	// Pelaajan 1 siirtovuoro
+	return askForMove(player1)
+	// Pelaajan 2 siirtovuoro
+	.then(askForMove.bind(null, player2))
+	// Jos peli ei päättynyt, looppaa takaisin
+	// jotta pelaajat voivat tehdä uudet siirrot.
+	.then(loopMoves.bind(null, player1, player2);
+}
+
+// Player1 ja player2 tulevat ulkoa.
+loopMoves(player1, player2)
+.catch(GameOver, function(gameOver) {
+	console.log(&quot;Game over&quot;);
+})
+
+</code></pre>
+
+<p>Ylläolevan kaltainen koodi tekee game-loopin kirjoittamisesta helppoa online-multiplayer-pelille. Kaiken ytimessä on kutsu <em>player.makeMove()</em>, joka palauttaa Promisen, joka puolestaan täyttyy pelaajan antamalla siirrolla.</p>
+
+<p>Mutta miltä tuo <em>makeMove</em>-funktio näyttää? Ongelmana on, että makeMove-funktion tulee ottaa yhteys yli internetin siihen pelaajaan, jonka siirtovuoro on kyseessä. Tyypillisessä arkkitehtuurissa tuo yhteys on TCP-yhteyden välityksellä, web-applikaatioissa lähes poikkeuksetta WebSocket-protokollan avulla.</p>
+
+<p>WebSocketin käyttö osana siirtovuoro-Promisea vaatii jonkin verran koordinointia. Tarvitsemme tavan yhdistää pelaajalle lähetetty pyyntö (&ldquo;tee siirto&rdquo;) myöhempään sisääntulevaan vastaukseen (&ldquo;tässä siirtoni&rdquo;). Ongelmana on, että pelaaja voi saada näiden kahden ajanhetken välillä useita eri viestejä palvelimelta, ja kaikki viestit välitetään samalla WebSocket-yhteydellä.</p>
+
+<p>Tästä syystä meidän täytyy jotenkin tallentaa palvelimen päässä tieto lähetetystä siirtovuoro-pyynnöstä, ja myöhemmin osata yhdistää sisääntullut vastaus aiempaan pyyntöön, jotta voimme täyttää siirtovuoro-Promisen (joka makeMove-metodista palautetaan):</p>
+
+<pre><code class="language-javascript">
+function Player(webSocket) {
+	// Esim. socket.ion tuottama socket-objekti.
+	this.webSocket = webSocket;
+
+	this.init = function() {
+		// Ohjaa socketista tulevat siirtoviestit omaan receive-metodiimme.
+		this.webSocket.on('answerToMakeMove', this.receiveMoveFromClient.bind(this));
+	}
+
+	// Tämä objekti pitää kirjaa pelaajan suuntaan lähetetyistä pyynnöistä,
+	// joihin pelaaja ei ole vielä antanut vastausta.	
+	this.pendingMoveRequests = {};	
+
+	this.makeMove = function() {
+		var moveRequestId = generateUUID(); 
+
+		return new Promise(function(resolve, reject) {
+			// Talleta resolve-callback, jotta voimme myöhemmin
+			// löytää sen ja palauttaa pelaajalta saadun vastauksen
+			// alkuperäiselle kutsujalle.
+			this.pendingMoveRequests[moveRequestId] = resolve;
+
+			// Lähetä tieto pelaajalle 
+			this.webSocket.emit('makeMove', {
+				answerId: moveRequestId
+			});
+		}.bind(this))
+	}
+
+	this.receiveMoveFromClient = function(moveMsg) {
+		var answerTo = moveMsg.moveRequestId;
+		var move = moveMsg.move;
+
+		// Etsi resolver hyödyntäen clientin mukana kuljettamaa moveRequestId-arvoa.
+		if (this.pendingMoveRequests[answerTo]) {
+			var resolver = this.pendingMoveRequests[answerTo];
+			delete this.pendingMoveRequests[answerTo];
+
+			// Tämä täyttää Promisen, joka aikaa sitten palautettiin makeMove-metodista.
+			resolver(move);
+		}
+	}
+}
+
+</code></pre>
+
+<p>Ylläoleva vaatii clientin puolella sen, että client käyttää saamaansa moveRequestId-tunnistetta antaessaan vastauksen takaisin palvelimen suuntaan. Jos client tämän muistaa tehdä, voimme palvelimen puolella helposti matchata lähetetyn siirtopyynnön ja sisääntulleen siirtovastauksen toisiinsa.</p>
+
+<p>Itse ylimmällä tasolla voimme laittaa pelin käyntiin esim. seuraavasti:</p>
+
+<pre><code class="language-javascript">
+var p1;
+var p2;
+var game = new Game();
+
+// Socket.io odottaa sisääntulevia yhteyksiä
+socketio.on('connect', function(socket) {
+	// Aseta disconnect-handler.
+	socket.on('disconnect', function() {
+		// Client on sulkenut yhteyden
+		if (game.running()) {
+			game.end();
+		}
+	});
+
+	if (!p1) {
+		// Ensimmäinen pelaaja
+		p1 = new Player(socket);
+		return;
+	}
+
+	// Toinen pelaaja
+	p2 = new Player(socket);
+
+	game.startGame();
+  p1.init();
+  p2.init();
+
+	// Molemmat pelaajat paikalla, aloita siirtojen looppaus.
+	loopMoves(p1, p2)
+	.catch(GameOver, function() {
+		// Peli päättynyt, disconnectoi pelaajat
+		p1.webSocket.disconnect();
+		p2.webSocket.disconnect();
+	});
+});
+
+
+</code></pre>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
       <a href="https://www.nollaversio.fi/blog/public/misc/project-management/">
         Ohjelmistoprojektin koordinointi ja psykologia (osa 1)
       </a>
@@ -150,7 +702,7 @@
 <p>Ylöspäin mentäessä siirrytään joko moduuleiden (löyhästi <em>kokoelma toisiinsa liittyviä funktioita</em>) tai komponenttien (löyhästi <em>erillinen palikka, joka kykenee itsenäisesti suorittamaan vaativia tehtäviä, esim. sähköpostin lähetyksen</em>) tasolle. Tällä tasolla syntyy ensimmäistä kertaa kokonaiskuva (osa-)applikaatiosta, jota ollaan rakentamassa. Applikaatio koostuu komponenteista, jotka vuorovaikuttavat toistensa kanssa. Yhdistelemällä komponentteja ja rakentamalla informaatioväyliä komponenttien välille saavutetaan applikaatio.</p>
 
 <blockquote>
-<p>Komponentin ja moduulin ero on tärkeä ymmärtää; moduuli on <strong>staattinen</strong> kokoelma koodia, jolla on jokin yhteinen tarkoitus olla olemassa. Komponentti on <strong>dynaaminen</strong> palikka, joka elää ohjelman ajon aikana ja suorittaa vastuulleen kuuluvia velvollisuuksia. Komponentti on siis ohjelman ajon aikana elävä asia; moduuli puolestaan on kasa koodia, joka elää &ldquo;koodieditorissa&rdquo;.</p>
+<p>Komponentin ja moduulin ero on tärkeä ymmärtää; moduuli on <strong>staattinen</strong> kokoelma koodia, jolla on jokin yhteinen tarkoitus olla olemassa. Komponentti on <strong>dynaaminen</strong> palikka, joka elää ohjelman ajon aikana ja suorittaa vastuulleen kuuluvia velvollisuuksia. Komponentti on siis ohjelman ajon aikana elävä asia; moduuli puolestaan on kasa koodia, joka &ldquo;elää koodieditorissa&rdquo;.</p>
 
 <p>Ero on sama kuin Pythagoraan lauseella ja Kheopsin pyramidilla; Pythagoraan lause ei ole olemassa muuten kuin abstraktina sääntönä, jonka perusteella voidaan käsin kosketeltavia asioita (kuten pyramidit) rakentaa.</p>
 </blockquote>

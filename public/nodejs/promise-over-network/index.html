@@ -1,0 +1,241 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Promise yli netin &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="https://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/misc">Misc </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/vue">Vue </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Promise yli netin</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Thu, Nov 30, 2017</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      <p>Promise on hieno keksintö. Se mahdollistaa asynkronoidun operaation odottamisen yli yksittäisen Javascript-tapahtumaloopin pyörähdyksen (tick), ja tekee mm. virhetilanteiden hallinnasta helppoa.</p>
+
+<p>Useimmissa tilanteissa Promise hoitaa kaiken koordinoinnin automaattisesti ohjelmoijan puolesta; ohjelmoijalle riittää kirjoittaa Promise-kutsu ja haluttu koodi, joka ajetaan Promisen täytyttyä.</p>
+
+<pre><code class="language-javascript">
+import Promise from 'bluebird'
+
+Promise.resolve(&quot;Kutsuttava async-operaatio&quot;)
+.then(function() {
+	console.log(&quot;Ajettava koodi&quot;)	
+})
+
+</code></pre>
+
+<p>Mutta jotta ylläoleva toimisi ja tarjoaisi helppokäyttöisen API:n ohjelmoijalle, täytyy pinnan alla tapahtua aika paljon. Promise-objektin täytyy sisällään koordinoita sille annettujen callback-funktioiden kutsumista.</p>
+
+<p>Entä jos Promisen suorittama asynkronoitu operaatio suoritetaan internet-yhteyden yli, siis osana operaatiota otetaan yhteys johonkin toiseen tietokoneeseen. Esimerkkinä seuraavan internet-moninpeli-applikaation koodinpätkä:</p>
+
+<pre><code class="language-javascript">
+// Applikaatio kuvaa kaksinpeliä, jossa pelaajat
+// tekevät vuorotellen siirtoja.
+
+// Pelin business-logiikka.	
+var game = new Game();
+
+var loopMoves = function(player1, player2) {
+	var askForMove = function(player) {
+		// Palauttaa Promisen, joka odottaa pelaajan tekevän siirron.
+		return player.makeMove()
+		.then(function(move) {
+			// Tee siirto ja vahvista sen laillisuus
+			var legal = game.applyMove(move);
+
+			if (!legal || game.gameOver()) {
+				throw new GameOver();
+			}
+		});
+	}
+	// Pelaajan 1 siirtovuoro
+	return askForMove(player1)
+	// Pelaajan 2 siirtovuoro
+	.then(askForMove.bind(null, player2))
+	// Jos peli ei päättynyt, looppaa takaisin
+	// jotta pelaajat voivat tehdä uudet siirrot.
+	.then(loopMoves.bind(null, player1, player2);
+}
+
+// Player1 ja player2 tulevat ulkoa.
+loopMoves(player1, player2)
+.catch(GameOver, function(gameOver) {
+	console.log(&quot;Game over&quot;);
+})
+
+</code></pre>
+
+<p>Ylläolevan kaltainen koodi tekee game-loopin kirjoittamisesta helppoa online-multiplayer-pelille. Kaiken ytimessä on kutsu <em>player.makeMove()</em>, joka palauttaa Promisen, joka puolestaan täyttyy pelaajan antamalla siirrolla.</p>
+
+<p>Mutta miltä tuo <em>makeMove</em>-funktio näyttää? Ongelmana on, että makeMove-funktion tulee ottaa yhteys yli internetin siihen pelaajaan, jonka siirtovuoro on kyseessä. Tyypillisessä arkkitehtuurissa tuo yhteys on TCP-yhteyden välityksellä, web-applikaatioissa lähes poikkeuksetta WebSocket-protokollan avulla.</p>
+
+<p>WebSocketin käyttö osana siirtovuoro-Promisea vaatii jonkin verran koordinointia. Tarvitsemme tavan yhdistää pelaajalle lähetetty pyyntö (&ldquo;tee siirto&rdquo;) myöhempään sisääntulevaan vastaukseen (&ldquo;tässä siirtoni&rdquo;). Ongelmana on, että pelaaja voi saada näiden kahden ajanhetken välillä useita eri viestejä palvelimelta, ja kaikki viestit välitetään samalla WebSocket-yhteydellä.</p>
+
+<p>Tästä syystä meidän täytyy jotenkin tallentaa palvelimen päässä tieto lähetetystä siirtovuoro-pyynnöstä, ja myöhemmin osata yhdistää sisääntullut vastaus aiempaan pyyntöön, jotta voimme täyttää siirtovuoro-Promisen (joka makeMove-metodista palautetaan):</p>
+
+<pre><code class="language-javascript">
+function Player(webSocket) {
+	// Esim. socket.ion tuottama socket-objekti.
+	this.webSocket = webSocket;
+
+	this.init = function() {
+		// Ohjaa socketista tulevat siirtoviestit omaan receive-metodiimme.
+		this.webSocket.on('answerToMakeMove', this.receiveMoveFromClient.bind(this));
+	}
+
+	// Tämä objekti pitää kirjaa pelaajan suuntaan lähetetyistä pyynnöistä,
+	// joihin pelaaja ei ole vielä antanut vastausta.	
+	this.pendingMoveRequests = {};	
+
+	this.makeMove = function() {
+		var moveRequestId = generateUUID(); 
+
+		return new Promise(function(resolve, reject) {
+			// Talleta resolve-callback, jotta voimme myöhemmin
+			// löytää sen ja palauttaa pelaajalta saadun vastauksen
+			// alkuperäiselle kutsujalle.
+			this.pendingMoveRequests[moveRequestId] = resolve;
+
+			// Lähetä tieto pelaajalle 
+			this.webSocket.emit('makeMove', {
+				answerId: moveRequestId
+			});
+		}.bind(this))
+	}
+
+	this.receiveMoveFromClient = function(moveMsg) {
+		var answerTo = moveMsg.moveRequestId;
+		var move = moveMsg.move;
+
+		// Etsi resolver hyödyntäen clientin mukana kuljettamaa moveRequestId-arvoa.
+		if (this.pendingMoveRequests[answerTo]) {
+			var resolver = this.pendingMoveRequests[answerTo];
+			delete this.pendingMoveRequests[answerTo];
+
+			// Tämä täyttää Promisen, joka aikaa sitten palautettiin makeMove-metodista.
+			resolver(move);
+		}
+	}
+}
+
+</code></pre>
+
+<p>Ylläoleva vaatii clientin puolella sen, että client käyttää saamaansa moveRequestId-tunnistetta antaessaan vastauksen takaisin palvelimen suuntaan. Jos client tämän muistaa tehdä, voimme palvelimen puolella helposti matchata lähetetyn siirtopyynnön ja sisääntulleen siirtovastauksen toisiinsa.</p>
+
+<p>Itse ylimmällä tasolla voimme laittaa pelin käyntiin esim. seuraavasti:</p>
+
+<pre><code class="language-javascript">
+var p1;
+var p2;
+var game = new Game();
+
+// Socket.io odottaa sisääntulevia yhteyksiä
+socketio.on('connect', function(socket) {
+	// Aseta disconnect-handler.
+	socket.on('disconnect', function() {
+		// Client on sulkenut yhteyden
+		if (game.running()) {
+			game.end();
+		}
+	});
+
+	if (!p1) {
+		// Ensimmäinen pelaaja
+		p1 = new Player(socket);
+		return;
+	}
+
+	// Toinen pelaaja
+	p2 = new Player(socket);
+
+	game.startGame();
+  p1.init();
+  p2.init();
+
+	// Molemmat pelaajat paikalla, aloita siirtojen looppaus.
+	loopMoves(p1, p2)
+	.catch(GameOver, function() {
+		// Peli päättynyt, disconnectoi pelaajat
+		p1.webSocket.disconnect();
+		p2.webSocket.disconnect();
+	});
+});
+
+
+</code></pre>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>
