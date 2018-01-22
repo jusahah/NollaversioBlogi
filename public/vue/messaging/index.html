@@ -88,10 +88,9 @@
 
 <p>Mikäli <em>toinen komponentti on toisen suora jälkeläinen</em>, kommunikointi tapahtuu luontevasti joko käyttäen propseja (alaspäin kommunikoidessa!) tai emittoimalla eventtejä (ylöspäin kommunikoidessa!). Tämä on luonteva tapa kommunikoida jos komponenttipuussa liikutaan vain vertikaalisesti (<em>isä-poika</em>), ei horisontaalisesti (<em>sisar-veli</em>). Ohessa esimerkki eventtien käytöstä:</p>
 
-<pre><code class="language-javascript">
+<pre><code>
 // Parent.js
 
-import Child from './Child'
 
 &lt;template&gt;
 	&lt;h3&gt;Parent component&lt;/h3&gt;
@@ -99,6 +98,8 @@ import Child from './Child'
 &lt;/template&gt;
 
 &lt;script&gt;
+
+import Child from './Child'
 
 export default {
 	methods: {
@@ -113,7 +114,7 @@ export default {
 
 </code></pre>
 
-<pre><code class="language-javascript">
+<pre><code>
 // Child.js
 
 &lt;template&gt;
@@ -155,12 +156,14 @@ export default new Vue({});
 
 </code></pre>
 
-<pre><code class="language-javascript">
+<pre><code>
 // Palolaitos.js
+
+
+&lt;script&gt;
 
 import Radiomasto from './services/Radiomasto';
 
-&lt;script&gt;
 export default {
 	data() {
 		observerCb: null
@@ -189,9 +192,11 @@ export default {
 <pre><code class="language-javascript">
 // Puukerrostalo.js
 
-import Radiomasto from './services/Radiomasto';
 
 &lt;script&gt;
+
+import Radiomasto from './services/Radiomasto';
+
 export default {
 	name: 'Puukerrostalo',
 	methods: {
@@ -226,12 +231,9 @@ export default {
 
 </code></pre>
 
-<pre><code class="language-javascript">
+<pre><code>
 // Muumimamma.js
 
-import Tietovarasto from 'services/Tietovarasto'
-import Muumi from 'entities/Muumi'
-import Tuutikki from 'entities/communists/Tuutikki'
 
 &lt;template&gt;
 	&lt;button v-on:click=&quot;lisaaMuumi&quot;&gt;Lisää&lt;/button&gt;
@@ -239,6 +241,11 @@ import Tuutikki from 'entities/communists/Tuutikki'
 &lt;/template&gt;
 
 &lt;script&gt;
+
+import Tietovarasto from 'services/Tietovarasto'
+import Muumi from 'entities/Muumi'
+import Tuutikki from 'entities/communists/Tuutikki'
+
 export default {
 	name: 'Tuottaja',
 	data() {
@@ -265,16 +272,18 @@ export default {
 
 </code></pre>
 
-<pre><code class="language-javascript">
+<pre><code>
 // MuumitInfotaulu.js
 
-import Tietovarasto from 'services/Tietovarasto'
 
 &lt;template&gt;
 	&lt;h3&gt;Muumeja on {{kpl}}&lt;/h3&gt;
 	&lt;button v-on:click=&quot;paivitaMuumimaara&quot;&gt;Päivitä&lt;/button&gt;
 &lt;/template&gt;
 &lt;script&gt;
+
+import Tietovarasto from 'services/Tietovarasto'
+
 export default {
 	name: 'MuumitInfotaulu',
 	data() {

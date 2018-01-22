@@ -6,8 +6,310 @@
     <description>Recent content in Laravels on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Sat, 11 Nov 2017 07:47:42 +0200</lastBuildDate>
+    <lastBuildDate>Mon, 22 Jan 2018 15:11:33 +0200</lastBuildDate>
     <atom:link href="https://www.nollaversio.fi/blog/public/laravel/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Laravel ja välimuistin testaus</title>
+      <link>https://www.nollaversio.fi/blog/public/laravel/cache-options/</link>
+      <pubDate>Mon, 22 Jan 2018 15:11:33 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/laravel/cache-options/</guid>
+      <description>
+
+&lt;p&gt;Moderni Laravel-pohjainen weppi-appi käyttää usein hyväkseen välimuistia (cache). Välimuistia hyödyntämällä vältetään joko turhat HTTP-kutsut (frontend-välimuisti) tai turhat tietokantahaut (backend-välimuisti). Tällä tavalla applikaation suorituskyky paranee, toivottavasti.&lt;/p&gt;
+
+&lt;h2 id=&#34;frontti-välimuisti&#34;&gt;Frontti-välimuisti&lt;/h2&gt;
+
+&lt;p&gt;Fronttipuolella välimuisti liittyy rajapintakutsujen välttämiseen. Toimintamalli tällöin on, että kun tietty rajapintakutsu on tehty, sen tulos tallennetaan lokaalisti, ja tulevaisuudessa rajapintakutsun sijasta käytetään tallennettua tulosta.&lt;/p&gt;
+
+&lt;p&gt;Fronttipuolen välimuistilla on käyttönsä, mutta HTTP-kutsun skippaamisella on varjopuolensa; on vaikea tietää hetkeä, jolloin lokaali välimuisti on vanhentunut. Eli hetkeä, jolloin täytyy tehdä uusi HTTP-kutsu ja päivittää välimuistin sisältö tuoreella datalla.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Yksi keino on käyttää jonkinlaista &lt;em&gt;subscriber&lt;/em&gt;-systeemiä, jossa backend puskee komennon tyhjentää välimuisti fronttiin. Komento voidaan toimittaa vaikka Pusherin kaltaisen järjestelmän kautta. Toimintamalli on kuitenkin varsin monimutkainen saavutettavaan hyötyyn nähden.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Fronttipuolella välimuisti soveltuu parhaiten tapauksiin, joissa palvelimelta haettava data muuntuu aniharvoin jos koskaan. Tällöin voidaan esim. kirjautumisen yhteydessä tehdä yksi HTTP-kutsu, ja tämän jälkeen tallettaa saatu data pysyvästi välimuistiin.&lt;/p&gt;
+
+&lt;p&gt;Tyypillisesti paras vaihtoehto on yksinkertaisesti välttää frontti-välimuistin käyttöä kokonaan, ja tehdä HTTP-kutsu palvelimelle joka kerta kun dataa tarvitaan.&lt;/p&gt;
+
+&lt;h2 id=&#34;backend-välimuisti&#34;&gt;Backend-välimuisti&lt;/h2&gt;
+
+&lt;h3 id=&#34;erillinen-välimuisti-layeri&#34;&gt;Erillinen välimuisti-layeri&lt;/h3&gt;
+
+&lt;p&gt;Backendin puolella yksi mahdollisuus on käyttää jonkinlaista erillistä välimuisti-layeriä. Tälläinen layer on kokonaan erillisellä palvelimella, ja toimii täysin erillään varsinaisesta business-backendistä. Esimerkiksi Varnish tarjoaa ratkaisun tähän.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Erillisen välimuistipalvelimen voi valjastaa myös muihin käyttötarkoituksiin, esimerkiksi kuorman tasaukseen.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Erillisen välimuisti-layerin käyttö törmää samaan ongelmaan - joskin hiukan helpommassa muodossa - kuin frontti-välimuistin; &lt;em&gt;kuinka tyhjentää välimuisti ja pakottaa tuoreen datan haku&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Applikaatiosta riippuen voimme skipata &lt;em&gt;erillisen tyhjennyskomennon&lt;/em&gt; kokonaan, ja tyytyä &lt;em&gt;aikaperusteiseen tyhjennykseen&lt;/em&gt;. Aikaperusteisessa tyhjennyksessä välimuisti tyhjentyy esimerkiksi viiden minuutin välein itsestään. Tällöin loppukäyttäjä saa haltuunsa pahimmillaan 5 minuuttia vanhaa dataa.&lt;/p&gt;
+
+&lt;p&gt;Toinen vaihtoehto on turvautua Laravellin omaan välimuisti-ratkaisuun.&lt;/p&gt;
+
+&lt;h3 id=&#34;laravel-cache&#34;&gt;Laravel Cache&lt;/h3&gt;
+
+&lt;p&gt;Laravellin oma välimuistiratkaisu siirtää välimuistin samalle palvelimelle (default-asetuksilla, tätäkin voi toki kustomoida!) itse business-koodin kanssa. Loppuosa artikkelista tutkii tätä toimintamallia.&lt;/p&gt;
+
+&lt;h4 id=&#34;käyttö&#34;&gt;Käyttö&lt;/h4&gt;
+
+&lt;p&gt;Laravellin oman välimuistiratkaisun käyttö onnistuu - oman kokemukseni perusteella - parhaiten suoraan HTTP-layeriltä käsin, eli siis &lt;em&gt;Controller&lt;/em&gt;:eista.&lt;/p&gt;
+
+&lt;p&gt;Tässä toimintamallissa välimuistiin talletetaan HTTP-endpointtien palauttama sisältö.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Toinen vaihtoehto on toteuttaa välimuisti syvemmälle applikaation sisuksiin, esimerkiksi suoraan yksittäisten domain-objektien sisälle. Tällöin välimuistiin talletetaan tietokannasta saatu data jonkinlaisessa tekstimuodossa.&lt;/p&gt;
+
+&lt;p&gt;Ero nk. &lt;em&gt;domain-välimuistin&lt;/em&gt; ja &lt;em&gt;Controller-välimuistin&lt;/em&gt; välillä on hienojakoisuudessa; Controllereiden hallitsema välimuisti tallentaa endpointin lopullisen palautusarvon (joka usein sisältää &lt;em&gt;useamman&lt;/em&gt; domain-objektin sekä lisäksi mahdolliset &lt;em&gt;transformaatiot&lt;/em&gt;, joita domain-objekteille on tehty). Domain-välimuisti taas tallettaa yksittäisen domain-objektin kerrallaan sellaisena kuin se tietokannasta pötkähtää ulos.&lt;/p&gt;
+
+&lt;p&gt;Domain-välimuisti on teoriassa suorituskykyisempi ja konseptuaalisesti &amp;ldquo;oikeampi&amp;rdquo; malli, mutta myös vaikeampi toteuttaa. Huonosti toteutettuna domain-välimuisti on ensiaskel tiellä kohti BBoM*-helvettiä. Käytännössä se on valtava &lt;em&gt;overkill&lt;/em&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Alla esimerkki Controllerista, joka hyödyntää Controller-välimuistia:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class VihannesController extends Controller {
+  
+  public function all() {
+  
+    if (Cache::has(&#39;vihannekset&#39;)) {
+      return Cache::get(&#39;vihannekset&#39;);
+    }
+    // Ei vihanneksia välimuistissa -&amp;gt; haetaan tietokannasta.
+    $vihannekset = Vihannes::all();
+
+    // Ajetaan fractalin transformaatiot, jotka rakentavat meille
+    // lopullisen vastaus-objektin palautettavaksi HTTP-vastauksena.
+    $responseData = $this-&amp;gt;transformCollection($vihannekset, new VihannesTransformer);
+    
+    // Lisätään välimuistiin 10 minuutiksi.
+    Cache::put(&#39;vihannekset&#39;, $responseData, 10);
+    // Palautetaan kutsujalle
+    return $responseData;
+  }
+
+  protected function transformCollection($collection, $transformer) {
+    //... muunna objektit front-endin odottamaan formaattiin
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva Controller lisää vihannekset välimuistiin 10 minuutin ajaksi. Eli 10 minuutin ajan tietokantaan ei tarvitse tehdä hakuja vihannesten osalta. Tämä säästää kivasti tietokannan hermoja.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Mutta entä jos ennen 10 minuutin aikarajan umpeutumista joku lisää uuden vihanneksen tietokantaan?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Laravel tarjoaa toiminnon tyhjentää (&amp;ldquo;forget&amp;rdquo;) välimuisti halutun avain-arvon osalta. Tällä tavalla voimme pakottaa uuden vihannekset-haun tietokannasta joka kerta, kun uusi vihannes lisätään.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class Vihannes extends Model {
+  
+  public static function flushCache() {
+    Cache::forget(&#39;vihannekset&#39;);
+  }
+
+  public static function create(array $data = []) {
+    // Uusi vihannes lisätään tietokantaan, 
+    // tyhjennä välimuisti lisäyksen jälkeen.
+    $model = parent::create($data);
+    static::flushCache();
+    return $model;
+
+  }
+
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Huom! Ylläoleva koodi ei toimi Laravel 5.4 tai tuoreemmilla versioilla, koska create-metodia on muutettu frameworkin konepellin alla.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Yllä teemme &lt;em&gt;overriden&lt;/em&gt; Eloquentin create-metodille. Overriden sisällä kutsumme Eloquent-metodia, joka lisää vihanneksen tietokantaan, ja kutsun jälkeen tyhjennämme välimuistin.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Yllä on tehty välimuistin tyhjennys vain create-metodin kohdalle. Vastaavat overridet tarvitaan myös metodeille, jotka muuttavat vihanneksen dataa tai tuhoavat vihanneksia.&lt;/p&gt;
+
+&lt;p&gt;Metodien overraidaamisen sijaan voisimme käyttää &lt;em&gt;tapahtumakuuntelijaa&lt;/em&gt; (model listener), jolla kuuntelisimme esimerkiksi &lt;em&gt;saved&lt;/em&gt;-eventtejä vihannesten osalta. Tällöin saamme enkapsuloitua välimuistin tyhjennyksen yhteen paikkaan, eli tapahtumakuuntelijan sisälle.&lt;/p&gt;
+
+&lt;p&gt;Valinta näiden kahden vaihtoehdon välillä on ensisijaisesti makukysymys. Itse suosin eksplisiittistä koodia ja usecase-arkkitehtuuria (josta lisää seuraavassa kappaleessa), ja siksi vältän sekä tapahtumakuuntelijoita että välimuisti-kontrollin sijoittamista domain-luokkien (kuten &lt;em&gt;Vihannes&lt;/em&gt;) sisälle.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Ylläoleva koodi toimii (tietenkin), mutta olen itse päätynyt viimeisimmässä applikaatiossani malliin, jota kutsun &amp;ldquo;&lt;em&gt;get from controller, flush from usecase&lt;/em&gt;&amp;rdquo; -malliksi.&lt;/p&gt;
+
+&lt;h3 id=&#34;get-from-controller-flush-from-usecase&#34;&gt;Get from Controller, flush from Usecase&lt;/h3&gt;
+
+&lt;p&gt;Mallin nimi kertoo kaiken oleellisen siitä, mistä koodipohjan osasta käsin kukin operaatio suoritetaan. Controller-puolen käsittelimme jo. Mutta mitä tarkoittaa &amp;ldquo;flush from usecase&amp;rdquo;?&lt;/p&gt;
+
+&lt;p&gt;Usecase-arkkitehtuurissa kukin applikaatiolle suoritettava toimenpide muodostaa erillisen usecase-luokan. Tämä usecase-luokka kontrolloi toimenpiteen suorittamista, ja tarjoaa oivallisen sijainnin kaikelle toimenpiteen &lt;em&gt;oheis&lt;/em&gt;-koodille. Tälläistä oheiskoodia on mm. virhehallintakoodi sekä tässä käsiteltävä välimuistin kontrolloimiseen liittyvä koodi.&lt;/p&gt;
+
+&lt;p&gt;Usecase-luokan instanssi on tyypillinen manager-objekti; sen ydintehtävä on &lt;em&gt;koordinoida toimenpiteen suorittaminen, ei niinkään suorittaa itse toimenpidettä&lt;/em&gt;. Usecase on siis työnjohtaja, joka valvoo työtehtävien suoritusta. Ero on hienovarainen, mutta konseptina hyödyllinen.&lt;/p&gt;
+
+&lt;p&gt;Välimuistin tyhjennykselle usecase on mainio paikka, koska mikäli applikaatio rakennetaan oikein, &lt;em&gt;yksikään muutos tietokantaan ei tapahdu ilman usecase-objektin antamaa käskyä&lt;/em&gt;. Alla esimerkki usecasesta, joka tekee vihannessopan sille annetuista vapaavalintaisista vihanneksista (Vihannes-luokan instanssit):&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class ValmistaSoppa extends Usecase {
+
+  public function execute($soppaVihannekset) {
+    // Soppavihannekset koostuu Vihannes-objekteista, jotka
+    // käytetään sopan valmistukseen. 
+
+    // Aloitetaan sopan valmistus, mieluiten transaktion sisällä
+    // jotta emme töpeksi tietokantaa mikäli jotain menee päin hönkiä.
+    DB::transaction(function() {
+      
+      // Luodaan soppakattila
+      $soppaKattila = new SoppaKattila;
+      // Siirretään vihannekset yksi kerrallaan kattilaan
+      $ainesosat = $soppaVihannekset-&amp;gt;each(function($vihannes) use ($soppaKattila) {
+        // Siirrä vihannes kattilaan
+        $soppaKattila-&amp;gt;lisaaKattilaan($vihannes);
+        // Vihannes on nyt käytetty, tuhotaan se tietokannasta.
+        $vihannes-&amp;gt;delete();
+      });
+
+    });
+
+    // Vihanneksia on poistettu tietokannasta, joten välimuisti tyhjennettävä.
+    Cache::forget(&#39;vihannekset&#39;);
+
+    // Kiehauta ja suolaa
+    $soppaKattila-&amp;gt;kiehauta();
+    $soppaKattila-&amp;gt;lisaaSuola();
+
+    // Soppa on valmis, palauta kutsujalle joka voi
+    // kaataa liemen lautasille ym.
+    return $soppaKattila;
+
+  }
+  
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläolevassa usecasessa valmistamme vihannessopan. Koko usecasen koodi on selkeästi step-by-step -muodossa; tee näin, sitten tee näin, sitten tee näin. Tämä hienosti tarjoaa meille selkeän paikan, jonne tunkea välimuistin tyhjennys. Vasta kun vihannekset on poistettu tietokannasta - ja poisto tapahtuu vain mikäli transaktio onnistuu -, tyhjennämme välimuistin.&lt;/p&gt;
+
+&lt;h3 id=&#34;välimuistin-testaamisesta-kehityksen-aikana&#34;&gt;Välimuistin testaamisesta kehityksen aikana&lt;/h3&gt;
+
+&lt;p&gt;Vihdoin otsikon aiheeseen, eli kuinka testata välimuistin kontrolloimista devauksen aikana.&lt;/p&gt;
+
+&lt;p&gt;Ensinnäkin ilmiselvä fakta: välimuistin käytön merkitys korostuu applikaatioissa, jotka ovat joko datamäärältään tai käyttäjämäärältään suuria.&lt;/p&gt;
+
+&lt;p&gt;Kehitystyön aikana voi olla vaikea simuloida tarpeeksi suurta data-/käyttäjämäärää, jotta välimuistin tuomasta performanssi-hyödystä pääsee jyvälle. Siksi olen päätynyt seuraavanlaiseen toimintatapaan: &lt;em&gt;joka kerta kun datahaku palvelimelle menee välimuistin ohi, palvelupyynnön suoritusaikaan lisätään 5 sekuntia luppoaikaa.&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Tällä tavalla on applikaatiota testatessa esim. fronttiappista käsin helppo omin silmin erotella &lt;em&gt;välimuisti-hitit&lt;/em&gt; (cache hit) ja &lt;em&gt;välimuisti-missit&lt;/em&gt; (cache miss) toisistaan.&lt;/p&gt;
+
+&lt;p&gt;Ohessa muokattu Controllerin koodi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class VihannesController extends Controller {
+  
+  public function all() {
+  
+    if (Cache::has(&#39;vihannekset&#39;)) {
+      return Cache::get(&#39;vihannekset&#39;);
+    }
+
+    if (env(&#39;APP_ENV&#39; === &#39;development&#39;)) {
+      // Välimuisti ohitettu! Simuloidaan tietokannan hitautta
+      // odottamalla viisi sekuntia.
+      sleep(5);     
+    }
+
+    // Ei vihanneksia välimuistissa -&amp;gt; haetaan tietokannasta.
+    $vihannekset = Vihannes::all();
+
+    // Ajetaan fractalin transformaatiot, jotka rakentavat meille
+    // lopullisen vastaus-objektin palautettavaksi HTTP-vastauksena.
+    $responseData = $this-&amp;gt;transformCollection($vihannekset, new VihannesTransformer);
+    
+    // Lisätään välimuistiin 10 minuutiksi.
+    Cache::put(&#39;vihannekset&#39;, $responseData, 10);
+    // Palautetaan kutsujalle
+    return $responseData;
+  }
+
+  protected function transformCollection($collection, $transformer) {
+    //...
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Odotamme siis 5 sekuntia mikäli dataa ei löydy välimuistista. Tällä tavalla simuloimme tilannetta, jossa kutsu ylikuormitettuun tietokantaan kestää pienen ikuisuuden. Luonnollisesti haluamme tehdä simulaation vain kehitysympäristössä.&lt;/p&gt;
+
+&lt;p&gt;Suuressa applikaatiossa odottelu-koodi kannattaa enkapsuloida joko traitin sisään, tai siirtää yläluokkaan. Esimerkiksi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class VihannesController extends CacheController {
+  
+  public function all() {
+  
+    if (Cache::has(&#39;vihannekset&#39;)) {
+      return Cache::get(&#39;vihannekset&#39;);
+    }
+
+    static::cacheMiss();
+
+    // jne...
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class CacheController extends Controller {
+  
+  protected static function cacheMiss() {
+    if (env(&#39;APP_ENV&#39; === &#39;development&#39;)) {
+      // Välimuisti ohitettu! Simuloidaan tietokannan hitautta
+      // odottamalla viisi sekuntia.
+      sleep(5);     
+    }    
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Viiden sekunnin odottelu voi jossain kohtaa kehitystyötä alkaa rasittaa. Toisaalta haluamme silti tietää, milloin välimuistiin on osuttu ja milloin ei. Voimme palauttaa tiedon headerissa, ja fronttiappi voi lukea headerin ja ilmoittaa välimuistiosuman/-ohituksen devaajalle visuaalisesti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
+class CacheController extends Controller {
+  
+  protected static function cacheMiss() {
+    if (env(&#39;APP_ENV&#39; === &#39;development&#39;)) {
+      // Välimuisti ohitettu! Lisätään tieto headeriin.
+      Response::header(&#39;cache-miss-occurred&#39;, 1);   
+    }    
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ja frontissa jotain tähän tyyliin:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+axios.get(baseUrl + &#39;/vihannekset&#39;)
+.then((response) =&amp;gt; {
+  if (response.headers[&#39;cache-miss-occurred&#39;]) {
+    // Hienovaraisesti ilmoita käyttäjälle
+    setInterval(() =&amp;gt; { alert(&#39;Cache miss!&#39;)}, 1);
+  }
+
+  return response;
+})
+.then(/*...*/);
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Summa summarum: harkitse välimuistin toteuttamista sanahirviön &lt;em&gt;get from controller, flush from usecase&lt;/em&gt; eli GCFU-mallin mukaisesti. Devauksen aikana kehitä käyttöliittymää siten, että välimuistiin osumisen/missauksen seuraukset näkee saman tien.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;* BBom = Big Ball of Mud = hirveä sekasotku *&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
     
     <item>
       <title>Tietokanta per asiakas</title>
@@ -1559,87 +1861,6 @@ public class LainausController {
 &lt;p&gt;Loppukaneetti: Controllerista käsin tietokantakutsujen tekeminen on useimpien mielestä kyseenalaista. Höpsis. Jos tietokantakutsu on turvallinen ja yksinkertainen, ei ole mitään syytä lähteä abstraktoimaan sitä sen enempää. Kunhan vain kutsut tietokantaa ja sillä sipuli.&lt;/p&gt;
 
 &lt;p&gt;Muokkausoperaation kohdalla tilanne on toinen. Vaativissa applikaatioissa muokkausoperaatiot voivat olla erittäin monimutkaisia ja sisältää monta askelta. Tällöin on tärkeää, että mahdolliset virhetilanteet käsitellään asianmukaisesti. Muokkausoperaation voi suorittaa Controllerista käsin, mutta applikaation rakenteen kannalta on selkeämpää, että elintärkeä ja mutkikas muokkaus eristetään omaksi apuluokakseen. Tämä eristys myös mahdollistaa, että useampi eri Controller voi uudelleenkäyttää tuota muokkauslogiikkaa mikäli tarve niin vaatii.&lt;/p&gt;
-&lt;/blockquote&gt;
-</description>
-    </item>
-    
-    <item>
-      <title>Laravel 5.3: ilmoitukset</title>
-      <link>https://www.nollaversio.fi/blog/public/laravel/notifications/</link>
-      <pubDate>Mon, 05 Sep 2016 07:38:13 +0300</pubDate>
-      
-      <guid>https://www.nollaversio.fi/blog/public/laravel/notifications/</guid>
-      <description>&lt;p&gt;Laravellin uusin versio (5.3) tekee web-ohjelmoinnista taas laittoman helppoa. Ikäänkuin se ei olisi jo sitä ollut.&lt;/p&gt;
-
-&lt;p&gt;Uusi versio tuo mukanaan &lt;em&gt;ilmoituksen&lt;/em&gt; (engl. notification) konseptin, jonka avulla ns. domain-koodista pystyy ampumaan ilmoituksia suoraan domain-objektien suuntaan. Laravel-kehys sitten hoitaa loput.&lt;/p&gt;
-
-&lt;p&gt;Tyypillinen tapa ilmoitttaa jotain on ampua ilmoitus &lt;em&gt;User&lt;/em&gt;-objektin suuntaan. Homma toimii äärimmäisen yksinkertaisesti:&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-$matti-&amp;gt;notify(new LaskuEraantynyt());
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Ylläoleva koodi kertoo Matille, että hänen laskunsa on erääntynyt.&lt;/p&gt;
-
-&lt;p&gt;Pinnan alla tapahtuu ylläolevan koodinajon jälkeen vielä hiukka asioita. Ensiksi tarvitsemme &lt;em&gt;User&lt;/em&gt;-luokkaan ($matti on User-luokan objekti) metodin nimeltä &lt;em&gt;routeNotificationForSlack&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;Tämä routeNotificationForSlack-metodi määrittelee mihin &amp;ldquo;postilaatikkoon&amp;rdquo; lähetämme laskun erääntymisestä kertovan ilmoituksen. Se &lt;strong&gt;ei&lt;/strong&gt; tee itse ilmoitusta, vaan ainoastaan kertoo mihin tuo ilmoitus ohjataan.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// User.php
-
-public function routeNotificationForSlack() {
-  // Tässä määritetään Matin Slack-tilin endpoint joka vastaanottaa viestit.
-  // Oletetaan että Matti on rekisteröinnin yhteydessä antanut endpoint-URL:n.
-  // Tuo Slack-URL on sitten tallennettu osaksi Matin käyttäjätietoja tietokantaan.
-  return $this-&amp;gt;slack_url;	
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Lisäksi tarvitsemme vielä LaskuEraantynyt-viestiluokan. Koska Laravel 5.3 vakiona tukee Slackkia, voimme luoda tuon luokan helposti.&lt;/p&gt;
-
-&lt;p&gt;Tarvitsemme ensinnäkin &lt;em&gt;via&lt;/em&gt;-metodin, joka määrittää mitä ilmoitustapaa käytämme. Voimme käyttää esim. SMS-viestiä tai email-viestiä. Tässä esimerkissä tyydymme Slackin käyttöön.&lt;/p&gt;
-
-&lt;p&gt;Lisäksi tarvitsemme &lt;em&gt;toSlack&lt;/em&gt;-metodin, joka luo Slackia varten uuden viestin. Tätä metodia tarvitsemme ainoastaan lähettäessämme ilmoituksen Slackiin.&lt;/p&gt;
-
-&lt;p&gt;Jos lähettäisimme ilmoituksen emaililla, käyttäisimme metodia &lt;em&gt;toMail&lt;/em&gt;. Koska lähetämme Slackiin, käytämme metodia &lt;em&gt;toSlack&lt;/em&gt;. Suorastaan johdonmukaista.&lt;/p&gt;
-
-&lt;pre&gt;&lt;code class=&#34;language-php&#34;&gt;
-// Notifications/LaskuEraantynyt.php
-
-class LaskuEraantynyt extends Notification {
-
-  public function via($notifiable) {
-    // Laskuilmoitukset lähetetään asiakkaiden Slack-kanaviin.
-    return [&#39;slack&#39;];	
-  }
-
-  public function toSlack($notifiable) {
-    // Kehys kutsuu tätä metodia kun Slack-viestiä luodaan/lähetetään.
-    // SlackMessage on Laravellin sisäinen apuluokka.
-    return (new SlackMessage)-&amp;gt;content(&#39;Maksa heti!&#39;);
-
-  }
-	
-}
-
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;Muuta ei tarvita (paitsi Guzzle, lue loppukaneetti).&lt;/p&gt;
-
-&lt;p&gt;On syytä nopeasti katsoa miten Laravel-kehys hoitaa lähetyksen pinnan alla:&lt;/p&gt;
-
-&lt;ol&gt;
-&lt;li&gt;Kutsumme domain-koodissa User-objektin &lt;em&gt;notify&lt;/em&gt;-metodia. Parametrinä sisään pyyhältää uunituore LaskuEraantynyt-objekti.&lt;/li&gt;
-&lt;li&gt;Laravel selvittää LaskuEraantynyt-objektin &lt;em&gt;via&lt;/em&gt;-metodilla, että haluttu viestiväylä on Slack.&lt;/li&gt;
-&lt;li&gt;LaskuEraantynyt-objektin &lt;em&gt;toSlack&lt;/em&gt;-metodi palauttaa SlackMessage-viestiobjektin.&lt;/li&gt;
-&lt;li&gt;SlackMessage-viestiobjekti ohjataan User-objektin &lt;em&gt;routeNotificationForSlack&lt;/em&gt;-metodin palauttamaan URL-osoitteeseen. Teknisesti tuon ohjauksen hoitaa Guzzle, joka kutsuu Slackin rajapintaa HTTP POST-pyynnön turvin.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Loppukaneetti: Slack-viestin lähettäminen vaatii Guzzle-lisäosaa, joka ottaa yhteyden Slackin HTTP-rajapintaan.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
     </item>

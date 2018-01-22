@@ -27,10 +27,9 @@
 
 &lt;p&gt;Mikäli &lt;em&gt;toinen komponentti on toisen suora jälkeläinen&lt;/em&gt;, kommunikointi tapahtuu luontevasti joko käyttäen propseja (alaspäin kommunikoidessa!) tai emittoimalla eventtejä (ylöspäin kommunikoidessa!). Tämä on luonteva tapa kommunikoida jos komponenttipuussa liikutaan vain vertikaalisesti (&lt;em&gt;isä-poika&lt;/em&gt;), ei horisontaalisesti (&lt;em&gt;sisar-veli&lt;/em&gt;). Ohessa esimerkki eventtien käytöstä:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+&lt;pre&gt;&lt;code&gt;
 // Parent.js
 
-import Child from &#39;./Child&#39;
 
 &amp;lt;template&amp;gt;
 	&amp;lt;h3&amp;gt;Parent component&amp;lt;/h3&amp;gt;
@@ -38,6 +37,8 @@ import Child from &#39;./Child&#39;
 &amp;lt;/template&amp;gt;
 
 &amp;lt;script&amp;gt;
+
+import Child from &#39;./Child&#39;
 
 export default {
 	methods: {
@@ -52,7 +53,7 @@ export default {
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+&lt;pre&gt;&lt;code&gt;
 // Child.js
 
 &amp;lt;template&amp;gt;
@@ -94,12 +95,14 @@ export default new Vue({});
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+&lt;pre&gt;&lt;code&gt;
 // Palolaitos.js
+
+
+&amp;lt;script&amp;gt;
 
 import Radiomasto from &#39;./services/Radiomasto&#39;;
 
-&amp;lt;script&amp;gt;
 export default {
 	data() {
 		observerCb: null
@@ -128,9 +131,11 @@ export default {
 &lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
 // Puukerrostalo.js
 
-import Radiomasto from &#39;./services/Radiomasto&#39;;
 
 &amp;lt;script&amp;gt;
+
+import Radiomasto from &#39;./services/Radiomasto&#39;;
+
 export default {
 	name: &#39;Puukerrostalo&#39;,
 	methods: {
@@ -165,12 +170,9 @@ export default {
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+&lt;pre&gt;&lt;code&gt;
 // Muumimamma.js
 
-import Tietovarasto from &#39;services/Tietovarasto&#39;
-import Muumi from &#39;entities/Muumi&#39;
-import Tuutikki from &#39;entities/communists/Tuutikki&#39;
 
 &amp;lt;template&amp;gt;
 	&amp;lt;button v-on:click=&amp;quot;lisaaMuumi&amp;quot;&amp;gt;Lisää&amp;lt;/button&amp;gt;
@@ -178,6 +180,11 @@ import Tuutikki from &#39;entities/communists/Tuutikki&#39;
 &amp;lt;/template&amp;gt;
 
 &amp;lt;script&amp;gt;
+
+import Tietovarasto from &#39;services/Tietovarasto&#39;
+import Muumi from &#39;entities/Muumi&#39;
+import Tuutikki from &#39;entities/communists/Tuutikki&#39;
+
 export default {
 	name: &#39;Tuottaja&#39;,
 	data() {
@@ -204,16 +211,18 @@ export default {
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+&lt;pre&gt;&lt;code&gt;
 // MuumitInfotaulu.js
 
-import Tietovarasto from &#39;services/Tietovarasto&#39;
 
 &amp;lt;template&amp;gt;
 	&amp;lt;h3&amp;gt;Muumeja on {{kpl}}&amp;lt;/h3&amp;gt;
 	&amp;lt;button v-on:click=&amp;quot;paivitaMuumimaara&amp;quot;&amp;gt;Päivitä&amp;lt;/button&amp;gt;
 &amp;lt;/template&amp;gt;
 &amp;lt;script&amp;gt;
+
+import Tietovarasto from &#39;services/Tietovarasto&#39;
+
 export default {
 	name: &#39;MuumitInfotaulu&#39;,
 	data() {

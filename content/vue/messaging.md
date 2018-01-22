@@ -15,11 +15,10 @@ Tyypillisestihän Vue-komponenttien välinen kommunikointi tapahtuu jommalla kum
 
 Mikäli *toinen komponentti on toisen suora jälkeläinen*, kommunikointi tapahtuu luontevasti joko käyttäen propseja (alaspäin kommunikoidessa!) tai emittoimalla eventtejä (ylöspäin kommunikoidessa!). Tämä on luonteva tapa kommunikoida jos komponenttipuussa liikutaan vain vertikaalisesti (*isä-poika*), ei horisontaalisesti (*sisar-veli*). Ohessa esimerkki eventtien käytöstä:
 
-```javascript
+```
 
 // Parent.js
 
-import Child from './Child'
 
 <template>
 	<h3>Parent component</h3>
@@ -27,6 +26,8 @@ import Child from './Child'
 </template>
 
 <script>
+
+import Child from './Child'
 
 export default {
 	methods: {
@@ -41,7 +42,7 @@ export default {
 
 ```
 
-```javascript
+```
 
 // Child.js
 
@@ -83,13 +84,15 @@ export default new Vue({});
 
 ```
 
-```javascript
+```
 
 // Palolaitos.js
 
-import Radiomasto from './services/Radiomasto';
 
 <script>
+
+import Radiomasto from './services/Radiomasto';
+
 export default {
 	data() {
 		observerCb: null
@@ -119,9 +122,11 @@ export default {
 
 // Puukerrostalo.js
 
-import Radiomasto from './services/Radiomasto';
 
 <script>
+
+import Radiomasto from './services/Radiomasto';
+
 export default {
 	name: 'Puukerrostalo',
 	methods: {
@@ -157,13 +162,10 @@ export default {
 
 ```
 
-```javascript
+```
 
 // Muumimamma.js
 
-import Tietovarasto from 'services/Tietovarasto'
-import Muumi from 'entities/Muumi'
-import Tuutikki from 'entities/communists/Tuutikki'
 
 <template>
 	<button v-on:click="lisaaMuumi">Lisää</button>
@@ -171,6 +173,11 @@ import Tuutikki from 'entities/communists/Tuutikki'
 </template>
 
 <script>
+
+import Tietovarasto from 'services/Tietovarasto'
+import Muumi from 'entities/Muumi'
+import Tuutikki from 'entities/communists/Tuutikki'
+
 export default {
 	name: 'Tuottaja',
 	data() {
@@ -197,17 +204,19 @@ export default {
 
 ```
 
-```javascript
+```
 
 // MuumitInfotaulu.js
 
-import Tietovarasto from 'services/Tietovarasto'
 
 <template>
 	<h3>Muumeja on {{kpl}}</h3>
 	<button v-on:click="paivitaMuumimaara">Päivitä</button>
 </template>
 <script>
+
+import Tietovarasto from 'services/Tietovarasto'
+
 export default {
 	name: 'MuumitInfotaulu',
 	data() {
