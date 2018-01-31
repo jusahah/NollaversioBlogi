@@ -17,6 +17,12 @@
       <guid>https://www.nollaversio.fi/blog/public/laravel/cache-options/</guid>
       <description>
 
+&lt;blockquote&gt;
+&lt;p&gt;Alkusanat: tässä artikkelissa ei käsitellä HTTP-protokollan headereihin perustuvaa välimuistin kontrollointia. Frontti-välimuisti tämän artikkelin yhteydessä tarkoittaa Javascriptin päälle rakennettavaa tietovarastoa.&lt;/p&gt;
+
+&lt;p&gt;Hyvä katsaus HTTP:n välimuistikäyttöön löytyy mm.: &lt;a href=&#34;https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching&#34;&gt;https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
 &lt;p&gt;Moderni Laravel-pohjainen weppi-appi käyttää usein hyväkseen välimuistia (cache). Välimuistia hyödyntämällä vältetään joko turhat HTTP-kutsut (frontend-välimuisti) tai turhat tietokantahaut (backend-välimuisti). Tällä tavalla applikaation suorituskyky paranee, toivottavasti.&lt;/p&gt;
 
 &lt;h2 id=&#34;frontti-välimuisti&#34;&gt;Frontti-välimuisti&lt;/h2&gt;
@@ -29,7 +35,7 @@
 &lt;p&gt;Yksi keino on käyttää jonkinlaista &lt;em&gt;subscriber&lt;/em&gt;-systeemiä, jossa backend puskee komennon tyhjentää välimuisti fronttiin. Komento voidaan toimittaa vaikka Pusherin kaltaisen järjestelmän kautta. Toimintamalli on kuitenkin varsin monimutkainen saavutettavaan hyötyyn nähden.&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;p&gt;Fronttipuolella välimuisti soveltuu parhaiten tapauksiin, joissa palvelimelta haettava data muuntuu aniharvoin jos koskaan. Tällöin voidaan esim. kirjautumisen yhteydessä tehdä yksi HTTP-kutsu, ja tämän jälkeen tallettaa saatu data pysyvästi välimuistiin.&lt;/p&gt;
+&lt;p&gt;Fronttipuolella välimuisti soveltuu parhaiten tapauksiin, joissa palvelimelta haettava data muuntuu aniharvoin jos koskaan. Tällöin voidaan esim. kirjautumisen yhteydessä tehdä yksi HTTP-kutsu, ja tämän jälkeen tallettaa saatu data välimuistiin kirjautumissession ajaksi.&lt;/p&gt;
 
 &lt;p&gt;Tyypillisesti paras vaihtoehto on yksinkertaisesti välttää frontti-välimuistin käyttöä kokonaan, ja tehdä HTTP-kutsu palvelimelle joka kerta kun dataa tarvitaan.&lt;/p&gt;
 
@@ -158,7 +164,7 @@ class ValmistaSoppa extends Usecase {
 
     // Aloitetaan sopan valmistus, mieluiten transaktion sisällä
     // jotta emme töpeksi tietokantaa mikäli jotain menee päin hönkiä.
-    DB::transaction(function() {
+    DB::transaction(function() use ($soppaVihannekset) {
       
       // Luodaan soppakattila
       $soppaKattila = new SoppaKattila;
@@ -191,6 +197,14 @@ class ValmistaSoppa extends Usecase {
 
 &lt;p&gt;Ylläolevassa usecasessa valmistamme vihannessopan. Koko usecasen koodi on selkeästi step-by-step -muodossa; tee näin, sitten tee näin, sitten tee näin. Tämä hienosti tarjoaa meille selkeän paikan, jonne tunkea välimuistin tyhjennys. Vasta kun vihannekset on poistettu tietokannasta - ja poisto tapahtuu vain mikäli transaktio onnistuu -, tyhjennämme välimuistin.&lt;/p&gt;
 
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;Disclaimer:&lt;/strong&gt; Välimuistin toteuttaminen Controller-layerille ei ole hopealuoti. Yksi merkittävä haaste on, että palvelupyynnön &lt;em&gt;query stringin&lt;/em&gt; mukana tulevat &lt;em&gt;include&lt;/em&gt;-komennot vaativat erillisen käsittelyn. Ongelman ydin on se, että yksi palvelupyyntö voi haluta includeerata jotain mitä toinen palvelupyyntö ei tarvitse. Mikäli laitamme yhden palvelupyynnön tuottaman responsen välimuistiin, toinen palvelupyyntö saa &lt;em&gt;puutteellisen&lt;/em&gt; datan käyttöönsä.&lt;/p&gt;
+
+&lt;p&gt;Yksi ratkaisu on käyttää &lt;em&gt;koko&lt;/em&gt; URL-stringiä (myös Query-osuutta!) välimuistin avaimena. Mutta tämä vie välimuistin kontrolloimista hienojakoisempaan suuntaan kuin mitä haluamme. Välimuistin ja query-parametrien välinen riippuvuus kuulostaa yksinkertaiselta huonolta idealta (omakohtaista kokemusta asiasta minulla ei ole).&lt;/p&gt;
+
+&lt;p&gt;Toinen ratkaisu on usecase-luokkien sisällä suorittaa kaikki tarvittavat välimuistityhjennykset kaikille niille objektiluokille, joihin operaatio vaikutti. Tämä on hiukka sotkuista mikäli objektien väliset relaatiot ovat runsaslukuisia, mutta hyvä puoli on toimintatavan eksplisiittisyys. Usecase-luokkaa tarkastelemalla voi kerralla havaita mitkä välimuistit nollaantuvat operaation seurauksena.&lt;/p&gt;
+&lt;/blockquote&gt;
+
 &lt;h3 id=&#34;välimuistin-testaamisesta-kehityksen-aikana&#34;&gt;Välimuistin testaamisesta kehityksen aikana&lt;/h3&gt;
 
 &lt;p&gt;Vihdoin otsikon aiheeseen, eli kuinka testata välimuistin kontrolloimista devauksen aikana.&lt;/p&gt;
@@ -212,7 +226,7 @@ class VihannesController extends Controller {
       return Cache::get(&#39;vihannekset&#39;);
     }
 
-    if (env(&#39;APP_ENV&#39; === &#39;development&#39;)) {
+    if (env(&#39;APP_ENV&#39;) === &#39;development&#39;) {
       // Välimuisti ohitettu! Simuloidaan tietokannan hitautta
       // odottamalla viisi sekuntia.
       sleep(5);     
@@ -262,7 +276,7 @@ class VihannesController extends CacheController {
 class CacheController extends Controller {
   
   protected static function cacheMiss() {
-    if (env(&#39;APP_ENV&#39; === &#39;development&#39;)) {
+    if (env(&#39;APP_ENV&#39;) === &#39;development&#39;) {
       // Välimuisti ohitettu! Simuloidaan tietokannan hitautta
       // odottamalla viisi sekuntia.
       sleep(5);     
@@ -278,7 +292,7 @@ class CacheController extends Controller {
 class CacheController extends Controller {
   
   protected static function cacheMiss() {
-    if (env(&#39;APP_ENV&#39; === &#39;development&#39;)) {
+    if (env(&#39;APP_ENV&#39;) === &#39;development&#39;) {
       // Välimuisti ohitettu! Lisätään tieto headeriin.
       Response::header(&#39;cache-miss-occurred&#39;, 1);   
     }    
@@ -306,7 +320,7 @@ axios.get(baseUrl + &#39;/vihannekset&#39;)
 &lt;p&gt;Summa summarum: harkitse välimuistin toteuttamista sanahirviön &lt;em&gt;get from controller, flush from usecase&lt;/em&gt; eli GCFU-mallin mukaisesti. Devauksen aikana kehitä käyttöliittymää siten, että välimuistiin osumisen/missauksen seuraukset näkee saman tien.&lt;/p&gt;
 
 &lt;ul&gt;
-&lt;li&gt;* BBom = Big Ball of Mud = hirveä sekasotku *&lt;/li&gt;
+&lt;li&gt;* BBoM = Big Ball of Mud = hirveä sekasotku *&lt;/li&gt;
 &lt;/ul&gt;
 </description>
     </item>

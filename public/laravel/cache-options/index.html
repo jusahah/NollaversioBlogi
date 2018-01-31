@@ -78,6 +78,12 @@
 				<hr style="margin-top: 12px;">
 			      
 
+<blockquote>
+<p>Alkusanat: tässä artikkelissa ei käsitellä HTTP-protokollan headereihin perustuvaa välimuistin kontrollointia. Frontti-välimuisti tämän artikkelin yhteydessä tarkoittaa Javascriptin päälle rakennettavaa tietovarastoa.</p>
+
+<p>Hyvä katsaus HTTP:n välimuistikäyttöön löytyy mm.: <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching">https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching</a></p>
+</blockquote>
+
 <p>Moderni Laravel-pohjainen weppi-appi käyttää usein hyväkseen välimuistia (cache). Välimuistia hyödyntämällä vältetään joko turhat HTTP-kutsut (frontend-välimuisti) tai turhat tietokantahaut (backend-välimuisti). Tällä tavalla applikaation suorituskyky paranee, toivottavasti.</p>
 
 <h2 id="frontti-välimuisti">Frontti-välimuisti</h2>
@@ -90,7 +96,7 @@
 <p>Yksi keino on käyttää jonkinlaista <em>subscriber</em>-systeemiä, jossa backend puskee komennon tyhjentää välimuisti fronttiin. Komento voidaan toimittaa vaikka Pusherin kaltaisen järjestelmän kautta. Toimintamalli on kuitenkin varsin monimutkainen saavutettavaan hyötyyn nähden.</p>
 </blockquote>
 
-<p>Fronttipuolella välimuisti soveltuu parhaiten tapauksiin, joissa palvelimelta haettava data muuntuu aniharvoin jos koskaan. Tällöin voidaan esim. kirjautumisen yhteydessä tehdä yksi HTTP-kutsu, ja tämän jälkeen tallettaa saatu data pysyvästi välimuistiin.</p>
+<p>Fronttipuolella välimuisti soveltuu parhaiten tapauksiin, joissa palvelimelta haettava data muuntuu aniharvoin jos koskaan. Tällöin voidaan esim. kirjautumisen yhteydessä tehdä yksi HTTP-kutsu, ja tämän jälkeen tallettaa saatu data välimuistiin kirjautumissession ajaksi.</p>
 
 <p>Tyypillisesti paras vaihtoehto on yksinkertaisesti välttää frontti-välimuistin käyttöä kokonaan, ja tehdä HTTP-kutsu palvelimelle joka kerta kun dataa tarvitaan.</p>
 
@@ -219,7 +225,7 @@ class ValmistaSoppa extends Usecase {
 
     // Aloitetaan sopan valmistus, mieluiten transaktion sisällä
     // jotta emme töpeksi tietokantaa mikäli jotain menee päin hönkiä.
-    DB::transaction(function() {
+    DB::transaction(function() use ($soppaVihannekset) {
       
       // Luodaan soppakattila
       $soppaKattila = new SoppaKattila;
@@ -252,6 +258,14 @@ class ValmistaSoppa extends Usecase {
 
 <p>Ylläolevassa usecasessa valmistamme vihannessopan. Koko usecasen koodi on selkeästi step-by-step -muodossa; tee näin, sitten tee näin, sitten tee näin. Tämä hienosti tarjoaa meille selkeän paikan, jonne tunkea välimuistin tyhjennys. Vasta kun vihannekset on poistettu tietokannasta - ja poisto tapahtuu vain mikäli transaktio onnistuu -, tyhjennämme välimuistin.</p>
 
+<blockquote>
+<p><strong>Disclaimer:</strong> Välimuistin toteuttaminen Controller-layerille ei ole hopealuoti. Yksi merkittävä haaste on, että palvelupyynnön <em>query stringin</em> mukana tulevat <em>include</em>-komennot vaativat erillisen käsittelyn. Ongelman ydin on se, että yksi palvelupyyntö voi haluta includeerata jotain mitä toinen palvelupyyntö ei tarvitse. Mikäli laitamme yhden palvelupyynnön tuottaman responsen välimuistiin, toinen palvelupyyntö saa <em>puutteellisen</em> datan käyttöönsä.</p>
+
+<p>Yksi ratkaisu on käyttää <em>koko</em> URL-stringiä (myös Query-osuutta!) välimuistin avaimena. Mutta tämä vie välimuistin kontrolloimista hienojakoisempaan suuntaan kuin mitä haluamme. Välimuistin ja query-parametrien välinen riippuvuus kuulostaa yksinkertaiselta huonolta idealta (omakohtaista kokemusta asiasta minulla ei ole).</p>
+
+<p>Toinen ratkaisu on usecase-luokkien sisällä suorittaa kaikki tarvittavat välimuistityhjennykset kaikille niille objektiluokille, joihin operaatio vaikutti. Tämä on hiukka sotkuista mikäli objektien väliset relaatiot ovat runsaslukuisia, mutta hyvä puoli on toimintatavan eksplisiittisyys. Usecase-luokkaa tarkastelemalla voi kerralla havaita mitkä välimuistit nollaantuvat operaation seurauksena.</p>
+</blockquote>
+
 <h3 id="välimuistin-testaamisesta-kehityksen-aikana">Välimuistin testaamisesta kehityksen aikana</h3>
 
 <p>Vihdoin otsikon aiheeseen, eli kuinka testata välimuistin kontrolloimista devauksen aikana.</p>
@@ -273,7 +287,7 @@ class VihannesController extends Controller {
       return Cache::get('vihannekset');
     }
 
-    if (env('APP_ENV' === 'development')) {
+    if (env('APP_ENV') === 'development') {
       // Välimuisti ohitettu! Simuloidaan tietokannan hitautta
       // odottamalla viisi sekuntia.
       sleep(5);     
@@ -323,7 +337,7 @@ class VihannesController extends CacheController {
 class CacheController extends Controller {
   
   protected static function cacheMiss() {
-    if (env('APP_ENV' === 'development')) {
+    if (env('APP_ENV') === 'development') {
       // Välimuisti ohitettu! Simuloidaan tietokannan hitautta
       // odottamalla viisi sekuntia.
       sleep(5);     
@@ -339,7 +353,7 @@ class CacheController extends Controller {
 class CacheController extends Controller {
   
   protected static function cacheMiss() {
-    if (env('APP_ENV' === 'development')) {
+    if (env('APP_ENV') === 'development') {
       // Välimuisti ohitettu! Lisätään tieto headeriin.
       Response::header('cache-miss-occurred', 1);   
     }    
@@ -367,7 +381,7 @@ axios.get(baseUrl + '/vihannekset')
 <p>Summa summarum: harkitse välimuistin toteuttamista sanahirviön <em>get from controller, flush from usecase</em> eli GCFU-mallin mukaisesti. Devauksen aikana kehitä käyttöliittymää siten, että välimuistiin osumisen/missauksen seuraukset näkee saman tien.</p>
 
 <ul>
-<li>* BBom = Big Ball of Mud = hirveä sekasotku *</li>
+<li>* BBoM = Big Ball of Mud = hirveä sekasotku *</li>
 </ul>
 
 			</div>
