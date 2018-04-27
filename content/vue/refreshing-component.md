@@ -23,7 +23,7 @@ Kun nyt käyttäjä klikkaa applikaation menuvalikosta painiketta "Profiili", UR
 
 Kun URL päivittyy, Vue automaattisesti hoitaa lifecycle-kontrollin *poistuville* ja *ilmestyville* komponenteille. Esimerkin tapauksessa poistuvia komponentteja ovat *Sahkoposti* ja *Liitelista*, ja ilmestyvä komponentti on *Profiili*. Osana tätä lifecycle-kontrollia komponenttien lifecycle-hooksit ajetaan, mikä mahdollistaa uuden komponentin populoinnin esimerkiksi palvelimelta haetulla datalla.
 
-```javascript
+```html
 
 // Sahkoposti.vue
 
@@ -63,7 +63,7 @@ Mutta entä jos meillä on seuraavanlainen URL-reitti ja siihen kytketty kompone
 
 *www.osakeseuranta.fi/#/osakekurssit/{id}*
 
-```javascript
+```html
 
 // Osakekurssi.vue
 
@@ -103,7 +103,7 @@ Yksi tapa on tehdä jonkinlainen push-notifikaatioihin perustuva järjestelmä, 
 
 ### Ratkaisu 1: Push-notifikaatiot
 
-```javascript
+```html
 
 <script>
 
@@ -122,7 +122,7 @@ export default {
       this.osakekurssi = viimeisinKurssi;
     }.bind(this);
 
-    return PusherWrapper.subscribe('osakkeet', id, this.cb);
+    return PusherWrapper.subscribe('osakkeet', this.id, this.cb);
   },
   beforeDestroy() {
     PusherWrapper.unsubscribe(this.cb);
@@ -138,9 +138,9 @@ Ratkaisu on varsin monimutkainen. Mikäli esimerkiksi viiden sekunnin viive data
 
 ### Ratkaisu 2: Polling API
 
-```javascript
+```html
 
-<template>...</template>
+<template></template>
 
 <script>
 
@@ -169,7 +169,7 @@ export default {
   },
   methods: {
     haeData(currentRequestNum) {
-      API.osakekurssit.single(id)
+      API.osakekurssit.single(this.id)
       .then((osakekurssi) => {
         if (this.latestResponse > currentRequestNum) {
           // Responsella kesti liian pitkään saapua. 
@@ -177,6 +177,7 @@ export default {
           // tällä datalla emme tee yhtikäs mitään.
           return;
         }
+        this.latestResponse = currentRequestNum;
         this.osakekurssi = osakekurssi;
       });
     }
@@ -202,7 +203,7 @@ Lisäksi kiveen hakattu päivitystahti on suorastaan käyttäjän *ehdollistamis
 
 Tämä ratkaisu sisältää vihdoin otsikon mukaisen ongelman. Esimerkin tapauksessa voimme tehdä *nappia painamalla refreshin* seuraavasti:
 
-```javascript
+```html
 
 <template>
   <div v-if="osakekurssi !== null">
@@ -228,7 +229,7 @@ export default {
   },
   methods: {
     haeData() {
-      API.osakekurssit.single(id)
+      API.osakekurssit.single(this.id)
       .then((osakekurssi) => {
         this.osakekurssi = osakekurssi;
       });
@@ -273,7 +274,7 @@ Entä jos teemme näin:
 
 Lisäämällä query stringin URL:iin saamme muutettua URL:ia ilman, että itse komponenttipuun rakennetta ohjaava osuus URL:ista muuttuu. Nyt sitten ylätasolla (App.vue) teemme seuraavasti:
 
-```javascript
+```html
 
 // App.vue
 
@@ -281,11 +282,11 @@ Lisäämällä query stringin URL:iin saamme muutettua URL:ia ilman, että itse 
   <router-view :key="$route.fullPath"></router-view>
 </template>
 
-<script>...</script>
+<script>/*...*/</script>
 
 ```
 
-```javascript
+```html
 
 // Menu.vue
 
@@ -327,7 +328,7 @@ Ylläolevassa ratkaisussa URL muuttuu millisekunnin välein (koska Date.now pala
 
 Toteutimme kuin vahingossa automaattisen *rate limitin*, siis.
 
-```javascript
+```html
 
 // Menu.vue
 

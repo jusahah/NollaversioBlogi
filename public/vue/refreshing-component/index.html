@@ -1,0 +1,452 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Komponenttipuun kontrollointi URL:n timestampilla &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="https://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/misc">Misc </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/vue">Vue </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Komponenttipuun kontrollointi URL:n timestampilla</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Wed, Jan 31, 2018</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<p>Männä päivänä syntyi tarve ladata Vue:n reitittimeen kytketty Vue komponentti uusiksi ilman, että reitittimen toimintaa ohjaava <em>route</em> muuttuu.</p>
+
+<blockquote>
+<p>Löyhä määritelmä: route on kytkös URL:n eli selaimen www-osoitteen ja käyttöliittymässä aktiivisena olevan näkymän välillä.</p>
+</blockquote>
+
+<p>Tyypillisestihän Vuen reititin (router) automaattisesti päivittää komponentti-puun ajan tasalle mätsäämään sen hetkistä URL-rakennetta.</p>
+
+<p>Esimerkiksi:</p>
+
+<p><em>www.appi.fi/#/sahkopostit/{id}/liitteet</em> tuottaa komponenttipuun: <strong>App.vue &gt; Sahkoposti.vue &gt; Liitelista.vue</strong></p>
+
+<blockquote>
+<p>App.vue on ylimmän tason <em>container</em>-tyyppinen komponentti, jonka sisään applikaation business-näkymät rakentuvat. Kaikki mahdolliset komponenttipuut sisältävät App-komponentin esi-isänään.</p>
+</blockquote>
+
+<p>Kun nyt käyttäjä klikkaa applikaation menuvalikosta painiketta &ldquo;Profiili&rdquo;, URL päivittyy:</p>
+
+<p><em>www.appi.fi/#/profiili</em>, joka tuottaa komponenttipuun <strong>App.vue &gt; Profiili.vue</strong>.</p>
+
+<p>Kun URL päivittyy, Vue automaattisesti hoitaa lifecycle-kontrollin <em>poistuville</em> ja <em>ilmestyville</em> komponenteille. Esimerkin tapauksessa poistuvia komponentteja ovat <em>Sahkoposti</em> ja <em>Liitelista</em>, ja ilmestyvä komponentti on <em>Profiili</em>. Osana tätä lifecycle-kontrollia komponenttien lifecycle-hooksit ajetaan, mikä mahdollistaa uuden komponentin populoinnin esimerkiksi palvelimelta haetulla datalla.</p>
+
+<pre><code class="language-html">
+// Sahkoposti.vue
+
+&lt;template&gt;
+  &lt;div v-if=&quot;email&quot;&gt;
+    &lt;h1&gt;{{email.subject}}&lt;/h1&gt;
+    &lt;span&gt;{{email.content}}&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;h3 v-else&gt;&quot;Ladataan...&quot;&lt;/h3&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+
+import API from '@/api'
+
+export default {
+  
+  name: 'Sahkoposti',
+  props: ['id'],
+  data() {
+    email: null,
+  },
+  created() {
+    return API.emails.single(id)
+    .then((email) =&gt; {
+      this.email = email;
+    });
+  }
+}
+&lt;/script&gt;
+
+</code></pre>
+
+<p>Ylläoleva soveltuu hyvin datalle, joka ei koskaan muutu. Tällöin komponentin alustuksen aikana tehty hakureissu serverille riittää populoimaan komponentin sen <em>koko elinkaaren ajaksi</em>.</p>
+
+<p>Mutta entä jos meillä on seuraavanlainen URL-reitti ja siihen kytketty komponentti?</p>
+
+<p><em>www.osakeseuranta.fi/#/osakekurssit/{id}</em></p>
+
+<pre><code class="language-html">
+// Osakekurssi.vue
+
+&lt;template&gt;
+  &lt;div v-if=&quot;osakekurssi !== null&quot;&gt;
+    &lt;h1&gt;Kurssi: {{osakekurssi}}&lt;/h1&gt;
+  &lt;/div&gt;
+  &lt;h3 v-else&gt;&quot;Ladataan...&quot;&lt;/h3&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+
+import API from '@/api'
+
+export default {
+  
+  name: 'Osakekurssi',
+  props: ['id'],
+  data() {
+    osakekurssi: null,
+  },
+  created() {
+    return API.osakekurssit.single(id)
+    .then((osakekurssi) =&gt; {
+      this.osakekurssi = osakekurssi;
+    });
+  }
+}
+&lt;/script&gt;
+
+</code></pre>
+
+<p>Haemme jälleen osakekurssidatan komponentin alustuksen yhteydessä, mutta ongelmana on, että osakekurssilla on tapana muuttua. Varsin nopeasti ja usein. Haettu osakekurssi on tarpeeksi hyvä approksimaatio <em>oikeasta osakekurssista</em> ehkä muutaman sekunnin ajan; sen jälkeen se on <em>vanhentunutta</em> tietoa. Vanhentunut tieto on arvotonta tietoa.</p>
+
+<p>Yksi tapa on tehdä jonkinlainen push-notifikaatioihin perustuva järjestelmä, jossa uusin osakekurssi ammutaan fronttiin aina parin sekunnin välein:</p>
+
+<h3 id="ratkaisu-1-push-notifikaatiot">Ratkaisu 1: Push-notifikaatiot</h3>
+
+<pre><code class="language-html">
+&lt;script&gt;
+
+import PusherWrapper from '@/inbound/PusherWrapper'
+
+export default {
+  
+  name: 'Osakekurssi',
+  props: ['id'],
+  data() {
+    osakekurssi: null,
+    cb: null
+  },
+  created() {
+    this.cb = (viimeisinKurssi) =&gt; {
+      this.osakekurssi = viimeisinKurssi;
+    }.bind(this);
+
+    return PusherWrapper.subscribe('osakkeet', this.id, this.cb);
+  },
+  beforeDestroy() {
+    PusherWrapper.unsubscribe(this.cb);
+  }
+}
+&lt;/script&gt;
+
+</code></pre>
+
+<p>Toimiakseen komponentti vaatii tietenkin taustajärjestelmien olemassaolon, kuten (esimerkin tapauksessa) Pusher-tilin. Myös osakekurssidatan sisältävän palvelimen täytyy muuttua; sen täytyy ampua tietoa Pusherin suuntaan harvasen sekunti.</p>
+
+<p>Ratkaisu on varsin monimutkainen. Mikäli esimerkiksi viiden sekunnin viive datan saannissa on OK, seuraava ratkaisu on parempi:</p>
+
+<h3 id="ratkaisu-2-polling-api">Ratkaisu 2: Polling API</h3>
+
+<pre><code class="language-html">
+&lt;template&gt;&lt;/template&gt;
+
+&lt;script&gt;
+
+import API from '@/api'
+
+export default {
+  
+  name: 'Osakekurssi',
+  props: ['id'],
+  data() {
+    osakekurssi: null,
+    // Polling-järjestelmän apumuuttujat
+    poller: null,
+    // Viimeisimpänä lähteneen requestin järjestysnumero
+    requestNum: 0,
+    // Suurin järjestysnumero jolle saatu vastaus palvelimelta.
+    latestResponse: 0
+  },
+  created() {
+    // Ensihaku
+    this.haeData(this.requestNum++);
+    // Luo looppi joka hakee dataa 5 sek välein
+    this.poller = setInterval(() =&gt; {
+      this.haeData(this.requestNum++); 
+    }, 5000);
+  },
+  methods: {
+    haeData(currentRequestNum) {
+      API.osakekurssit.single(this.id)
+      .then((osakekurssi) =&gt; {
+        if (this.latestResponse &gt; currentRequestNum) {
+          // Responsella kesti liian pitkään saapua. 
+          // Tuoreempaa dataa on jo ehtinyt saapua, joten
+          // tällä datalla emme tee yhtikäs mitään.
+          return;
+        }
+        this.latestResponse = currentRequestNum;
+        this.osakekurssi = osakekurssi;
+      });
+    }
+  },
+  beforeDestroy() {
+    clearInterval(this.poller);
+    this.poller = null;
+  }
+}
+&lt;/script&gt;
+
+</code></pre>
+
+<p>Ylläoleva ratkaisu on siitä hyvä, että se ei vaadi muutoksia palvelimen puolelle eikä push-notifikaatioita. Yksinkertaisesti häiriköimme rajapintaa viiden sekunnin välein.</p>
+
+<p>Huono puoli on, että viiden sekunnin intervalli on arbitraali, ja ei anna käyttäjälle mahdollisuutta vaikuttaa päivitystahtiin. Osakekurssien tapauksessa kustomoitua päivitys-kontrollia ei juuri tarvita (koska osakekurssit tuppaavat päivittymään orjallisen tasaisesti), mutta muissa yhteyksissä päivitystahdin parempi kontrollointi voi olla tarpeen.</p>
+
+<p>Lisäksi kiveen hakattu päivitystahti on suorastaan käyttäjän <em>ehdollistamista avuttomuuteen</em>. Kuin Albert Camuksen novellissa, käyttäjästä tulee passiivinen seuraaja, joka ei voi vaikuttaa mihinkään.</p>
+
+<blockquote>
+<p>Sidenote: vastakohta Albert Camuksen masennuskeskeiselle maailmankuvalle on Viktor Hugo, jonka novelleissa päähenkilöt omaavat vapaan tahdon, ja voivat aktiivisesti vaikuttaa oman elämänsä kulkuun.</p>
+</blockquote>
+
+<h3 id="ratkaisu-3-datan-uudelleenlataus-nappia-painamalla">Ratkaisu 3: Datan uudelleenlataus nappia painamalla</h3>
+
+<p>Tämä ratkaisu sisältää vihdoin otsikon mukaisen ongelman. Esimerkin tapauksessa voimme tehdä <em>nappia painamalla refreshin</em> seuraavasti:</p>
+
+<pre><code class="language-html">
+&lt;template&gt;
+  &lt;div v-if=&quot;osakekurssi !== null&quot;&gt;
+    &lt;h1&gt;Kurssi: {{osakekurssi}}&lt;/h1&gt;
+    &lt;button v-on:click=&quot;haeData&quot;&gt;Päivitä&lt;/button&gt;
+  &lt;/div&gt;
+  &lt;h3 v-else&gt;&quot;Ladataan...&quot;&lt;/h3&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+
+import API from '@/api'
+
+export default {
+  
+  name: 'Osakekurssi',
+  props: ['id'],
+  data() {
+    osakekurssi: null,
+  },
+  created() {
+    this.haeData();
+  },
+  methods: {
+    haeData() {
+      API.osakekurssit.single(this.id)
+      .then((osakekurssi) =&gt; {
+        this.osakekurssi = osakekurssi;
+      });
+    }
+  }
+}
+&lt;/script&gt;
+
+</code></pre>
+
+<p>On kuitenkin huomattava, että käyttämämme esimerkki on nk. <em>toy example</em>. Oikeassa applikaatiossa päivitettävä komponentti saattaa sisältää valtavan alipuun täynnä muita komponentteja. Lisäksi päivitysnappula voi sijaita ihan toisaalla kuin itse osakekurssi-komponentin sisällä.</p>
+
+<p>Se mitä haluaisimme tehdä on hyödyntää olemassaolevaa Vue:n reititintä. Se tietää tismalleen mitä tehdä; kun saavumme esimerkiksi osoitteeseen <em>www.osakeappi.fi/#/osakekurssit/5</em>, reititin osaa rakentaa koko komponenttipuun osakekurssille, jolla on ID 5.</p>
+
+<blockquote>
+<p>Yleisemmin: koska meillä on jo tapa <em>rakentaa koko komponenttipuu ja populoida</em> se reititintä käyttäen, olisi fiksua tehdä myös <em>puun uudelleenrakennus + uudelleenpopulointi</em> reititintä käyttäen.</p>
+</blockquote>
+
+<p>Törmäämme kuitenkin ongelmaan: kun vapaan tahdon omaava käyttäjä klikkaa osakekurssi-painiketta menuvalikossa, Vue oikeaoppisesti siirtyy uuteen URL:iin ja rakentaa uuden komponenttipuun. Mutta kun käyttäjä klikkaa samaa valikkopainiketta uudestaan, mitään ei tapahdu.</p>
+
+<p>Ongelma on, että Vuen reititin päivittää komponenttipuun <em>vain mikäli reitittimen havaitsema route muuttuu</em>. Käyttäjän klikatessa valikkonappulaa toisen kerran route ei muutu. Käyttäjän tavoitteena on saada samalle osakekurssille tuore kurssidata. Tuore data ja vanha data käyttävät kuitenkin samaa URL:iä, joten reititin ei ymmärrä päivittää komponenttipuuta, eikä täten created-hookit tule kutsutuksi.</p>
+
+<p>Yksi ratkaisu on kutsua <em>$vm.forceUpdate()</em> jossain kohtaa, mutta näin toimiessa olemme matkalla kohti spagettikoodia; Vue reititin seuraa URL:ia, ja forceUpdate-ratkaisu sivuuttaa reitittimen toimintamekanismin. Oikeaoppisessa web-applikaatiossa <em>URL toimii käyttöliittymän näkymää kontrolloivana tilamuuttujana</em>, ja mieluiten <em>ainoana</em> näkymää kontrolloivana tilamuuttujana.</p>
+
+<blockquote>
+<p>Kyseessä on filosofinen ero <em>datan</em> ja <em>näkymän dataan</em> välillä. Ero on vastaava kuin vaikkapa tähden ja kaukoputken välillä. Matemaattisesti ero on vastaava kuin <em>X</em>:n ja <em>F(X)</em>:n välillä; ensimmäinen on objekti, jälkimmäinen on transformaatio eli funktio.</p>
+
+<p>Oikeaoppisessa web-applikaatiossa URL on tilamuuttuja sille <em>mitä/miten dataa näytetään</em>. URL on harvoin tilamuuttuja itse datalle. Ihan jo siksi, että suuren määrän dataa mahduttaminen selaimen osoiteriville on mahdotonta.</p>
+
+<p>Itse datan tilamuuttujana toimii useimmiten joko palvelin-rajapinta, lokaali tietovarasto (esim. local storage) tai yksinkertaisesti globaali Javascript-objekti.</p>
+</blockquote>
+
+<p>Tämän periaatteen sivuuttaminen saattaa johtaa ongelmiin pitkässä juoksussa. Tai sitten ei johda. Mutta meillä on parempikin tapa, joten&hellip;</p>
+
+<h3 id="ratkaisu-4-komponenttipuun-kontrollointi-url-n-timestampilla">Ratkaisu 4: Komponenttipuun kontrollointi URL:n timestampilla</h3>
+
+<p>Paras(?) ratkaisu ongelmaan on muuttaa URL:ia. Mutta miten? Emme voi muuttaa täysin arbitraalisti, koska osakekurssidatan sisältävä komponentti näkyy vain URL:in <em>www.osakeappi.fi/#/osakekurssit/{id}</em> alaisuudessa. Mitä siis voimme muuttaa?</p>
+
+<p>Entä jos teemme näin:</p>
+
+<p><em>www.osakeappi.fi/#/osakekurssit/{id}?ts=772272727</em></p>
+
+<p>Lisäämällä query stringin URL:iin saamme muutettua URL:ia ilman, että itse komponenttipuun rakennetta ohjaava osuus URL:ista muuttuu. Nyt sitten ylätasolla (App.vue) teemme seuraavasti:</p>
+
+<pre><code class="language-html">
+// App.vue
+
+&lt;template&gt;
+  &lt;router-view :key=&quot;$route.fullPath&quot;&gt;&lt;/router-view&gt;
+&lt;/template&gt;
+
+&lt;script&gt;/*...*/&lt;/script&gt;
+
+</code></pre>
+
+<pre><code class="language-html">
+// Menu.vue
+
+&lt;template&gt;
+  &lt;ul v-for=&quot;osake in osakkeet&quot;&gt;
+    &lt;li v-on:click=&quot;openOsake(osake.id)&quot;&gt;{{osake.name}}&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+  export default {
+    //...
+    methods: {
+      openOsake(id) {
+        // Generoimme timestampin URL:in mukaan!
+        // Koska timestamp muuttuu millisekunnin välein,
+        // URL ei ole koskaan sama!
+        this.$router.replace({ 
+          name: &quot;osakekurssi&quot;, 
+          params: {id: id}, 
+          query: {ts: Date.now()} 
+        })
+      }
+    }
+  }
+&lt;/script&gt;
+
+</code></pre>
+
+<p>Yllä oleelliset osuudet ovat App-komponentin <em>:key=$route.fullPath</em> ja Menu-komponentin <em>query: {ts: Date.now()}</em>.</p>
+
+<p>Ensin mainittu kytkee router-viewin kuuntelemaan URL:n muutoksia. Joka kerta kun URL <em>mukaan lukien query string</em> muuttuu, komponentin key-attribuutti muuttuu, ja se pakottaa komponentin uudelleenlatauksen.</p>
+
+<p>Jälkimmäinen huolehtii, että joka kerta kun valikkopainiketta klikataan, generoitava URL on uniikki.</p>
+
+<p>Yksi hyvä puoli ratkaisussa on, että nyt voimme automaattisesti kontrolloida päivitystahtia <strong>suoraan URL:n tasolla</strong>! Tämä on suorastaan upeaa, fantastista.</p>
+
+<p>Ylläolevassa ratkaisussa URL muuttuu millisekunnin välein (koska Date.now palauttaa aikamääreen millisekunnin tarkkuudella). Mutta voimme yhtä hyvin tehdä URL muutoksen yhden sekunnin välein. Tällä tavalla käyttäjä ei voi ampua kuin maksimissaan yhden HTTP-requestin per sekunti vaikka kuinka näpyttelisi hurmiossa samaa valikkolinkkiä.</p>
+
+<p>Toteutimme kuin vahingossa automaattisen <em>rate limitin</em>, siis.</p>
+
+<pre><code class="language-html">
+// Menu.vue
+
+&lt;template&gt;
+  &lt;ul v-for=&quot;osake in osakkeet&quot;&gt;
+    &lt;li v-on:click=&quot;openOsake(osake.id)&quot;&gt;{{osake.name}}&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+  export default {
+    //...
+    methods: {
+      generateTs() {
+        var now = Date.now();
+        // Pyöristä sekunnin tarkkuuteen -&gt; URL muuttuu keskimäärin
+        // sekunnin välein vaikka kuinka naputtaisi li-elementtiä.
+        return Math.round(now / 1000);
+      },
+      openOsake(id) {
+        this.$router.replace({ 
+          name: &quot;osakekurssi&quot;, 
+          params: {id: id}, 
+          query: {ts: this.generateTs()} 
+        })
+      }
+    }
+  }
+&lt;/script&gt;
+
+</code></pre>
+
+<p>Tässä saavumme ihanteelliseen kompromissiin monen asian suhteen. Ensinnäkin käyttäjä olettaa, että kun hän kerran klikkaa osakkeen nimeä ja kurssi päivittyy, myöhemmät klikkaukset tekevät samoin. Tämä antaa käyttäjälle kontrollin. Samaan aikaan saamme kuitenkin toteutettua rate limiitin; koska kurssidataa ei ole järkeä hakea useammin kuin kerran sekunnissa, voimme <em>URL:n koostumusta</em> kontrolloimalla kontrolloida päivitystahtia. Kolmanneksi&hellip; koska URL:n muutos uudelleengeneroi koko router-viewin alaisen komponenttipuun, kaikki alikomponentit ladataan puhtaalta pöydältä. Tämä helpottaa synkronisaatio-ongelmia ison komponenttipuun eri haarojen välillä; kaikki haarat generoidaan uusiksi, ja vanha data häviää bittiavaruuteen.</p>
+
+<p>Kaiken kaikkiaan toimintamalli muistuttaa jumalallista <em>RAII</em>-patternia C++:n puolelta.</p>
+
+<blockquote>
+<p>RAAI = Resource acquisation is initialization</p>
+
+<p>Opetus: pidä komponenttipuun rakenne ja päivityssykli riippuvaisena URL:ista, käyttäen tarvittaessa query stringiä generoimaan uniikki URL.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>

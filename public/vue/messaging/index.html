@@ -88,13 +88,13 @@
 
 <p>Mikäli <em>toinen komponentti on toisen suora jälkeläinen</em>, kommunikointi tapahtuu luontevasti joko käyttäen propseja (alaspäin kommunikoidessa!) tai emittoimalla eventtejä (ylöspäin kommunikoidessa!). Tämä on luonteva tapa kommunikoida jos komponenttipuussa liikutaan vain vertikaalisesti (<em>isä-poika</em>), ei horisontaalisesti (<em>sisar-veli</em>). Ohessa esimerkki eventtien käytöstä:</p>
 
-<pre><code>
+<pre><code class="language-html">
 // Parent.js
 
 
 &lt;template&gt;
-	&lt;h3&gt;Parent component&lt;/h3&gt;
-	&lt;Child @viesti=&quot;viestiAlhaalta&quot;&gt;&lt;/Child&gt;
+  &lt;h3&gt;Parent component&lt;/h3&gt;
+  &lt;Child @viesti=&quot;viestiAlhaalta&quot;&gt;&lt;/Child&gt;
 &lt;/template&gt;
 
 &lt;script&gt;
@@ -102,35 +102,35 @@
 import Child from './Child'
 
 export default {
-	methods: {
-		viestiAlhaalta(viestinSisalto) {
-			console.log(&quot;Viesti alhaalta: &quot; + viestinSisalto)
-			
-		}
-	}
+  methods: {
+    viestiAlhaalta(viestinSisalto) {
+      console.log(&quot;Viesti alhaalta: &quot; + viestinSisalto)
+      
+    }
+  }
 }
 
 &lt;/script&gt;
 
 </code></pre>
 
-<pre><code>
+<pre><code class="language-html">
 // Child.js
 
 &lt;template&gt;
-	&lt;h3&gt;Child component&lt;/h3&gt;
-	&lt;button v-on:click=&quot;lahetaViesti&quot;&gt;Lähetä&lt;/button&gt;
+  &lt;h3&gt;Child component&lt;/h3&gt;
+  &lt;button v-on:click=&quot;lahetaViesti&quot;&gt;Lähetä&lt;/button&gt;
 &lt;/template&gt;
 
 &lt;script&gt;
 
 export default {
-	methods: {
-		lahetaViesti() {
-			this.$emit('viesti', 'Hei vain, isäpappa');
-			
-		}
-	}
+  methods: {
+    lahetaViesti() {
+      this.$emit('viesti', 'Hei vain, isäpappa');
+      
+    }
+  }
 }
 
 &lt;/script&gt;
@@ -156,7 +156,7 @@ export default new Vue({});
 
 </code></pre>
 
-<pre><code>
+<pre><code class="language-html">
 // Palolaitos.js
 
 
@@ -165,31 +165,31 @@ export default new Vue({});
 import Radiomasto from './services/Radiomasto';
 
 export default {
-	data() {
-		observerCb: null
-	},
-	name: 'Palolaitos',
-	created() {
-		// Ilmoita halustasi kuunnella tiettyjä viestejä
-		this.observerCb = this.halytys.bind(this);
-		Radiomasto.$on('tulipalo', this.observerCb);	
-	},
-	beforeDestroy() {
-		// Lopeta kuuntelu
-		Radiomasto.$off('tulipalo', this.observerCb);
-	},
-	methods: {
-		halytys(osoite) {
-			// Lähetä palomiehet annettuun osoitteeseen
-			console.log(&quot;Palomiehet paikalle!&quot;);
-		}
-	}
+  data() {
+    observerCb: null
+  },
+  name: 'Palolaitos',
+  created() {
+    // Ilmoita halustasi kuunnella tiettyjä viestejä
+    this.observerCb = this.halytys.bind(this);
+    Radiomasto.$on('tulipalo', this.observerCb);  
+  },
+  beforeDestroy() {
+    // Lopeta kuuntelu
+    Radiomasto.$off('tulipalo', this.observerCb);
+  },
+  methods: {
+    halytys(osoite) {
+     // Lähetä palomiehet annettuun osoitteeseen
+      console.log(&quot;Palomiehet paikalle!&quot;);
+    }
+  }
 }
 &lt;/script&gt;
 
 </code></pre>
 
-<pre><code class="language-javascript">
+<pre><code class="language-html">
 // Puukerrostalo.js
 
 
@@ -198,13 +198,13 @@ export default {
 import Radiomasto from './services/Radiomasto';
 
 export default {
-	name: 'Puukerrostalo',
-	methods: {
-		tulipaloHavaittu() {
-			// Ilmoita palosta.
-			Radiomasto.$emit('tulipalo', 'Koivukuja 2');
-		}
-	}
+  name: 'Puukerrostalo',
+  methods: {
+    tulipaloHavaittu() {
+      // Ilmoita palosta.
+      Radiomasto.$emit('tulipalo', 'Koivukuja 2');
+    }
+  }
 }
 &lt;/script&gt;
 
@@ -226,18 +226,18 @@ export default {
 // Tietovarasto.js
 
 export default {
-	muumitKpl: 0
+  muumitKpl: 0
 }
 
 </code></pre>
 
-<pre><code>
+<pre><code class="language-html">
 // Muumimamma.js
 
 
 &lt;template&gt;
-	&lt;button v-on:click=&quot;lisaaMuumi&quot;&gt;Lisää&lt;/button&gt;
-	&lt;button v-on:click=&quot;lisaaTuutikki&quot;&gt;Lisää tuutikki&lt;/button&gt;
+  &lt;button v-on:click=&quot;lisaaMuumi&quot;&gt;Lisää&lt;/button&gt;
+  &lt;button v-on:click=&quot;lisaaTuutikki&quot;&gt;Lisää tuutikki&lt;/button&gt;
 &lt;/template&gt;
 
 &lt;script&gt;
@@ -247,61 +247,61 @@ import Muumi from 'entities/Muumi'
 import Tuutikki from 'entities/communists/Tuutikki'
 
 export default {
-	name: 'Tuottaja',
-	data() {
-		olennot: [],
-	},
-	methods: {
-		lisaaMuumi() {
-			this.olennot(new Muumi());
-			// Muumien määrä muuttui
-			// Laske ja päivitä globaali tieto muumien määrästä
-			Tietovarasto.muumitKpl = this.olennot.filter((olento) =&gt; {
-				return !!olento.valkoinenJaPullea;
-			}).length;
-		},
-		lisaaTuutikki() {
-			this.olennot(new Tuutikki());
+  name: 'Tuottaja',
+  data() {
+    olennot: [],
+  },
+  methods: {
+    lisaaMuumi() {
+      this.olennot(new Muumi());
+      // Muumien määrä muuttui
+      // Laske ja päivitä globaali tieto muumien määrästä
+      Tietovarasto.muumitKpl = this.olennot.filter((olento) =&gt; {
+        return !!olento.valkoinenJaPullea;
+      }).length;
+    },
+    lisaaTuutikki() {
+      this.olennot(new Tuutikki());
 
-			// Muumien määrä ei muuttunut
+      // Muumien määrä ei muuttunut
 
-		}
-	}
+    }
+  }
 }
 &lt;/script&gt;
 
 </code></pre>
 
-<pre><code>
+<pre><code class="language-html">
 // MuumitInfotaulu.js
 
 
 &lt;template&gt;
-	&lt;h3&gt;Muumeja on {{kpl}}&lt;/h3&gt;
-	&lt;button v-on:click=&quot;paivitaMuumimaara&quot;&gt;Päivitä&lt;/button&gt;
+  &lt;h3&gt;Muumeja on {{kpl}}&lt;/h3&gt;
+  &lt;button v-on:click=&quot;paivitaMuumimaara&quot;&gt;Päivitä&lt;/button&gt;
 &lt;/template&gt;
 &lt;script&gt;
 
 import Tietovarasto from 'services/Tietovarasto'
 
 export default {
-	name: 'MuumitInfotaulu',
-	data() {
-		kpl: 0
-	},
-	methods: {
-		paivitaMuumimaara() {
-			// Käy hakemassa viimeisin lukumäärä
-			// globaalista tietovarastosta.
-			this.kpl = Tietovarasto.muumitKpl;
-		}
-	},
-	created() {
-		// Alustus
-		//
-		// Haetaan muumimäärä.
-		this.paivitaMuumimaara();
-	}
+  name: 'MuumitInfotaulu',
+  data() {
+    kpl: 0
+  },
+  methods: {
+    paivitaMuumimaara() {
+      // Käy hakemassa viimeisin lukumäärä
+      // globaalista tietovarastosta.
+      this.kpl = Tietovarasto.muumitKpl;
+    }
+  },
+  created() {
+    // Alustus
+    //
+    // Haetaan muumimäärä.
+    this.paivitaMuumimaara();
+  }
 }
 &lt;/script&gt;
 

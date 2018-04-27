@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+	<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
 <head>
   <link href="http://gmpg.org/xfn/11" rel="profile">
@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
   <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
-  <title> Vues &middot; Nollaversio IT </title>
+  <title> Vue komponenttipuun visualisaatio (plugin) &middot; Nollaversio IT </title>
 
   
   <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/poole.css">
@@ -21,7 +21,7 @@
   <link rel="shortcut icon" href="/favicon.png">
 
   
-  <link href="https://www.nollaversio.fi/blog/public/vue/index.xml" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
   <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hybrid.css">
   <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
   <script>hljs.initHighlightingOnLoad();</script>
@@ -29,9 +29,8 @@
 
 </head>
 
-<body class="">
-
-<div class="sidebar">
+	<body class="">
+		<div class="sidebar">
   <div class="container sidebar-sticky">
     <div class="sidebar-about">
       <a href="https://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
@@ -68,35 +67,35 @@
 </div>
 
 
-  <div class="content container">
-  <h3>Aihepiirin postaukset</h3>
-    <ul class="posts">
-        
-        <li>
-          <span><a href="https://www.nollaversio.fi/blog/public/vue/vueviz-plugin/">Vue komponenttipuun visualisaatio (plugin)</a> <time class="pull-right post-list">Fri, Apr 27, 2018</time></span>
-        </li>
-        
-        <li>
-          <span><a href="https://www.nollaversio.fi/blog/public/vue/inverse-hook-order/">Käännä kutsujärjestys mixinin avulla</a> <time class="pull-right post-list">Mon, Feb 12, 2018</time></span>
-        </li>
-        
-        <li>
-          <span><a href="https://www.nollaversio.fi/blog/public/vue/mixins/">Tapahtumakuuntelu mixinin kautta</a> <time class="pull-right post-list">Tue, Feb 6, 2018</time></span>
-        </li>
-        
-        <li>
-          <span><a href="https://www.nollaversio.fi/blog/public/vue/refreshing-component/">Komponenttipuun kontrollointi URL:n timestampilla</a> <time class="pull-right post-list">Wed, Jan 31, 2018</time></span>
-        </li>
-        
-        <li>
-          <span><a href="https://www.nollaversio.fi/blog/public/vue/messaging/">Komponentin datahaku alustuksen aikana</a> <time class="pull-right post-list">Mon, Jan 15, 2018</time></span>
-        </li>
-        
-        <li>
-          <span><a href="https://www.nollaversio.fi/blog/public/vue/paper-and-vue/">Vue.js reactivity gotcha</a> <time class="pull-right post-list">Sat, Oct 21, 2017</time></span>
-        </li>
-        
-    </ul>
-  </div>
-</body>
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Vue komponenttipuun visualisaatio (plugin)</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Fri, Apr 27, 2018</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      
+
+<h3 id="vue-komponenttipuun-visualisaatio">Vue komponenttipuun visualisaatio</h3>
+
+<p><img src="/blog/public/img/vueviz-2.png" alt="Vueviz osana kehitystyötä kuva 2" /></p>
+
+<p>Kehitin alkuvuodesta Vue pluginin erääseen tärkeään tarpeeseen. Monissa yhteyksissä oli tarve nähdä Vue-appia kehitettäessä paitsi komponenttipuun rakenne, myös komponenttipuun <em>diff</em>, eli mitkä komponentit ovat juuri päivittyneet tai tulleet luoduiksi.</p>
+
+<p>Tällä tavalla on helpompi varmistaa, että kun klikkaan vaikka nappulaa &ldquo;Avaa tuotehierarkia&rdquo;, suunnilleen oikeat komponentit päivittyvät ja oikea setti uusia komponentteja ilmestyy puuhun.</p>
+
+<p>Tarvetta varten kehitin <a href="https://github.com/jusahah/VueViz">Vueviz pluginin</a>. Se kuuntelee koko appin komponenttipuussa tapahtuvia muutoksia, laskee diffin edelliseen puuversioon nähden, ja printtaa ruudulle tiedot muutoksesta. Tiedot muutoksista kommunikoidaan värikoodeilla; sininen merkkaa päivittynyttä komponenttia, vihreä on uusi komponentti.</p>
+
+<p><img src="/blog/public/img/vueviz-1.png" alt="Vueviz osana kehitystyötä" /></p>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
 </html>

@@ -3,7 +3,27 @@
   
   <url>
     <loc>https://www.nollaversio.fi/blog/public/</loc>
-    <lastmod>2018-01-22T15:11:33+02:00</lastmod>
+    <lastmod>2018-04-27T04:48:27+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.nollaversio.fi/blog/public/vue/vueviz-plugin/</loc>
+    <lastmod>2018-04-27T04:48:27+03:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.nollaversio.fi/blog/public/vue/inverse-hook-order/</loc>
+    <lastmod>2018-02-12T13:20:21+02:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.nollaversio.fi/blog/public/vue/mixins/</loc>
+    <lastmod>2018-02-06T14:51:13+02:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://www.nollaversio.fi/blog/public/vue/refreshing-component/</loc>
+    <lastmod>2018-01-31T11:37:33+02:00</lastmod>
   </url>
   
   <url>

@@ -6,8 +6,644 @@
     <description>Recent content in Vues on Nollaversio IT</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>fi-fi</language>
-    <lastBuildDate>Mon, 15 Jan 2018 17:57:17 +0200</lastBuildDate>
+    <lastBuildDate>Fri, 27 Apr 2018 04:48:27 +0300</lastBuildDate>
     <atom:link href="https://www.nollaversio.fi/blog/public/vue/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Vue komponenttipuun visualisaatio (plugin)</title>
+      <link>https://www.nollaversio.fi/blog/public/vue/vueviz-plugin/</link>
+      <pubDate>Fri, 27 Apr 2018 04:48:27 +0300</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/vue/vueviz-plugin/</guid>
+      <description>
+
+&lt;h3 id=&#34;vue-komponenttipuun-visualisaatio&#34;&gt;Vue komponenttipuun visualisaatio&lt;/h3&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://www.nollaversio.fi/blog/public/blog/public/img/vueviz-2.png&#34; alt=&#34;Vueviz osana kehitystyötä kuva 2&#34; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Kehitin alkuvuodesta Vue pluginin erääseen tärkeään tarpeeseen. Monissa yhteyksissä oli tarve nähdä Vue-appia kehitettäessä paitsi komponenttipuun rakenne, myös komponenttipuun &lt;em&gt;diff&lt;/em&gt;, eli mitkä komponentit ovat juuri päivittyneet tai tulleet luoduiksi.&lt;/p&gt;
+
+&lt;p&gt;Tällä tavalla on helpompi varmistaa, että kun klikkaan vaikka nappulaa &amp;ldquo;Avaa tuotehierarkia&amp;rdquo;, suunnilleen oikeat komponentit päivittyvät ja oikea setti uusia komponentteja ilmestyy puuhun.&lt;/p&gt;
+
+&lt;p&gt;Tarvetta varten kehitin &lt;a href=&#34;https://github.com/jusahah/VueViz&#34;&gt;Vueviz pluginin&lt;/a&gt;. Se kuuntelee koko appin komponenttipuussa tapahtuvia muutoksia, laskee diffin edelliseen puuversioon nähden, ja printtaa ruudulle tiedot muutoksesta. Tiedot muutoksista kommunikoidaan värikoodeilla; sininen merkkaa päivittynyttä komponenttia, vihreä on uusi komponentti.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&#34;https://www.nollaversio.fi/blog/public/blog/public/img/vueviz-1.png&#34; alt=&#34;Vueviz osana kehitystyötä&#34; /&gt;&lt;/p&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Käännä kutsujärjestys mixinin avulla</title>
+      <link>https://www.nollaversio.fi/blog/public/vue/inverse-hook-order/</link>
+      <pubDate>Mon, 12 Feb 2018 13:20:21 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/vue/inverse-hook-order/</guid>
+      <description>
+
+&lt;h3 id=&#34;vue-and-mixins-osa-2-vaihda-kutsujärjestys&#34;&gt;Vue and Mixins (osa 2): Vaihda kutsujärjestys&lt;/h3&gt;
+
+&lt;p&gt;Viime viikolla käsittelin blogipostauksessa Vuen mixineitä. Ne mahdollistavat hienoja asioita, kuten useaa komponenttia koskevan koodin abstraktoinnin ikäänkuin yläluokkaan.&lt;/p&gt;
+
+&lt;p&gt;Vue mixinin yksi hienoimmista ominaisuuksista on lifecycleen liittyvien hooks-kutsujen kutominen; komponentin oman hookin lisäksi Vuen moottori kutsuu myös mixinin saman nimisen hookin (mikäli sellainen on määritelty).&lt;/p&gt;
+
+&lt;p&gt;Lähtökohtaisesti kutsujärjestys on mixin ensin, komponentti sitten.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Tämä tarkoittaa siis, että useaa komponenttia koskeva &lt;em&gt;yhteinen&lt;/em&gt; koodi ajetaan ensin, ja komponentin oma &lt;em&gt;spesifi&lt;/em&gt; koodi ajetaan jälkeen.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Valittu järjestys on yhtäältä looginen, toisaalta epälooginen.&lt;/p&gt;
+
+&lt;p&gt;Yhtäältä järjestys on äärimmäisen looginen. Ajamalla mixinin hooksin ensin saamme tehtyä vakioalustuksen ensin; mikäli komponentti on tyytyväinen vakioalustukseen, all is fine ja komponentin oman hooksin ei tarvitse tehdä mitään. Mikäli komponentti puolestaan tarvitsee &amp;ldquo;ylhäältä määrätyn&amp;rdquo; vakioalustuksen lisäksi jotain omaa, se voi turvallisesti määrittää omat data-muuttujansa luottaen siihen, että mahdolliset nimi-konfliktit ratkotaan komponentin omien määritysten hyväksi!&lt;/p&gt;
+
+&lt;p&gt;Tämä luottamus toimii juuri siksi, että komponentin oma hook ajetaan viimeisenä, jolloin komponentti voi vapaasti ylikirjoittaa haluamansa data-muuttujan.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Vastaava periaate on keskiössä kaikissa OOP-ohjelmointikielissä. Periaatteen ydinajatus on, että mitä &lt;em&gt;ylemmällä&lt;/em&gt; abstraktion tasolla jokin luokkamuuttuja on määritelty, sitä &lt;em&gt;alempi&lt;/em&gt; sen prioriteetti on. Eri tasojen eri prioriteetit varmistavat sen, että konfliktit on aina mahdollista ratkaista.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Toisaalta järjestys on epälooginen. Entä jos haluamme luoda mixinin, joka loggaa komponentin alkutilan? Koska mixinin created-hook ajetaan ensin, ei mixinillä ole mitään logattavaa; komponentin oma created-hook ei ole vielä ehtinyt alustaa data-muuttujia haluttuihin alkuarvoihin, joten koko loggaus on yhtä tyhjän kanssa.&lt;/p&gt;
+
+&lt;p&gt;Jotta loggaus toimisi oikein, on meidän saatava mixinin hook ajetuksi komponentin hookin &lt;em&gt;jälkeen&lt;/em&gt;, ei ennen. Tällä tavalla mixinin created-hook näkee komponentin tilamuuttujan juuri sellaisina kuin mihin komponentin oma created-hook ne alusti.&lt;/p&gt;
+
+&lt;p&gt;Ongelmaan on ratkaisu:&lt;/p&gt;
+
+&lt;h3 id=&#34;vaihda-kutsujärjestystä-mixin&#34;&gt;Vaihda kutsujärjestystä -mixin&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// CreationLogger.js
+
+function privCreated() {
+    console.log(JSON.stringify(this.$data)); 
+}
+
+export default {
+  created: function () {
+    setTimeout(privCreated.bind(this), 0);
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ratkaisu perustuu siihen, että varsinainen toiminnallisuus siirretään pois mixinin created-hookista. Sen sijaan created-hook - joka ajetaan ennen komponentin created-hookia - kutsuu mixinin privaattia funktiota, joka sisältää varsinaisen business-koodin. Ja oleellista on, että kutsu ajastetaan tehtäväksi &lt;em&gt;Javascriptin event-loopin seuraavalla pyörähdyksellä (tick)&lt;/em&gt;; tällä tavoin komponentin oman created-hook ehtii ajaa välissä.&lt;/p&gt;
+
+&lt;p&gt;Kutsujärjestys ajon aikana siis on:&lt;/p&gt;
+
+&lt;ol&gt;
+&lt;li&gt;Mixinin created()&lt;/li&gt;
+&lt;li&gt;Komponentin created()&lt;/li&gt;
+&lt;li&gt;Mixinin privCreated()&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Mixinin käyttöönotto tapahtuu normaaliin tapaan:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+import CreationLogger from &#39;@/mixins/CreationLogger&#39;
+import Gen from &#39;@/chess/PositionGenerator&#39;
+
+export default {
+  name: &#39;ChessGame&#39;,
+  props: [&#39;players&#39;],
+  mixins: [CreationLogger],
+  data() {
+    return {
+      
+      position: &#39;&#39;,
+      startingTimes: null
+    }
+  },
+  created() {
+
+    this.position = Gen.getRandomStartPosition();
+    this.startingTimes = [15, 15] // Minuuttia
+    // ...
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tärkeintä tässäkin ratkaisussa on, että itse komponentin ei tarvitse tietää hölkäsen pöläystä mixinin poikkeavasta toimintatavasta.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Loppuhuomautus: idea koodinajon siirtämisestä seuraavalle event-loopin pyörähdykselle on erittäin monikäyttöinen. Se on itse asiassa yksi tärkeimmistä (&lt;em&gt;lexical scoping&lt;/em&gt;:in ja &lt;em&gt;prototyyppi&lt;/em&gt;-ketjujen ohella) tekijöistä, jotka tekevät Javascriptista Javascriptin.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Tapahtumakuuntelu mixinin kautta</title>
+      <link>https://www.nollaversio.fi/blog/public/vue/mixins/</link>
+      <pubDate>Tue, 06 Feb 2018 14:51:13 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/vue/mixins/</guid>
+      <description>&lt;p&gt;Moni Vue-komponentti tarvitsee elinkaarensa aikana kyvyn reagoida muiden komponenttien tapahtumiin. Mikäli tapahtumiin reagoiva komponentti ja tapahtumia tuottava komponentti eivät ole suorassa parent-child -suhteessa, paras tapa välittää tietoa on erillisen Vue instanssin kautta, joka toimii keskitettynä viestikeskuksena, siis ikäänkuin radiomastona.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://www.nollaversio.fi/blog/public/vue/messaging/&#34;&gt;Aiemmassa Vue-blogauksessani&lt;/a&gt; annoin esimerkin komponentista (&lt;em&gt;Palolaitos&lt;/em&gt;), joka kuuntelee viestikeskuksesta tulevia viestejä, ja komponentista (&lt;em&gt;Puukerrostalo&lt;/em&gt;), joka ampuu viestejä viestikeskukseen.&lt;/p&gt;
+
+&lt;p&gt;Tuossa esimerkissä viestinvälitysmekanismi oli koodattu suoraan komponenttien sisälle. Mutta suuressa web-applikaatiossa vastaavaa viestittelymekanismia joudutaan käyttämään useiden eri komponenttien kohdalla.&lt;/p&gt;
+
+&lt;p&gt;Eli mikäli toinen komponentti haluaa ottaa vastaavan ratkaisun käyttöön, täytyy vastaava mekanismi koodata myös sinne.&lt;/p&gt;
+
+&lt;p&gt;Ongelma on, että kyseessä on puhdas duplikaatio; sama koodi ripotellaan kopioina eri puolelle koodipohjaa.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Yksi ohjelmoinnin kaikkein fundamentaalisimmista säännöistä on: älä duplikoi koodia ilman hyvää syytä.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Lähes kaikki ohjelmointikielet tarjoavat ratkaisun duplikaation torjumiseen, ja yleisin ratkaisu on funktionaalinen abstraktio; koodi laitetaan funktion sisään, ja koodin sijasta ripotellaan funktiokutsuja pitkin poikin koodipohjaa. Vue tarjoaa tähän lisämausteen mixin-konseptin avulla.&lt;/p&gt;
+
+&lt;p&gt;Perusidealtaan Vuen mixin on hiukka samankaltainen kuin vaikkapa PHP:n puolella konsepti &lt;em&gt;trait&lt;/em&gt;. Molemmat mahdollistavat koodin abstraktoinnin komponentin ulkopuolelle siten, että myös muut komponentit (tai luokat) voivat koodia hyödyntää.&lt;/p&gt;
+
+&lt;p&gt;Yksi ero on, että siinä missä PHP:ssä trait on yksi vaihtoehto – joskus hyvä, joskus huono, useimmiten neutraali - perimiselle yläluokasta, Vuen puolella mixin on kutakuinkin ainoa järkevä tapa abstraktoida komponentin &lt;em&gt;lifecycleen liittyvä toiminta&lt;/em&gt; ulos komponentista. Vuen moottori nimittäin osaa käsitellä mixineiksi merkityn koodin spesiaalilla tavalla, ja ikäänkuin &lt;em&gt;kutoa&lt;/em&gt; sen yhteen komponentin oman koodin kanssa.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Teknisesti Vue yksinkertaisesti tunnistaa, että mixiniä käytetään, ja ajaa mixinin määrittelemät lifecycle-kuuntelijat (esim. created)juuri ennen komponentin omia lifecycle-kuuntelijoita. Huomionarvoista on, että komponentin oma kuuntelija ajetaan mixin-kuuntelijan &lt;em&gt;jälkeen&lt;/em&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Tämä “kutominen” mahdollistaa ratkaisun, joka ei yksinkertaisesti ole mahdollinen PHP:n traittia käyttäen; mixin voi määritellä metodin “created”, ja komponentti voi määritellä saman nimisen metodin “created”, ja kun komponentti ottaa mixinin käyttöön, Vue &lt;em&gt;kutoo&lt;/em&gt; kaksi metodia yhteen ja ajaa metodikutsun seurauksena molempien metodien koodit.&lt;/p&gt;
+
+&lt;p&gt;Tämä on fundamentaalisti eri asia kuin useimpien ohjelmointikielten (ml. Javascript, jonka päälle Vue rakentuu!) tapauksessa kun runtime-engine etsii ajettavaa metodia metodinimen perusteella. Esimerkiksi PHP:n puolella luokka ja yläluokka voivat määritellä saman nimisen metodin, mutta koodinajon aikana vain yhden metodin sisältämä koodi ajetaan. Yksi metodi voi tietenkin kutsua toista metodia – tämä on mahdollista jopa silloin kun metodien nimet ovat tismalleen samat (esim. &lt;em&gt;parent::__construct&lt;/em&gt;) - ,mutta tämä kutsuminen on erikseen kirjoitettava koodiin. Vuen hienous on, että Vuen moottori tekee kutsun automaattisesti lifecycle-kuuntelijoiden kohdalla.&lt;/p&gt;
+
+&lt;p&gt;Yhtäkaikki, mixin näyttää tältä:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// mixins/eventListeningMixin.js
+
+import {EventBus} from &#39;@/services/eventbus&#39;
+import _ from &#39;lodash&#39;
+
+export default {
+
+  data() {
+    return {
+      // vakiona tyhjä objekti -&amp;gt; ei kuuntelijoita
+      eventBusListeners: {}
+    }
+  },
+
+  beforeDestroy() {
+    // Komponentti tuhoutumassa, poista kuuntelijat.
+    _.forOwn(this.eventBusListeners, function(fun, eventName) {
+      EventBus.$off(eventName, fun);
+    });  
+    
+  },
+  created() {
+    // Komponenttia alustetaan, aseta kuuntelijat
+    _.forOwn(this.eventBusListeners, function(fun, eventName) {
+      EventBus.$on(eventName, fun);
+    })
+  }
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Itse EventBus - &lt;strong&gt;joka on hienosti wrapattu mixinin sisälle piiloon&lt;/strong&gt; - on yksinkertaisesti erillinen Vue-instanssi:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// services/eventbus.js
+
+import Vue from &#39;vue&#39;;
+export const EventBus = new Vue();
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Kun olemme luoneet mixinin, mikä tahansa komponentti voi ottaa tuon mixinin käyttöönsä. Käyttöönotto on helppoa; rekisteröi mixinin ja asettaa halutun eventBusListeners-objektin, joka kytkee tapahtumanimet kuuntelijametodeihin. Oleellista on, että mixin hoitaa kaiken koordinnoin taustajärjestelmien kanssa - komponentin sisällä voimme koodata &lt;em&gt;deklaratiivisesti&lt;/em&gt; eli meidän ei tarvitse huolehtia algoritmeista, joita tapahtumakuuntelu käyttää.&lt;/p&gt;
+
+&lt;p&gt;Esimerkkinä komponentti Dashboard.vue:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+// components/Dashboard.vue
+
+import API from &#39;@/api&#39;
+import eventListening from &#39;@/mixins/eventListeningMixin&#39;
+
+export default {
+
+  name: &#39;Dashboard&#39;,
+  mixins: [
+    eventListening
+  ],  
+  data() {
+    return {        
+
+      // Komponentin oma data
+      leads: null,
+      
+
+      // Tapahtumakuuntelijat mixiniä varten
+      // Tämä ylikirjoittaa mixinin oman kuuntelijaobjektin (defaulttina tyhjä objekti)
+      eventBusListeners: {
+        open_lead_acquired: this.eventReloadOpenLeads.bind(this),
+        own_lead_closed: this.eventReloadOwnLeads.bind(this),        
+      }, 
+
+    }
+  },
+  created() {
+    console.log(&amp;quot;Dashboard luotu&amp;quot;);
+    return API.leads.fetch(&#39;include=events,reminders,calls,emails&#39;)
+    .then((leads) =&amp;gt; {
+      this.leads = leads;
+    });
+
+    //...jne
+  },
+  methods: {
+    eventReloadOpenLeads() {
+      // Lataa avoimet liidit uusiksi rajapinnasta
+    },
+
+    eventReloadOwnLeads() {
+      //... lataa omat liidit uusiksi rajapinnasta
+    },
+
+  }
+}  
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Parasta tässä on, että kiitos Vuen kutomisen, viestikuuntelija-mixiniä käyttävän komponentin ei tarvitse pelätä, että mixin vaikuttaisi itse komponentin omien lifecycle-hooksien toimintaan. Ne toimivat tismalleen samoin kuin ilman mixiniä.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Esimerkissä emme määrittäneet varsinaisia business-metodeja mixinin sisään. Toisin kuin lifecycle-kuuntelijoiden tapauksessa, Vue ei &amp;ldquo;kudo&amp;rdquo; mixinin ja komponentin saman nimisiä business-metodeja yhteen. Sen sijaan mixinin metodi yksinkertaisesti kipataan roskiin, ja komponentin metodi jää käyttöön.&lt;/p&gt;
+
+&lt;p&gt;Tämä koskee siis vain tilanteita, joissa komponentin ja mixinin määrittämällä metodilla on tismalleen sama nimi.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
+    
+    <item>
+      <title>Komponenttipuun kontrollointi URL:n timestampilla</title>
+      <link>https://www.nollaversio.fi/blog/public/vue/refreshing-component/</link>
+      <pubDate>Wed, 31 Jan 2018 11:37:33 +0200</pubDate>
+      
+      <guid>https://www.nollaversio.fi/blog/public/vue/refreshing-component/</guid>
+      <description>
+
+&lt;p&gt;Männä päivänä syntyi tarve ladata Vue:n reitittimeen kytketty Vue komponentti uusiksi ilman, että reitittimen toimintaa ohjaava &lt;em&gt;route&lt;/em&gt; muuttuu.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Löyhä määritelmä: route on kytkös URL:n eli selaimen www-osoitteen ja käyttöliittymässä aktiivisena olevan näkymän välillä.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Tyypillisestihän Vuen reititin (router) automaattisesti päivittää komponentti-puun ajan tasalle mätsäämään sen hetkistä URL-rakennetta.&lt;/p&gt;
+
+&lt;p&gt;Esimerkiksi:&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;www.appi.fi/#/sahkopostit/{id}/liitteet&lt;/em&gt; tuottaa komponenttipuun: &lt;strong&gt;App.vue &amp;gt; Sahkoposti.vue &amp;gt; Liitelista.vue&lt;/strong&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;App.vue on ylimmän tason &lt;em&gt;container&lt;/em&gt;-tyyppinen komponentti, jonka sisään applikaation business-näkymät rakentuvat. Kaikki mahdolliset komponenttipuut sisältävät App-komponentin esi-isänään.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Kun nyt käyttäjä klikkaa applikaation menuvalikosta painiketta &amp;ldquo;Profiili&amp;rdquo;, URL päivittyy:&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;www.appi.fi/#/profiili&lt;/em&gt;, joka tuottaa komponenttipuun &lt;strong&gt;App.vue &amp;gt; Profiili.vue&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Kun URL päivittyy, Vue automaattisesti hoitaa lifecycle-kontrollin &lt;em&gt;poistuville&lt;/em&gt; ja &lt;em&gt;ilmestyville&lt;/em&gt; komponenteille. Esimerkin tapauksessa poistuvia komponentteja ovat &lt;em&gt;Sahkoposti&lt;/em&gt; ja &lt;em&gt;Liitelista&lt;/em&gt;, ja ilmestyvä komponentti on &lt;em&gt;Profiili&lt;/em&gt;. Osana tätä lifecycle-kontrollia komponenttien lifecycle-hooksit ajetaan, mikä mahdollistaa uuden komponentin populoinnin esimerkiksi palvelimelta haetulla datalla.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
+// Sahkoposti.vue
+
+&amp;lt;template&amp;gt;
+  &amp;lt;div v-if=&amp;quot;email&amp;quot;&amp;gt;
+    &amp;lt;h1&amp;gt;{{email.subject}}&amp;lt;/h1&amp;gt;
+    &amp;lt;span&amp;gt;{{email.content}}&amp;lt;/span&amp;gt;
+  &amp;lt;/div&amp;gt;
+  &amp;lt;h3 v-else&amp;gt;&amp;quot;Ladataan...&amp;quot;&amp;lt;/h3&amp;gt;
+&amp;lt;/template&amp;gt;
+
+&amp;lt;script&amp;gt;
+
+import API from &#39;@/api&#39;
+
+export default {
+  
+  name: &#39;Sahkoposti&#39;,
+  props: [&#39;id&#39;],
+  data() {
+    email: null,
+  },
+  created() {
+    return API.emails.single(id)
+    .then((email) =&amp;gt; {
+      this.email = email;
+    });
+  }
+}
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva soveltuu hyvin datalle, joka ei koskaan muutu. Tällöin komponentin alustuksen aikana tehty hakureissu serverille riittää populoimaan komponentin sen &lt;em&gt;koko elinkaaren ajaksi&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Mutta entä jos meillä on seuraavanlainen URL-reitti ja siihen kytketty komponentti?&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;www.osakeseuranta.fi/#/osakekurssit/{id}&lt;/em&gt;&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
+// Osakekurssi.vue
+
+&amp;lt;template&amp;gt;
+  &amp;lt;div v-if=&amp;quot;osakekurssi !== null&amp;quot;&amp;gt;
+    &amp;lt;h1&amp;gt;Kurssi: {{osakekurssi}}&amp;lt;/h1&amp;gt;
+  &amp;lt;/div&amp;gt;
+  &amp;lt;h3 v-else&amp;gt;&amp;quot;Ladataan...&amp;quot;&amp;lt;/h3&amp;gt;
+&amp;lt;/template&amp;gt;
+
+&amp;lt;script&amp;gt;
+
+import API from &#39;@/api&#39;
+
+export default {
+  
+  name: &#39;Osakekurssi&#39;,
+  props: [&#39;id&#39;],
+  data() {
+    osakekurssi: null,
+  },
+  created() {
+    return API.osakekurssit.single(id)
+    .then((osakekurssi) =&amp;gt; {
+      this.osakekurssi = osakekurssi;
+    });
+  }
+}
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Haemme jälleen osakekurssidatan komponentin alustuksen yhteydessä, mutta ongelmana on, että osakekurssilla on tapana muuttua. Varsin nopeasti ja usein. Haettu osakekurssi on tarpeeksi hyvä approksimaatio &lt;em&gt;oikeasta osakekurssista&lt;/em&gt; ehkä muutaman sekunnin ajan; sen jälkeen se on &lt;em&gt;vanhentunutta&lt;/em&gt; tietoa. Vanhentunut tieto on arvotonta tietoa.&lt;/p&gt;
+
+&lt;p&gt;Yksi tapa on tehdä jonkinlainen push-notifikaatioihin perustuva järjestelmä, jossa uusin osakekurssi ammutaan fronttiin aina parin sekunnin välein:&lt;/p&gt;
+
+&lt;h3 id=&#34;ratkaisu-1-push-notifikaatiot&#34;&gt;Ratkaisu 1: Push-notifikaatiot&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
+&amp;lt;script&amp;gt;
+
+import PusherWrapper from &#39;@/inbound/PusherWrapper&#39;
+
+export default {
+  
+  name: &#39;Osakekurssi&#39;,
+  props: [&#39;id&#39;],
+  data() {
+    osakekurssi: null,
+    cb: null
+  },
+  created() {
+    this.cb = (viimeisinKurssi) =&amp;gt; {
+      this.osakekurssi = viimeisinKurssi;
+    }.bind(this);
+
+    return PusherWrapper.subscribe(&#39;osakkeet&#39;, this.id, this.cb);
+  },
+  beforeDestroy() {
+    PusherWrapper.unsubscribe(this.cb);
+  }
+}
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Toimiakseen komponentti vaatii tietenkin taustajärjestelmien olemassaolon, kuten (esimerkin tapauksessa) Pusher-tilin. Myös osakekurssidatan sisältävän palvelimen täytyy muuttua; sen täytyy ampua tietoa Pusherin suuntaan harvasen sekunti.&lt;/p&gt;
+
+&lt;p&gt;Ratkaisu on varsin monimutkainen. Mikäli esimerkiksi viiden sekunnin viive datan saannissa on OK, seuraava ratkaisu on parempi:&lt;/p&gt;
+
+&lt;h3 id=&#34;ratkaisu-2-polling-api&#34;&gt;Ratkaisu 2: Polling API&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
+&amp;lt;template&amp;gt;&amp;lt;/template&amp;gt;
+
+&amp;lt;script&amp;gt;
+
+import API from &#39;@/api&#39;
+
+export default {
+  
+  name: &#39;Osakekurssi&#39;,
+  props: [&#39;id&#39;],
+  data() {
+    osakekurssi: null,
+    // Polling-järjestelmän apumuuttujat
+    poller: null,
+    // Viimeisimpänä lähteneen requestin järjestysnumero
+    requestNum: 0,
+    // Suurin järjestysnumero jolle saatu vastaus palvelimelta.
+    latestResponse: 0
+  },
+  created() {
+    // Ensihaku
+    this.haeData(this.requestNum++);
+    // Luo looppi joka hakee dataa 5 sek välein
+    this.poller = setInterval(() =&amp;gt; {
+      this.haeData(this.requestNum++); 
+    }, 5000);
+  },
+  methods: {
+    haeData(currentRequestNum) {
+      API.osakekurssit.single(this.id)
+      .then((osakekurssi) =&amp;gt; {
+        if (this.latestResponse &amp;gt; currentRequestNum) {
+          // Responsella kesti liian pitkään saapua. 
+          // Tuoreempaa dataa on jo ehtinyt saapua, joten
+          // tällä datalla emme tee yhtikäs mitään.
+          return;
+        }
+        this.latestResponse = currentRequestNum;
+        this.osakekurssi = osakekurssi;
+      });
+    }
+  },
+  beforeDestroy() {
+    clearInterval(this.poller);
+    this.poller = null;
+  }
+}
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ylläoleva ratkaisu on siitä hyvä, että se ei vaadi muutoksia palvelimen puolelle eikä push-notifikaatioita. Yksinkertaisesti häiriköimme rajapintaa viiden sekunnin välein.&lt;/p&gt;
+
+&lt;p&gt;Huono puoli on, että viiden sekunnin intervalli on arbitraali, ja ei anna käyttäjälle mahdollisuutta vaikuttaa päivitystahtiin. Osakekurssien tapauksessa kustomoitua päivitys-kontrollia ei juuri tarvita (koska osakekurssit tuppaavat päivittymään orjallisen tasaisesti), mutta muissa yhteyksissä päivitystahdin parempi kontrollointi voi olla tarpeen.&lt;/p&gt;
+
+&lt;p&gt;Lisäksi kiveen hakattu päivitystahti on suorastaan käyttäjän &lt;em&gt;ehdollistamista avuttomuuteen&lt;/em&gt;. Kuin Albert Camuksen novellissa, käyttäjästä tulee passiivinen seuraaja, joka ei voi vaikuttaa mihinkään.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Sidenote: vastakohta Albert Camuksen masennuskeskeiselle maailmankuvalle on Viktor Hugo, jonka novelleissa päähenkilöt omaavat vapaan tahdon, ja voivat aktiivisesti vaikuttaa oman elämänsä kulkuun.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&#34;ratkaisu-3-datan-uudelleenlataus-nappia-painamalla&#34;&gt;Ratkaisu 3: Datan uudelleenlataus nappia painamalla&lt;/h3&gt;
+
+&lt;p&gt;Tämä ratkaisu sisältää vihdoin otsikon mukaisen ongelman. Esimerkin tapauksessa voimme tehdä &lt;em&gt;nappia painamalla refreshin&lt;/em&gt; seuraavasti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
+&amp;lt;template&amp;gt;
+  &amp;lt;div v-if=&amp;quot;osakekurssi !== null&amp;quot;&amp;gt;
+    &amp;lt;h1&amp;gt;Kurssi: {{osakekurssi}}&amp;lt;/h1&amp;gt;
+    &amp;lt;button v-on:click=&amp;quot;haeData&amp;quot;&amp;gt;Päivitä&amp;lt;/button&amp;gt;
+  &amp;lt;/div&amp;gt;
+  &amp;lt;h3 v-else&amp;gt;&amp;quot;Ladataan...&amp;quot;&amp;lt;/h3&amp;gt;
+&amp;lt;/template&amp;gt;
+
+&amp;lt;script&amp;gt;
+
+import API from &#39;@/api&#39;
+
+export default {
+  
+  name: &#39;Osakekurssi&#39;,
+  props: [&#39;id&#39;],
+  data() {
+    osakekurssi: null,
+  },
+  created() {
+    this.haeData();
+  },
+  methods: {
+    haeData() {
+      API.osakekurssit.single(this.id)
+      .then((osakekurssi) =&amp;gt; {
+        this.osakekurssi = osakekurssi;
+      });
+    }
+  }
+}
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;On kuitenkin huomattava, että käyttämämme esimerkki on nk. &lt;em&gt;toy example&lt;/em&gt;. Oikeassa applikaatiossa päivitettävä komponentti saattaa sisältää valtavan alipuun täynnä muita komponentteja. Lisäksi päivitysnappula voi sijaita ihan toisaalla kuin itse osakekurssi-komponentin sisällä.&lt;/p&gt;
+
+&lt;p&gt;Se mitä haluaisimme tehdä on hyödyntää olemassaolevaa Vue:n reititintä. Se tietää tismalleen mitä tehdä; kun saavumme esimerkiksi osoitteeseen &lt;em&gt;www.osakeappi.fi/#/osakekurssit/5&lt;/em&gt;, reititin osaa rakentaa koko komponenttipuun osakekurssille, jolla on ID 5.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Yleisemmin: koska meillä on jo tapa &lt;em&gt;rakentaa koko komponenttipuu ja populoida&lt;/em&gt; se reititintä käyttäen, olisi fiksua tehdä myös &lt;em&gt;puun uudelleenrakennus + uudelleenpopulointi&lt;/em&gt; reititintä käyttäen.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Törmäämme kuitenkin ongelmaan: kun vapaan tahdon omaava käyttäjä klikkaa osakekurssi-painiketta menuvalikossa, Vue oikeaoppisesti siirtyy uuteen URL:iin ja rakentaa uuden komponenttipuun. Mutta kun käyttäjä klikkaa samaa valikkopainiketta uudestaan, mitään ei tapahdu.&lt;/p&gt;
+
+&lt;p&gt;Ongelma on, että Vuen reititin päivittää komponenttipuun &lt;em&gt;vain mikäli reitittimen havaitsema route muuttuu&lt;/em&gt;. Käyttäjän klikatessa valikkonappulaa toisen kerran route ei muutu. Käyttäjän tavoitteena on saada samalle osakekurssille tuore kurssidata. Tuore data ja vanha data käyttävät kuitenkin samaa URL:iä, joten reititin ei ymmärrä päivittää komponenttipuuta, eikä täten created-hookit tule kutsutuksi.&lt;/p&gt;
+
+&lt;p&gt;Yksi ratkaisu on kutsua &lt;em&gt;$vm.forceUpdate()&lt;/em&gt; jossain kohtaa, mutta näin toimiessa olemme matkalla kohti spagettikoodia; Vue reititin seuraa URL:ia, ja forceUpdate-ratkaisu sivuuttaa reitittimen toimintamekanismin. Oikeaoppisessa web-applikaatiossa &lt;em&gt;URL toimii käyttöliittymän näkymää kontrolloivana tilamuuttujana&lt;/em&gt;, ja mieluiten &lt;em&gt;ainoana&lt;/em&gt; näkymää kontrolloivana tilamuuttujana.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;Kyseessä on filosofinen ero &lt;em&gt;datan&lt;/em&gt; ja &lt;em&gt;näkymän dataan&lt;/em&gt; välillä. Ero on vastaava kuin vaikkapa tähden ja kaukoputken välillä. Matemaattisesti ero on vastaava kuin &lt;em&gt;X&lt;/em&gt;:n ja &lt;em&gt;F(X)&lt;/em&gt;:n välillä; ensimmäinen on objekti, jälkimmäinen on transformaatio eli funktio.&lt;/p&gt;
+
+&lt;p&gt;Oikeaoppisessa web-applikaatiossa URL on tilamuuttuja sille &lt;em&gt;mitä/miten dataa näytetään&lt;/em&gt;. URL on harvoin tilamuuttuja itse datalle. Ihan jo siksi, että suuren määrän dataa mahduttaminen selaimen osoiteriville on mahdotonta.&lt;/p&gt;
+
+&lt;p&gt;Itse datan tilamuuttujana toimii useimmiten joko palvelin-rajapinta, lokaali tietovarasto (esim. local storage) tai yksinkertaisesti globaali Javascript-objekti.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Tämän periaatteen sivuuttaminen saattaa johtaa ongelmiin pitkässä juoksussa. Tai sitten ei johda. Mutta meillä on parempikin tapa, joten&amp;hellip;&lt;/p&gt;
+
+&lt;h3 id=&#34;ratkaisu-4-komponenttipuun-kontrollointi-url-n-timestampilla&#34;&gt;Ratkaisu 4: Komponenttipuun kontrollointi URL:n timestampilla&lt;/h3&gt;
+
+&lt;p&gt;Paras(?) ratkaisu ongelmaan on muuttaa URL:ia. Mutta miten? Emme voi muuttaa täysin arbitraalisti, koska osakekurssidatan sisältävä komponentti näkyy vain URL:in &lt;em&gt;www.osakeappi.fi/#/osakekurssit/{id}&lt;/em&gt; alaisuudessa. Mitä siis voimme muuttaa?&lt;/p&gt;
+
+&lt;p&gt;Entä jos teemme näin:&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;www.osakeappi.fi/#/osakekurssit/{id}?ts=772272727&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;Lisäämällä query stringin URL:iin saamme muutettua URL:ia ilman, että itse komponenttipuun rakennetta ohjaava osuus URL:ista muuttuu. Nyt sitten ylätasolla (App.vue) teemme seuraavasti:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
+// App.vue
+
+&amp;lt;template&amp;gt;
+  &amp;lt;router-view :key=&amp;quot;$route.fullPath&amp;quot;&amp;gt;&amp;lt;/router-view&amp;gt;
+&amp;lt;/template&amp;gt;
+
+&amp;lt;script&amp;gt;/*...*/&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
+// Menu.vue
+
+&amp;lt;template&amp;gt;
+  &amp;lt;ul v-for=&amp;quot;osake in osakkeet&amp;quot;&amp;gt;
+    &amp;lt;li v-on:click=&amp;quot;openOsake(osake.id)&amp;quot;&amp;gt;{{osake.name}}&amp;lt;/li&amp;gt;
+  &amp;lt;/ul&amp;gt;
+&amp;lt;/template&amp;gt;
+
+&amp;lt;script&amp;gt;
+  export default {
+    //...
+    methods: {
+      openOsake(id) {
+        // Generoimme timestampin URL:in mukaan!
+        // Koska timestamp muuttuu millisekunnin välein,
+        // URL ei ole koskaan sama!
+        this.$router.replace({ 
+          name: &amp;quot;osakekurssi&amp;quot;, 
+          params: {id: id}, 
+          query: {ts: Date.now()} 
+        })
+      }
+    }
+  }
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Yllä oleelliset osuudet ovat App-komponentin &lt;em&gt;:key=$route.fullPath&lt;/em&gt; ja Menu-komponentin &lt;em&gt;query: {ts: Date.now()}&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;Ensin mainittu kytkee router-viewin kuuntelemaan URL:n muutoksia. Joka kerta kun URL &lt;em&gt;mukaan lukien query string&lt;/em&gt; muuttuu, komponentin key-attribuutti muuttuu, ja se pakottaa komponentin uudelleenlatauksen.&lt;/p&gt;
+
+&lt;p&gt;Jälkimmäinen huolehtii, että joka kerta kun valikkopainiketta klikataan, generoitava URL on uniikki.&lt;/p&gt;
+
+&lt;p&gt;Yksi hyvä puoli ratkaisussa on, että nyt voimme automaattisesti kontrolloida päivitystahtia &lt;strong&gt;suoraan URL:n tasolla&lt;/strong&gt;! Tämä on suorastaan upeaa, fantastista.&lt;/p&gt;
+
+&lt;p&gt;Ylläolevassa ratkaisussa URL muuttuu millisekunnin välein (koska Date.now palauttaa aikamääreen millisekunnin tarkkuudella). Mutta voimme yhtä hyvin tehdä URL muutoksen yhden sekunnin välein. Tällä tavalla käyttäjä ei voi ampua kuin maksimissaan yhden HTTP-requestin per sekunti vaikka kuinka näpyttelisi hurmiossa samaa valikkolinkkiä.&lt;/p&gt;
+
+&lt;p&gt;Toteutimme kuin vahingossa automaattisen &lt;em&gt;rate limitin&lt;/em&gt;, siis.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
+// Menu.vue
+
+&amp;lt;template&amp;gt;
+  &amp;lt;ul v-for=&amp;quot;osake in osakkeet&amp;quot;&amp;gt;
+    &amp;lt;li v-on:click=&amp;quot;openOsake(osake.id)&amp;quot;&amp;gt;{{osake.name}}&amp;lt;/li&amp;gt;
+  &amp;lt;/ul&amp;gt;
+&amp;lt;/template&amp;gt;
+
+&amp;lt;script&amp;gt;
+  export default {
+    //...
+    methods: {
+      generateTs() {
+        var now = Date.now();
+        // Pyöristä sekunnin tarkkuuteen -&amp;gt; URL muuttuu keskimäärin
+        // sekunnin välein vaikka kuinka naputtaisi li-elementtiä.
+        return Math.round(now / 1000);
+      },
+      openOsake(id) {
+        this.$router.replace({ 
+          name: &amp;quot;osakekurssi&amp;quot;, 
+          params: {id: id}, 
+          query: {ts: this.generateTs()} 
+        })
+      }
+    }
+  }
+&amp;lt;/script&amp;gt;
+
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Tässä saavumme ihanteelliseen kompromissiin monen asian suhteen. Ensinnäkin käyttäjä olettaa, että kun hän kerran klikkaa osakkeen nimeä ja kurssi päivittyy, myöhemmät klikkaukset tekevät samoin. Tämä antaa käyttäjälle kontrollin. Samaan aikaan saamme kuitenkin toteutettua rate limiitin; koska kurssidataa ei ole järkeä hakea useammin kuin kerran sekunnissa, voimme &lt;em&gt;URL:n koostumusta&lt;/em&gt; kontrolloimalla kontrolloida päivitystahtia. Kolmanneksi&amp;hellip; koska URL:n muutos uudelleengeneroi koko router-viewin alaisen komponenttipuun, kaikki alikomponentit ladataan puhtaalta pöydältä. Tämä helpottaa synkronisaatio-ongelmia ison komponenttipuun eri haarojen välillä; kaikki haarat generoidaan uusiksi, ja vanha data häviää bittiavaruuteen.&lt;/p&gt;
+
+&lt;p&gt;Kaiken kaikkiaan toimintamalli muistuttaa jumalallista &lt;em&gt;RAII&lt;/em&gt;-patternia C++:n puolelta.&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;RAAI = Resource acquisation is initialization&lt;/p&gt;
+
+&lt;p&gt;Opetus: pidä komponenttipuun rakenne ja päivityssykli riippuvaisena URL:ista, käyttäen tarvittaessa query stringiä generoimaan uniikki URL.&lt;/p&gt;
+&lt;/blockquote&gt;
+</description>
+    </item>
     
     <item>
       <title>Komponentin datahaku alustuksen aikana</title>
@@ -27,13 +663,13 @@
 
 &lt;p&gt;Mikäli &lt;em&gt;toinen komponentti on toisen suora jälkeläinen&lt;/em&gt;, kommunikointi tapahtuu luontevasti joko käyttäen propseja (alaspäin kommunikoidessa!) tai emittoimalla eventtejä (ylöspäin kommunikoidessa!). Tämä on luonteva tapa kommunikoida jos komponenttipuussa liikutaan vain vertikaalisesti (&lt;em&gt;isä-poika&lt;/em&gt;), ei horisontaalisesti (&lt;em&gt;sisar-veli&lt;/em&gt;). Ohessa esimerkki eventtien käytöstä:&lt;/p&gt;
 
-&lt;pre&gt;&lt;code&gt;
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
 // Parent.js
 
 
 &amp;lt;template&amp;gt;
-	&amp;lt;h3&amp;gt;Parent component&amp;lt;/h3&amp;gt;
-	&amp;lt;Child @viesti=&amp;quot;viestiAlhaalta&amp;quot;&amp;gt;&amp;lt;/Child&amp;gt;
+  &amp;lt;h3&amp;gt;Parent component&amp;lt;/h3&amp;gt;
+  &amp;lt;Child @viesti=&amp;quot;viestiAlhaalta&amp;quot;&amp;gt;&amp;lt;/Child&amp;gt;
 &amp;lt;/template&amp;gt;
 
 &amp;lt;script&amp;gt;
@@ -41,35 +677,35 @@
 import Child from &#39;./Child&#39;
 
 export default {
-	methods: {
-		viestiAlhaalta(viestinSisalto) {
-			console.log(&amp;quot;Viesti alhaalta: &amp;quot; + viestinSisalto)
-			
-		}
-	}
+  methods: {
+    viestiAlhaalta(viestinSisalto) {
+      console.log(&amp;quot;Viesti alhaalta: &amp;quot; + viestinSisalto)
+      
+    }
+  }
 }
 
 &amp;lt;/script&amp;gt;
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;pre&gt;&lt;code&gt;
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
 // Child.js
 
 &amp;lt;template&amp;gt;
-	&amp;lt;h3&amp;gt;Child component&amp;lt;/h3&amp;gt;
-	&amp;lt;button v-on:click=&amp;quot;lahetaViesti&amp;quot;&amp;gt;Lähetä&amp;lt;/button&amp;gt;
+  &amp;lt;h3&amp;gt;Child component&amp;lt;/h3&amp;gt;
+  &amp;lt;button v-on:click=&amp;quot;lahetaViesti&amp;quot;&amp;gt;Lähetä&amp;lt;/button&amp;gt;
 &amp;lt;/template&amp;gt;
 
 &amp;lt;script&amp;gt;
 
 export default {
-	methods: {
-		lahetaViesti() {
-			this.$emit(&#39;viesti&#39;, &#39;Hei vain, isäpappa&#39;);
-			
-		}
-	}
+  methods: {
+    lahetaViesti() {
+      this.$emit(&#39;viesti&#39;, &#39;Hei vain, isäpappa&#39;);
+      
+    }
+  }
 }
 
 &amp;lt;/script&amp;gt;
@@ -95,7 +731,7 @@ export default new Vue({});
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;pre&gt;&lt;code&gt;
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
 // Palolaitos.js
 
 
@@ -104,31 +740,31 @@ export default new Vue({});
 import Radiomasto from &#39;./services/Radiomasto&#39;;
 
 export default {
-	data() {
-		observerCb: null
-	},
-	name: &#39;Palolaitos&#39;,
-	created() {
-		// Ilmoita halustasi kuunnella tiettyjä viestejä
-		this.observerCb = this.halytys.bind(this);
-		Radiomasto.$on(&#39;tulipalo&#39;, this.observerCb);	
-	},
-	beforeDestroy() {
-		// Lopeta kuuntelu
-		Radiomasto.$off(&#39;tulipalo&#39;, this.observerCb);
-	},
-	methods: {
-		halytys(osoite) {
-			// Lähetä palomiehet annettuun osoitteeseen
-			console.log(&amp;quot;Palomiehet paikalle!&amp;quot;);
-		}
-	}
+  data() {
+    observerCb: null
+  },
+  name: &#39;Palolaitos&#39;,
+  created() {
+    // Ilmoita halustasi kuunnella tiettyjä viestejä
+    this.observerCb = this.halytys.bind(this);
+    Radiomasto.$on(&#39;tulipalo&#39;, this.observerCb);  
+  },
+  beforeDestroy() {
+    // Lopeta kuuntelu
+    Radiomasto.$off(&#39;tulipalo&#39;, this.observerCb);
+  },
+  methods: {
+    halytys(osoite) {
+     // Lähetä palomiehet annettuun osoitteeseen
+      console.log(&amp;quot;Palomiehet paikalle!&amp;quot;);
+    }
+  }
 }
 &amp;lt;/script&amp;gt;
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
 // Puukerrostalo.js
 
 
@@ -137,13 +773,13 @@ export default {
 import Radiomasto from &#39;./services/Radiomasto&#39;;
 
 export default {
-	name: &#39;Puukerrostalo&#39;,
-	methods: {
-		tulipaloHavaittu() {
-			// Ilmoita palosta.
-			Radiomasto.$emit(&#39;tulipalo&#39;, &#39;Koivukuja 2&#39;);
-		}
-	}
+  name: &#39;Puukerrostalo&#39;,
+  methods: {
+    tulipaloHavaittu() {
+      // Ilmoita palosta.
+      Radiomasto.$emit(&#39;tulipalo&#39;, &#39;Koivukuja 2&#39;);
+    }
+  }
 }
 &amp;lt;/script&amp;gt;
 
@@ -165,18 +801,18 @@ export default {
 // Tietovarasto.js
 
 export default {
-	muumitKpl: 0
+  muumitKpl: 0
 }
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;pre&gt;&lt;code&gt;
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
 // Muumimamma.js
 
 
 &amp;lt;template&amp;gt;
-	&amp;lt;button v-on:click=&amp;quot;lisaaMuumi&amp;quot;&amp;gt;Lisää&amp;lt;/button&amp;gt;
-	&amp;lt;button v-on:click=&amp;quot;lisaaTuutikki&amp;quot;&amp;gt;Lisää tuutikki&amp;lt;/button&amp;gt;
+  &amp;lt;button v-on:click=&amp;quot;lisaaMuumi&amp;quot;&amp;gt;Lisää&amp;lt;/button&amp;gt;
+  &amp;lt;button v-on:click=&amp;quot;lisaaTuutikki&amp;quot;&amp;gt;Lisää tuutikki&amp;lt;/button&amp;gt;
 &amp;lt;/template&amp;gt;
 
 &amp;lt;script&amp;gt;
@@ -186,61 +822,61 @@ import Muumi from &#39;entities/Muumi&#39;
 import Tuutikki from &#39;entities/communists/Tuutikki&#39;
 
 export default {
-	name: &#39;Tuottaja&#39;,
-	data() {
-		olennot: [],
-	},
-	methods: {
-		lisaaMuumi() {
-			this.olennot(new Muumi());
-			// Muumien määrä muuttui
-			// Laske ja päivitä globaali tieto muumien määrästä
-			Tietovarasto.muumitKpl = this.olennot.filter((olento) =&amp;gt; {
-				return !!olento.valkoinenJaPullea;
-			}).length;
-		},
-		lisaaTuutikki() {
-			this.olennot(new Tuutikki());
+  name: &#39;Tuottaja&#39;,
+  data() {
+    olennot: [],
+  },
+  methods: {
+    lisaaMuumi() {
+      this.olennot(new Muumi());
+      // Muumien määrä muuttui
+      // Laske ja päivitä globaali tieto muumien määrästä
+      Tietovarasto.muumitKpl = this.olennot.filter((olento) =&amp;gt; {
+        return !!olento.valkoinenJaPullea;
+      }).length;
+    },
+    lisaaTuutikki() {
+      this.olennot(new Tuutikki());
 
-			// Muumien määrä ei muuttunut
+      // Muumien määrä ei muuttunut
 
-		}
-	}
+    }
+  }
 }
 &amp;lt;/script&amp;gt;
 
 &lt;/code&gt;&lt;/pre&gt;
 
-&lt;pre&gt;&lt;code&gt;
+&lt;pre&gt;&lt;code class=&#34;language-html&#34;&gt;
 // MuumitInfotaulu.js
 
 
 &amp;lt;template&amp;gt;
-	&amp;lt;h3&amp;gt;Muumeja on {{kpl}}&amp;lt;/h3&amp;gt;
-	&amp;lt;button v-on:click=&amp;quot;paivitaMuumimaara&amp;quot;&amp;gt;Päivitä&amp;lt;/button&amp;gt;
+  &amp;lt;h3&amp;gt;Muumeja on {{kpl}}&amp;lt;/h3&amp;gt;
+  &amp;lt;button v-on:click=&amp;quot;paivitaMuumimaara&amp;quot;&amp;gt;Päivitä&amp;lt;/button&amp;gt;
 &amp;lt;/template&amp;gt;
 &amp;lt;script&amp;gt;
 
 import Tietovarasto from &#39;services/Tietovarasto&#39;
 
 export default {
-	name: &#39;MuumitInfotaulu&#39;,
-	data() {
-		kpl: 0
-	},
-	methods: {
-		paivitaMuumimaara() {
-			// Käy hakemassa viimeisin lukumäärä
-			// globaalista tietovarastosta.
-			this.kpl = Tietovarasto.muumitKpl;
-		}
-	},
-	created() {
-		// Alustus
-		//
-		// Haetaan muumimäärä.
-		this.paivitaMuumimaara();
-	}
+  name: &#39;MuumitInfotaulu&#39;,
+  data() {
+    kpl: 0
+  },
+  methods: {
+    paivitaMuumimaara() {
+      // Käy hakemassa viimeisin lukumäärä
+      // globaalista tietovarastosta.
+      this.kpl = Tietovarasto.muumitKpl;
+    }
+  },
+  created() {
+    // Alustus
+    //
+    // Haetaan muumimäärä.
+    this.paivitaMuumimaara();
+  }
 }
 &amp;lt;/script&amp;gt;
 

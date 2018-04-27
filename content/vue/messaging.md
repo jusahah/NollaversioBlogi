@@ -15,14 +15,14 @@ Tyypillisestihän Vue-komponenttien välinen kommunikointi tapahtuu jommalla kum
 
 Mikäli *toinen komponentti on toisen suora jälkeläinen*, kommunikointi tapahtuu luontevasti joko käyttäen propseja (alaspäin kommunikoidessa!) tai emittoimalla eventtejä (ylöspäin kommunikoidessa!). Tämä on luonteva tapa kommunikoida jos komponenttipuussa liikutaan vain vertikaalisesti (*isä-poika*), ei horisontaalisesti (*sisar-veli*). Ohessa esimerkki eventtien käytöstä:
 
-```
+```html
 
 // Parent.js
 
 
 <template>
-	<h3>Parent component</h3>
-	<Child @viesti="viestiAlhaalta"></Child>
+  <h3>Parent component</h3>
+  <Child @viesti="viestiAlhaalta"></Child>
 </template>
 
 <script>
@@ -30,36 +30,36 @@ Mikäli *toinen komponentti on toisen suora jälkeläinen*, kommunikointi tapaht
 import Child from './Child'
 
 export default {
-	methods: {
-		viestiAlhaalta(viestinSisalto) {
-			console.log("Viesti alhaalta: " + viestinSisalto)
-			
-		}
-	}
+  methods: {
+    viestiAlhaalta(viestinSisalto) {
+      console.log("Viesti alhaalta: " + viestinSisalto)
+      
+    }
+  }
 }
 
 </script>
 
 ```
 
-```
+```html
 
 // Child.js
 
 <template>
-	<h3>Child component</h3>
-	<button v-on:click="lahetaViesti">Lähetä</button>
+  <h3>Child component</h3>
+  <button v-on:click="lahetaViesti">Lähetä</button>
 </template>
 
 <script>
 
 export default {
-	methods: {
-		lahetaViesti() {
-			this.$emit('viesti', 'Hei vain, isäpappa');
-			
-		}
-	}
+  methods: {
+    lahetaViesti() {
+      this.$emit('viesti', 'Hei vain, isäpappa');
+      
+    }
+  }
 }
 
 </script>
@@ -84,7 +84,7 @@ export default new Vue({});
 
 ```
 
-```
+```html
 
 // Palolaitos.js
 
@@ -94,31 +94,31 @@ export default new Vue({});
 import Radiomasto from './services/Radiomasto';
 
 export default {
-	data() {
-		observerCb: null
-	},
-	name: 'Palolaitos',
-	created() {
-		// Ilmoita halustasi kuunnella tiettyjä viestejä
-		this.observerCb = this.halytys.bind(this);
-		Radiomasto.$on('tulipalo', this.observerCb);	
-	},
-	beforeDestroy() {
-		// Lopeta kuuntelu
-		Radiomasto.$off('tulipalo', this.observerCb);
-	},
-	methods: {
-		halytys(osoite) {
-			// Lähetä palomiehet annettuun osoitteeseen
-			console.log("Palomiehet paikalle!");
-		}
-	}
+  data() {
+    observerCb: null
+  },
+  name: 'Palolaitos',
+  created() {
+    // Ilmoita halustasi kuunnella tiettyjä viestejä
+    this.observerCb = this.halytys.bind(this);
+    Radiomasto.$on('tulipalo', this.observerCb);  
+  },
+  beforeDestroy() {
+    // Lopeta kuuntelu
+    Radiomasto.$off('tulipalo', this.observerCb);
+  },
+  methods: {
+    halytys(osoite) {
+     // Lähetä palomiehet annettuun osoitteeseen
+      console.log("Palomiehet paikalle!");
+    }
+  }
 }
 </script>
 
 ```
 
-```javascript
+```html
 
 // Puukerrostalo.js
 
@@ -128,13 +128,13 @@ export default {
 import Radiomasto from './services/Radiomasto';
 
 export default {
-	name: 'Puukerrostalo',
-	methods: {
-		tulipaloHavaittu() {
-			// Ilmoita palosta.
-			Radiomasto.$emit('tulipalo', 'Koivukuja 2');
-		}
-	}
+  name: 'Puukerrostalo',
+  methods: {
+    tulipaloHavaittu() {
+      // Ilmoita palosta.
+      Radiomasto.$emit('tulipalo', 'Koivukuja 2');
+    }
+  }
 }
 </script>
 
@@ -157,19 +157,19 @@ Yksinkertaisin ratkaisu on suorastaan hupaisan... yksinkertainen. Käytetään y
 // Tietovarasto.js
 
 export default {
-	muumitKpl: 0
+  muumitKpl: 0
 }
 
 ```
 
-```
+```html
 
 // Muumimamma.js
 
 
 <template>
-	<button v-on:click="lisaaMuumi">Lisää</button>
-	<button v-on:click="lisaaTuutikki">Lisää tuutikki</button>
+  <button v-on:click="lisaaMuumi">Lisää</button>
+  <button v-on:click="lisaaTuutikki">Lisää tuutikki</button>
 </template>
 
 <script>
@@ -179,62 +179,62 @@ import Muumi from 'entities/Muumi'
 import Tuutikki from 'entities/communists/Tuutikki'
 
 export default {
-	name: 'Tuottaja',
-	data() {
-		olennot: [],
-	},
-	methods: {
-		lisaaMuumi() {
-			this.olennot(new Muumi());
-			// Muumien määrä muuttui
-			// Laske ja päivitä globaali tieto muumien määrästä
-			Tietovarasto.muumitKpl = this.olennot.filter((olento) => {
-				return !!olento.valkoinenJaPullea;
-			}).length;
-		},
-		lisaaTuutikki() {
-			this.olennot(new Tuutikki());
+  name: 'Tuottaja',
+  data() {
+    olennot: [],
+  },
+  methods: {
+    lisaaMuumi() {
+      this.olennot(new Muumi());
+      // Muumien määrä muuttui
+      // Laske ja päivitä globaali tieto muumien määrästä
+      Tietovarasto.muumitKpl = this.olennot.filter((olento) => {
+        return !!olento.valkoinenJaPullea;
+      }).length;
+    },
+    lisaaTuutikki() {
+      this.olennot(new Tuutikki());
 
-			// Muumien määrä ei muuttunut
+      // Muumien määrä ei muuttunut
 
-		}
-	}
+    }
+  }
 }
 </script>
 
 ```
 
-```
+```html
 
 // MuumitInfotaulu.js
 
 
 <template>
-	<h3>Muumeja on {{kpl}}</h3>
-	<button v-on:click="paivitaMuumimaara">Päivitä</button>
+  <h3>Muumeja on {{kpl}}</h3>
+  <button v-on:click="paivitaMuumimaara">Päivitä</button>
 </template>
 <script>
 
 import Tietovarasto from 'services/Tietovarasto'
 
 export default {
-	name: 'MuumitInfotaulu',
-	data() {
-		kpl: 0
-	},
-	methods: {
-		paivitaMuumimaara() {
-			// Käy hakemassa viimeisin lukumäärä
-			// globaalista tietovarastosta.
-			this.kpl = Tietovarasto.muumitKpl;
-		}
-	},
-	created() {
-		// Alustus
-		//
-		// Haetaan muumimäärä.
-		this.paivitaMuumimaara();
-	}
+  name: 'MuumitInfotaulu',
+  data() {
+    kpl: 0
+  },
+  methods: {
+    paivitaMuumimaara() {
+      // Käy hakemassa viimeisin lukumäärä
+      // globaalista tietovarastosta.
+      this.kpl = Tietovarasto.muumitKpl;
+    }
+  },
+  created() {
+    // Alustus
+    //
+    // Haetaan muumimäärä.
+    this.paivitaMuumimaara();
+  }
 }
 </script>
 

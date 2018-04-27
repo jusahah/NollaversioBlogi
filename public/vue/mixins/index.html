@@ -1,0 +1,222 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fi-fi" lang="fi-fi">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.16" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="google-site-verification" content="npcZjxZqOw-RIBOXf3LqA-WmuV9LnJjisYTalXyh4AY" />
+  <title> Tapahtumakuuntelu mixinin kautta &middot; Nollaversio IT </title>
+
+  
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/poole.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/syntax.css">
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Nollaversio IT" />
+  <link rel="stylesheet" href="https://www.nollaversio.fi/blog/public/css/hybrid.css">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.5.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+  
+
+</head>
+
+	<body class="">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="https://www.nollaversio.fi/blog/public/"><h1>Nollaversio IT</h1></a>
+      <p class="lead">
+       Nollaversio IT:n ohjelmointiin keskittyvä blogi. Aihepiireinä Laravel, Node.js, Electron ja arkkitehtuurit.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      
+      
+      
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/arkkitehtuuri">Arkkitehtuuri </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/laravel">Laravel </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/misc">Misc </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/nodejs">Nodejs </a></li>
+      
+
+        <li><a href="https://www.nollaversio.fi/blog/public/vue">Vue </a></li>
+      
+
+    </ul>
+    
+    <p> Kaikki blogin sisältö MIT-lisenssillä.  Blogia ylläpitää <a href="http://jussihamalainen.fi" target="_blank">Jussi Hämäläinen</a>.</p>
+  </div>
+</div>
+
+
+		<div class="content container">
+
+			<div class="post">
+			 	<h1>Tapahtumakuuntelu mixinin kautta</h1>
+			  <span class="post-date" style="margin-bottom: 4px;">Tue, Feb 6, 2018</span>
+				<ul id="tags" class="tagslist">
+				  
+				</ul>
+				<hr style="margin-top: 12px;">
+			      <p>Moni Vue-komponentti tarvitsee elinkaarensa aikana kyvyn reagoida muiden komponenttien tapahtumiin. Mikäli tapahtumiin reagoiva komponentti ja tapahtumia tuottava komponentti eivät ole suorassa parent-child -suhteessa, paras tapa välittää tietoa on erillisen Vue instanssin kautta, joka toimii keskitettynä viestikeskuksena, siis ikäänkuin radiomastona.</p>
+
+<p><a href="https://www.nollaversio.fi/blog/public/vue/messaging/">Aiemmassa Vue-blogauksessani</a> annoin esimerkin komponentista (<em>Palolaitos</em>), joka kuuntelee viestikeskuksesta tulevia viestejä, ja komponentista (<em>Puukerrostalo</em>), joka ampuu viestejä viestikeskukseen.</p>
+
+<p>Tuossa esimerkissä viestinvälitysmekanismi oli koodattu suoraan komponenttien sisälle. Mutta suuressa web-applikaatiossa vastaavaa viestittelymekanismia joudutaan käyttämään useiden eri komponenttien kohdalla.</p>
+
+<p>Eli mikäli toinen komponentti haluaa ottaa vastaavan ratkaisun käyttöön, täytyy vastaava mekanismi koodata myös sinne.</p>
+
+<p>Ongelma on, että kyseessä on puhdas duplikaatio; sama koodi ripotellaan kopioina eri puolelle koodipohjaa.</p>
+
+<blockquote>
+<p>Yksi ohjelmoinnin kaikkein fundamentaalisimmista säännöistä on: älä duplikoi koodia ilman hyvää syytä.</p>
+</blockquote>
+
+<p>Lähes kaikki ohjelmointikielet tarjoavat ratkaisun duplikaation torjumiseen, ja yleisin ratkaisu on funktionaalinen abstraktio; koodi laitetaan funktion sisään, ja koodin sijasta ripotellaan funktiokutsuja pitkin poikin koodipohjaa. Vue tarjoaa tähän lisämausteen mixin-konseptin avulla.</p>
+
+<p>Perusidealtaan Vuen mixin on hiukka samankaltainen kuin vaikkapa PHP:n puolella konsepti <em>trait</em>. Molemmat mahdollistavat koodin abstraktoinnin komponentin ulkopuolelle siten, että myös muut komponentit (tai luokat) voivat koodia hyödyntää.</p>
+
+<p>Yksi ero on, että siinä missä PHP:ssä trait on yksi vaihtoehto – joskus hyvä, joskus huono, useimmiten neutraali - perimiselle yläluokasta, Vuen puolella mixin on kutakuinkin ainoa järkevä tapa abstraktoida komponentin <em>lifecycleen liittyvä toiminta</em> ulos komponentista. Vuen moottori nimittäin osaa käsitellä mixineiksi merkityn koodin spesiaalilla tavalla, ja ikäänkuin <em>kutoa</em> sen yhteen komponentin oman koodin kanssa.</p>
+
+<blockquote>
+<p>Teknisesti Vue yksinkertaisesti tunnistaa, että mixiniä käytetään, ja ajaa mixinin määrittelemät lifecycle-kuuntelijat (esim. created)juuri ennen komponentin omia lifecycle-kuuntelijoita. Huomionarvoista on, että komponentin oma kuuntelija ajetaan mixin-kuuntelijan <em>jälkeen</em>.</p>
+</blockquote>
+
+<p>Tämä “kutominen” mahdollistaa ratkaisun, joka ei yksinkertaisesti ole mahdollinen PHP:n traittia käyttäen; mixin voi määritellä metodin “created”, ja komponentti voi määritellä saman nimisen metodin “created”, ja kun komponentti ottaa mixinin käyttöön, Vue <em>kutoo</em> kaksi metodia yhteen ja ajaa metodikutsun seurauksena molempien metodien koodit.</p>
+
+<p>Tämä on fundamentaalisti eri asia kuin useimpien ohjelmointikielten (ml. Javascript, jonka päälle Vue rakentuu!) tapauksessa kun runtime-engine etsii ajettavaa metodia metodinimen perusteella. Esimerkiksi PHP:n puolella luokka ja yläluokka voivat määritellä saman nimisen metodin, mutta koodinajon aikana vain yhden metodin sisältämä koodi ajetaan. Yksi metodi voi tietenkin kutsua toista metodia – tämä on mahdollista jopa silloin kun metodien nimet ovat tismalleen samat (esim. <em>parent::__construct</em>) - ,mutta tämä kutsuminen on erikseen kirjoitettava koodiin. Vuen hienous on, että Vuen moottori tekee kutsun automaattisesti lifecycle-kuuntelijoiden kohdalla.</p>
+
+<p>Yhtäkaikki, mixin näyttää tältä:</p>
+
+<pre><code class="language-javascript">
+// mixins/eventListeningMixin.js
+
+import {EventBus} from '@/services/eventbus'
+import _ from 'lodash'
+
+export default {
+
+  data() {
+    return {
+      // vakiona tyhjä objekti -&gt; ei kuuntelijoita
+      eventBusListeners: {}
+    }
+  },
+
+  beforeDestroy() {
+    // Komponentti tuhoutumassa, poista kuuntelijat.
+    _.forOwn(this.eventBusListeners, function(fun, eventName) {
+      EventBus.$off(eventName, fun);
+    });  
+    
+  },
+  created() {
+    // Komponenttia alustetaan, aseta kuuntelijat
+    _.forOwn(this.eventBusListeners, function(fun, eventName) {
+      EventBus.$on(eventName, fun);
+    })
+  }
+}
+
+</code></pre>
+
+<p>Itse EventBus - <strong>joka on hienosti wrapattu mixinin sisälle piiloon</strong> - on yksinkertaisesti erillinen Vue-instanssi:</p>
+
+<pre><code class="language-javascript">
+// services/eventbus.js
+
+import Vue from 'vue';
+export const EventBus = new Vue();
+
+</code></pre>
+
+<p>Kun olemme luoneet mixinin, mikä tahansa komponentti voi ottaa tuon mixinin käyttöönsä. Käyttöönotto on helppoa; rekisteröi mixinin ja asettaa halutun eventBusListeners-objektin, joka kytkee tapahtumanimet kuuntelijametodeihin. Oleellista on, että mixin hoitaa kaiken koordinnoin taustajärjestelmien kanssa - komponentin sisällä voimme koodata <em>deklaratiivisesti</em> eli meidän ei tarvitse huolehtia algoritmeista, joita tapahtumakuuntelu käyttää.</p>
+
+<p>Esimerkkinä komponentti Dashboard.vue:</p>
+
+<pre><code class="language-javascript">
+// components/Dashboard.vue
+
+import API from '@/api'
+import eventListening from '@/mixins/eventListeningMixin'
+
+export default {
+
+  name: 'Dashboard',
+  mixins: [
+    eventListening
+  ],  
+  data() {
+    return {        
+
+      // Komponentin oma data
+      leads: null,
+      
+
+      // Tapahtumakuuntelijat mixiniä varten
+      // Tämä ylikirjoittaa mixinin oman kuuntelijaobjektin (defaulttina tyhjä objekti)
+      eventBusListeners: {
+        open_lead_acquired: this.eventReloadOpenLeads.bind(this),
+        own_lead_closed: this.eventReloadOwnLeads.bind(this),        
+      }, 
+
+    }
+  },
+  created() {
+    console.log(&quot;Dashboard luotu&quot;);
+    return API.leads.fetch('include=events,reminders,calls,emails')
+    .then((leads) =&gt; {
+      this.leads = leads;
+    });
+
+    //...jne
+  },
+  methods: {
+    eventReloadOpenLeads() {
+      // Lataa avoimet liidit uusiksi rajapinnasta
+    },
+
+    eventReloadOwnLeads() {
+      //... lataa omat liidit uusiksi rajapinnasta
+    },
+
+  }
+}  
+
+</code></pre>
+
+<p>Parasta tässä on, että kiitos Vuen kutomisen, viestikuuntelija-mixiniä käyttävän komponentin ei tarvitse pelätä, että mixin vaikuttaisi itse komponentin omien lifecycle-hooksien toimintaan. Ne toimivat tismalleen samoin kuin ilman mixiniä.</p>
+
+<blockquote>
+<p>Esimerkissä emme määrittäneet varsinaisia business-metodeja mixinin sisään. Toisin kuin lifecycle-kuuntelijoiden tapauksessa, Vue ei &ldquo;kudo&rdquo; mixinin ja komponentin saman nimisiä business-metodeja yhteen. Sen sijaan mixinin metodi yksinkertaisesti kipataan roskiin, ja komponentin metodi jää käyttöön.</p>
+
+<p>Tämä koskee siis vain tilanteita, joissa komponentin ja mixinin määrittämällä metodilla on tismalleen sama nimi.</p>
+</blockquote>
+
+			</div>
+
+			
+
+
+		</div>
+
+  </body>
+</html>
